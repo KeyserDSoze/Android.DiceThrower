@@ -1,0 +1,5 @@
+{
+  "title": "Dice Thrower",
+  "shortDescription": "Build character dice dashboards and roll by shaking your phone.",
+  "fullDescription": "Dice Thrower is a game-agnostic dice companion for tabletop and role-playing games.\\n\\nCreate lightweight characters with a name, optional image and free-form game tag. Attach reusable dice rolls such as 1d20+8, 6d6+6 or 4d3+3d6+10, organize them into groups, and arrange the dashboard to match how you play.\\n\\nMain features:\\n• configurable characters and quick-roll dashboards;\\n• grouped and ungrouped rolls with custom ordering;\\n• d2, d3, d4, d6, d10, d12, d20 and d100;\\n• composite expressions with modifiers;\\n• roll by shaking the phone or using a configurable button;\\n• local roll history with configurable retention;\\n• light and dark themes;\\n• multilingual interface.\\n\\nDice Thrower is designed to work offline. It requires no account, contains no advertising or analytics, and keeps character data, settings and roll history on the device."
+}
