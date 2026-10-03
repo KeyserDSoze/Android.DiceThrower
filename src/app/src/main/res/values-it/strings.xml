@@ -16,7 +16,7 @@
     <string name="back">Indietro</string>
     <string name="no_characters">Non ci sono ancora personaggi. Creane uno per iniziare.</string>
     <string name="no_rolls">Non ci sono ancora tiri attivi.</string>
-    <string name="groups">Gruppi</string>
+    <string name="dashboard">Dashboard</string>\n    <string name="groups">Gruppi</string>
     <string name="rolls">Tiri</string>
     <string name="new_group">Nuovo gruppo</string>
     <string name="group_name">Nome del gruppo</string>
