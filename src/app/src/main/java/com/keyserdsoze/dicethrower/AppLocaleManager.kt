@@ -7,10 +7,14 @@ import android.os.Build
 import android.os.LocaleList
 import java.util.Locale
 
-data class AppLanguageOption(val code: String, val nativeName: String)
+data class AppLanguageOption(
+    val code: String,
+    val nativeName: String,
+)
 
 object AppLocaleManager {
     const val SYSTEM = "system"
+
     private const val PREFS = "dice_thrower_locale"
     private const val KEY_LANGUAGE = "language"
 
@@ -59,29 +63,50 @@ object AppLocaleManager {
 
     private val supportedCodes = supportedLanguages.map { it.code }.toSet()
 
-    fun selectedLanguage(context: Context): String =
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    fun selectedLanguage(context: Context): String {
+        val stored = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .getString(KEY_LANGUAGE, SYSTEM)
             ?.takeIf { it == SYSTEM || it in supportedCodes }
             ?: SYSTEM
 
+        if (stored != SYSTEM || Build.VERSION.SDK_INT < 33) return stored
+
+        val frameworkTag = context.getSystemService(LocaleManager::class.java)
+            .applicationLocales
+            .toLanguageTags()
+            .substringBefore(',')
+            .takeIf { it.isNotBlank() }
+
+        return frameworkTag
+            ?.let(::normalizeSupportedTag)
+            ?: SYSTEM
+    }
+
     fun setLanguage(context: Context, code: String) {
         val normalized = if (code == SYSTEM || code in supportedCodes) code else SYSTEM
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit().putString(KEY_LANGUAGE, normalized).apply()
+            .edit()
+            .putString(KEY_LANGUAGE, normalized)
+            .apply()
 
         if (Build.VERSION.SDK_INT >= 33) {
-            context.getSystemService(LocaleManager::class.java).applicationLocales =
-                if (normalized == SYSTEM) LocaleList.getEmptyLocaleList()
-                else LocaleList.forLanguageTags(normalized)
+            val manager = context.getSystemService(LocaleManager::class.java)
+            manager.applicationLocales = if (normalized == SYSTEM) {
+                LocaleList.getEmptyLocaleList()
+            } else {
+                LocaleList.forLanguageTags(normalized)
+            }
         }
     }
 
     fun syncFrameworkLocale(context: Context) {
         if (Build.VERSION.SDK_INT < 33) return
         val selected = selectedLanguage(context)
-        val desired = if (selected == SYSTEM) LocaleList.getEmptyLocaleList()
-        else LocaleList.forLanguageTags(selected)
+        val desired = if (selected == SYSTEM) {
+            LocaleList.getEmptyLocaleList()
+        } else {
+            LocaleList.forLanguageTags(selected)
+        }
         val manager = context.getSystemService(LocaleManager::class.java)
         if (manager.applicationLocales.toLanguageTags() != desired.toLanguageTags()) {
             manager.applicationLocales = desired
@@ -91,11 +116,115 @@ object AppLocaleManager {
     fun wrap(base: Context): Context {
         val selected = selectedLanguage(base)
         if (selected == SYSTEM) return base
+
         val locale = Locale.forLanguageTag(selected)
         val configuration = Configuration(base.resources.configuration).apply {
             setLocale(locale)
             setLayoutDirection(locale)
         }
         return base.createConfigurationContext(configuration)
+    }
+
+    private fun normalizeSupportedTag(tag: String): String? {
+        if (tag in supportedCodes) return tag
+        val locale = Locale.forLanguageTag(tag)
+        return when (locale.language.lowercase(Locale.ROOT)) {
+            "it" -> "it"
+            "es" -> "es"
+            "fr" -> "fr"
+            "de" -> "de"
+            "pt" -> "pt"
+            "ru" -> "ru"
+            "ar" -> "ar"
+            "hi" -> "hi"
+            "zh" -> "zh-CN"
+            "ja" -> "ja"
+            "ko" -> "ko"
+            "id", "in" -> "id"
+            "tr" -> "tr"
+            "vi" -> "vi"
+            "bn" -> "bn"
+            "ur" -> "ur"
+            "fa" -> "fa"
+            "pl" -> "pl"
+            "nl" -> "nl"
+            "th" -> "th"
+            "ms" -> "ms"
+            "sw" -> "sw"
+            "ta" -> "ta"
+            "te" -> "te"
+            "mr" -> "mr"
+            "pa" -> "pa"
+            "gu" -> "gu"
+            "kn" -> "kn"
+            "ml" -> "ml"
+            "my" -> "my"
+            "ne" -> "ne"
+            "uk" -> "uk"
+            "he", "iw" -> "he"
+            "el" -> "el"
+            "ro" -> "ro"
+            "cs" -> "cs"
+            "hu" -> "hu"
+            "sv" -> "sv"
+            "ha" -> "ha"
+            "en" -> "en"
+            else -> null
+        }
+    }
+
+    fun effectiveLanguage(context: Context): String {
+        val selected = selectedLanguage(context)
+        if (selected != SYSTEM) return selected
+
+        val locale = if (Build.VERSION.SDK_INT >= 24) {
+            context.resources.configuration.locales[0]
+        } else {
+            @Suppress("DEPRECATION")
+            context.resources.configuration.locale
+        }
+
+        return when (locale.language.lowercase(Locale.ROOT)) {
+            "it" -> "it"
+            "es" -> "es"
+            "fr" -> "fr"
+            "de" -> "de"
+            "pt" -> "pt"
+            "ru" -> "ru"
+            "ar" -> "ar"
+            "hi" -> "hi"
+            "zh" -> "zh-CN"
+            "ja" -> "ja"
+            "ko" -> "ko"
+            "id", "in" -> "id"
+            "tr" -> "tr"
+            "vi" -> "vi"
+            "bn" -> "bn"
+            "ur" -> "ur"
+            "fa" -> "fa"
+            "pl" -> "pl"
+            "nl" -> "nl"
+            "th" -> "th"
+            "ms" -> "ms"
+            "sw" -> "sw"
+            "ta" -> "ta"
+            "te" -> "te"
+            "mr" -> "mr"
+            "pa" -> "pa"
+            "gu" -> "gu"
+            "kn" -> "kn"
+            "ml" -> "ml"
+            "my" -> "my"
+            "ne" -> "ne"
+            "uk" -> "uk"
+            "he", "iw" -> "he"
+            "el" -> "el"
+            "ro" -> "ro"
+            "cs" -> "cs"
+            "hu" -> "hu"
+            "sv" -> "sv"
+            "ha" -> "ha"
+            else -> "en"
+        }
     }
 }
