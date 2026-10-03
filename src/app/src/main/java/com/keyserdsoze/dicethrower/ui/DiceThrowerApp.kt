@@ -428,6 +428,29 @@ private fun CharacterScreen(
     }
 }
 
+private sealed interface DashboardOrderItem {
+    val key: String
+    val order: Int
+
+    data class GroupItem(val group: RollGroup) : DashboardOrderItem {
+        override val key: String = "group-${group.id}"
+        override val order: Int = group.order
+    }
+
+    data class RollItem(val roll: RollDefinition) : DashboardOrderItem {
+        override val key: String = "roll-${roll.id}"
+        override val order: Int = roll.order
+    }
+}
+
+private fun dashboardItems(
+    groups: List<RollGroup>,
+    ungroupedRolls: List<RollDefinition>,
+): List<DashboardOrderItem> =
+    (groups.map { DashboardOrderItem.GroupItem(it) } +
+        ungroupedRolls.map { DashboardOrderItem.RollItem(it) })
+        .sortedWith(compareBy<DashboardOrderItem> { it.order }.thenBy { it.key })
+
 @Composable
 private fun DashboardContent(
     character: CharacterProfile,
@@ -438,49 +461,58 @@ private fun DashboardContent(
     val expanded = remember { mutableStateMapOf<String, Boolean>() }
     val groups = data.groups.filter { it.characterId == character.id }.sortedBy { it.order }
     val activeRolls = data.rolls.filter { it.characterId == character.id && it.enabled }
-    val ungrouped = activeRolls.filter { it.groupId == null }.sortedBy { it.order }
+    val ungrouped = activeRolls.filter { it.groupId == null }
+    val visibleGroups = groups.filter { group -> activeRolls.any { it.groupId == group.id } }
+    val topLevel = dashboardItems(visibleGroups, ungrouped)
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        items(groups, key = { "group-${it.id}" }) { group ->
-            val groupRolls = activeRolls.filter { it.groupId == group.id }.sortedBy { it.order }
-            if (groupRolls.isNotEmpty()) {
-                Card(
-                    modifier = Modifier.fillMaxWidth().clickable {
-                        expanded[group.id] = !(expanded[group.id] ?: false)
-                    },
-                ) {
-                    Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                        Text(group.name, style = MaterialTheme.typography.titleMedium)
-                        if (expanded[group.id] == true) {
-                            Spacer(Modifier.height(10.dp))
-                            groupRolls.forEach { roll ->
-                                RollLaunchRow(roll, onOpenRoll)
+        items(topLevel, key = { it.key }) { item ->
+            when (item) {
+                is DashboardOrderItem.GroupItem -> {
+                    val group = item.group
+                    val groupRolls = activeRolls
+                        .filter { it.groupId == group.id }
+                        .sortedBy { it.order }
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth().clickable {
+                            expanded[group.id] = !(expanded[group.id] ?: false)
+                        },
+                    ) {
+                        Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                            Text(group.name, style = MaterialTheme.typography.titleMedium)
+                            if (expanded[group.id] == true) {
+                                Spacer(Modifier.height(10.dp))
+                                groupRolls.forEach { roll ->
+                                    RollLaunchRow(roll, onOpenRoll)
+                                }
+                            } else {
+                                Text(
+                                    stringResource(R.string.tap_to_expand),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                             }
-                        } else {
-                            Text(
-                                stringResource(R.string.tap_to_expand),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
                         }
+                    }
+                }
+
+                is DashboardOrderItem.RollItem -> {
+                    val roll = item.roll
+                    Card(
+                        modifier = Modifier.fillMaxWidth().clickable { onOpenRoll(roll.id) },
+                    ) {
+                        RollLaunchRow(roll, onOpenRoll)
                     }
                 }
             }
         }
 
-        items(ungrouped, key = { "roll-${it.id}" }) { roll ->
-            Card(
-                modifier = Modifier.fillMaxWidth().clickable { onOpenRoll(roll.id) },
-            ) {
-                RollLaunchRow(roll, onOpenRoll)
-            }
-        }
-
-        if (groups.isEmpty() && ungrouped.isEmpty()) {
+        if (topLevel.isEmpty()) {
             item {
                 Text(
                     stringResource(R.string.no_rolls),
@@ -523,7 +555,9 @@ private fun EditCharacterContent(
     var addRoll by remember { mutableStateOf(false) }
 
     val groups = data.groups.filter { it.characterId == character.id }.sortedBy { it.order }
-    val rolls = data.rolls.filter { it.characterId == character.id }.sortedBy { it.order }
+    val rolls = data.rolls.filter { it.characterId == character.id }
+    val ungroupedRolls = rolls.filter { it.groupId == null }
+    val topLevel = dashboardItems(groups, ungroupedRolls)
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -531,6 +565,46 @@ private fun EditCharacterContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
+            Text(stringResource(R.string.dashboard), style = MaterialTheme.typography.titleLarge)
+        }
+
+        items(topLevel, key = { "dashboard-${it.key}" }) { item ->
+            val title = when (item) {
+                is DashboardOrderItem.GroupItem -> item.group.name
+                is DashboardOrderItem.RollItem -> item.roll.name
+            }
+            val type = when (item) {
+                is DashboardOrderItem.GroupItem -> stringResource(R.string.group)
+                is DashboardOrderItem.RollItem -> stringResource(R.string.rolls)
+            }
+
+            Card(Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(title, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            type,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    SmallOrderButtons(
+                        onUp = {
+                            onDataChanged(reorderTopLevel(data, character.id, item.key, -1))
+                        },
+                        onDown = {
+                            onDataChanged(reorderTopLevel(data, character.id, item.key, 1))
+                        },
+                    )
+                }
+            }
+        }
+
+        item {
+            Spacer(Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -541,31 +615,16 @@ private fun EditCharacterContent(
             }
         }
 
-        items(groups, key = { it.id }) { group ->
+        items(groups, key = { "edit-group-${it.id}" }) { group ->
             Card(Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(group.name, modifier = Modifier.weight(1f))
-                    SmallOrderButtons(
-                        onUp = {
-                            onDataChanged(data.copy(groups = reorderGroups(data.groups, character.id, group.id, -1)))
-                        },
-                        onDown = {
-                            onDataChanged(data.copy(groups = reorderGroups(data.groups, character.id, group.id, 1)))
-                        },
-                    )
                     TextButton(
                         onClick = {
-                            onDataChanged(
-                                data.copy(
-                                    groups = data.groups.filterNot { it.id == group.id },
-                                    rolls = data.rolls.map {
-                                        if (it.groupId == group.id) it.copy(groupId = null) else it
-                                    },
-                                ),
-                            )
+                            onDataChanged(deleteGroup(data, character.id, group.id))
                         },
                     ) { Text(stringResource(R.string.delete)) }
                 }
@@ -584,20 +643,17 @@ private fun EditCharacterContent(
             }
         }
 
-        items(rolls, key = { it.id }) { roll ->
+        items(rolls.sortedWith(compareBy<RollDefinition> { it.groupId ?: "" }.thenBy { it.order }), key = { "edit-roll-${it.id}" }) { roll ->
+            var groupMenu by remember(roll.id) { mutableStateOf(false) }
             val groupName = groups.firstOrNull { it.id == roll.groupId }?.name
                 ?: stringResource(R.string.ungrouped)
+
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth().padding(12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(roll.name, fontWeight = FontWeight.SemiBold)
                             Text(roll.expression)
-                            Text(
-                                groupName,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
                         }
                         Switch(
                             checked = roll.enabled,
@@ -612,18 +668,69 @@ private fun EditCharacterContent(
                             },
                         )
                     }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        SmallOrderButtons(
-                            onUp = {
-                                onDataChanged(data.copy(rolls = reorderRolls(data.rolls, character.id, roll.id, -1)))
-                            },
-                            onDown = {
-                                onDataChanged(data.copy(rolls = reorderRolls(data.rolls, character.id, roll.id, 1)))
-                            },
-                        )
+                        Box(Modifier.weight(1f)) {
+                            OutlinedButton(onClick = { groupMenu = true }) {
+                                Text(groupName)
+                            }
+                            DropdownMenu(
+                                expanded = groupMenu,
+                                onDismissRequest = { groupMenu = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.ungrouped)) },
+                                    onClick = {
+                                        groupMenu = false
+                                        onDataChanged(changeRollGroup(data, character.id, roll.id, null))
+                                    },
+                                )
+                                groups.forEach { group ->
+                                    DropdownMenuItem(
+                                        text = { Text(group.name) },
+                                        onClick = {
+                                            groupMenu = false
+                                            onDataChanged(changeRollGroup(data, character.id, roll.id, group.id))
+                                        },
+                                    )
+                                }
+                            }
+                        }
+
+                        if (roll.groupId != null) {
+                            SmallOrderButtons(
+                                onUp = {
+                                    onDataChanged(
+                                        data.copy(
+                                            rolls = reorderRollsInGroup(
+                                                data.rolls,
+                                                character.id,
+                                                roll.groupId,
+                                                roll.id,
+                                                -1,
+                                            ),
+                                        ),
+                                    )
+                                },
+                                onDown = {
+                                    onDataChanged(
+                                        data.copy(
+                                            rolls = reorderRollsInGroup(
+                                                data.rolls,
+                                                character.id,
+                                                roll.groupId,
+                                                roll.id,
+                                                1,
+                                            ),
+                                        ),
+                                    )
+                                },
+                            )
+                        }
+
                         TextButton(
                             onClick = {
                                 onDataChanged(data.copy(rolls = data.rolls.filterNot { it.id == roll.id }))
@@ -637,7 +744,7 @@ private fun EditCharacterContent(
 
     if (addGroup) {
         AddGroupDialog(
-            nextOrder = groups.size,
+            nextOrder = topLevel.size,
             characterId = character.id,
             onDismiss = { addGroup = false },
             onAdd = { group ->
@@ -654,7 +761,12 @@ private fun EditCharacterContent(
             nextOrder = rolls.size,
             onDismiss = { addRoll = false },
             onAdd = { roll ->
-                onDataChanged(data.copy(rolls = data.rolls + roll))
+                val order = if (roll.groupId == null) {
+                    topLevel.size
+                } else {
+                    rolls.count { it.groupId == roll.groupId }
+                }
+                onDataChanged(data.copy(rolls = data.rolls + roll.copy(order = order)))
                 addRoll = false
             },
         )
@@ -667,42 +779,111 @@ private fun SmallOrderButtons(onUp: () -> Unit, onDown: () -> Unit) {
     TextButton(onClick = onDown) { Text("↓") }
 }
 
-private fun reorderGroups(
-    all: List<RollGroup>,
+private fun reorderTopLevel(
+    data: AppData,
     characterId: String,
-    itemId: String,
+    itemKey: String,
     direction: Int,
-): List<RollGroup> {
-    val local = all.filter { it.characterId == characterId }.sortedBy { it.order }.toMutableList()
-    val index = local.indexOfFirst { it.id == itemId }
+): AppData {
+    val groups = data.groups.filter { it.characterId == characterId }
+    val ungrouped = data.rolls.filter { it.characterId == characterId && it.groupId == null }
+    val items = dashboardItems(groups, ungrouped).toMutableList()
+    val index = items.indexOfFirst { it.key == itemKey }
     val target = index + direction
-    if (index < 0 || target !in local.indices) return all
-    val temp = local[index]
-    local[index] = local[target]
-    local[target] = temp
-    val orderById = local.mapIndexed { order, group -> group.id to order }.toMap()
-    return all.map { group ->
-        orderById[group.id]?.let { group.copy(order = it) } ?: group
-    }
+    if (index < 0 || target !in items.indices) return data
+
+    val temp = items[index]
+    items[index] = items[target]
+    items[target] = temp
+    val orderByKey = items.mapIndexed { order, item -> item.key to order }.toMap()
+
+    return data.copy(
+        groups = data.groups.map { group ->
+            orderByKey["group-${group.id}"]?.let { group.copy(order = it) } ?: group
+        },
+        rolls = data.rolls.map { roll ->
+            if (roll.groupId == null) {
+                orderByKey["roll-${roll.id}"]?.let { roll.copy(order = it) } ?: roll
+            } else {
+                roll
+            }
+        },
+    )
 }
 
-private fun reorderRolls(
+private fun reorderRollsInGroup(
     all: List<RollDefinition>,
     characterId: String,
+    groupId: String,
     itemId: String,
     direction: Int,
 ): List<RollDefinition> {
-    val local = all.filter { it.characterId == characterId }.sortedBy { it.order }.toMutableList()
+    val local = all
+        .filter { it.characterId == characterId && it.groupId == groupId }
+        .sortedBy { it.order }
+        .toMutableList()
     val index = local.indexOfFirst { it.id == itemId }
     val target = index + direction
     if (index < 0 || target !in local.indices) return all
+
     val temp = local[index]
     local[index] = local[target]
     local[target] = temp
     val orderById = local.mapIndexed { order, roll -> roll.id to order }.toMap()
+
     return all.map { roll ->
         orderById[roll.id]?.let { roll.copy(order = it) } ?: roll
     }
+}
+
+private fun changeRollGroup(
+    data: AppData,
+    characterId: String,
+    rollId: String,
+    newGroupId: String?,
+): AppData {
+    val roll = data.rolls.firstOrNull { it.id == rollId && it.characterId == characterId }
+        ?: return data
+    if (roll.groupId == newGroupId) return data
+
+    val otherRolls = data.rolls.filterNot { it.id == rollId }
+    val newOrder = if (newGroupId == null) {
+        dashboardItems(
+            data.groups.filter { it.characterId == characterId },
+            otherRolls.filter { it.characterId == characterId && it.groupId == null },
+        ).size
+    } else {
+        otherRolls.count { it.characterId == characterId && it.groupId == newGroupId }
+    }
+
+    return data.copy(
+        rolls = otherRolls + roll.copy(groupId = newGroupId, order = newOrder),
+    )
+}
+
+private fun deleteGroup(
+    data: AppData,
+    characterId: String,
+    groupId: String,
+): AppData {
+    val remainingGroups = data.groups.filterNot { it.id == groupId }
+    val existingUngrouped = data.rolls.filter {
+        it.characterId == characterId && it.groupId == null
+    }
+    var nextOrder = dashboardItems(
+        remainingGroups.filter { it.characterId == characterId },
+        existingUngrouped,
+    ).size
+
+    val updatedRolls = data.rolls.map { roll ->
+        if (roll.characterId == characterId && roll.groupId == groupId) {
+            roll.copy(groupId = null, order = nextOrder++)
+        } else {
+            roll
+        }
+    }
+
+    return data.copy(groups = remainingGroups, rolls = updatedRolls)
 }
 
 @Composable
