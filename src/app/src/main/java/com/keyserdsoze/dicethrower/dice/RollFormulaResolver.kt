@@ -28,6 +28,7 @@ object RollFormulaResolver {
         val appliedRules = mutableListOf<RollLevelRule>()
 
         roll.levelRules.forEach { rule ->
+            require(rule.trigger >= 1) { "Level rule trigger must be at least 1" }
             val repeatCount = when (rule.kind) {
                 LevelRuleKind.FROM_LEVEL -> if (character.level >= rule.trigger) 1 else 0
                 LevelRuleKind.EVERY_LEVELS -> character.level / rule.trigger
@@ -57,8 +58,7 @@ object RollFormulaResolver {
         level: Int,
         modifiers: List<CharacterModifier>,
     ): Boolean = runCatching {
-        val variables = buildVariableMap(level, modifiers)
-        DiceExpression.parse(resolveExpression(expression, variables))
+        resolveTemplate(expression, level, modifiers)
     }.isSuccess
 
     fun resolveTemplate(
@@ -102,11 +102,25 @@ object RollFormulaResolver {
         raw: String,
         variables: Map<String, Int>,
     ): String {
-        val resolved = variableRegex.replace(raw) { match ->
+        var resolved = variableRegex.replace(raw) { match ->
             val requested = normalizeName(match.groupValues[1])
             variables[requested]?.toString()
                 ?: throw IllegalArgumentException("Unknown variable: ${match.groupValues[1]}")
         }
+
+        while (
+            resolved.contains("+-") ||
+            resolved.contains("-+") ||
+            resolved.contains("++") ||
+            resolved.contains("--")
+        ) {
+            resolved = resolved
+                .replace("+-", "-")
+                .replace("-+", "-")
+                .replace("++", "+")
+                .replace("--", "+")
+        }
+
         return DiceExpression.parse(resolved).source
     }
 

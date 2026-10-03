@@ -77,6 +77,7 @@ export default function App() {
                 [copy.flexible, copy.flexibleBody],
                 [copy.dashboard, copy.dashboardBody],
                 [copy.shake, copy.shakeBody],
+                [copy.progression, copy.progressionBody],
                 [copy.history, copy.historyBody],
               ].map(([title, body]) => (
                 <article key={title}><h2>{title}</h2><p>{body}</p></article>

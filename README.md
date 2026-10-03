@@ -23,6 +23,22 @@ Dadi supportati nella prima versione: **d2, d3, d4, d6, d10, d12, d20, d100**.
 
 Il pulsante di lancio può essere nascosto oppure posizionato in alto/basso a sinistra, centro o destra.
 
+## Livelli, modificatori e tiri parametrici
+
+Ogni personaggio può avere un livello e modificatori interi con nomi liberi, per esempio `Intelligenza = 4` o `Forza = -2`.
+
+Le espressioni possono usare le variabili tra parentesi graffe:
+
+- `1d20+{Intelligenza}`
+- `2d6+{Forza}+{level}`
+
+`{level}` è sempre disponibile. I tiri possono inoltre avere regole additive di progressione:
+
+- **dal livello N** aggiungi un'espressione una volta;
+- **ogni N livelli** aggiungi l'espressione una volta per ogni intervallo raggiunto.
+
+Salire di livello non riscrive i tiri: la formula effettiva viene risolta al momento del lancio, quindi tutti i tiri parametrizzati si aggiornano automaticamente.
+
 ## Privacy e storage
 
 La prima versione è completamente locale: nessun account, analytics, tracking, backend o permesso Internet. Personaggi, configurazione e log restano sul dispositivo.

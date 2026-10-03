@@ -15,10 +15,11 @@ This file records the intended answers for the first local-only release and must
 
 The app stores the following only on the user's device:
 
-- character names;
+- character names and levels;
 - optional character image references selected through Android's Storage Access Framework;
 - free-form character tags;
-- dice-roll names and expressions;
+- locally defined character modifiers;
+- dice-roll names, parameterized expressions and level-scaling rules;
 - dashboard grouping and ordering;
 - app settings;
 - dice-roll history.

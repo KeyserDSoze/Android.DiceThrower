@@ -63,12 +63,16 @@ import com.keyserdsoze.dicethrower.R
 import com.keyserdsoze.dicethrower.data.LocalStore
 import com.keyserdsoze.dicethrower.dice.DiceExpression
 import com.keyserdsoze.dicethrower.dice.DiceRollResult
+import com.keyserdsoze.dicethrower.dice.RollFormulaResolver
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.AppSettings
+import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterProfile
+import com.keyserdsoze.dicethrower.model.LevelRuleKind
 import com.keyserdsoze.dicethrower.model.RollButtonPosition
 import com.keyserdsoze.dicethrower.model.RollDefinition
 import com.keyserdsoze.dicethrower.model.RollGroup
+import com.keyserdsoze.dicethrower.model.RollLevelRule
 import com.keyserdsoze.dicethrower.model.RollLog
 import com.keyserdsoze.dicethrower.model.ThemeMode
 import com.keyserdsoze.dicethrower.sensor.ShakeDetector
@@ -142,6 +146,7 @@ fun DiceThrowerApp(
             } else {
                 RollScreen(
                     character = character,
+                    modifiers = data.modifiers.filter { it.characterId == character.id },
                     roll = roll,
                     settings = settings,
                     onBack = { route = Route.CHARACTER },
@@ -312,6 +317,7 @@ private fun CharacterDialog(
     val context = LocalContext.current
     var name by remember { mutableStateOf("") }
     var tag by remember { mutableStateOf("") }
+    var levelText by remember { mutableStateOf("1") }
     var imageUri by remember { mutableStateOf<String?>(null) }
 
     val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -325,6 +331,9 @@ private fun CharacterDialog(
             imageUri = uri.toString()
         }
     }
+
+    val level = levelText.toIntOrNull()
+    val valid = name.isNotBlank() && level != null && level >= 1
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -343,6 +352,12 @@ private fun CharacterDialog(
                     label = { Text(stringResource(R.string.character_tag)) },
                     singleLine = true,
                 )
+                OutlinedTextField(
+                    value = levelText,
+                    onValueChange = { levelText = it.filter { char -> char.isDigit() } },
+                    label = { Text(stringResource(R.string.level)) },
+                    singleLine = true,
+                )
                 OutlinedButton(onClick = { imageLauncher.launch(arrayOf("image/*")) }) {
                     Text(
                         if (imageUri == null) stringResource(R.string.choose_image)
@@ -353,7 +368,7 @@ private fun CharacterDialog(
         },
         confirmButton = {
             Button(
-                enabled = name.isNotBlank(),
+                enabled = valid,
                 onClick = {
                     onCreate(
                         CharacterProfile(
@@ -361,6 +376,7 @@ private fun CharacterDialog(
                             name = name.trim(),
                             imageUri = imageUri,
                             tag = tag.trim(),
+                            level = level ?: 1,
                             order = nextOrder,
                         ),
                     )
@@ -392,10 +408,20 @@ private fun CharacterScreen(
             TopAppBar(
                 title = {
                     Column {
+                        val levelLabel = stringResource(R.string.level)
                         Text(character.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        if (character.tag.isNotBlank()) {
-                            Text(character.tag, style = MaterialTheme.typography.labelMedium)
-                        }
+                        Text(
+                            buildString {
+                                if (character.tag.isNotBlank()) {
+                                    append(character.tag)
+                                    append(" · ")
+                                }
+                                append(levelLabel)
+                                append(" ")
+                                append(character.level)
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                        )
                     }
                 },
                 navigationIcon = {
@@ -553,9 +579,14 @@ private fun EditCharacterContent(
 ) {
     var addGroup by remember { mutableStateOf(false) }
     var addRoll by remember { mutableStateOf(false) }
+    var addModifier by remember { mutableStateOf(false) }
+    var editingModifierId by remember { mutableStateOf<String?>(null) }
+    var editingRollId by remember { mutableStateOf<String?>(null) }
+    var addRuleForRollId by remember { mutableStateOf<String?>(null) }
 
     val groups = data.groups.filter { it.characterId == character.id }.sortedBy { it.order }
     val rolls = data.rolls.filter { it.characterId == character.id }
+    val modifiers = data.modifiers.filter { it.characterId == character.id }.sortedBy { it.order }
     val ungroupedRolls = rolls.filter { it.groupId == null }
     val topLevel = dashboardItems(groups, ungroupedRolls)
 
@@ -565,6 +596,122 @@ private fun EditCharacterContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
+            Text(
+                stringResource(R.string.character_progression),
+                style = MaterialTheme.typography.titleLarge,
+            )
+        }
+
+        item {
+            Card(Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Column {
+                        Text(stringResource(R.string.level), fontWeight = FontWeight.SemiBold)
+                        Text(
+                            character.level.toString(),
+                            style = MaterialTheme.typography.headlineMedium,
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            enabled = character.level > 1,
+                            onClick = {
+                                onDataChanged(
+                                    data.copy(
+                                        characters = data.characters.map {
+                                            if (it.id == character.id) {
+                                                it.copy(level = (it.level - 1).coerceAtLeast(1))
+                                            } else {
+                                                it
+                                            }
+                                        },
+                                    ),
+                                )
+                            },
+                        ) {
+                            Text("−")
+                        }
+                        Button(
+                            onClick = {
+                                onDataChanged(
+                                    data.copy(
+                                        characters = data.characters.map {
+                                            if (it.id == character.id) {
+                                                it.copy(level = it.level + 1)
+                                            } else {
+                                                it
+                                            }
+                                        },
+                                    ),
+                                )
+                            },
+                        ) {
+                            Text("+")
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(stringResource(R.string.modifiers), style = MaterialTheme.typography.titleLarge)
+                Button(onClick = { addModifier = true }) {
+                    Text(stringResource(R.string.add))
+                }
+            }
+            Text(
+                stringResource(R.string.modifier_help),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        items(modifiers, key = { "modifier-${it.id}" }) { characterModifier ->
+            val used = modifierIsReferenced(characterModifier.name, rolls)
+            Card(Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(characterModifier.name, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            characterModifier.value.toString(),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    }
+                    TextButton(onClick = { editingModifierId = characterModifier.id }) {
+                        Text(stringResource(R.string.edit))
+                    }
+                    TextButton(
+                        enabled = !used,
+                        onClick = {
+                            onDataChanged(
+                                data.copy(
+                                    modifiers = data.modifiers.filterNot {
+                                        it.id == characterModifier.id
+                                    },
+                                ),
+                            )
+                        },
+                    ) {
+                        Text(stringResource(R.string.delete))
+                    }
+                }
+            }
+        }
+
+        item {
+            Spacer(Modifier.height(8.dp))
             Text(stringResource(R.string.dashboard), style = MaterialTheme.typography.titleLarge)
         }
 
@@ -643,17 +790,33 @@ private fun EditCharacterContent(
             }
         }
 
-        items(rolls.sortedWith(compareBy<RollDefinition> { it.groupId ?: "" }.thenBy { it.order }), key = { "edit-roll-${it.id}" }) { roll ->
+        items(
+            rolls.sortedWith(compareBy<RollDefinition> { it.groupId ?: "" }.thenBy { it.order }),
+            key = { "edit-roll-${it.id}" },
+        ) { roll ->
             var groupMenu by remember(roll.id) { mutableStateOf(false) }
             val groupName = groups.firstOrNull { it.id == roll.groupId }?.name
                 ?: stringResource(R.string.ungrouped)
+            val resolved = runCatching {
+                RollFormulaResolver.resolve(character, modifiers, roll).expression
+            }.getOrNull()
 
             Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.fillMaxWidth().padding(12.dp)) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(roll.name, fontWeight = FontWeight.SemiBold)
                             Text(roll.expression)
+                            if (resolved != null && resolved != roll.expression) {
+                                Text(
+                                    "${stringResource(R.string.resolved_expression)}: $resolved",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
                         }
                         Switch(
                             checked = roll.enabled,
@@ -730,15 +893,119 @@ private fun EditCharacterContent(
                                 },
                             )
                         }
+                    }
 
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        TextButton(onClick = { editingRollId = roll.id }) {
+                            Text(stringResource(R.string.edit_roll))
+                        }
+                        TextButton(onClick = { addRuleForRollId = roll.id }) {
+                            Text(stringResource(R.string.add_level_rule))
+                        }
                         TextButton(
                             onClick = {
-                                onDataChanged(data.copy(rolls = data.rolls.filterNot { it.id == roll.id }))
+                                onDataChanged(
+                                    data.copy(
+                                        rolls = data.rolls.filterNot { it.id == roll.id },
+                                    ),
+                                )
                             },
-                        ) { Text(stringResource(R.string.delete)) }
+                        ) {
+                            Text(stringResource(R.string.delete))
+                        }
+                    }
+
+                    Text(
+                        stringResource(R.string.level_scaling),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    if (roll.levelRules.isEmpty()) {
+                        Text(
+                            stringResource(R.string.no_level_rules),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        roll.levelRules.forEach { rule ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = when (rule.kind) {
+                                        LevelRuleKind.FROM_LEVEL ->
+                                            "${stringResource(R.string.from_level)} ${rule.trigger}: +${rule.expression}"
+                                        LevelRuleKind.EVERY_LEVELS ->
+                                            "${stringResource(R.string.every_levels)} ${rule.trigger}: +${rule.expression}"
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                                TextButton(
+                                    onClick = {
+                                        onDataChanged(
+                                            data.copy(
+                                                rolls = data.rolls.map {
+                                                    if (it.id == roll.id) {
+                                                        it.copy(
+                                                            levelRules = it.levelRules.filterNot {
+                                                                existingRule -> existingRule.id == rule.id
+                                                            },
+                                                        )
+                                                    } else {
+                                                        it
+                                                    }
+                                                },
+                                            ),
+                                        )
+                                    },
+                                ) {
+                                    Text("×")
+                                }
+                            }
+                        }
                     }
                 }
             }
+        }
+    }
+
+    if (addModifier) {
+        ModifierDialog(
+            existing = null,
+            characterId = character.id,
+            nextOrder = modifiers.size,
+            existingNames = modifiers.map { it.name },
+            onDismiss = { addModifier = false },
+            onSave = { saved ->
+                onDataChanged(data.copy(modifiers = data.modifiers + saved))
+                addModifier = false
+            },
+        )
+    }
+
+    editingModifierId?.let { modifierId ->
+        modifiers.firstOrNull { it.id == modifierId }?.let { existing ->
+            ModifierDialog(
+                existing = existing,
+                characterId = character.id,
+                nextOrder = existing.order,
+                existingNames = modifiers.filterNot { it.id == existing.id }.map { it.name },
+                onDismiss = { editingModifierId = null },
+                onSave = { saved ->
+                    onDataChanged(
+                        data.copy(
+                            modifiers = data.modifiers.map {
+                                if (it.id == saved.id) saved else it
+                            },
+                        ),
+                    )
+                    editingModifierId = null
+                },
+            )
         }
     }
 
@@ -756,6 +1023,8 @@ private fun EditCharacterContent(
 
     if (addRoll) {
         AddRollDialog(
+            character = character,
+            modifiers = modifiers,
             characterId = character.id,
             groups = groups,
             nextOrder = rolls.size,
@@ -771,12 +1040,72 @@ private fun EditCharacterContent(
             },
         )
     }
+
+    editingRollId?.let { rollId ->
+        rolls.firstOrNull { it.id == rollId }?.let { existing ->
+            EditRollDialog(
+                character = character,
+                modifiers = modifiers,
+                roll = existing,
+                onDismiss = { editingRollId = null },
+                onSave = { updated ->
+                    onDataChanged(
+                        data.copy(
+                            rolls = data.rolls.map {
+                                if (it.id == updated.id) updated else it
+                            },
+                        ),
+                    )
+                    editingRollId = null
+                },
+            )
+        }
+    }
+
+    addRuleForRollId?.let { rollId ->
+        rolls.firstOrNull { it.id == rollId }?.let { existing ->
+            AddLevelRuleDialog(
+                character = character,
+                modifiers = modifiers,
+                onDismiss = { addRuleForRollId = null },
+                onAdd = { rule ->
+                    onDataChanged(
+                        data.copy(
+                            rolls = data.rolls.map {
+                                if (it.id == existing.id) {
+                                    it.copy(levelRules = it.levelRules + rule)
+                                } else {
+                                    it
+                                }
+                            },
+                        ),
+                    )
+                    addRuleForRollId = null
+                },
+            )
+        }
+    }
 }
 
 @Composable
 private fun SmallOrderButtons(onUp: () -> Unit, onDown: () -> Unit) {
     TextButton(onClick = onUp) { Text("↑") }
     TextButton(onClick = onDown) { Text("↓") }
+}
+
+private fun modifierIsReferenced(
+    modifierName: String,
+    rolls: List<RollDefinition>,
+): Boolean {
+    val variableRegex = Regex("""\{([^{}]+)}""")
+    return rolls.any { roll ->
+        val expressions = listOf(roll.expression) + roll.levelRules.map { it.expression }
+        expressions.any { expression ->
+            variableRegex.findAll(expression).any { match ->
+                match.groupValues[1].trim().equals(modifierName.trim(), ignoreCase = true)
+            }
+        }
+    }
 }
 
 private fun reorderTopLevel(
@@ -927,7 +1256,246 @@ private fun AddGroupDialog(
 }
 
 @Composable
+private fun ModifierDialog(
+    existing: CharacterModifier?,
+    characterId: String,
+    nextOrder: Int,
+    existingNames: List<String>,
+    onDismiss: () -> Unit,
+    onSave: (CharacterModifier) -> Unit,
+) {
+    var name by remember(existing?.id) { mutableStateOf(existing?.name ?: "") }
+    var valueText by remember(existing?.id) {
+        mutableStateOf(existing?.value?.toString() ?: "0")
+    }
+
+    val value = valueText.toIntOrNull()
+    val normalizedName = name.trim()
+    val duplicate = existingNames.any { it.equals(normalizedName, ignoreCase = true) }
+    val reserved = normalizedName.equals(RollFormulaResolver.LEVEL_VARIABLE, ignoreCase = true)
+    val valid = normalizedName.isNotBlank() && value != null && !duplicate && !reserved
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                stringResource(
+                    if (existing == null) R.string.new_modifier else R.string.edit_modifier,
+                ),
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { if (existing == null) name = it },
+                    enabled = existing == null,
+                    label = { Text(stringResource(R.string.modifier_name)) },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = valueText,
+                    onValueChange = { input ->
+                        valueText = input.filterIndexed { index, char ->
+                            char.isDigit() || (char == '-' && index == 0)
+                        }
+                    },
+                    label = { Text(stringResource(R.string.modifier_value)) },
+                    singleLine = true,
+                    supportingText = {
+                        if (duplicate || reserved) {
+                            Text(stringResource(R.string.duplicate_modifier))
+                        }
+                    },
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = valid,
+                onClick = {
+                    onSave(
+                        CharacterModifier(
+                            id = existing?.id ?: UUID.randomUUID().toString(),
+                            characterId = characterId,
+                            name = normalizedName,
+                            value = value ?: 0,
+                            order = existing?.order ?: nextOrder,
+                        ),
+                    )
+                },
+            ) {
+                Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun EditRollDialog(
+    character: CharacterProfile,
+    modifiers: List<CharacterModifier>,
+    roll: RollDefinition,
+    onDismiss: () -> Unit,
+    onSave: (RollDefinition) -> Unit,
+) {
+    var name by remember(roll.id) { mutableStateOf(roll.name) }
+    var expression by remember(roll.id) { mutableStateOf(roll.expression) }
+    val validExpression = RollFormulaResolver.validateTemplate(
+        expression = expression,
+        level = character.level,
+        modifiers = modifiers,
+    )
+    val valid = name.isNotBlank() && validExpression
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.edit_roll)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.roll_name)) },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = expression,
+                    onValueChange = { expression = it },
+                    label = { Text(stringResource(R.string.expression)) },
+                    singleLine = true,
+                    supportingText = {
+                        Text(
+                            if (expression.isBlank() || validExpression) {
+                                stringResource(R.string.expression_hint)
+                            } else {
+                                stringResource(R.string.invalid_expression)
+                            },
+                        )
+                    },
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = valid,
+                onClick = {
+                    onSave(
+                        roll.copy(
+                            name = name.trim(),
+                            expression = expression.trim(),
+                        ),
+                    )
+                },
+            ) {
+                Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun AddLevelRuleDialog(
+    character: CharacterProfile,
+    modifiers: List<CharacterModifier>,
+    onDismiss: () -> Unit,
+    onAdd: (RollLevelRule) -> Unit,
+) {
+    var kind by remember { mutableStateOf(LevelRuleKind.FROM_LEVEL) }
+    var triggerText by remember { mutableStateOf("2") }
+    var expression by remember { mutableStateOf("") }
+
+    val trigger = triggerText.toIntOrNull()
+    val expressionValid = RollFormulaResolver.validateTemplate(
+        expression = expression,
+        level = character.level,
+        modifiers = modifiers,
+    )
+    val valid = trigger != null && trigger >= 1 && expressionValid
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.add_level_rule)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = kind == LevelRuleKind.FROM_LEVEL,
+                        onClick = { kind = LevelRuleKind.FROM_LEVEL },
+                        label = { Text(stringResource(R.string.from_level)) },
+                    )
+                    FilterChip(
+                        selected = kind == LevelRuleKind.EVERY_LEVELS,
+                        onClick = { kind = LevelRuleKind.EVERY_LEVELS },
+                        label = { Text(stringResource(R.string.every_levels)) },
+                    )
+                }
+                OutlinedTextField(
+                    value = triggerText,
+                    onValueChange = { triggerText = it.filter { char -> char.isDigit() } },
+                    label = {
+                        Text(
+                            stringResource(
+                                if (kind == LevelRuleKind.FROM_LEVEL) {
+                                    R.string.trigger_level
+                                } else {
+                                    R.string.interval_levels
+                                },
+                            ),
+                        )
+                    },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = expression,
+                    onValueChange = { expression = it },
+                    label = { Text(stringResource(R.string.rule_expression)) },
+                    singleLine = true,
+                    supportingText = {
+                        Text(
+                            if (expression.isBlank() || expressionValid) {
+                                stringResource(R.string.expression_hint)
+                            } else {
+                                stringResource(R.string.invalid_expression)
+                            },
+                        )
+                    },
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = valid,
+                onClick = {
+                    onAdd(
+                        RollLevelRule(
+                            id = UUID.randomUUID().toString(),
+                            kind = kind,
+                            trigger = trigger ?: 1,
+                            expression = expression.trim(),
+                        ),
+                    )
+                },
+            ) {
+                Text(stringResource(R.string.add))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+    )
+}
+
+@Composable
 private fun AddRollDialog(
+    character: CharacterProfile,
+    modifiers: List<CharacterModifier>,
     characterId: String,
     groups: List<RollGroup>,
     nextOrder: Int,
@@ -939,7 +1507,12 @@ private fun AddRollDialog(
     var groupId by remember { mutableStateOf<String?>(null) }
     var groupMenu by remember { mutableStateOf(false) }
 
-    val valid = name.isNotBlank() && runCatching { DiceExpression.parse(expression) }.isSuccess
+    val validExpression = RollFormulaResolver.validateTemplate(
+        expression = expression,
+        level = character.level,
+        modifiers = modifiers,
+    )
+    val valid = name.isNotBlank() && validExpression
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -958,7 +1531,7 @@ private fun AddRollDialog(
                     label = { Text(stringResource(R.string.expression)) },
                     supportingText = {
                         Text(
-                            if (expression.isBlank() || runCatching { DiceExpression.parse(expression) }.isSuccess) {
+                            if (expression.isBlank() || validExpression) {
                                 stringResource(R.string.expression_hint)
                             } else {
                                 stringResource(R.string.invalid_expression)
@@ -1005,7 +1578,7 @@ private fun AddRollDialog(
                             id = UUID.randomUUID().toString(),
                             characterId = characterId,
                             name = name.trim(),
-                            expression = DiceExpression.parse(expression).source,
+                            expression = expression.trim(),
                             groupId = groupId,
                             order = nextOrder,
                         ),
@@ -1023,16 +1596,20 @@ private fun AddRollDialog(
 @Composable
 private fun RollScreen(
     character: CharacterProfile,
+    modifiers: List<CharacterModifier>,
     roll: RollDefinition,
     settings: AppSettings,
     onBack: () -> Unit,
     onLogged: (RollLog) -> Unit,
 ) {
     val context = LocalContext.current
+    val formula = remember(character.level, modifiers, roll) {
+        RollFormulaResolver.resolve(character, modifiers, roll)
+    }
     var outcome by remember(roll.id) { mutableStateOf<DiceRollResult?>(null) }
 
     fun throwDice() {
-        val result = DiceExpression.parse(roll.expression).evaluate()
+        val result = DiceExpression.parse(formula.expression).evaluate()
         outcome = result
         onLogged(
             RollLog(
@@ -1040,7 +1617,7 @@ private fun RollScreen(
                 characterId = character.id,
                 rollDefinitionId = roll.id,
                 rollName = roll.name,
-                expression = roll.expression,
+                expression = formula.expression,
                 total = result.total,
                 detail = result.detail(),
                 timestamp = System.currentTimeMillis(),
@@ -1048,7 +1625,7 @@ private fun RollScreen(
         )
     }
 
-    DisposableEffect(settings.shakeEnabled, roll.id) {
+    DisposableEffect(settings.shakeEnabled, roll.id, formula.expression) {
         val detector = if (settings.shakeEnabled) {
             ShakeDetector(context, ::throwDice).also { it.start() }
         } else {
@@ -1071,13 +1648,25 @@ private fun RollScreen(
             Column(
                 modifier = Modifier.fillMaxWidth().padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
+                    "${stringResource(R.string.level)} ${character.level}",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
                     roll.expression,
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                 )
+                if (formula.expression != roll.expression) {
+                    Text(
+                        "${stringResource(R.string.resolved_expression)}: ${formula.expression}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Text(
                     if (settings.shakeEnabled && settings.showRollButton) {
                         stringResource(R.string.shake_to_throw)
