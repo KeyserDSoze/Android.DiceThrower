@@ -11,12 +11,33 @@ enum class RollButtonPosition {
     BOTTOM_RIGHT,
 }
 
+enum class LevelRuleKind {
+    FROM_LEVEL,
+    EVERY_LEVELS,
+}
+
 data class CharacterProfile(
     val id: String,
     val name: String,
     val imageUri: String? = null,
     val tag: String = "",
+    val level: Int = 1,
     val order: Int = 0,
+)
+
+data class CharacterModifier(
+    val id: String,
+    val characterId: String,
+    val name: String,
+    val value: Int,
+    val order: Int = 0,
+)
+
+data class RollLevelRule(
+    val id: String,
+    val kind: LevelRuleKind,
+    val trigger: Int,
+    val expression: String,
 )
 
 data class RollGroup(
@@ -34,6 +55,7 @@ data class RollDefinition(
     val groupId: String? = null,
     val enabled: Boolean = true,
     val order: Int = 0,
+    val levelRules: List<RollLevelRule> = emptyList(),
 )
 
 data class RollLog(
@@ -58,6 +80,7 @@ data class AppSettings(
 
 data class AppData(
     val characters: List<CharacterProfile> = emptyList(),
+    val modifiers: List<CharacterModifier> = emptyList(),
     val groups: List<RollGroup> = emptyList(),
     val rolls: List<RollDefinition> = emptyList(),
     val logs: List<RollLog> = emptyList(),
