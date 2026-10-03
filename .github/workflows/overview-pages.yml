@@ -1,0 +1,64 @@
+name: Overview site · GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/overviewapp/**'
+      - '.github/workflows/overview-pages.yml'
+  pull_request:
+    paths:
+      - 'src/overviewapp/**'
+      - '.github/workflows/overview-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        working-directory: src/overviewapp
+        run: npm install --no-audit --no-fund
+
+      - name: Build overview site
+        working-directory: src/overviewapp
+        run: npm run build
+
+      - name: Configure GitHub Pages
+        if: github.event_name != 'pull_request'
+        uses: actions/configure-pages@v6
+
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: src/overviewapp/dist
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

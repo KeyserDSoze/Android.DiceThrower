@@ -1,0 +1,23 @@
+# Android / Gradle
+.gradle/
+**/build/
+local.properties
+*.iml
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Signing
+*.jks
+*.keystore
+
+# Node / Vite
+node_modules/
+dist/
+src/overviewapp/node_modules/
+src/overviewapp/dist/
+
+# OS
+.DS_Store
+Thumbs.db
