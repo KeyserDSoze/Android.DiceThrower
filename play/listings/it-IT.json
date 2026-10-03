@@ -1,0 +1,5 @@
+{
+  "title": "Dice Thrower",
+  "shortDescription": "Crea dashboard di tiri per i personaggi e lancia scuotendo il telefono.",
+  "fullDescription": "Dice Thrower è un compagno per dadi indipendente dal regolamento, pensato per giochi da tavolo e giochi di ruolo.\\n\\nCrea personaggi leggeri con nome, immagine opzionale e tag libero per il gioco. Collega tiri riutilizzabili come 1d20+8, 6d6+6 o 4d3+3d6+10, organizzali in gruppi e componi la dashboard nel modo più comodo per giocare.\\n\\nFunzioni principali:\\n• personaggi e dashboard di tiri rapidi configurabili;\\n• tiri raggruppati e senza gruppo con ordine personalizzato;\\n• d2, d3, d4, d6, d10, d12, d20 e d100;\\n• espressioni composte con modificatori;\\n• lancio scuotendo il telefono o tramite pulsante configurabile;\\n• storico locale dei tiri con conservazione configurabile;\\n• tema chiaro e scuro;\\n• interfaccia multilingua.\\n\\nDice Thrower è progettata per funzionare offline. Non richiede account, non contiene pubblicità o analytics e mantiene sul dispositivo dati dei personaggi, impostazioni e storico dei tiri."
+}
