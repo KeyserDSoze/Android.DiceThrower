@@ -16,7 +16,7 @@
     <string name="back">Back</string>
     <string name="no_characters">No characters yet. Create one to start.</string>
     <string name="no_rolls">No active rolls yet.</string>
-    <string name="groups">Groups</string>
+    <string name="dashboard">Dashboard</string>\n    <string name="groups">Groups</string>
     <string name="rolls">Rolls</string>
     <string name="new_group">New group</string>
     <string name="group_name">Group name</string>
