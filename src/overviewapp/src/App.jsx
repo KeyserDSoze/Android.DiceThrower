@@ -20,7 +20,8 @@ export default function App() {
   });
 
   const copy = useMemo(() => locales[locale]?.copy || locales.en.copy, [locale]);
-  const page = currentPage();\n  const base = import.meta.env.BASE_URL;
+  const page = currentPage();
+  const base = import.meta.env.BASE_URL;
 
   function changeLocale(value) {
     setLocale(value);
