@@ -20,7 +20,7 @@ export default function App() {
   });
 
   const copy = useMemo(() => locales[locale]?.copy || locales.en.copy, [locale]);
-  const page = currentPage();
+  const page = currentPage();\n  const base = import.meta.env.BASE_URL;
 
   function changeLocale(value) {
     setLocale(value);
@@ -35,10 +35,10 @@ export default function App() {
 
   const links = (
     <nav>
-      <a href="./">{'Dice Thrower'}</a>
-      <a href="./privacy/">{copy.privacy}</a>
-      <a href="./terms/">{copy.terms}</a>
-      <a href="./contact/">{copy.contact}</a>
+      <a href={base}>{'Dice Thrower'}</a>
+      <a href={base + 'privacy/'}>{copy.privacy}</a>
+      <a href={base + 'terms/'}>{copy.terms}</a>
+      <a href={base + 'contact/'}>{copy.contact}</a>
       <a href={repo}>{copy.source}</a>
     </nav>
   );
