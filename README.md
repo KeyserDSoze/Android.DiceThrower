@@ -20,6 +20,7 @@ Dadi supportati nella prima versione: **d2, d3, d4, d6, d10, d12, d20, d100**.
 6. Lancio con pulsante configurabile oppure scuotendo il telefono.
 7. Animazione OpenGL ES dei dadi 3D, seguita da dettaglio dei singoli risultati e totale.
 8. Log locale con retention configurabile.
+9. Backup e restore locale validato tramite Android Storage Access Framework.
 
 Il pulsante di lancio può essere nascosto oppure posizionato in alto/basso a sinistra, centro o destra.
 
@@ -39,6 +40,25 @@ Le espressioni possono usare le variabili tra parentesi graffe:
 
 Salire di livello non riscrive i tiri: la formula effettiva viene risolta al momento del lancio, quindi tutti i tiri parametrizzati si aggiornano automaticamente.
 
+## Gestione personaggi
+
+La logica dati supporta duplicazione e cancellazione sicura del personaggio:
+
+- la duplicazione copia livello, tag, modificatori, gruppi, tiri e regole di livello;
+- tutti gli ID e i riferimenti tra gruppi e tiri vengono rimappati;
+- lo storico non viene copiato nel duplicato;
+- la cancellazione rimuove a cascata modificatori, gruppi, tiri e log appartenenti al personaggio e ricompatta l'ordine dei personaggi rimasti.
+
+## Backup e ripristino
+
+Dice Thrower dispone di un formato backup JSON versionato e validato. Il backup contiene personaggi, modificatori, gruppi, tiri, regole di livello, storico e impostazioni.
+
+La schermata **Backup & Restore** è raggiungibile anche dal long-press sull'icona launcher dell'app. Export e import usano esclusivamente il document picker Android: l'utente sceglie dove salvare o da dove leggere il file e l'app non richiede permessi storage generali né accesso Internet.
+
+Prima del restore vengono verificati ID duplicati, riferimenti tra personaggi/gruppi/tiri, nomi dei modificatori e formule parametrizzate. Il ripristino dei dati e delle impostazioni viene quindi scritto nello storage locale in una singola operazione.
+
+Nella versione 1 del formato backup gli URI delle immagini vengono conservati come riferimenti: su un altro dispositivo potrebbero non essere più leggibili. Una futura versione del formato potrà incorporare direttamente le immagini senza cambiare il modello applicativo.
+
 ## Visual design
 
 L'identità di Dice Thrower usa una palette **deep navy + electric cyan/blue + violet + gold**. L'app usa Material 3 con superfici leggibili e accenti arcane/cosmic, mentre launcher e materiali store possono essere più cinematografici.
@@ -56,7 +76,7 @@ Vedi `play/assets/README.md`.
 
 ## Privacy e storage
 
-La prima versione è completamente locale: nessun account, analytics, tracking, backend o permesso Internet. Personaggi, configurazione e log restano sul dispositivo.
+La prima versione è completamente locale: nessun account, analytics, tracking, backend o permesso Internet. Personaggi, configurazione e log restano sul dispositivo. Anche backup e restore sono operazioni esplicitamente avviate dall'utente verso un documento scelto tramite Android.
 
 ## Stack
 
