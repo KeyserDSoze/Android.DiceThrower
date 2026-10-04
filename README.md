@@ -17,11 +17,12 @@ Dadi supportati nella prima versione: **d2, d3, d4, d6, d10, d12, d20, d100**.
 3. Gruppi espandibili e tiri senza gruppo avviabili direttamente.
 4. Modalità **Edit** con long-press + drag per riordinare dashboard e contenuti dei gruppi.
 5. Libreria di stili dei dadi per personaggio con materiali, due colori, stile predefinito e anteprima 3D live.
-6. Editor visuale delle formule con chip per inserire `{level}` e i modificatori del personaggio nel punto del cursore.
-7. Lancio con pulsante configurabile oppure scuotendo il telefono.
-8. Animazione OpenGL ES dei dadi 3D, seguita da dettaglio dei singoli risultati e totale.
-9. Log locale con retention configurabile.
-10. Backup e restore locale validato tramite Android Storage Access Framework.
+6. Aspetto dei singoli tiri configurabile: predefinito, uniforme, per dado, casuale uniforme o casuale per dado, con pool opzionale.
+7. Editor visuale delle formule con chip per inserire `{level}` e i modificatori del personaggio nel punto del cursore.
+8. Lancio con pulsante configurabile oppure scuotendo il telefono.
+9. Animazione OpenGL ES dei dadi 3D, seguita da dettaglio dei singoli risultati e totale.
+10. Log locale con retention configurabile.
+11. Backup e restore locale validato tramite Android Storage Access Framework.
 
 Il pulsante di lancio può essere nascosto oppure posizionato in alto/basso a sinistra, centro o destra.
 
@@ -113,6 +114,8 @@ Le forme visuali includono geometrie dedicate per d2, d3, d4, d6, d10, d12, d20 
 In modalità **Edit**, ogni personaggio dispone di una libreria ordinabile di stili riutilizzabili. Uno stile combina materiale (resina lucida/opaca, metallo o gemma), colore primario e secondario; l'editor mostra un d20 3D aggiornato in tempo reale e permette di scegliere lo stile predefinito del personaggio. Rinomina e duplicazione mantengono indipendenti gli stili, mentre la cancellazione pulisce in sicurezza eventuali riferimenti salvati.
 
 Gli stili possono anche essere copiati in blocco da un altro personaggio. La copia mantiene materiale/colori e, su richiesta, il ruolo di stile predefinito, ma assegna sempre nuovi ID al personaggio di destinazione: modifiche o cancellazioni successive non collegano mai le due librerie.
+
+Ogni tiro può usare il predefinito del personaggio, un singolo stile per tutti i dadi, assegnazioni per dado oppure una scelta casuale per tutti i dadi insieme/per ciascun dado. Le modalità casuali possono usare tutta la libreria o un pool esplicito. Gli slot per dado seguono i componenti dell'espressione risolta: quando la formula viene modificata, le assegnazioni ancora compatibili vengono conservate e quelle obsolete eliminate, senza consumare mai il generatore casuale del risultato numerico.
 
 ## Sviluppo
 

@@ -126,4 +126,20 @@
     <string name="delete_dice_style_title">Delete “%1$s”?</string>
     <string name="delete_dice_style_in_use">This style is in use. Deleting it will safely clear its default/roll references and affected dice will use their fallback appearance.</string>
     <string name="delete_dice_style_unused">This style is not used by any roll or as the character default. Delete it?</string>
+    <string name="dice_appearance">Dice appearance</string>
+    <string name="dice_appearance_help">Choose whether this roll styles all dice together or each die individually.</string>
+    <string name="appearance_character_default">Character default</string>
+    <string name="appearance_uniform">All dice · one style</string>
+    <string name="appearance_per_die">Individual dice</string>
+    <string name="appearance_random_uniform">Random · all dice together</string>
+    <string name="appearance_random_per_die">Random · each die</string>
+    <string name="appearance_character_default_help">Every die uses the character default style.</string>
+    <string name="appearance_uniform_help">Every die in the roll uses the same selected style.</string>
+    <string name="appearance_per_die_help">Choose a style for each visual die. Unassigned dice use the character default.</string>
+    <string name="appearance_random_uniform_help">A new random style is chosen once per throw and applied to every die.</string>
+    <string name="appearance_random_per_die_help">Each visual die chooses a random style independently on every throw.</string>
+    <string name="dice_slot_label">Component %1$d · d%2$d · die %3$d</string>
+    <string name="random_style_pool">Random style pool</string>
+    <string name="random_style_pool_help">Use all character styles or restrict random selection to a subset.</string>
+    <string name="all_character_styles">All character styles</string>
 </resources>

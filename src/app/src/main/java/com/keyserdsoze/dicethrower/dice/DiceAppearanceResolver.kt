@@ -17,11 +17,43 @@ data class ResolvedDiceAppearance(
     val secondaryColorArgb: Int,
 )
 
+data class DiceAppearanceSlot(
+    val key: String,
+    val componentIndex: Int,
+    val dieIndex: Int,
+    val sides: Int,
+)
+
 object DiceAppearanceResolver {
     val defaultPrimaryColorArgb: Int = 0xFF2563EB.toInt()
     val defaultSecondaryColorArgb: Int = 0xFFF6C453.toInt()
 
     fun slotKey(componentIndex: Int, dieIndex: Int): String = "$componentIndex:$dieIndex"
+
+    fun slotsFor(expression: DiceExpression): List<DiceAppearanceSlot> = buildList {
+        expression.diceShape().forEachIndexed { componentIndex, component ->
+            repeat(component.count) { dieIndex ->
+                add(
+                    DiceAppearanceSlot(
+                        key = slotKey(componentIndex, dieIndex),
+                        componentIndex = componentIndex,
+                        dieIndex = dieIndex,
+                        sides = component.sides,
+                    ),
+                )
+            }
+        }
+    }
+
+    fun reconcileSlots(
+        appearance: RollDiceAppearance,
+        slots: Collection<DiceAppearanceSlot>,
+    ): RollDiceAppearance {
+        val validKeys = slots.mapTo(mutableSetOf()) { it.key }
+        return appearance.copy(
+            perDieStyleIds = appearance.perDieStyleIds.filterKeys(validKeys::contains),
+        )
+    }
 
     fun resolve(
         character: CharacterProfile,

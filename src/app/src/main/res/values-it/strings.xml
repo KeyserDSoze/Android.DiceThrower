@@ -126,4 +126,20 @@
     <string name="delete_dice_style_title">Eliminare “%1$s”?</string>
     <string name="delete_dice_style_in_use">Questo stile è in uso. Eliminandolo verranno rimossi in sicurezza i riferimenti da predefinito e tiri; i dadi interessati useranno l’aspetto di fallback.</string>
     <string name="delete_dice_style_unused">Questo stile non è usato da alcun tiro né come predefinito del personaggio. Eliminarlo?</string>
+    <string name="dice_appearance">Aspetto dei dadi</string>
+    <string name="dice_appearance_help">Scegli se questo tiro usa lo stesso stile per tutti i dadi o uno stile per ogni dado.</string>
+    <string name="appearance_character_default">Predefinito del personaggio</string>
+    <string name="appearance_uniform">Tutti i dadi · uno stile</string>
+    <string name="appearance_per_die">Dadi individuali</string>
+    <string name="appearance_random_uniform">Casuale · tutti insieme</string>
+    <string name="appearance_random_per_die">Casuale · ogni dado</string>
+    <string name="appearance_character_default_help">Ogni dado usa lo stile predefinito del personaggio.</string>
+    <string name="appearance_uniform_help">Ogni dado del tiro usa lo stesso stile selezionato.</string>
+    <string name="appearance_per_die_help">Scegli uno stile per ogni dado visuale. I dadi non assegnati usano il predefinito del personaggio.</string>
+    <string name="appearance_random_uniform_help">A ogni tiro viene scelto un nuovo stile casuale una sola volta e applicato a tutti i dadi.</string>
+    <string name="appearance_random_per_die_help">A ogni tiro ciascun dado visuale sceglie uno stile casuale in modo indipendente.</string>
+    <string name="dice_slot_label">Componente %1$d · d%2$d · dado %3$d</string>
+    <string name="random_style_pool">Gruppo di stili casuali</string>
+    <string name="random_style_pool_help">Usa tutti gli stili del personaggio oppure limita la scelta casuale a un sottoinsieme.</string>
+    <string name="all_character_styles">Tutti gli stili del personaggio</string>
 </resources>
