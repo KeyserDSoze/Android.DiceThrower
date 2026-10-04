@@ -16,6 +16,38 @@ enum class LevelRuleKind {
     EVERY_LEVELS,
 }
 
+enum class DiceMaterial {
+    GLOSSY_RESIN,
+    MATTE_RESIN,
+    METAL,
+    GEMSTONE,
+}
+
+enum class DiceAppearanceMode {
+    CHARACTER_DEFAULT,
+    UNIFORM,
+    PER_DIE,
+    RANDOM_UNIFORM,
+    RANDOM_PER_DIE,
+}
+
+data class DiceStyle(
+    val id: String,
+    val characterId: String,
+    val name: String,
+    val material: DiceMaterial = DiceMaterial.GLOSSY_RESIN,
+    val primaryColorArgb: Int,
+    val secondaryColorArgb: Int,
+    val order: Int = 0,
+)
+
+data class RollDiceAppearance(
+    val mode: DiceAppearanceMode = DiceAppearanceMode.CHARACTER_DEFAULT,
+    val styleId: String? = null,
+    val perDieStyleIds: Map<String, String> = emptyMap(),
+    val randomStyleIds: List<String> = emptyList(),
+)
+
 data class CharacterProfile(
     val id: String,
     val name: String,
@@ -23,6 +55,7 @@ data class CharacterProfile(
     val tag: String = "",
     val level: Int = 1,
     val order: Int = 0,
+    val defaultDiceStyleId: String? = null,
 )
 
 data class CharacterModifier(
@@ -56,6 +89,7 @@ data class RollDefinition(
     val enabled: Boolean = true,
     val order: Int = 0,
     val levelRules: List<RollLevelRule> = emptyList(),
+    val diceAppearance: RollDiceAppearance = RollDiceAppearance(),
 )
 
 data class RollLog(
@@ -84,4 +118,5 @@ data class AppData(
     val groups: List<RollGroup> = emptyList(),
     val rolls: List<RollDefinition> = emptyList(),
     val logs: List<RollLog> = emptyList(),
+    val diceStyles: List<DiceStyle> = emptyList(),
 )
