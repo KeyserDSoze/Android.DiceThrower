@@ -10,8 +10,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.keyserdsoze.dicethrower.data.LocalStore
 import com.keyserdsoze.dicethrower.model.AppSettings
-import com.keyserdsoze.dicethrower.ui.DiceThrowerApp
 import com.keyserdsoze.dicethrower.ui.theme.DiceThrowerTheme
+import com.keyserdsoze.dicethrower.ui.v2.DiceThrowerAppV2
 
 class MainActivity : ComponentActivity() {
     private lateinit var store: LocalStore
@@ -32,7 +32,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             DiceThrowerTheme(themeMode = settings.themeMode) {
-                DiceThrowerApp(
+                DiceThrowerAppV2(
                     store = store,
                     settings = settings,
                     selectedLanguage = selectedLanguage,
