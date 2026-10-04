@@ -4,15 +4,20 @@ import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.AppSettings
 import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterProfile
+import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
+import com.keyserdsoze.dicethrower.model.DiceMaterial
+import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.LevelRuleKind
 import com.keyserdsoze.dicethrower.model.RollButtonPosition
 import com.keyserdsoze.dicethrower.model.RollDefinition
+import com.keyserdsoze.dicethrower.model.RollDiceAppearance
 import com.keyserdsoze.dicethrower.model.RollGroup
 import com.keyserdsoze.dicethrower.model.RollLevelRule
 import com.keyserdsoze.dicethrower.model.RollLog
 import com.keyserdsoze.dicethrower.model.ThemeMode
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -42,6 +47,7 @@ class AppBackupCodecTest {
         assertEquals("it", decoded.language)
         assertEquals(123456789L, decoded.exportedAt)
         assertTrue(raw.contains("\"imageMode\": \"uri-reference\""))
+        assertTrue(raw.contains("\"diceStyles\""))
     }
 
     @Test(expected = IllegalArgumentException::class)
@@ -79,7 +85,7 @@ class AppBackupCodecTest {
     }
 
     @Test
-    fun dataCodecReadsVersionOneShapeWithSafeDefaults() {
+    fun dataCodecReadsVersionOneShapeWithSafeDiceDefaults() {
         val json = JSONObject()
             .put(
                 "characters",
@@ -92,13 +98,26 @@ class AppBackupCodecTest {
                 ),
             )
             .put("groups", org.json.JSONArray())
-            .put("rolls", org.json.JSONArray())
+            .put(
+                "rolls",
+                org.json.JSONArray().put(
+                    JSONObject()
+                        .put("id", "old-roll")
+                        .put("characterId", "old-character")
+                        .put("name", "Legacy roll")
+                        .put("expression", "1d20")
+                        .put("order", 0),
+                ),
+            )
             .put("logs", org.json.JSONArray())
 
         val decoded = AppDataJsonCodec.decodeData(json)
 
         assertEquals(1, decoded.characters.single().level)
+        assertNull(decoded.characters.single().defaultDiceStyleId)
         assertTrue(decoded.modifiers.isEmpty())
+        assertTrue(decoded.diceStyles.isEmpty())
+        assertEquals(DiceAppearanceMode.CHARACTER_DEFAULT, decoded.rolls.single().diceAppearance.mode)
     }
 
     private fun sampleData(): AppData = AppData(
@@ -110,6 +129,7 @@ class AppBackupCodecTest {
                 tag = "Arcane",
                 level = 8,
                 order = 0,
+                defaultDiceStyleId = "style-blue",
             ),
         ),
         modifiers = listOf(
@@ -145,6 +165,11 @@ class AppBackupCodecTest {
                         expression = "1d6",
                     ),
                 ),
+                diceAppearance = RollDiceAppearance(
+                    mode = DiceAppearanceMode.PER_DIE,
+                    perDieStyleIds = mapOf("0:0" to "style-steel"),
+                    randomStyleIds = listOf("style-blue", "style-steel"),
+                ),
             ),
         ),
         logs = listOf(
@@ -157,6 +182,26 @@ class AppBackupCodecTest {
                 total = 25,
                 detail = "6d6[3,4,5,2,3,4] +4",
                 timestamp = 42L,
+            ),
+        ),
+        diceStyles = listOf(
+            DiceStyle(
+                id = "style-blue",
+                characterId = "character",
+                name = "Arcane Blue",
+                material = DiceMaterial.GLOSSY_RESIN,
+                primaryColorArgb = 0xFF2563EB.toInt(),
+                secondaryColorArgb = 0xFFF6C453.toInt(),
+                order = 0,
+            ),
+            DiceStyle(
+                id = "style-steel",
+                characterId = "character",
+                name = "Steel",
+                material = DiceMaterial.METAL,
+                primaryColorArgb = 0xFF64748B.toInt(),
+                secondaryColorArgb = 0xFFE2E8F0.toInt(),
+                order = 1,
             ),
         ),
     )
