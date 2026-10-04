@@ -5,6 +5,7 @@ import com.keyserdsoze.dicethrower.model.AppSettings
 import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.CharacterSyncMetadata
+import com.keyserdsoze.dicethrower.model.ConflictPolicy
 import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 import com.keyserdsoze.dicethrower.model.DiceMaterial
 import com.keyserdsoze.dicethrower.model.DiceStyle
@@ -34,6 +35,7 @@ class AppBackupCodecTest {
             showRollButton = true,
             rollButtonPosition = RollButtonPosition.TOP_CENTER,
             logRetention = 100,
+            conflictPolicy = ConflictPolicy.LATEST_WINS,
         )
 
         val raw = AppBackupCodec.encode(

@@ -70,11 +70,33 @@ enum class SyncConflictKind {
     SETTINGS_DIVERGED,
 }
 
+enum class SyncConflictResolution {
+    KEEP_LOCAL,
+    USE_REMOTE,
+}
+
+enum class ConflictArea {
+    PROFILE,
+    IMAGE,
+    MODIFIERS,
+    ROLLS,
+    DICE_STYLES,
+    HISTORY,
+    DELETION,
+    SETTINGS,
+}
+
 data class SyncConflict(
     val kind: SyncConflictKind,
     val characterId: String? = null,
+    val characterName: String? = null,
     val localRevision: String? = null,
     val remoteRevision: String? = null,
+    val localUpdatedAt: Long? = null,
+    val remoteUpdatedAt: Long? = null,
+    val localWriterId: String? = null,
+    val remoteWriterId: String? = null,
+    val changedAreas: List<ConflictArea> = emptyList(),
 )
 
 enum class SyncErrorKind {
@@ -91,6 +113,7 @@ data class SyncStatus(
     val lastSuccessfulSyncAt: Long? = null,
     val conflicts: List<SyncConflict> = emptyList(),
     val error: SyncErrorKind? = null,
+    val autoResolvedCount: Int = 0,
 )
 
 data class SyncRunResult(

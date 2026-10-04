@@ -13,6 +13,7 @@ import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.AppSettings
 import com.keyserdsoze.dicethrower.model.CharacterImageRef
 import com.keyserdsoze.dicethrower.model.CharacterProfile
+import com.keyserdsoze.dicethrower.model.ConflictPolicy
 import com.keyserdsoze.dicethrower.model.RollButtonPosition
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -103,6 +104,86 @@ class CloudSyncEngineTest {
         assertEquals(SyncConflictKind.CHARACTER_DIVERGED, result.status.conflicts.single().kind)
         assertEquals("Hero B", deviceB.data.characters.single().name)
         assertEquals("Hero A", remote.characters.getValue(CHARACTER_ID).data.characters.single().name)
+    }
+
+    @Test
+    fun manualKeepLocalResolvesConflictAndDoesNotRepeatOnNextSync() = runBlocking {
+        val remote = FakeRemote()
+        val deviceA = FakeLocal("device-a", characterData("Hero", "device-a", 10L))
+        val deviceB = FakeLocal("device-b", AppData())
+        val engineA = engine(deviceA, remote, 100L)
+        val engineB = engine(deviceB, remote, 200L)
+        engineA.sync()
+        engineB.sync()
+        deviceA.rename("Hero A", 300L)
+        deviceB.rename("Hero B", 310L)
+        engineA.sync()
+
+        val resolved = engineB.sync(
+            resolutions = mapOf(CHARACTER_ID to SyncConflictResolution.KEEP_LOCAL),
+        )
+
+        assertEquals(SyncStatusKind.SYNCED, resolved.status.kind)
+        assertEquals("Hero B", remote.characters.getValue(CHARACTER_ID).data.characters.single().name)
+        assertEquals(
+            deviceB.data.characterSyncMetadata.single().revision,
+            deviceB.data.characterSyncMetadata.single().baseRevision,
+        )
+        assertEquals(SyncStatusKind.SYNCED, engineB.sync().status.kind)
+    }
+
+    @Test
+    fun latestWinsUsesUpdatedAtOnlyAfterRealConflict() = runBlocking {
+        val remote = FakeRemote()
+        val deviceA = FakeLocal("device-a", characterData("Hero", "device-a", 10L))
+        val deviceB = FakeLocal("device-b", AppData())
+        val engineA = engine(deviceA, remote, 100L)
+        val engineB = engine(deviceB, remote, 200L)
+        engineA.sync()
+        engineB.sync()
+        deviceA.rename("Older remote edit", 300L)
+        deviceB.rename("Newer local edit", 400L)
+        engineA.sync()
+
+        val result = engineB.sync(ConflictPolicy.LATEST_WINS)
+
+        assertEquals(SyncStatusKind.SYNCED, result.status.kind)
+        assertEquals(1, result.status.autoResolvedCount)
+        assertEquals("Newer local edit", remote.characters.getValue(CHARACTER_ID).data.characters.single().name)
+    }
+
+    @Test
+    fun latestWinsDownloadsNewerRemoteVersion() = runBlocking {
+        val remote = FakeRemote()
+        val deviceA = FakeLocal("device-a", characterData("Hero", "device-a", 10L))
+        val deviceB = FakeLocal("device-b", AppData())
+        val engineA = engine(deviceA, remote, 100L)
+        val engineB = engine(deviceB, remote, 200L)
+        engineA.sync()
+        engineB.sync()
+        deviceB.rename("Older local edit", 300L)
+        deviceA.rename("Newer remote edit", 400L)
+        engineA.sync()
+
+        val result = engineB.sync(ConflictPolicy.LATEST_WINS)
+
+        assertEquals(SyncStatusKind.SYNCED, result.status.kind)
+        assertEquals("Newer remote edit", deviceB.data.characters.single().name)
+        assertEquals(1, result.status.autoResolvedCount)
+    }
+
+    @Test
+    fun latestWinsTieBreakIsDeterministicByRevisionThenWriter() {
+        assertTrue(
+            CloudSyncEngine.compareConflictVersions(100L, "bbb", "device-a", 100L, "aaa", "device-z") > 0,
+        )
+        assertTrue(
+            CloudSyncEngine.compareConflictVersions(100L, "aaa", "device-z", 100L, "aaa", "device-a") > 0,
+        )
+        assertEquals(
+            0,
+            CloudSyncEngine.compareConflictVersions(100L, "aaa", "device-a", 100L, "aaa", "device-a"),
+        )
     }
 
     @Test

@@ -6,6 +6,7 @@ import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.CharacterImageRef
 import com.keyserdsoze.dicethrower.model.CharacterSyncMetadata
+import com.keyserdsoze.dicethrower.model.ConflictPolicy
 import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 import com.keyserdsoze.dicethrower.model.DiceMaterial
 import com.keyserdsoze.dicethrower.model.DiceStyle
@@ -214,6 +215,7 @@ object AppDataJsonCodec {
         .put("showRollButton", settings.showRollButton)
         .put("rollButtonPosition", settings.rollButtonPosition.name)
         .put("logRetention", settings.logRetention)
+        .put("conflictPolicy", settings.conflictPolicy.name)
 
     fun decodeSettings(json: JSONObject): AppSettings = AppSettings(
         themeMode = enumValueOrDefault(json.optString("themeMode"), ThemeMode.SYSTEM),
@@ -225,6 +227,7 @@ object AppDataJsonCodec {
             RollButtonPosition.BOTTOM_RIGHT,
         ),
         logRetention = json.optInt("logRetention", 20),
+        conflictPolicy = enumValueOrDefault(json.optString("conflictPolicy"), ConflictPolicy.ASK),
     )
 
     private fun encodeDiceAppearance(appearance: RollDiceAppearance): JSONObject = JSONObject()

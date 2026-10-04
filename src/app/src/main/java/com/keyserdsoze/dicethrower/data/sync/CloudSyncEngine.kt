@@ -17,6 +17,8 @@ import com.keyserdsoze.dicethrower.data.cloud.CloudSettingsMetadata
 import com.keyserdsoze.dicethrower.data.cloud.CloudTransientException
 import com.keyserdsoze.dicethrower.data.cloud.CloudDocumentCodec
 import com.keyserdsoze.dicethrower.data.cloud.CloudAssetDocument
+import com.keyserdsoze.dicethrower.model.AppData
+import com.keyserdsoze.dicethrower.model.ConflictPolicy
 import kotlinx.coroutines.CancellationException
 
 class CloudSyncEngine(
@@ -39,11 +41,14 @@ class CloudSyncEngine(
         )
     }
 
-    suspend fun sync(): SyncRunResult {
+    suspend fun sync(
+        conflictPolicy: ConflictPolicy = ConflictPolicy.ASK,
+        resolutions: Map<String, SyncConflictResolution> = emptyMap(),
+    ): SyncRunResult {
         val startedAt = clock()
         val snapshot = local.snapshot(startedAt)
         return try {
-            sync(snapshot)
+            sync(snapshot, conflictPolicy, resolutions)
         } catch (error: CancellationException) {
             throw error
         } catch (error: Exception) {
@@ -59,7 +64,11 @@ class CloudSyncEngine(
         }
     }
 
-    private suspend fun sync(snapshot: LocalSyncSnapshot): SyncRunResult {
+    private suspend fun sync(
+        snapshot: LocalSyncSnapshot,
+        conflictPolicy: ConflictPolicy,
+        resolutions: Map<String, SyncConflictResolution>,
+    ): SyncRunResult {
         val manifest = remote.readManifest()
         val remoteById = remote.listCharacters().associateByTo(linkedMapOf()) { it.characterId }
         val remoteAssetIds = remote.listAssets().mapTo(mutableSetOf()) { it.assetId }
@@ -76,6 +85,7 @@ class CloudSyncEngine(
         val resolvedDeletions = mutableListOf<PendingCharacterDeletion>()
         val downloadedAssets = linkedMapOf<String, com.keyserdsoze.dicethrower.data.PortableCharacterImageAsset>()
         val conflicts = mutableListOf<SyncConflict>()
+        var autoResolvedCount = 0
 
         for (characterId in allIds) {
             val localMetadata = localById[characterId]
@@ -103,12 +113,48 @@ class CloudSyncEngine(
                             remoteMetadata,
                             downloadedAssets,
                         )
-                        SyncChangeState.CONFLICT -> conflicts += SyncConflict(
-                            kind = SyncConflictKind.CHARACTER_DIVERGED,
-                            characterId = characterId,
-                            localRevision = localMetadata.revision,
-                            remoteRevision = remoteMetadata.revision,
-                        )
+                        SyncChangeState.CONFLICT -> {
+                            val resolution = resolutions[characterId] ?: latestResolution(
+                                conflictPolicy,
+                                localMetadata.updatedAt,
+                                localMetadata.revision,
+                                localMetadata.writerId,
+                                remoteMetadata.updatedAt,
+                                remoteMetadata.revision,
+                                remoteMetadata.writerId,
+                            )
+                            when (resolution) {
+                                SyncConflictResolution.KEEP_LOCAL -> {
+                                    uploadLocal(snapshot, characterId, remoteAssetIds)
+                                    remoteById[characterId] = CloudDocumentCodec
+                                        .buildCharacterDocument(snapshot.data, characterId).metadata
+                                    commits += markSynced(
+                                        characterId,
+                                        localMetadata.revision,
+                                        localMetadata.baseRevision,
+                                        true,
+                                    )
+                                    if (characterId !in resolutions) autoResolvedCount++
+                                }
+                                SyncConflictResolution.USE_REMOTE -> {
+                                    commits += downloadRemote(
+                                        characterId,
+                                        localMetadata.revision,
+                                        remoteMetadata,
+                                        downloadedAssets,
+                                    )
+                                    if (characterId !in resolutions) autoResolvedCount++
+                                }
+                                null -> conflicts += buildCharacterConflict(
+                                    snapshot.data,
+                                    characterId,
+                                    localMetadata.updatedAt,
+                                    localMetadata.revision,
+                                    localMetadata.writerId,
+                                    remoteMetadata,
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -120,12 +166,41 @@ class CloudSyncEngine(
                             delete = true,
                         )
                     } else {
-                        conflicts += SyncConflict(
-                            SyncConflictKind.LOCAL_EDIT_REMOTE_DELETE,
-                            characterId,
+                        val resolution = resolutions[characterId] ?: latestResolution(
+                            conflictPolicy,
+                            localMetadata.updatedAt,
                             localMetadata.revision,
+                            localMetadata.writerId,
+                            remoteDeletion.deletedAt,
                             remoteDeletion.baseRevision,
+                            remoteDeletion.writerId,
                         )
+                        when (resolution) {
+                            SyncConflictResolution.KEEP_LOCAL -> {
+                                uploadLocal(snapshot, characterId, remoteAssetIds)
+                                val uploaded = CloudDocumentCodec.buildCharacterDocument(snapshot.data, characterId).metadata
+                                remoteById[characterId] = uploaded
+                                tombstones.remove(characterId)
+                                commits += markSynced(characterId, localMetadata.revision, localMetadata.baseRevision, true)
+                                if (characterId !in resolutions) autoResolvedCount++
+                            }
+                            SyncConflictResolution.USE_REMOTE -> {
+                                commits += CharacterSyncCommit(characterId, localMetadata.revision, delete = true)
+                                if (characterId !in resolutions) autoResolvedCount++
+                            }
+                            null -> conflicts += SyncConflict(
+                                kind = SyncConflictKind.LOCAL_EDIT_REMOTE_DELETE,
+                                characterId = characterId,
+                                characterName = characterName(snapshot.data, characterId),
+                                localRevision = localMetadata.revision,
+                                remoteRevision = remoteDeletion.baseRevision,
+                                localUpdatedAt = localMetadata.updatedAt,
+                                remoteUpdatedAt = remoteDeletion.deletedAt,
+                                localWriterId = localMetadata.writerId,
+                                remoteWriterId = remoteDeletion.writerId,
+                                changedAreas = listOf(ConflictArea.DELETION),
+                            )
+                        }
                     }
                 }
 
@@ -136,12 +211,30 @@ class CloudSyncEngine(
                         remoteById[characterId] = uploaded
                         tombstones.remove(characterId)
                         commits += markSynced(characterId, localMetadata.revision, null, true)
-                    } else {
-                        conflicts += SyncConflict(
-                            SyncConflictKind.REMOTE_MISSING_WITHOUT_TOMBSTONE,
-                            characterId,
-                            localMetadata.revision,
-                            null,
+                    } else when (resolutions[characterId]) {
+                        SyncConflictResolution.KEEP_LOCAL -> {
+                            uploadLocal(snapshot, characterId, remoteAssetIds)
+                            remoteById[characterId] = CloudDocumentCodec
+                                .buildCharacterDocument(snapshot.data, characterId).metadata
+                            commits += markSynced(characterId, localMetadata.revision, localMetadata.baseRevision, true)
+                        }
+                        SyncConflictResolution.USE_REMOTE -> {
+                            tombstones[characterId] = CloudCharacterTombstone(
+                                characterId = characterId,
+                                deletedAt = clock(),
+                                writerId = snapshot.writerId,
+                                baseRevision = localMetadata.baseRevision,
+                            )
+                            commits += CharacterSyncCommit(characterId, localMetadata.revision, delete = true)
+                        }
+                        null -> conflicts += SyncConflict(
+                            kind = SyncConflictKind.REMOTE_MISSING_WITHOUT_TOMBSTONE,
+                            characterId = characterId,
+                            characterName = characterName(snapshot.data, characterId),
+                            localRevision = localMetadata.revision,
+                            localUpdatedAt = localMetadata.updatedAt,
+                            localWriterId = localMetadata.writerId,
+                            changedAreas = listOf(ConflictArea.DELETION),
                         )
                     }
                 }
@@ -161,12 +254,46 @@ class CloudSyncEngine(
                         )
                         resolvedDeletions += localDeletion
                     } else {
-                        conflicts += SyncConflict(
-                            SyncConflictKind.LOCAL_DELETE_REMOTE_EDIT,
-                            characterId,
+                        val resolution = resolutions[characterId] ?: latestResolution(
+                            conflictPolicy,
+                            localDeletion.deletedAt,
                             localDeletion.deletedRevision,
+                            localDeletion.writerId,
+                            remoteMetadata.updatedAt,
                             remoteMetadata.revision,
+                            remoteMetadata.writerId,
                         )
+                        when (resolution) {
+                            SyncConflictResolution.KEEP_LOCAL -> {
+                                remote.deleteCharacter(characterId)
+                                remoteById.remove(characterId)
+                                tombstones[characterId] = CloudCharacterTombstone(
+                                    characterId,
+                                    localDeletion.deletedAt,
+                                    localDeletion.writerId,
+                                    remoteMetadata.revision,
+                                )
+                                resolvedDeletions += localDeletion
+                                if (characterId !in resolutions) autoResolvedCount++
+                            }
+                            SyncConflictResolution.USE_REMOTE -> {
+                                commits += downloadRemote(characterId, null, remoteMetadata, downloadedAssets)
+                                resolvedDeletions += localDeletion
+                                if (characterId !in resolutions) autoResolvedCount++
+                            }
+                            null -> conflicts += SyncConflict(
+                                kind = SyncConflictKind.LOCAL_DELETE_REMOTE_EDIT,
+                                characterId = characterId,
+                                characterName = remoteCharacterName(characterId),
+                                localRevision = localDeletion.deletedRevision,
+                                remoteRevision = remoteMetadata.revision,
+                                localUpdatedAt = localDeletion.deletedAt,
+                                remoteUpdatedAt = remoteMetadata.updatedAt,
+                                localWriterId = localDeletion.writerId,
+                                remoteWriterId = remoteMetadata.writerId,
+                                changedAreas = listOf(ConflictArea.DELETION),
+                            )
+                        }
                     }
                 }
 
@@ -191,7 +318,14 @@ class CloudSyncEngine(
             }
         }
 
-        val settingsResult = reconcileSettings(snapshot, manifest?.settings, conflicts)
+        val settingsResult = reconcileSettings(
+            snapshot,
+            manifest?.settings,
+            conflicts,
+            conflictPolicy,
+            resolutions[SETTINGS_CONFLICT_KEY],
+        )
+        autoResolvedCount += settingsResult.autoResolvedCount
         val desiredCharacters = remoteById.values.sortedBy { it.characterId }
         val desiredTombstones = tombstones.values.sortedBy { it.characterId }
         val desiredSettings = settingsResult.remote
@@ -235,6 +369,7 @@ class CloudSyncEngine(
                 pendingCount = finalPending,
                 lastSuccessfulSyncAt = completedAt,
                 conflicts = conflicts,
+                autoResolvedCount = autoResolvedCount,
             ),
             localDataChanged = commit.dataChanged,
             localSettingsChanged = commit.settingsChanged,
@@ -302,6 +437,8 @@ class CloudSyncEngine(
         snapshot: LocalSyncSnapshot,
         remoteSettings: CloudSettingsDocument?,
         conflicts: MutableList<SyncConflict>,
+        conflictPolicy: ConflictPolicy,
+        explicitResolution: SyncConflictResolution?,
     ): SettingsResult {
         val localValues = RoamingSettings.from(snapshot.settings)
         val localMetadata = requireNotNull(snapshot.journal.settingsMetadata)
@@ -357,14 +494,116 @@ class CloudSyncEngine(
                 ),
             )
             SyncChangeState.CONFLICT -> {
-                conflicts += SyncConflict(
-                    kind = SyncConflictKind.SETTINGS_DIVERGED,
-                    localRevision = localMetadata.revision,
-                    remoteRevision = remoteSettings.metadata.revision,
+                val resolution = explicitResolution ?: latestResolution(
+                    conflictPolicy,
+                    localMetadata.updatedAt,
+                    localMetadata.revision,
+                    localMetadata.writerId,
+                    remoteSettings.metadata.updatedAt,
+                    remoteSettings.metadata.revision,
+                    remoteSettings.metadata.writerId,
                 )
-                SettingsResult(remoteSettings, null)
+                when (resolution) {
+                    SyncConflictResolution.KEEP_LOCAL -> SettingsResult(
+                        localCloud,
+                        SettingsSyncCommit(
+                            expectedRevision = localMetadata.revision,
+                            metadataAfter = localMetadata.copy(baseRevision = localMetadata.revision),
+                            originalBaseRevision = localMetadata.baseRevision,
+                            allowDescendantBaseAdvance = true,
+                        ),
+                        autoResolvedCount = if (explicitResolution == null) 1 else 0,
+                    )
+                    SyncConflictResolution.USE_REMOTE -> SettingsResult(
+                        remoteSettings,
+                        SettingsSyncCommit(
+                            expectedRevision = localMetadata.revision,
+                            replacement = remoteValues,
+                            metadataAfter = SettingsSyncMetadata(
+                                remoteSettings.metadata.updatedAt,
+                                remoteSettings.metadata.revision,
+                                remoteSettings.metadata.writerId,
+                                remoteSettings.metadata.revision,
+                            ),
+                        ),
+                        autoResolvedCount = if (explicitResolution == null) 1 else 0,
+                    )
+                    null -> {
+                        conflicts += SyncConflict(
+                            kind = SyncConflictKind.SETTINGS_DIVERGED,
+                            localRevision = localMetadata.revision,
+                            remoteRevision = remoteSettings.metadata.revision,
+                            localUpdatedAt = localMetadata.updatedAt,
+                            remoteUpdatedAt = remoteSettings.metadata.updatedAt,
+                            localWriterId = localMetadata.writerId,
+                            remoteWriterId = remoteSettings.metadata.writerId,
+                            changedAreas = listOf(ConflictArea.SETTINGS),
+                        )
+                        SettingsResult(remoteSettings, null)
+                    }
+                }
             }
         }
+    }
+
+    private fun latestResolution(
+        policy: ConflictPolicy,
+        localUpdatedAt: Long,
+        localRevision: String,
+        localWriterId: String,
+        remoteUpdatedAt: Long,
+        remoteRevision: String,
+        remoteWriterId: String,
+    ): SyncConflictResolution? {
+        if (policy != ConflictPolicy.LATEST_WINS) return null
+        val comparison = compareConflictVersions(
+            localUpdatedAt, localRevision, localWriterId,
+            remoteUpdatedAt, remoteRevision, remoteWriterId,
+        )
+        return if (comparison >= 0) SyncConflictResolution.KEEP_LOCAL else SyncConflictResolution.USE_REMOTE
+    }
+
+    private suspend fun buildCharacterConflict(
+        localData: AppData,
+        characterId: String,
+        localUpdatedAt: Long,
+        localRevision: String,
+        localWriterId: String,
+        remoteMetadata: CloudCharacterMetadata,
+    ): SyncConflict {
+        val remoteData = remote.readCharacter(characterId)?.data
+        return SyncConflict(
+            kind = SyncConflictKind.CHARACTER_DIVERGED,
+            characterId = characterId,
+            characterName = characterName(localData, characterId) ?: remoteData?.let { characterName(it, characterId) },
+            localRevision = localRevision,
+            remoteRevision = remoteMetadata.revision,
+            localUpdatedAt = localUpdatedAt,
+            remoteUpdatedAt = remoteMetadata.updatedAt,
+            localWriterId = localWriterId,
+            remoteWriterId = remoteMetadata.writerId,
+            changedAreas = remoteData?.let { changedAreas(localData, it, characterId) }.orEmpty(),
+        )
+    }
+
+    private suspend fun remoteCharacterName(characterId: String): String? =
+        remote.readCharacter(characterId)?.data?.let { characterName(it, characterId) }
+
+    private fun characterName(data: AppData, characterId: String): String? =
+        data.characters.firstOrNull { it.id == characterId }?.name
+
+    private fun changedAreas(localData: AppData, remoteData: AppData, characterId: String): List<ConflictArea> = buildList {
+        val localCharacter = localData.characters.firstOrNull { it.id == characterId }
+        val remoteCharacter = remoteData.characters.firstOrNull { it.id == characterId }
+        if (localCharacter?.copy(image = null, imageUri = null) != remoteCharacter?.copy(image = null, imageUri = null)) add(ConflictArea.PROFILE)
+        if (localCharacter?.image != remoteCharacter?.image) add(ConflictArea.IMAGE)
+        if (localData.modifiers.filter { it.characterId == characterId } != remoteData.modifiers.filter { it.characterId == characterId }) add(ConflictArea.MODIFIERS)
+        if (
+            localData.groups.filter { it.characterId == characterId } != remoteData.groups.filter { it.characterId == characterId } ||
+            localData.rolls.filter { it.characterId == characterId } != remoteData.rolls.filter { it.characterId == characterId }
+        ) add(ConflictArea.ROLLS)
+        if (localData.diceStyles.filter { it.characterId == characterId } != remoteData.diceStyles.filter { it.characterId == characterId }) add(ConflictArea.DICE_STYLES)
+        if (localData.logs.filter { it.characterId == characterId } != remoteData.logs.filter { it.characterId == characterId }) add(ConflictArea.HISTORY)
     }
 
     private fun pendingCount(snapshot: LocalSyncSnapshot): Int =
@@ -387,5 +626,22 @@ class CloudSyncEngine(
     private data class SettingsResult(
         val remote: CloudSettingsDocument,
         val commit: SettingsSyncCommit?,
+        val autoResolvedCount: Int = 0,
     )
+
+    companion object {
+        const val SETTINGS_CONFLICT_KEY = "__settings__"
+
+        internal fun compareConflictVersions(
+            localUpdatedAt: Long,
+            localRevision: String,
+            localWriterId: String,
+            remoteUpdatedAt: Long,
+            remoteRevision: String,
+            remoteWriterId: String,
+        ): Int = compareValues(localUpdatedAt, remoteUpdatedAt)
+            .takeIf { it != 0 }
+            ?: localRevision.compareTo(remoteRevision).takeIf { it != 0 }
+            ?: localWriterId.compareTo(remoteWriterId)
+    }
 }
