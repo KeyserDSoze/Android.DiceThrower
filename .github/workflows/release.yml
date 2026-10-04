@@ -1,0 +1,142 @@
+name: Release APK and App Bundle
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - VERSION
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dice-thrower-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: ${{ vars.RELEASE_ENABLED == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Read version
+        id: version
+        shell: bash
+        run: |
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "VERSION must use MAJOR.MINOR.PATCH" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure version is new
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists. Bump VERSION before releasing." >&2
+            exit 1
+          fi
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: ''
+          log-accepted-android-sdk-licenses: false
+
+      - name: Install Android 37 SDK
+        run: sdkmanager --channel=3 "platforms;android-37.0" "build-tools;37.0.0" "platform-tools"
+
+      - name: Set up Gradle 9.6
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: '9.6.0'
+
+      - name: Restore stable signing key
+        shell: bash
+        env:
+          DICETHROWER_KEYSTORE_B64: ${{ secrets.DICETHROWER_KEYSTORE_B64 }}
+        run: |
+          if [[ -z "$DICETHROWER_KEYSTORE_B64" ]]; then
+            echo "Missing repository secret DICETHROWER_KEYSTORE_B64" >&2
+            exit 1
+          fi
+          printf '%s' "$DICETHROWER_KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/dicethrower-release.jks"
+
+      - name: Test and build signed release APK and App Bundle
+        working-directory: src
+        env:
+          DICETHROWER_KEYSTORE_PATH: ${{ runner.temp }}/dicethrower-release.jks
+          DICETHROWER_KEYSTORE_PASSWORD: ${{ secrets.DICETHROWER_KEYSTORE_PASSWORD }}
+          DICETHROWER_GOOGLE_WEB_CLIENT_ID: ${{ vars.DICETHROWER_GOOGLE_WEB_CLIENT_ID }}
+        run: |
+          if [[ -z "$DICETHROWER_KEYSTORE_PASSWORD" ]]; then
+            echo "Missing repository secret DICETHROWER_KEYSTORE_PASSWORD" >&2
+            exit 1
+          fi
+          if [[ -z "$DICETHROWER_GOOGLE_WEB_CLIENT_ID" ]]; then
+            echo "Missing repository variable DICETHROWER_GOOGLE_WEB_CLIENT_ID" >&2
+            exit 1
+          fi
+          gradle --no-daemon -PrequireStableSigning=true :app:testDebugUnitTest :app:assembleRelease :app:bundleRelease
+
+      - name: Verify release signatures
+        shell: bash
+        run: |
+          "$ANDROID_HOME/build-tools/37.0.0/apksigner" verify --print-certs src/app/build/outputs/apk/release/app-release.apk
+          jarsigner -verify -verbose -certs src/app/build/outputs/bundle/release/app-release.aab >/dev/null
+
+      - name: Prepare release files
+        id: artifact
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          DICETHROWER_KEYSTORE_PASSWORD: ${{ secrets.DICETHROWER_KEYSTORE_PASSWORD }}
+        run: |
+          APK="dice-thrower-v${VERSION}.apk"
+          AAB="dice-thrower-v${VERSION}.aab"
+          CERT="dice-thrower-upload-cert.pem"
+          cp src/app/build/outputs/apk/release/app-release.apk "$APK"
+          cp src/app/build/outputs/bundle/release/app-release.aab "$AAB"
+          sha256sum "$APK" > "$APK.sha256"
+          sha256sum "$AAB" > "$AAB.sha256"
+          "$ANDROID_HOME/build-tools/37.0.0/apksigner" verify --print-certs "$APK" > "$APK.cert.txt"
+          keytool -exportcert -rfc \
+            -keystore "$RUNNER_TEMP/dicethrower-release.jks" \
+            -storepass "$DICETHROWER_KEYSTORE_PASSWORD" \
+            -alias dicethrower \
+            -file "$CERT"
+          {
+            echo "apk=$APK"
+            echo "aab=$AAB"
+            echo "cert=$CERT"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+          APK: ${{ steps.artifact.outputs.apk }}
+          AAB: ${{ steps.artifact.outputs.aab }}
+          CERT: ${{ steps.artifact.outputs.cert }}
+        run: |
+          gh release create "$TAG" \
+            "$APK" "$APK.sha256" "$APK.cert.txt" \
+            "$AAB" "$AAB.sha256" "$CERT" \
+            --target "$GITHUB_SHA" \
+            --title "Dice Thrower $VERSION" \
+            --generate-notes

@@ -15,6 +15,8 @@ The private keystore is never committed. GitHub Actions restores it at runtime f
 
 The build receives the decoded temporary file through `DICETHROWER_KEYSTORE_PATH`. A release workflow must invoke Gradle with `-PrequireStableSigning=true`; this makes configuration fail immediately if either signing input is absent or the restored keystore does not exist.
 
+The release workflow is gated by the repository variable `RELEASE_ENABLED=true`. It also requires the non-secret repository variable `DICETHROWER_GOOGLE_WEB_CLIENT_ID` so a published build can never accidentally ship with Google connection disabled.
+
 Local unsigned builds remain supported when neither signing variable is configured.
 
 ## Certificate fingerprints
