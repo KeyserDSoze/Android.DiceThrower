@@ -51,6 +51,9 @@ jobs:
         with:
           gradle-version: '9.6.0'
 
+      - name: Validate all advertised localizations
+        run: python3 scripts/validate_localizations.py
+
       - name: Test and compile debug APK
         working-directory: src
         run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
