@@ -18,6 +18,9 @@ jobs:
   release:
     if: ${{ vars.RELEASE_ENABLED == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
 
     steps:
       - name: Checkout
@@ -140,3 +143,46 @@ jobs:
             --target "$GITHUB_SHA" \
             --title "Dice Thrower $VERSION" \
             --generate-notes
+
+  publish-play-internal:
+    needs: release
+    if: ${{ vars.GOOGLE_PLAY_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    environment: google-play
+
+    steps:
+      - name: Download signed App Bundle from GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release.outputs.tag }}
+        run: |
+          mkdir -p dist
+          gh release download "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "dice-thrower-*.aab" \
+            --pattern "dice-thrower-*.aab.sha256" \
+            --dir dist
+
+      - name: Verify App Bundle checksum
+        working-directory: dist
+        run: sha256sum --check dice-thrower-*.aab.sha256
+
+      - name: Prepare Play release notes
+        shell: bash
+        env:
+          VERSION: ${{ needs.release.outputs.version }}
+        run: |
+          mkdir -p distribution/whatsnew
+          printf 'Dice Thrower %s: first signed release with character-based rolls and optional Drive sync.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
+          printf 'Dice Thrower %s: prima release firmata con tiri per personaggio e sincronizzazione Drive opzionale.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
+
+      - name: Upload to Google Play Internal testing
+        uses: r0adkll/upload-google-play@v1.1.5
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.keyserdsoze.dicethrower
+          releaseFiles: dist/dice-thrower-v${{ needs.release.outputs.version }}.aab
+          tracks: ${{ vars.GOOGLE_PLAY_AUTO_TRACKS || 'internal' }}
+          status: completed
+          whatsNewDirectory: distribution/whatsnew

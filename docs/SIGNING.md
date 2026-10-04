@@ -17,6 +17,8 @@ The build receives the decoded temporary file through `DICETHROWER_KEYSTORE_PATH
 
 The release workflow is gated by the repository variable `RELEASE_ENABLED=true`. It also requires the non-secret repository variable `DICETHROWER_GOOGLE_WEB_CLIENT_ID` so a published build can never accidentally ship with Google connection disabled.
 
+Optional Google Play publishing is gated separately with `GOOGLE_PLAY_ENABLED=true`. It consumes the already signed AAB from the GitHub Release, verifies its SHA-256 checksum, and uploads it to the Internal track (or `GOOGLE_PLAY_AUTO_TRACKS` when explicitly configured) using the `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` repository secret.
+
 Local unsigned builds remain supported when neither signing variable is configured.
 
 ## Certificate fingerprints
