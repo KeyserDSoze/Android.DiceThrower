@@ -4,9 +4,13 @@ import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.AppSettings
 import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterProfile
+import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
+import com.keyserdsoze.dicethrower.model.DiceMaterial
+import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.LevelRuleKind
 import com.keyserdsoze.dicethrower.model.RollButtonPosition
 import com.keyserdsoze.dicethrower.model.RollDefinition
+import com.keyserdsoze.dicethrower.model.RollDiceAppearance
 import com.keyserdsoze.dicethrower.model.RollGroup
 import com.keyserdsoze.dicethrower.model.RollLevelRule
 import com.keyserdsoze.dicethrower.model.RollLog
@@ -15,7 +19,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 object AppDataJsonCodec {
-    const val DATA_VERSION = 2
+    const val DATA_VERSION = 3
 
     fun encodeData(data: AppData): JSONObject = JSONObject()
         .put("version", DATA_VERSION)
@@ -27,7 +31,8 @@ object AppDataJsonCodec {
                     .put("imageUri", item.imageUri ?: JSONObject.NULL)
                     .put("tag", item.tag)
                     .put("level", item.level)
-                    .put("order", item.order))
+                    .put("order", item.order)
+                    .put("defaultDiceStyleId", item.defaultDiceStyleId ?: JSONObject.NULL))
             }
         })
         .put("modifiers", JSONArray().apply {
@@ -67,7 +72,8 @@ object AppDataJsonCodec {
                                 .put("trigger", rule.trigger)
                                 .put("expression", rule.expression))
                         }
-                    }))
+                    })
+                    .put("diceAppearance", encodeDiceAppearance(item.diceAppearance)))
             }
         })
         .put("logs", JSONArray().apply {
@@ -83,6 +89,18 @@ object AppDataJsonCodec {
                     .put("timestamp", item.timestamp))
             }
         })
+        .put("diceStyles", JSONArray().apply {
+            data.diceStyles.forEach { style ->
+                put(JSONObject()
+                    .put("id", style.id)
+                    .put("characterId", style.characterId)
+                    .put("name", style.name)
+                    .put("material", style.material.name)
+                    .put("primaryColorArgb", style.primaryColorArgb)
+                    .put("secondaryColorArgb", style.secondaryColorArgb)
+                    .put("order", style.order))
+            }
+        })
 
     fun decodeData(json: JSONObject): AppData = AppData(
         characters = json.optJSONArray("characters").mapObjects { item ->
@@ -93,6 +111,7 @@ object AppDataJsonCodec {
                 tag = item.optString("tag"),
                 level = item.optInt("level", 1).coerceAtLeast(1),
                 order = item.optInt("order"),
+                defaultDiceStyleId = item.optNullableString("defaultDiceStyleId"),
             )
         },
         modifiers = json.optJSONArray("modifiers").mapObjects { item ->
@@ -132,6 +151,8 @@ object AppDataJsonCodec {
                         expression = rule.getString("expression"),
                     )
                 },
+                diceAppearance = item.optJSONObject("diceAppearance")?.let(::decodeDiceAppearance)
+                    ?: RollDiceAppearance(),
             )
         },
         logs = json.optJSONArray("logs").mapObjects { item ->
@@ -144,6 +165,17 @@ object AppDataJsonCodec {
                 total = item.getInt("total"),
                 detail = item.optString("detail"),
                 timestamp = item.getLong("timestamp"),
+            )
+        },
+        diceStyles = json.optJSONArray("diceStyles").mapObjects { item ->
+            DiceStyle(
+                id = item.getString("id"),
+                characterId = item.getString("characterId"),
+                name = item.getString("name"),
+                material = enumValueOrDefault(item.optString("material"), DiceMaterial.GLOSSY_RESIN),
+                primaryColorArgb = item.optInt("primaryColorArgb", DEFAULT_PRIMARY_COLOR_ARGB),
+                secondaryColorArgb = item.optInt("secondaryColorArgb", DEFAULT_SECONDARY_COLOR_ARGB),
+                order = item.optInt("order"),
             )
         },
     )
@@ -168,6 +200,27 @@ object AppDataJsonCodec {
         logRetention = json.optInt("logRetention", 20),
     )
 
+    private fun encodeDiceAppearance(appearance: RollDiceAppearance): JSONObject = JSONObject()
+        .put("mode", appearance.mode.name)
+        .put("styleId", appearance.styleId ?: JSONObject.NULL)
+        .put("perDieStyleIds", JSONArray().apply {
+            appearance.perDieStyleIds.toSortedMap().forEach { (slot, styleId) ->
+                put(JSONObject().put("slot", slot).put("styleId", styleId))
+            }
+        })
+        .put("randomStyleIds", JSONArray().apply {
+            appearance.randomStyleIds.forEach(::put)
+        })
+
+    private fun decodeDiceAppearance(json: JSONObject): RollDiceAppearance = RollDiceAppearance(
+        mode = enumValueOrDefault(json.optString("mode"), DiceAppearanceMode.CHARACTER_DEFAULT),
+        styleId = json.optNullableString("styleId"),
+        perDieStyleIds = json.optJSONArray("perDieStyleIds").mapObjects { item ->
+            item.getString("slot") to item.getString("styleId")
+        }.toMap(),
+        randomStyleIds = json.optJSONArray("randomStyleIds").mapStrings(),
+    )
+
     private fun JSONObject.optNullableString(key: String): String? {
         if (!has(key) || isNull(key)) return null
         return optString(key).takeIf { it.isNotBlank() }
@@ -178,8 +231,16 @@ object AppDataJsonCodec {
         return List(length()) { index -> block(getJSONObject(index)) }
     }
 
+    private fun JSONArray?.mapStrings(): List<String> {
+        if (this == null) return emptyList()
+        return List(length()) { index -> getString(index) }
+    }
+
     private inline fun <reified T : Enum<T>> enumValueOrDefault(
         value: String,
         default: T,
     ): T = enumValues<T>().firstOrNull { it.name == value } ?: default
+
+    private const val DEFAULT_PRIMARY_COLOR_ARGB = -14384101
+    private const val DEFAULT_SECONDARY_COLOR_ARGB = -11751600
 }
