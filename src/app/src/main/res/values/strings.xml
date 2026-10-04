@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Dice Thrower</string>
+    <string name="app_tagline">Characters · quick rolls · shake to throw</string>
+    <string name="app_intro_short">Create a character, organize the rolls you actually use, then throw with a tap or a shake.</string>
     <string name="characters">Characters</string>
     <string name="new_character">New character</string>
     <string name="character_name">Name</string>
@@ -19,15 +21,20 @@
     <string name="no_characters">No characters yet. Create one to start.</string>
     <string name="no_rolls">No active rolls yet.</string>
     <string name="dashboard">Dashboard</string>
+    <string name="dashboard_order">Dashboard order</string>
+    <string name="drag_to_reorder">Long press a card and drag it up or down to reorder.</string>
     <string name="groups">Groups</string>
+    <string name="group_contents_help">Grouped rolls have their own internal order. Long press and drag them too.</string>
+    <string name="empty_group">This group is empty.</string>
     <string name="rolls">Rolls</string>
+    <string name="roll_editor_help">Enable, group, parameterize and scale every roll independently.</string>
     <string name="new_group">New group</string>
     <string name="group_name">Group name</string>
     <string name="new_roll">New roll</string>
     <string name="edit_roll">Edit roll</string>
     <string name="roll_name">Roll name</string>
     <string name="expression">Expression</string>
-    <string name="expression_hint">Example: 4d3+3d6+10 or 1d20+{Strength}</string>
+    <string name="expression_hint">Example: 4d3+3d6+10 or 1d20+{Strength}. Tap a variable chip to insert it.</string>
     <string name="resolved_expression">Current formula</string>
     <string name="ungrouped">Ungrouped</string>
     <string name="enabled">Enabled</string>
@@ -69,6 +76,7 @@
     <string name="add">Add</string>
     <string name="group">Group</string>
     <string name="character_progression">Character progression</string>
+    <string name="level_auto_update_help">Changing the level immediately updates every parameterized roll.</string>
     <string name="level_up">Level up</string>
     <string name="level_down">Level down</string>
     <string name="modifiers">Modifiers</string>
@@ -77,6 +85,7 @@
     <string name="modifier_name">Modifier name</string>
     <string name="modifier_value">Value</string>
     <string name="modifier_help">Use modifiers in rolls with braces, for example {Intelligence}. {level} is always available.</string>
+    <string name="modifier_in_use">Used by one or more rolls</string>
     <string name="duplicate_modifier">Modifier names must be unique and cannot be “level”.</string>
     <string name="level_scaling">Level scaling</string>
     <string name="add_level_rule">Add level rule</string>
