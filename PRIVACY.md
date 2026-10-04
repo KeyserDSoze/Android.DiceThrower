@@ -10,15 +10,21 @@ https://keyserdsoze.github.io/Android.DiceThrower/privacy/
 
 ## Data collection
 
-Dice Thrower does **not** require an account and does not collect, sell, share, profile, or use personal data for advertising or analytics.
+Dice Thrower does **not** require an account and does not sell, profile, or use personal data for advertising or analytics. Standalone mode remains fully functional without signing in.
 
 ## Local app data
 
-Character names, optional character images selected by the user, free-form tags, dice-roll definitions, dashboard organization, settings, roll history, and synchronization revision metadata are stored locally on the device. Selected character images are copied into the app's private storage so they can be included in user-requested backups; the app stores their MIME type, size and cryptographic content hash for integrity/deduplication. The app also creates a random, non-personal installation writer ID used only to mark local revisions; that installation ID is stored in Android's private no-backup area so it is not restored by Android Auto Backup. The app does not upload this information to a server in the current release.
+Character names, optional character images selected by the user, free-form tags, dice-roll definitions, dashboard organization, settings, roll history, and synchronization revision metadata are stored locally on the device. Selected character images are copied into the app's private storage so they can be included in user-requested backups; the app stores their MIME type, size and cryptographic content hash for integrity/deduplication. The app also creates a random, non-personal installation writer ID used only to mark local revisions; that installation ID is stored in Android's private no-backup area so it is not restored by Android Auto Backup.
+
+## Optional Google connection
+
+If the user explicitly chooses **Continue with Google**, Dice Thrower uses Google Identity through Android Credential Manager. The app keeps only the Google account's stable identifier, email address and optional display name needed to show connection state. This small record is stored in Android's private no-backup area. Dice Thrower does not store the Google password, ID token, Drive access token or raw credentials.
+
+Google Drive authorization is requested separately and is limited to the private `drive.appdata` scope. The account can be disconnected later; disconnecting revokes this app-data authorization but does not delete local Dice Thrower data. Character upload/download is not implemented by the account-onboarding feature itself and will use this authorization only when the Drive repository/sync features are enabled.
 
 ## Network access
 
-The application is designed to work fully offline and the Android manifest does not request Internet access.
+The application requests Internet access so an explicitly chosen Google sign-in/authorization flow can contact Google services. Core Dice Thrower features remain offline-first and standalone mode does not require a network connection. The app has no advertising, analytics or tracking backend.
 
 ## Sensors
 

@@ -86,7 +86,7 @@ export default function App() {
                 </div>
                 <div className="trust-row">
                   <span>◆ Offline</span>
-                  <span>◆ No account</span>
+                  <span>◆ Account optional</span>
                   <span>◆ No tracking</span>
                 </div>
               </div>

@@ -22,9 +22,12 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Casino
+import androidx.compose.material.icons.rounded.Cloud
+import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.History
@@ -72,8 +75,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.keyserdsoze.dicethrower.AppLanguageOption
 import com.keyserdsoze.dicethrower.AppLocaleManager
+import com.keyserdsoze.dicethrower.GoogleConnectionFailure
 import com.keyserdsoze.dicethrower.R
 import com.keyserdsoze.dicethrower.data.CharacterImageAssetStore
+import com.keyserdsoze.dicethrower.data.CloudAccountState
 import com.keyserdsoze.dicethrower.data.LocalStore
 import com.keyserdsoze.dicethrower.dice.DiceAppearanceResolver
 import com.keyserdsoze.dicethrower.dice.DiceExpression
@@ -123,9 +128,25 @@ fun DiceThrowerAppV2(
     settings: AppSettings,
     selectedLanguage: String,
     languageOptions: List<AppLanguageOption>,
+    cloudAccountState: CloudAccountState,
+    accountFlowBusy: Boolean,
+    accountFailure: GoogleConnectionFailure?,
     onSettingsChanged: (AppSettings) -> Unit,
+    onUseStandalone: () -> Unit,
+    onConnectGoogle: () -> Unit,
+    onDisconnectGoogle: () -> Unit,
     onLanguageChanged: (String) -> Unit,
 ) {
+    if (cloudAccountState.onboardingRequired) {
+        AccountOnboardingV2(
+            busy = accountFlowBusy,
+            failure = accountFailure,
+            onUseStandalone = onUseStandalone,
+            onConnectGoogle = onConnectGoogle,
+        )
+        return
+    }
+
     var data by remember { mutableStateOf(store.loadData()) }
     var route by remember { mutableStateOf(RouteV2.CHARACTERS) }
     var selectedCharacterId by remember { mutableStateOf<String?>(null) }
@@ -199,7 +220,12 @@ fun DiceThrowerAppV2(
             settings = settings,
             selectedLanguage = selectedLanguage,
             languageOptions = languageOptions,
+            cloudAccountState = cloudAccountState,
+            accountFlowBusy = accountFlowBusy,
+            accountFailure = accountFailure,
             onSettingsChanged = onSettingsChanged,
+            onConnectGoogle = onConnectGoogle,
+            onDisconnectGoogle = onDisconnectGoogle,
             onLanguageChanged = onLanguageChanged,
             onBack = { route = RouteV2.CHARACTERS },
         )
@@ -219,6 +245,68 @@ fun DiceThrowerAppV2(
                         persist(data.copy(logs = data.logs.filterNot { it.characterId == character.id }))
                     },
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AccountOnboardingV2(
+    busy: Boolean,
+    failure: GoogleConnectionFailure?,
+    onUseStandalone: () -> Unit,
+    onConnectGoogle: () -> Unit,
+) {
+    ArcaneBackground {
+        Box(
+            modifier = Modifier.fillMaxSize().padding(24.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            PremiumCard(Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.Casino, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(12.dp))
+                        Text(stringResource(R.string.welcome_to_dice_thrower), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+                    }
+                    Text(
+                        stringResource(R.string.onboarding_account_intro),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Button(
+                        onClick = onUseStandalone,
+                        enabled = !busy,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Rounded.CloudOff, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.use_standalone))
+                    }
+                    OutlinedButton(
+                        onClick = onConnectGoogle,
+                        enabled = !busy,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Rounded.AccountCircle, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(if (busy) R.string.connecting_google else R.string.continue_with_google))
+                    }
+                    Text(
+                        stringResource(R.string.onboarding_standalone_reassurance),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    failure?.let {
+                        Text(
+                            accountFailureText(it),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
             }
         }
     }
@@ -1381,11 +1469,38 @@ private fun SettingsScreenV2(
     settings: AppSettings,
     selectedLanguage: String,
     languageOptions: List<AppLanguageOption>,
+    cloudAccountState: CloudAccountState,
+    accountFlowBusy: Boolean,
+    accountFailure: GoogleConnectionFailure?,
     onSettingsChanged: (AppSettings) -> Unit,
+    onConnectGoogle: () -> Unit,
+    onDisconnectGoogle: () -> Unit,
     onLanguageChanged: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     var languageMenu by remember { mutableStateOf(false) }
+    var confirmDisconnect by remember { mutableStateOf(false) }
+
+    if (confirmDisconnect) {
+        AlertDialog(
+            onDismissRequest = { confirmDisconnect = false },
+            title = { Text(stringResource(R.string.disconnect_google_title)) },
+            text = { Text(stringResource(R.string.disconnect_google_body)) },
+            confirmButton = {
+                Button(onClick = {
+                    confirmDisconnect = false
+                    onDisconnectGoogle()
+                }) {
+                    Text(stringResource(R.string.disconnect))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDisconnect = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
 
     ArcaneBackground {
         Scaffold(
@@ -1413,6 +1528,69 @@ private fun SettingsScreenV2(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
+                item {
+                    PremiumCard(Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    if (cloudAccountState.googleConnected) Icons.Rounded.Cloud else Icons.Rounded.CloudOff,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                Text(stringResource(R.string.account_and_sync), fontWeight = FontWeight.Bold)
+                            }
+                            if (cloudAccountState.googleConnected) {
+                                Text(
+                                    cloudAccountState.account?.displayName?.takeIf { it.isNotBlank() }
+                                        ?: stringResource(R.string.google_account),
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                                cloudAccountState.account?.email?.let {
+                                    Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Text(
+                                    stringResource(R.string.drive_appdata_authorized),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                if (cloudAccountState.initialReconciliationPending) {
+                                    Text(
+                                        stringResource(R.string.first_sync_reconcile_pending),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                    )
+                                }
+                                OutlinedButton(
+                                    onClick = { confirmDisconnect = true },
+                                    enabled = !accountFlowBusy,
+                                ) {
+                                    Text(stringResource(if (accountFlowBusy) R.string.disconnecting else R.string.disconnect))
+                                }
+                            } else {
+                                Text(stringResource(R.string.standalone_mode), fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    stringResource(R.string.standalone_settings_help),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                OutlinedButton(onClick = onConnectGoogle, enabled = !accountFlowBusy) {
+                                    Icon(Icons.Rounded.AccountCircle, contentDescription = null)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(stringResource(if (accountFlowBusy) R.string.connecting_google else R.string.continue_with_google))
+                                }
+                            }
+                            accountFailure?.let {
+                                Text(
+                                    accountFailureText(it),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
+                    }
+                }
+
                 item {
                     PremiumCard(Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -1526,6 +1704,16 @@ private fun SettingsScreenV2(
         }
     }
 }
+
+@Composable
+private fun accountFailureText(failure: GoogleConnectionFailure): String = stringResource(
+    when (failure) {
+        GoogleConnectionFailure.CONFIGURATION -> R.string.google_configuration_missing
+        GoogleConnectionFailure.SIGN_IN -> R.string.google_sign_in_failed
+        GoogleConnectionFailure.DRIVE_AUTHORIZATION -> R.string.google_drive_authorization_failed
+        GoogleConnectionFailure.DISCONNECT -> R.string.google_disconnect_failed
+    },
+)
 
 @Composable
 private fun ToggleSettingCard(

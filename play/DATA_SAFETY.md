@@ -1,15 +1,15 @@
 # Google Play Data Safety — Dice Thrower
 
-This file records the intended answers for the first local-only release and must be re-reviewed before every store submission.
+This file records the intended Data Safety posture and must be re-reviewed before every store submission, especially now that optional Google account connectivity exists.
 
 ## Data collection and sharing
 
-- Data collected by the developer: **No**
-- Data shared with third parties by the developer: **No**
+- Data collected by a Dice Thrower-operated backend: **No**
+- Optional account data handled through Google Identity: **Yes — review against the current Play Console definitions before release**
 - Advertising: **No**
 - Analytics: **No**
-- Account creation: **No**
-- Internet permission in the Android manifest: **No**
+- Dice Thrower account creation: **No**; optional existing Google account connection is supported
+- Internet permission in the Android manifest: **Yes**, for user-initiated Google identity/authorization and future sync
 
 ## Data handled locally
 
@@ -24,6 +24,7 @@ The app stores the following only on the user's device:
 - app settings;
 - dice-roll history.
 - synchronization revision metadata and a random, non-personal local installation writer ID.
+- when Google is connected: stable Google account ID, email, optional display name and local connection/reconciliation flags in Android no-backup storage; no password or OAuth/ID token is persisted.
 
 ## User-directed backup and restore
 
@@ -31,7 +32,11 @@ Dice Thrower can export a versioned JSON backup through Android's Storage Access
 
 Restore is also user-initiated through the Android document picker. Backup format v2 embeds referenced character images and validates their SHA-256 hashes locally before replacing app data, making those images portable to another device. Legacy v1 URI references remain readable when the source document permission is still available.
 
-This user-directed file operation does not add an Internet permission or developer-operated data transfer.
+This user-directed file operation does not itself perform a developer-operated data transfer or use the optional Google connection.
+
+## Optional Google account and Drive authorization
+
+Standalone remains a first-class mode. If the user explicitly connects Google, authentication uses Android Credential Manager and Drive authorization is requested separately through Google Play services with only `drive.appdata`. Disconnect revokes that authorization while preserving the complete local snapshot. The onboarding feature does not yet upload character data; remote repository and sync behavior are tracked separately and require another Data Safety review before release.
 
 ## Sensors
 
