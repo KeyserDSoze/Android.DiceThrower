@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#050714"/>
+      <stop offset="0.52" stop-color="#111b43"/>
+      <stop offset="1" stop-color="#24114a"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#58c8ff" stop-opacity=".62"/>
+      <stop offset=".48" stop-color="#6548ff" stop-opacity=".26"/>
+      <stop offset="1" stop-color="#6548ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff0b7"/>
+      <stop offset=".45" stop-color="#ffd274"/>
+      <stop offset="1" stop-color="#b77717"/>
+    </linearGradient>
+    <linearGradient id="dice" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b72d9"/>
+      <stop offset=".48" stop-color="#262080"/>
+      <stop offset="1" stop-color="#661c8f"/>
+    </linearGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="30"/></filter>
+    <filter id="softShadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000" flood-opacity=".45"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="500" fill="url(#bg)"/>
+  <circle cx="760" cy="232" r="238" fill="url(#glow)"/>
+  <circle cx="920" cy="60" r="130" fill="#713cff" opacity=".14" filter="url(#blur)"/>
+  <circle cx="640" cy="420" r="180" fill="#00aaff" opacity=".12" filter="url(#blur)"/>
+
+  <g opacity=".26" fill="none" stroke="#72c9ff">
+    <ellipse cx="765" cy="248" rx="250" ry="118" transform="rotate(-15 765 248)"/>
+    <ellipse cx="765" cy="248" rx="205" ry="260" transform="rotate(57 765 248)"/>
+    <circle cx="765" cy="248" r="184" stroke-dasharray="2 12"/>
+  </g>
+
+  <g transform="translate(68 95)">
+    <text x="0" y="78" fill="url(#gold)" font-family="Georgia,serif" font-size="78" font-weight="700" letter-spacing="-3">Dice</text>
+    <text x="0" y="156" fill="url(#gold)" font-family="Georgia,serif" font-size="78" font-weight="700" letter-spacing="-3">Thrower</text>
+    <rect x="2" y="181" width="310" height="2" rx="1" fill="#ffd274" opacity=".55"/>
+    <text x="0" y="224" fill="#f5f6ff" font-family="Inter,Arial,sans-serif" font-size="23" font-weight="600">Create characters. Roll instantly.</text>
+    <text x="0" y="264" fill="#adb8d8" font-family="Inter,Arial,sans-serif" font-size="16">Offline · game-agnostic · parameterized rolls</text>
+    <g transform="translate(0 298)">
+      <rect width="118" height="42" rx="21" fill="#71c8ff"/>
+      <text x="59" y="27" text-anchor="middle" fill="#051321" font-family="Inter,Arial,sans-serif" font-size="14" font-weight="800">SHAKE &amp; ROLL</text>
+      <rect x="132" width="105" height="42" rx="21" fill="#ffffff" fill-opacity=".08" stroke="#ffffff" stroke-opacity=".18"/>
+      <text x="184" y="27" text-anchor="middle" fill="#ffd274" font-family="Inter,Arial,sans-serif" font-size="14" font-weight="800">LOCAL FIRST</text>
+    </g>
+  </g>
+
+  <g filter="url(#softShadow)" transform="translate(670 90) rotate(8 115 115)">
+    <polygon points="115,0 206,41 230,136 166,220 64,230 0,145 20,46" fill="url(#dice)" stroke="url(#gold)" stroke-width="8"/>
+    <path d="M115 0L111 109L20 46M111 109L206 41M111 109L230 136M111 109L166 220M111 109L64 230M111 109L0 145" fill="none" stroke="url(#gold)" stroke-width="5" opacity=".95"/>
+    <text x="112" y="136" text-anchor="middle" fill="#fff1b9" font-family="Georgia,serif" font-size="58" font-weight="700">20</text>
+    <text x="65" y="72" text-anchor="middle" fill="#ffe49b" font-family="Georgia,serif" font-size="27">14</text>
+    <text x="178" y="78" text-anchor="middle" fill="#ffe49b" font-family="Georgia,serif" font-size="25">8</text>
+    <text x="177" y="167" text-anchor="middle" fill="#ffe49b" font-family="Georgia,serif" font-size="24">2</text>
+    <circle cx="115" cy="0" r="8" fill="#fff7dc"/>
+  </g>
+
+  <g filter="url(#softShadow)" transform="translate(850 310) rotate(-12 58 58)">
+    <rect x="0" y="0" width="116" height="116" rx="24" fill="url(#dice)" stroke="url(#gold)" stroke-width="6"/>
+    <circle cx="30" cy="30" r="7" fill="#ffd274"/><circle cx="86" cy="30" r="7" fill="#ffd274"/>
+    <circle cx="30" cy="86" r="7" fill="#ffd274"/><circle cx="86" cy="86" r="7" fill="#ffd274"/>
+    <path d="M58 38L65 51L79 58L65 65L58 79L51 65L37 58L51 51Z" fill="#fff0b7"/>
+  </g>
+
+  <g fill="#ffd274">
+    <circle cx="606" cy="88" r="3"/><circle cx="958" cy="160" r="3"/><circle cx="584" cy="379" r="2"/>
+    <path d="M610 125l4 8 8 4-8 4-4 8-4-8-8-4 8-4z"/>
+    <path d="M953 245l3 6 6 3-6 3-3 6-3-6-6-3 6-3z"/>
+  </g>
+</svg>
