@@ -76,6 +76,31 @@ class DiceAppearanceResolverTest {
     }
 
     @Test
+    fun expressionChangesPreserveCompatiblePerDieSlotsAndDropObsoleteOnes() {
+        val original = DiceAppearanceResolver.slotsFor(DiceExpression.parse("4d6+1d20"))
+        assertEquals(listOf("0:0", "0:1", "0:2", "0:3", "1:0"), original.map { it.key })
+
+        val appearance = RollDiceAppearance(
+            mode = DiceAppearanceMode.PER_DIE,
+            perDieStyleIds = original.associate { it.key to "steel" },
+        )
+        val changed = DiceAppearanceResolver.slotsFor(DiceExpression.parse("2d6+1d20"))
+        val reconciled = DiceAppearanceResolver.reconcileSlots(appearance, changed)
+
+        assertEquals(listOf("0:0", "0:1", "1:0"), changed.map { it.key })
+        assertEquals(setOf("0:0", "0:1", "1:0"), reconciled.perDieStyleIds.keys)
+        assertEquals(DiceAppearanceMode.PER_DIE, reconciled.mode)
+    }
+
+    @Test
+    fun visualSlotsIgnoreConstantsAndExposeDieShape() {
+        val slots = DiceAppearanceResolver.slotsFor(DiceExpression.parse("4d6+2+1d20-3"))
+
+        assertEquals(listOf(6, 6, 6, 6, 20), slots.map { it.sides })
+        assertEquals(listOf(0, 1, 2, 3, 0), slots.map { it.dieIndex })
+    }
+
+    @Test
     fun randomUniformChoosesOnceForWholeThrow() {
         val resolved = resolve(
             RollDiceAppearance(

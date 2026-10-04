@@ -87,6 +87,7 @@ import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.LevelRuleKind
 import com.keyserdsoze.dicethrower.model.RollButtonPosition
+import com.keyserdsoze.dicethrower.model.RollDiceAppearance
 import com.keyserdsoze.dicethrower.model.RollDefinition
 import com.keyserdsoze.dicethrower.model.RollGroup
 import com.keyserdsoze.dicethrower.model.RollLevelRule
@@ -592,6 +593,7 @@ private fun CharacterEditContentV2(
     val groups = data.groups.filter { it.characterId == character.id }.sortedBy { it.order }
     val rolls = data.rolls.filter { it.characterId == character.id }
     val modifiers = data.modifiers.filter { it.characterId == character.id }.sortedBy { it.order }
+    val diceStyles = data.diceStyles.filter { it.characterId == character.id }.sortedBy { it.order }
     val entries = dashboardEntries(groups, rolls.filter { it.groupId == null })
 
     LazyColumn(
@@ -870,6 +872,7 @@ private fun CharacterEditContentV2(
                 character = character,
                 modifiers = modifiers,
                 groups = groups,
+                diceStyles = diceStyles,
                 roll = roll,
                 onEnabledChanged = { enabled ->
                     onDataChanged(
@@ -882,6 +885,15 @@ private fun CharacterEditContentV2(
                     onDataChanged(changeRollGroup(data, character.id, roll.id, groupId))
                 },
                 onEdit = { editingRollId = roll.id },
+                onAppearanceChanged = { appearance ->
+                    onDataChanged(
+                        data.copy(
+                            rolls = data.rolls.map {
+                                if (it.id == roll.id) it.copy(diceAppearance = appearance) else it
+                            },
+                        ),
+                    )
+                },
                 onAddRule = { addRuleRollId = roll.id },
                 onDeleteRule = { ruleId ->
                     onDataChanged(
@@ -1039,10 +1051,12 @@ private fun RollEditorCardV2(
     character: CharacterProfile,
     modifiers: List<CharacterModifier>,
     groups: List<RollGroup>,
+    diceStyles: List<DiceStyle>,
     roll: RollDefinition,
     onEnabledChanged: (Boolean) -> Unit,
     onGroupChanged: (String?) -> Unit,
     onEdit: () -> Unit,
+    onAppearanceChanged: (RollDiceAppearance) -> Unit,
     onAddRule: () -> Unit,
     onDeleteRule: (String) -> Unit,
     onDelete: () -> Unit,
@@ -1115,6 +1129,14 @@ private fun RollEditorCardV2(
                     Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.delete))
                 }
             }
+
+            DiceAppearanceEditorV2(
+                character = character,
+                diceStyles = diceStyles,
+                resolvedExpression = resolved,
+                appearance = roll.diceAppearance,
+                onAppearanceChanged = onAppearanceChanged,
+            )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -1803,8 +1825,7 @@ private fun RollDialogV2(
             Button(
                 enabled = valid,
                 onClick = {
-                    onSave(
-                        (existing ?: RollDefinition(
+                    val saved = (existing ?: RollDefinition(
                             id = "",
                             characterId = character.id,
                             name = "",
@@ -1813,6 +1834,14 @@ private fun RollDialogV2(
                             name = name.trim(),
                             expression = expression.text.trim(),
                             groupId = groupId,
+                        )
+                    val slots = runCatching {
+                        val resolved = RollFormulaResolver.resolve(character, modifiers, saved).expression
+                        DiceAppearanceResolver.slotsFor(DiceExpression.parse(resolved))
+                    }.getOrDefault(emptyList())
+                    onSave(
+                        saved.copy(
+                            diceAppearance = DiceAppearanceResolver.reconcileSlots(saved.diceAppearance, slots),
                         ),
                     )
                 },

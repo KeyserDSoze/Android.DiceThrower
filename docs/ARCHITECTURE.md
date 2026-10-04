@@ -144,6 +144,8 @@ The editor's d20 preview creates a visual-only `DiceRollVisualEvent` from the un
 
 Cross-character style copy is value-based, never reference-based: selected source styles receive fresh IDs and destination ownership, name collisions are resolved locally, and the source default is mapped only when the user explicitly requests it. Full character duplication applies the same invariant to the whole style graph by remapping the character default and every roll appearance reference to newly duplicated style IDs.
 
+Roll appearance assignment is edited independently from roll math. `DiceAppearanceResolver.slotsFor` derives stable `componentIndex:dieIndex` keys from the parsed expression shape without evaluating it. The UI supports character-default, uniform, per-die, random-uniform and random-per-die policies; random policies may restrict selection to an explicit character-owned style pool. Saving a changed expression reconciles per-die references against the new resolved slot set, preserving compatible keys and dropping obsolete ones. Newly introduced/unassigned slots deterministically fall back to the character default.
+
 ## Localization
 
 The locale registry mirrors Android.ScreenLock's 40 languages. English and Italian are the reference translations while the UI vocabulary is still evolving.

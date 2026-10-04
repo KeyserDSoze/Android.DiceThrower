@@ -29,6 +29,12 @@ data class DiceRollResult(
     }
 }
 
+data class DiceTermShape(
+    val count: Int,
+    val sides: Int,
+    val sign: Int,
+)
+
 class DiceExpression private constructor(
     val source: String,
     private val terms: List<Term>,
@@ -72,6 +78,10 @@ class DiceExpression private constructor(
             components = components,
             constantTotal = constantTotal,
         )
+    }
+
+    fun diceShape(): List<DiceTermShape> = terms.filterIsInstance<Term.Dice>().map { term ->
+        DiceTermShape(count = term.count, sides = term.sides, sign = term.sign)
     }
 
     companion object {
