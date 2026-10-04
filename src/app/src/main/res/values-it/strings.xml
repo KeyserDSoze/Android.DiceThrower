@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Dice Thrower</string>
+    <string name="app_tagline">Personaggi · tiri rapidi · scuoti per lanciare</string>
+    <string name="app_intro_short">Crea un personaggio, organizza i tiri che usi davvero e poi lancia con un tocco o scuotendo il telefono.</string>
     <string name="characters">Personaggi</string>
     <string name="new_character">Nuovo personaggio</string>
     <string name="character_name">Nome</string>
@@ -19,15 +21,20 @@
     <string name="no_characters">Non ci sono ancora personaggi. Creane uno per iniziare.</string>
     <string name="no_rolls">Non ci sono ancora tiri attivi.</string>
     <string name="dashboard">Dashboard</string>
+    <string name="dashboard_order">Ordine dashboard</string>
+    <string name="drag_to_reorder">Tieni premuta una scheda e trascinala in alto o in basso per riordinarla.</string>
     <string name="groups">Gruppi</string>
+    <string name="group_contents_help">I tiri raggruppati hanno un ordine interno. Tieni premuto e trascina anche quelli.</string>
+    <string name="empty_group">Questo gruppo è vuoto.</string>
     <string name="rolls">Tiri</string>
+    <string name="roll_editor_help">Attiva, raggruppa, parametrizza e scala ogni tiro in modo indipendente.</string>
     <string name="new_group">Nuovo gruppo</string>
     <string name="group_name">Nome del gruppo</string>
     <string name="new_roll">Nuovo tiro</string>
     <string name="edit_roll">Modifica tiro</string>
     <string name="roll_name">Nome del tiro</string>
     <string name="expression">Espressione</string>
-    <string name="expression_hint">Esempio: 4d3+3d6+10 oppure 1d20+{Forza}</string>
+    <string name="expression_hint">Esempio: 4d3+3d6+10 oppure 1d20+{Forza}. Tocca una variabile per inserirla.</string>
     <string name="resolved_expression">Formula attuale</string>
     <string name="ungrouped">Senza gruppo</string>
     <string name="enabled">Attivo</string>
@@ -69,6 +76,7 @@
     <string name="add">Aggiungi</string>
     <string name="group">Gruppo</string>
     <string name="character_progression">Progressione personaggio</string>
+    <string name="level_auto_update_help">Cambiare livello aggiorna immediatamente tutti i tiri parametrizzati.</string>
     <string name="level_up">Sali di livello</string>
     <string name="level_down">Scendi di livello</string>
     <string name="modifiers">Modificatori</string>
@@ -77,6 +85,7 @@
     <string name="modifier_name">Nome modificatore</string>
     <string name="modifier_value">Valore</string>
     <string name="modifier_help">Usa i modificatori nei tiri tra parentesi graffe, ad esempio {Intelligenza}. {level} è sempre disponibile.</string>
+    <string name="modifier_in_use">Usato da uno o più tiri</string>
     <string name="duplicate_modifier">I nomi dei modificatori devono essere univoci e non possono essere “level”.</string>
     <string name="level_scaling">Progressione per livello</string>
     <string name="add_level_rule">Aggiungi regola di livello</string>
