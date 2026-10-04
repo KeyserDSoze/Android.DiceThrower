@@ -45,10 +45,10 @@ Salire di livello non riscrive i tiri: la formula effettiva viene risolta al mom
 
 La logica dati supporta duplicazione e cancellazione sicura del personaggio:
 
-- la duplicazione copia livello, tag, modificatori, gruppi, tiri e regole di livello;
-- tutti gli ID e i riferimenti tra gruppi e tiri vengono rimappati;
+- la duplicazione copia livello, tag, stili dei dadi, modificatori, gruppi, tiri e regole di livello;
+- tutti gli ID e i riferimenti tra stili, default, gruppi e tiri vengono rimappati;
 - lo storico non viene copiato nel duplicato;
-- la cancellazione rimuove a cascata modificatori, gruppi, tiri e log appartenenti al personaggio e ricompatta l'ordine dei personaggi rimasti.
+- la cancellazione rimuove a cascata stili, modificatori, gruppi, tiri e log appartenenti al personaggio e ricompatta l'ordine dei personaggi rimasti.
 
 ## Backup e ripristino
 
@@ -111,6 +111,8 @@ Il risultato numerico viene sempre deciso dal motore di dadi prima della grafica
 Le forme visuali includono geometrie dedicate per d2, d3, d4, d6, d10, d12, d20 e d100. Il d10/d100 usa una forma trapezoedrica e il d12 viene costruito come vero dodecaedro, duale dell'icosaedro. L'overlay mostra anche i risultati individuali e il totale.
 
 In modalità **Edit**, ogni personaggio dispone di una libreria ordinabile di stili riutilizzabili. Uno stile combina materiale (resina lucida/opaca, metallo o gemma), colore primario e secondario; l'editor mostra un d20 3D aggiornato in tempo reale e permette di scegliere lo stile predefinito del personaggio. Rinomina e duplicazione mantengono indipendenti gli stili, mentre la cancellazione pulisce in sicurezza eventuali riferimenti salvati.
+
+Gli stili possono anche essere copiati in blocco da un altro personaggio. La copia mantiene materiale/colori e, su richiesta, il ruolo di stile predefinito, ma assegna sempre nuovi ID al personaggio di destinazione: modifiche o cancellazioni successive non collegano mai le due librerie.
 
 ## Sviluppo
 
