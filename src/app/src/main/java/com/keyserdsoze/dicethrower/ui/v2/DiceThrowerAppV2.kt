@@ -1784,8 +1784,12 @@ private fun ConflictDialogV2(
     onKeepLocal: () -> Unit,
     onUseRemote: () -> Unit,
 ) {
+    val context = LocalContext.current
     val localTime = conflict.localUpdatedAt?.let { DateFormat.getDateTimeInstance().format(Date(it)) }
     val remoteTime = conflict.remoteUpdatedAt?.let { DateFormat.getDateTimeInstance().format(Date(it)) }
+    val changedAreasText = conflict.changedAreas.joinToString(", ") { area ->
+        context.getString(conflictAreaLabelResource(area))
+    }
     AlertDialog(
         onDismissRequest = {},
         title = {
@@ -1802,7 +1806,7 @@ private fun ConflictDialogV2(
                 if (conflict.changedAreas.isNotEmpty()) {
                     Text(
                         stringResource(R.string.sync_conflict_changes) + ": " +
-                            conflict.changedAreas.joinToString(", ") { conflictAreaLabel(it) },
+                            changedAreasText,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -1818,9 +1822,7 @@ private fun ConflictDialogV2(
     )
 }
 
-@Composable
-private fun conflictAreaLabel(area: ConflictArea): String = stringResource(
-    when (area) {
+private fun conflictAreaLabelResource(area: ConflictArea): Int = when (area) {
         ConflictArea.PROFILE -> R.string.conflict_area_profile
         ConflictArea.IMAGE -> R.string.conflict_area_image
         ConflictArea.MODIFIERS -> R.string.conflict_area_modifiers
@@ -1829,8 +1831,7 @@ private fun conflictAreaLabel(area: ConflictArea): String = stringResource(
         ConflictArea.HISTORY -> R.string.conflict_area_history
         ConflictArea.DELETION -> R.string.conflict_area_deletion
         ConflictArea.SETTINGS -> R.string.conflict_area_settings
-    },
-)
+    }
 
 private fun syncStatusLabel(status: SyncStatusKind): Int = when (status) {
     SyncStatusKind.LOCAL_ONLY -> R.string.sync_status_local_only
