@@ -9,7 +9,20 @@ require(versionParts.size == 3) { "VERSION must be MAJOR.MINOR.PATCH" }
 
 val signingKeyPath = System.getenv("DICETHROWER_KEYSTORE_PATH")
 val signingKeyPassword = System.getenv("DICETHROWER_KEYSTORE_PASSWORD")
+val requireStableSigning = providers.gradleProperty("requireStableSigning").orNull == "true"
 val googleWebClientId = System.getenv("DICETHROWER_GOOGLE_WEB_CLIENT_ID").orEmpty()
+
+require(signingKeyPath.isNullOrBlank() == signingKeyPassword.isNullOrBlank()) {
+    "DICETHROWER_KEYSTORE_PATH and DICETHROWER_KEYSTORE_PASSWORD must be configured together"
+}
+if (requireStableSigning) {
+    require(!signingKeyPath.isNullOrBlank() && !signingKeyPassword.isNullOrBlank()) {
+        "Stable signing is required: configure DICETHROWER_KEYSTORE_PATH and DICETHROWER_KEYSTORE_PASSWORD"
+    }
+    require(file(signingKeyPath).isFile) {
+        "Stable signing keystore does not exist at DICETHROWER_KEYSTORE_PATH"
+    }
+}
 
 android {
     namespace = "com.keyserdsoze.dicethrower"

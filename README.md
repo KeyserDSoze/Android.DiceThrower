@@ -84,6 +84,8 @@ Al primo avvio l'utente sceglie tra standalone e **Continua con Google**. La con
 
 La configurazione OAuth non è versionata nel repository. Le build abilitate alla connessione Google devono impostare `DICETHROWER_GOOGLE_WEB_CLIENT_ID` con il Web Client ID del progetto Google Auth Platform; senza questa variabile la modalità standalone resta disponibile e il tentativo Google mostra un errore di configurazione sicuro.
 
+Le release usano una chiave di firma stabile dedicata a Dice Thrower (alias `dicethrower`). Il keystore non viene versionato: vedere [docs/SIGNING.md](docs/SIGNING.md) per i secret richiesti, la verifica della firma e la gestione del certificato OAuth.
+
 Quando l'utente sceglie un'immagine, Dice Thrower ne copia i byte nello storage privato dell'app (massimo 10 MiB), calcola SHA-256 e riutilizza lo stesso asset per contenuti identici. Gli asset orfani vengono eliminati solo dopo una finestra di sicurezza di 7 giorni.
 
 Per la sincronizzazione multi-dispositivo, ogni grafo personaggio possiede un `updatedAt`, una revisione SHA-256 del contenuto canonico, l'ID casuale non personale dell'ultimo writer e l'eventuale revisione remota comune. Questi metadati funzionano anche in modalità standalone. Un nuovo collegamento Google viene marcato come `initialReconciliationPending`: la prima sync confronta sempre dati locali e Drive prima di considerare completata la riconciliazione.
