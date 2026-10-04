@@ -12,13 +12,15 @@
 
 ## Domain model
 
-`CharacterProfile`: id, name, imageUri, tag, level, order.
+`CharacterProfile`: id, name, imageUri, tag, level, order, defaultDiceStyleId.
 
 `CharacterModifier`: id, characterId, name, integer value, order.
 
 `RollGroup`: id, characterId, name, order.
 
-`RollDefinition`: id, characterId, name, base expression, groupId, enabled, order, levelRules.
+`RollDefinition`: id, characterId, name, base expression, groupId, enabled, order, levelRules, diceAppearance.
+
+`DiceStyle`: character-owned visual style with material, primary/secondary colors and stable ordering. Roll appearance policies reference style IDs and never participate in dice math.
 
 `RollLevelRule`: id, kind, trigger, expression.
 
@@ -88,7 +90,9 @@ The stored roll remains parametric. For every throw:
 4. normalize arithmetic signs;
 5. validate the final dice expression;
 6. generate the numerical result;
-7. store the fully resolved expression in the roll log.
+7. independently resolve a visual style for each stable die slot;
+8. publish the immutable result + resolved appearances to the visual layer;
+9. store the fully resolved expression in the roll log.
 
 Level-up therefore affects every parameterized roll immediately without mutating the roll definitions.
 
@@ -106,13 +110,15 @@ Supported sides: 2, 3, 4, 6, 10, 12, 20, 100.
 
 ## Persistence and migration
 
-The application stores one versioned JSON document in private SharedPreferences. Storage version 2 adds character level, modifiers and level rules.
+The application stores one versioned JSON document in private SharedPreferences. Storage version 3 includes the character-owned dice-style model and roll appearance policies introduced after version 2 added character level, modifiers and level rules.
 
 Version-1 data remains readable:
 
 - missing character level defaults to 1;
 - missing modifiers default to an empty list;
 - missing roll level rules default to an empty list.
+
+Version-1/2 data also receives safe dice-appearance defaults when read: missing style collections are empty and rolls use the deterministic built-in glossy-resin fallback until a character style is configured.
 
 The preference key remains unchanged so existing installations migrate transparently.
 
@@ -124,7 +130,11 @@ The accelerometer listener is active only while the roll screen is visible. A de
 
 ## 3D renderer
 
-A future 3D renderer consumes the already-produced numerical result. Physics/animation never decides the numerical result: the dice engine decides first, then the renderer visualizes it.
+The OpenGL ES 2.0 renderer consumes an already-produced numerical result plus the fully resolved appearance for each visible die. Physics/animation never decides the numerical result: the dice engine decides first, then the UI resolves appearance, then the renderer visualizes both.
+
+Renderer material profiles map the domain-level `GLOSSY_RESIN`, `MATTE_RESIN`, `METAL` and `GEMSTONE` values to lightweight shader parameters for ambient/diffuse/specular response, rim accents and gemstone inner glow. Both primary and secondary style colors feed the shader. Renderer fallback is deterministic and matches `DiceAppearanceResolver` defaults if a visual slot is unexpectedly missing.
+
+Appearance randomization uses a random source separate from the one passed to `DiceExpression.evaluate`, so choosing or randomizing a visual style cannot consume or alter dice-result RNG state.
 
 ## Localization
 

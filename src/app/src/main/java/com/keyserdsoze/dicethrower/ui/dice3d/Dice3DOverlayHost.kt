@@ -25,7 +25,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -35,8 +34,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.keyserdsoze.dicethrower.R
-import com.keyserdsoze.dicethrower.dice.DiceRollResult
 import com.keyserdsoze.dicethrower.dice.DiceRollVisualBus
+import com.keyserdsoze.dicethrower.dice.DiceRollVisualEvent
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -46,17 +45,15 @@ fun Dice3DOverlayHost(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    var activeResult by remember { mutableStateOf<DiceRollResult?>(null) }
-    var eventId by remember { mutableIntStateOf(0) }
+    var activeEvent by remember { mutableStateOf<DiceRollVisualEvent?>(null) }
     var showBreakdown by remember { mutableStateOf(false) }
     val mainHandler = remember { Handler(Looper.getMainLooper()) }
     val callback = remember {
-        { result: DiceRollResult ->
-            if (result.components.any { it.rolls.isNotEmpty() }) {
+        { event: DiceRollVisualEvent ->
+            if (event.result.components.any { it.rolls.isNotEmpty() }) {
                 mainHandler.post {
-                    activeResult = result
+                    activeEvent = event
                     showBreakdown = false
-                    eventId += 1
                 }
             }
             Unit
@@ -67,7 +64,7 @@ fun Dice3DOverlayHost(
         if (enabled) {
             DiceRollVisualBus.subscribe(callback)
         } else {
-            activeResult = null
+            activeEvent = null
             showBreakdown = false
         }
         onDispose {
@@ -76,12 +73,12 @@ fun Dice3DOverlayHost(
         }
     }
 
-    LaunchedEffect(enabled, eventId) {
-        if (enabled && eventId > 0) {
+    LaunchedEffect(enabled, activeEvent?.id) {
+        if (enabled && activeEvent != null) {
             delay(650)
             showBreakdown = true
             delay(1_500)
-            activeResult = null
+            activeEvent = null
             showBreakdown = false
         }
     }
@@ -90,18 +87,19 @@ fun Dice3DOverlayHost(
         content()
 
         AnimatedVisibility(
-            visible = enabled && activeResult != null,
+            visible = enabled && activeEvent != null,
             modifier = Modifier.align(Alignment.Center),
             enter = fadeIn() + scaleIn(initialScale = 0.92f),
             exit = fadeOut() + scaleOut(targetScale = 0.97f),
         ) {
-            activeResult?.let { result ->
+            activeEvent?.let { event ->
+                val result = event.result
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 18.dp)
                         .clickable {
-                            activeResult = null
+                            activeEvent = null
                             showBreakdown = false
                         },
                     shape = RoundedCornerShape(30.dp),
@@ -114,7 +112,7 @@ fun Dice3DOverlayHost(
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         Dice3DScene(
-                            result = result,
+                            event = event,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(280.dp),

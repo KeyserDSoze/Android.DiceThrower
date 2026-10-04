@@ -75,13 +75,16 @@ import com.keyserdsoze.dicethrower.AppLanguageOption
 import com.keyserdsoze.dicethrower.AppLocaleManager
 import com.keyserdsoze.dicethrower.R
 import com.keyserdsoze.dicethrower.data.LocalStore
+import com.keyserdsoze.dicethrower.dice.DiceAppearanceResolver
 import com.keyserdsoze.dicethrower.dice.DiceExpression
 import com.keyserdsoze.dicethrower.dice.DiceRollResult
+import com.keyserdsoze.dicethrower.dice.DiceRollVisualBus
 import com.keyserdsoze.dicethrower.dice.RollFormulaResolver
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.AppSettings
 import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterProfile
+import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.LevelRuleKind
 import com.keyserdsoze.dicethrower.model.RollButtonPosition
 import com.keyserdsoze.dicethrower.model.RollDefinition
@@ -93,6 +96,7 @@ import com.keyserdsoze.dicethrower.sensor.ShakeDetector
 import java.text.DateFormat
 import java.util.Date
 import java.util.UUID
+import kotlin.random.Random
 
 private enum class RouteV2 { CHARACTERS, CHARACTER, ROLL, SETTINGS, LOGS }
 
@@ -175,6 +179,7 @@ fun DiceThrowerAppV2(
                 RollScreenV2(
                     character = character,
                     modifiers = data.modifiers.filter { it.characterId == character.id },
+                    diceStyles = data.diceStyles,
                     roll = roll,
                     settings = settings,
                     onBack = { route = RouteV2.CHARACTER },
@@ -1157,6 +1162,7 @@ private fun RollEditorCardV2(
 private fun RollScreenV2(
     character: CharacterProfile,
     modifiers: List<CharacterModifier>,
+    diceStyles: List<DiceStyle>,
     roll: RollDefinition,
     settings: AppSettings,
     onBack: () -> Unit,
@@ -1166,10 +1172,19 @@ private fun RollScreenV2(
     val formula = remember(character.level, modifiers, roll) {
         RollFormulaResolver.resolve(character, modifiers, roll)
     }
+    val appearanceRandom = remember(roll.id) { Random(System.nanoTime()) }
     var outcome by remember(roll.id) { mutableStateOf<DiceRollResult?>(null) }
 
     fun throwDice() {
         val result = DiceExpression.parse(formula.expression).evaluate()
+        val appearances = DiceAppearanceResolver.resolve(
+            character = character,
+            styles = diceStyles,
+            appearance = roll.diceAppearance,
+            result = result,
+            random = appearanceRandom,
+        )
+        DiceRollVisualBus.publish(result, appearances)
         outcome = result
         onLogged(
             RollLog(
