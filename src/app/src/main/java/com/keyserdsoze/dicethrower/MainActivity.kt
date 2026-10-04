@@ -17,10 +17,12 @@ import com.keyserdsoze.dicethrower.data.CloudAccountTransitions
 import com.keyserdsoze.dicethrower.data.GoogleAccountIdentity
 import com.keyserdsoze.dicethrower.data.LocalStore
 import com.keyserdsoze.dicethrower.data.cloud.CloudRepositoryFactory
+import com.keyserdsoze.dicethrower.data.cloud.CloudRemoteRepository
 import com.keyserdsoze.dicethrower.data.sync.AndroidSyncLocalGateway
 import com.keyserdsoze.dicethrower.data.sync.CloudSyncEngine
 import com.keyserdsoze.dicethrower.data.sync.SyncConflict
 import com.keyserdsoze.dicethrower.data.sync.SyncConflictResolution
+import com.keyserdsoze.dicethrower.data.sync.SyncErrorKind
 import com.keyserdsoze.dicethrower.data.sync.SyncStatus
 import com.keyserdsoze.dicethrower.data.sync.SyncStatusKind
 import com.keyserdsoze.dicethrower.model.AppSettings
@@ -29,12 +31,14 @@ import com.keyserdsoze.dicethrower.ui.theme.DiceThrowerTheme
 import com.keyserdsoze.dicethrower.ui.v2.DiceThrowerAppV2
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
 
 class MainActivity : ComponentActivity() {
     private lateinit var store: LocalStore
     private lateinit var cloudAccountStore: CloudAccountStore
     private lateinit var googleAccountCoordinator: GoogleAccountCoordinator
     private lateinit var syncEngine: CloudSyncEngine
+    private lateinit var cloudRepository: CloudRemoteRepository
     private var settings by mutableStateOf(AppSettings())
     private var selectedLanguage by mutableStateOf(AppLocaleManager.SYSTEM)
     private var cloudAccountState by mutableStateOf(CloudAccountState())
@@ -44,6 +48,8 @@ class MainActivity : ComponentActivity() {
     private var syncStatus by mutableStateOf(SyncStatus(SyncStatusKind.LOCAL_ONLY))
     private var dataRefreshVersion by mutableStateOf(0)
     private var syncJob: Job? = null
+    private var cloudDeleteBusy by mutableStateOf(false)
+    private var cloudDeleteFailed by mutableStateOf(false)
 
     private val driveAuthorizationLauncher = registerForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult(),
@@ -69,9 +75,10 @@ class MainActivity : ComponentActivity() {
         googleAccountCoordinator = GoogleAccountCoordinator(this)
         settings = store.loadSettings()
         cloudAccountState = cloudAccountStore.load()
+        cloudRepository = CloudRepositoryFactory.create(this) { cloudAccountState }
         syncEngine = CloudSyncEngine(
             local = AndroidSyncLocalGateway(store),
-            remote = CloudRepositoryFactory.create(this) { cloudAccountState },
+            remote = cloudRepository,
         )
         syncStatus = syncEngine.currentStatus(cloudAccountState.googleConnected)
         selectedLanguage = AppLocaleManager.selectedLanguage(this)
@@ -89,6 +96,8 @@ class MainActivity : ComponentActivity() {
                         accountFlowBusy = accountFlowBusy,
                         accountFailure = accountFailure,
                         syncStatus = syncStatus,
+                        cloudDeleteBusy = cloudDeleteBusy,
+                        cloudDeleteFailed = cloudDeleteFailed,
                         dataRefreshVersion = dataRefreshVersion,
                         onSettingsChanged = {
                             settings = it
@@ -104,6 +113,7 @@ class MainActivity : ComponentActivity() {
                         },
                         onConnectGoogle = ::connectGoogle,
                         onDisconnectGoogle = ::disconnectGoogle,
+                        onDeleteCloudData = ::deleteCloudData,
                         onLanguageChanged = { code ->
                             if (code != selectedLanguage) {
                                 AppLocaleManager.setLanguage(this, code)
@@ -192,6 +202,42 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    private fun deleteCloudData() {
+        if (!cloudAccountState.googleConnected || cloudDeleteBusy) return
+        val email = cloudAccountState.account?.email ?: return
+        cloudDeleteBusy = true
+        cloudDeleteFailed = false
+        accountFailure = null
+        lifecycleScope.launch {
+            try {
+                cloudRepository.deleteAllData()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                cloudDeleteBusy = false
+                cloudDeleteFailed = true
+                return@launch
+            }
+
+            // Stop sync before revoking the grant so the intentionally deleted dataset cannot be re-uploaded.
+            updateCloudAccountState(CloudAccountTransitions.useStandalone())
+            syncStatus = SyncStatus(SyncStatusKind.LOCAL_ONLY)
+            googleAccountCoordinator.disconnect(
+                accountEmail = email,
+                onComplete = {
+                    lifecycleScope.launch {
+                        googleAccountCoordinator.clearCredentialSession()
+                        cloudDeleteBusy = false
+                    }
+                },
+                onFailure = {
+                    cloudDeleteBusy = false
+                    accountFailure = GoogleConnectionFailure.DISCONNECT
+                },
+            )
+        }
+    }
+
     private fun updateCloudAccountState(state: CloudAccountState) {
         cloudAccountState = state
         cloudAccountStore.save(state)
@@ -215,7 +261,13 @@ class MainActivity : ComponentActivity() {
         syncStatus = syncStatus.copy(kind = SyncStatusKind.SYNCING, error = null, conflicts = emptyList())
         syncJob = lifecycleScope.launch {
             val result = syncEngine.sync(settings.conflictPolicy, resolutions)
-            syncStatus = result.status
+            if (result.status.error == SyncErrorKind.AUTHORIZATION) {
+                updateCloudAccountState(CloudAccountTransitions.authorizationRevoked())
+                syncStatus = SyncStatus(SyncStatusKind.LOCAL_ONLY)
+                accountFailure = GoogleConnectionFailure.DRIVE_AUTHORIZATION
+            } else {
+                syncStatus = result.status
+            }
             if (result.localDataChanged) dataRefreshVersion++
             if (result.localSettingsChanged) settings = store.loadSettings()
             if (result.initialReconciliationComplete && cloudAccountState.initialReconciliationPending) {

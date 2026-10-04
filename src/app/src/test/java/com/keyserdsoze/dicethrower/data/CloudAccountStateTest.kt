@@ -54,6 +54,15 @@ class CloudAccountStateTest {
     }
 
     @Test
+    fun revokedAuthorizationFallsBackToStandalone() {
+        val fallback = CloudAccountTransitions.authorizationRevoked()
+
+        assertEquals(CloudMode.STANDALONE, fallback.mode)
+        assertFalse(fallback.googleConnected)
+        assertNull(fallback.account)
+    }
+
+    @Test
     fun noBackupFileStateRoundTripsWithoutTokens() {
         val directory = Files.createTempDirectory("dice-cloud-account").toFile()
         val file = directory.resolve("state.json")

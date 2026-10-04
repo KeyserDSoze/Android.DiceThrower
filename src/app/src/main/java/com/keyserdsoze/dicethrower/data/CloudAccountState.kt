@@ -44,6 +44,8 @@ object CloudAccountTransitions {
     )
 
     fun disconnect(): CloudAccountState = useStandalone()
+
+    fun authorizationRevoked(): CloudAccountState = useStandalone()
 }
 
 class CloudAccountStore(context: Context) {

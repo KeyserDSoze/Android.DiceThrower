@@ -36,7 +36,9 @@ This user-directed file operation does not itself perform a developer-operated d
 
 ## Optional Google account and Drive authorization
 
-Standalone remains a first-class mode. If the user explicitly connects Google, authentication uses Android Credential Manager and Drive authorization is requested separately through Google Play services with only `drive.appdata`. The app then syncs character graphs, portable images, revision/tombstone metadata and the deliberately roaming roll-button/log-retention preferences in Drive's hidden `appDataFolder` on resume and on explicit **Sync now**. Theme, shake and animation preferences remain device-local. Disconnect revokes authorization while preserving the complete local snapshot and does not itself delete remote data. Conflict-resolution policy/UI and the explicit remote-data lifecycle remain tracked in #11/#12 and require another Data Safety review before release.
+Standalone remains a first-class mode. If the user explicitly connects Google, authentication uses Android Credential Manager and Drive authorization is requested separately through Google Play services with only `drive.appdata`. The app then syncs character graphs, portable images, revision/tombstone metadata and the deliberately roaming roll-button/log-retention preferences in Drive's hidden `appDataFolder` on resume and on explicit **Sync now**. Theme, shake, animation and conflict-policy preferences remain device-local. Disconnect revokes authorization while preserving the complete local snapshot and does not itself delete remote data. Revoked authorization falls back safely to standalone without changing local data.
+
+Settings exposes a separate, confirmed **Delete Dice Thrower cloud data** action. It deletes only Dice Thrower-managed files from Drive `appDataFolder`, preserves local data, switches locally to standalone before any future sync can recreate those files, and then revokes the Drive grant. This is the explicit remote-data deletion path and is not performed by ordinary disconnect.
 
 ## Sensors
 
@@ -45,6 +47,8 @@ The accelerometer is used only while the roll screen is active when shake-to-rol
 ## Deletion
 
 Users can delete individual rolls and groups and clear roll history in the app. Character-level cascade deletion is implemented in the data layer. Uninstalling the application or clearing app storage removes the application's local data, subject to Android backup/restore behavior.
+
+Users who enabled optional Google sync can explicitly delete all Dice Thrower cloud data from Settings as described above. The operation is retry-safe and is scoped to this application's managed `appDataFolder` files.
 
 ## Re-review triggers
 

@@ -7,6 +7,7 @@ import com.keyserdsoze.dicethrower.data.PortableCharacterImageAsset
 import com.keyserdsoze.dicethrower.model.CharacterImageRef
 
 interface CloudRemoteRepository {
+    suspend fun deleteAllData(): Int
     suspend fun readManifest(): CloudManifest?
     suspend fun putManifest(manifest: CloudManifest)
     suspend fun listCharacters(): List<CloudCharacterMetadata>
@@ -22,6 +23,20 @@ interface CloudRemoteRepository {
 class DriveCloudRepository(
     private val transport: DriveAppDataTransport,
 ) : CloudRemoteRepository {
+    override suspend fun deleteAllData(): Int {
+        val files = managedFiles()
+        var deleted = 0
+        files.forEach { file ->
+            try {
+                transport.delete(file.id)
+                deleted++
+            } catch (_: CloudNotFoundException) {
+                // Deletion is idempotent: a previous partial attempt may already have removed it.
+            }
+        }
+        return deleted
+    }
+
     override suspend fun readManifest(): CloudManifest? {
         val file = findUnique(MANIFEST_KEY) ?: return null
         requireLogicalFile(file, KIND_MANIFEST, MANIFEST_KEY)
@@ -285,6 +300,7 @@ class GatedCloudRemoteRepository(
         return delegate
     }
 
+    override suspend fun deleteAllData() = connected().deleteAllData()
     override suspend fun readManifest() = connected().readManifest()
     override suspend fun putManifest(manifest: CloudManifest) = connected().putManifest(manifest)
     override suspend fun listCharacters() = connected().listCharacters()
