@@ -136,6 +136,12 @@ Renderer material profiles map the domain-level `GLOSSY_RESIN`, `MATTE_RESIN`, `
 
 Appearance randomization uses a random source separate from the one passed to `DiceExpression.evaluate`, so choosing or randomizing a visual style cannot consume or alter dice-result RNG state.
 
+## Dice style editor
+
+Character Edit mode exposes the character-owned `DiceStyle` collection without coupling the OpenGL renderer to persistence. `DiceStyleDataOperations` owns reference-safe create/update/duplicate/reorder/default/delete operations, while Compose edits domain values and persists the returned `AppData` through the existing screen boundary.
+
+The editor's d20 preview creates a visual-only `DiceRollVisualEvent` from the unsaved style values; it does not invoke `DiceExpression` and therefore cannot roll or consume numerical RNG. Deleting an in-use style requires explicit confirmation and then reuses the same cleanup rules as storage-level deletion so default and roll references remain valid.
+
 ## Localization
 
 The locale registry mirrors Android.ScreenLock's 40 languages. English and Italian are the reference translations while the UI vocabulary is still evolving.

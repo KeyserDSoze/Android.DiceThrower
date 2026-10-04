@@ -653,6 +653,14 @@ private fun CharacterEditContentV2(
         }
 
         item {
+            DiceStyleLibraryV2(
+                character = character,
+                data = data,
+                onDataChanged = onDataChanged,
+            )
+        }
+
+        item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,

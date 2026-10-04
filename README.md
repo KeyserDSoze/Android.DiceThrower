@@ -16,11 +16,12 @@ Dadi supportati nella prima versione: **d2, d3, d4, d6, d10, d12, d20, d100**.
 2. Modalità **Use** con dashboard composta dall'utente.
 3. Gruppi espandibili e tiri senza gruppo avviabili direttamente.
 4. Modalità **Edit** con long-press + drag per riordinare dashboard e contenuti dei gruppi.
-5. Editor visuale delle formule con chip per inserire `{level}` e i modificatori del personaggio nel punto del cursore.
-6. Lancio con pulsante configurabile oppure scuotendo il telefono.
-7. Animazione OpenGL ES dei dadi 3D, seguita da dettaglio dei singoli risultati e totale.
-8. Log locale con retention configurabile.
-9. Backup e restore locale validato tramite Android Storage Access Framework.
+5. Libreria di stili dei dadi per personaggio con materiali, due colori, stile predefinito e anteprima 3D live.
+6. Editor visuale delle formule con chip per inserire `{level}` e i modificatori del personaggio nel punto del cursore.
+7. Lancio con pulsante configurabile oppure scuotendo il telefono.
+8. Animazione OpenGL ES dei dadi 3D, seguita da dettaglio dei singoli risultati e totale.
+9. Log locale con retention configurabile.
+10. Backup e restore locale validato tramite Android Storage Access Framework.
 
 Il pulsante di lancio può essere nascosto oppure posizionato in alto/basso a sinistra, centro o destra.
 
@@ -51,7 +52,7 @@ La logica dati supporta duplicazione e cancellazione sicura del personaggio:
 
 ## Backup e ripristino
 
-Dice Thrower dispone di un formato backup JSON versionato e validato. Il backup contiene personaggi, modificatori, gruppi, tiri, regole di livello, storico e impostazioni.
+Dice Thrower dispone di un formato backup JSON versionato e validato. Il backup contiene personaggi, stili dei dadi, modificatori, gruppi, tiri, regole di livello, storico e impostazioni.
 
 La schermata **Backup & Restore** è raggiungibile anche dal long-press sull'icona launcher dell'app. Export e import usano esclusivamente il document picker Android: l'utente sceglie dove salvare o da dove leggere il file e l'app non richiede permessi storage generali né accesso Internet.
 
@@ -108,6 +109,8 @@ L'app supporta **Sistema / Chiaro / Scuro**. Anche il sito GitHub Pages usa tema
 Il risultato numerico viene sempre deciso dal motore di dadi prima della grafica. Un renderer **OpenGL ES 2.0** mostra poi l'animazione 3D senza poter alterare il risultato, mantenendo log e test deterministici.
 
 Le forme visuali includono geometrie dedicate per d2, d3, d4, d6, d10, d12, d20 e d100. Il d10/d100 usa una forma trapezoedrica e il d12 viene costruito come vero dodecaedro, duale dell'icosaedro. L'overlay mostra anche i risultati individuali e il totale.
+
+In modalità **Edit**, ogni personaggio dispone di una libreria ordinabile di stili riutilizzabili. Uno stile combina materiale (resina lucida/opaca, metallo o gemma), colore primario e secondario; l'editor mostra un d20 3D aggiornato in tempo reale e permette di scegliere lo stile predefinito del personaggio. Rinomina e duplicazione mantengono indipendenti gli stili, mentre la cancellazione pulisce in sicurezza eventuali riferimenti salvati.
 
 ## Sviluppo
 
