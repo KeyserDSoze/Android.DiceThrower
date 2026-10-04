@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">Backup e ripristino</string>
+    <string name="backup_restore_intro">Crea un backup locale di personaggi, variabili, tiri, regole di livello, impostazioni e storico. Dice Thrower non carica nulla online.</string>
+    <string name="backup_export_title">Esporta backup</string>
+    <string name="backup_export_description">Salva un backup JSON versionato tramite il selettore documenti di Android. Decidi tu dove conservare il file.</string>
+    <string name="backup_export_action">Salva file di backup</string>
+    <string name="backup_export_success">Backup salvato correttamente.</string>
+    <string name="backup_import_title">Ripristina backup</string>
+    <string name="backup_import_description">Scegli un backup di Dice Thrower. Il file viene validato prima di sostituire qualsiasi dato locale.</string>
+    <string name="backup_import_action">Scegli file di backup</string>
+    <string name="backup_import_confirm_title">Sostituire i dati locali di Dice Thrower?</string>
+    <string name="backup_import_confirm_body">Questo backup validato contiene %1$d personaggi e %2$d tiri. Il ripristino sostituirà dati e impostazioni locali attuali.</string>
+    <string name="backup_import_replace_action">Ripristina e riavvia</string>
+    <string name="backup_image_warning">I riferimenti alle immagini dei personaggi sono inclusi, ma gli URI dei documenti Android potrebbero non funzionare su un altro dispositivo. Le immagini incorporate e portabili arriveranno in una versione successiva del formato backup.</string>
+    <string name="backup_invalid_file">Il file non è un backup valido di Dice Thrower.</string>
+    <string name="backup_unknown_error">Impossibile completare l’operazione di backup.</string>
+    <string name="backup_shortcut_label">Backup e ripristino</string>
+    <string name="backup_shortcut_short">Backup</string>
+</resources>
