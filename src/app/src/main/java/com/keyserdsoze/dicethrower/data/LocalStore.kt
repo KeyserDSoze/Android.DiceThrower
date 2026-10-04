@@ -34,6 +34,17 @@ class LocalStore(context: Context) {
             .apply()
     }
 
+    fun replaceAll(
+        data: AppData,
+        settings: AppSettings,
+    ) {
+        AppDataValidator.requireValid(data)
+        prefs.edit()
+            .putString(KEY_DATA, AppDataJsonCodec.encodeData(data).toString())
+            .putString(KEY_SETTINGS, AppDataJsonCodec.encodeSettings(settings).toString())
+            .apply()
+    }
+
     companion object {
         private const val PREFS = "dice_thrower_store"
         private const val KEY_DATA = "data_v1"
