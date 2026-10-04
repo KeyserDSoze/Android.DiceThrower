@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.keyserdsoze.dicethrower.data.LocalStore
 import com.keyserdsoze.dicethrower.model.AppSettings
+import com.keyserdsoze.dicethrower.ui.dice3d.Dice3DOverlayHost
 import com.keyserdsoze.dicethrower.ui.theme.DiceThrowerTheme
 import com.keyserdsoze.dicethrower.ui.v2.DiceThrowerAppV2
 
@@ -32,23 +33,25 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             DiceThrowerTheme(themeMode = settings.themeMode) {
-                DiceThrowerAppV2(
-                    store = store,
-                    settings = settings,
-                    selectedLanguage = selectedLanguage,
-                    languageOptions = AppLocaleManager.supportedLanguages,
-                    onSettingsChanged = {
-                        settings = it
-                        store.saveSettings(it)
-                    },
-                    onLanguageChanged = { code ->
-                        if (code != selectedLanguage) {
-                            AppLocaleManager.setLanguage(this, code)
-                            selectedLanguage = code
-                            recreate()
-                        }
-                    },
-                )
+                Dice3DOverlayHost(enabled = settings.animationsEnabled) {
+                    DiceThrowerAppV2(
+                        store = store,
+                        settings = settings,
+                        selectedLanguage = selectedLanguage,
+                        languageOptions = AppLocaleManager.supportedLanguages,
+                        onSettingsChanged = {
+                            settings = it
+                            store.saveSettings(it)
+                        },
+                        onLanguageChanged = { code ->
+                            if (code != selectedLanguage) {
+                                AppLocaleManager.setLanguage(this, code)
+                                selectedLanguage = code
+                                recreate()
+                            }
+                        },
+                    )
+                }
             }
         }
     }
