@@ -18,7 +18,7 @@ Dadi supportati nella prima versione: **d2, d3, d4, d6, d10, d12, d20, d100**.
 4. Modalità **Edit** con long-press + drag per riordinare dashboard e contenuti dei gruppi.
 5. Editor visuale delle formule con chip per inserire `{level}` e i modificatori del personaggio nel punto del cursore.
 6. Lancio con pulsante configurabile oppure scuotendo il telefono.
-7. Risultato con dettaglio dei singoli dadi e totale.
+7. Animazione OpenGL ES dei dadi 3D, seguita da dettaglio dei singoli risultati e totale.
 8. Log locale con retention configurabile.
 
 Il pulsante di lancio può essere nascosto oppure posizionato in alto/basso a sinistra, centro o destra.
@@ -85,7 +85,9 @@ L'app supporta **Sistema / Chiaro / Scuro**. Anche il sito GitHub Pages usa tema
 
 ## Dadi 3D
 
-Il dominio e la schermata di tiro sono separati dal renderer. La UI attuale usa una visualizzazione Compose 2D; un renderer 3D potrà essere aggiunto senza cambiare parser, log o modello dati.
+Il risultato numerico viene sempre deciso dal motore di dadi prima della grafica. Un renderer **OpenGL ES 2.0** mostra poi l'animazione 3D senza poter alterare il risultato, mantenendo log e test deterministici.
+
+Le forme visuali includono geometrie dedicate per d2, d3, d4, d6, d10, d12, d20 e d100. Il d10/d100 usa una forma trapezoedrica e il d12 viene costruito come vero dodecaedro, duale dell'icosaedro. L'overlay mostra anche i risultati individuali e il totale.
 
 ## Sviluppo
 
@@ -93,6 +95,8 @@ Il dominio e la schermata di tiro sono separati dal renderer. La UI attuale usa 
 cd src
 gradle :app:testDebugUnitTest :app:assembleDebug
 ```
+
+La CI pubblica inoltre l'APK debug installabile come artifact GitHub Actions per 14 giorni.
 
 ## Sito
 
