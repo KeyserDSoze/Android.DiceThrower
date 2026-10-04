@@ -1,6 +1,5 @@
 package com.keyserdsoze.dicethrower.ui
 
-import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -60,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import com.keyserdsoze.dicethrower.AppLanguageOption
 import com.keyserdsoze.dicethrower.AppLocaleManager
 import com.keyserdsoze.dicethrower.R
+import com.keyserdsoze.dicethrower.data.CharacterImageAssetStore
 import com.keyserdsoze.dicethrower.data.LocalStore
 import com.keyserdsoze.dicethrower.dice.DiceAppearanceResolver
 import com.keyserdsoze.dicethrower.dice.DiceExpression
@@ -69,6 +69,7 @@ import com.keyserdsoze.dicethrower.dice.RollFormulaResolver
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.AppSettings
 import com.keyserdsoze.dicethrower.model.CharacterModifier
+import com.keyserdsoze.dicethrower.model.CharacterImageRef
 import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.LevelRuleKind
@@ -282,8 +283,13 @@ private fun CharactersScreen(
 @Composable
 private fun CharacterAvatar(character: CharacterProfile) {
     val context = LocalContext.current
-    val bitmap = remember(character.imageUri) {
-        character.imageUri?.let { raw ->
+    val bitmap = remember(character.image, character.imageUri) {
+        val portable = character.image?.let { ref ->
+            CharacterImageAssetStore(context).loadVerified(ref)?.let { bytes ->
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            }
+        }
+        portable ?: character.imageUri?.let { raw ->
             runCatching {
                 context.contentResolver.openInputStream(Uri.parse(raw)).use { stream ->
                     BitmapFactory.decodeStream(stream)
@@ -322,17 +328,18 @@ private fun CharacterDialog(
     var name by remember { mutableStateOf("") }
     var tag by remember { mutableStateOf("") }
     var levelText by remember { mutableStateOf("1") }
-    var imageUri by remember { mutableStateOf<String?>(null) }
+    var image by remember { mutableStateOf<CharacterImageRef?>(null) }
+    var imageImportFailed by remember { mutableStateOf(false) }
+    val imageAssetStore = remember(context) { CharacterImageAssetStore(context) }
 
     val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
-            runCatching {
-                context.contentResolver.takePersistableUriPermission(
-                    uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
-                )
-            }
-            imageUri = uri.toString()
+            runCatching { imageAssetStore.importFromUri(uri) }
+                .onSuccess {
+                    image = it
+                    imageImportFailed = false
+                }
+                .onFailure { imageImportFailed = true }
         }
     }
 
@@ -364,8 +371,15 @@ private fun CharacterDialog(
                 )
                 OutlinedButton(onClick = { imageLauncher.launch(arrayOf("image/*")) }) {
                     Text(
-                        if (imageUri == null) stringResource(R.string.choose_image)
+                        if (image == null) stringResource(R.string.choose_image)
                         else stringResource(R.string.image_selected),
+                    )
+                }
+                if (imageImportFailed) {
+                    Text(
+                        stringResource(R.string.image_import_failed),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             }
@@ -378,7 +392,7 @@ private fun CharacterDialog(
                         CharacterProfile(
                             id = UUID.randomUUID().toString(),
                             name = name.trim(),
-                            imageUri = imageUri,
+                            image = image,
                             tag = tag.trim(),
                             level = level ?: 1,
                             order = nextOrder,

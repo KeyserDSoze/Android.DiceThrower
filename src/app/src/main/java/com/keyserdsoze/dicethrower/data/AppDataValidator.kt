@@ -7,6 +7,7 @@ import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 object AppDataValidator {
     private val dieSlotRegex = Regex("""\d+:\d+""")
     private val revisionRegex = Regex("[0-9a-f]{64}")
+    private val imageAssetIdRegex = Regex("img_[0-9a-f]{64}")
 
     fun validate(data: AppData): List<String> {
         val errors = mutableListOf<String>()
@@ -30,6 +31,23 @@ object AppDataValidator {
         data.characters.forEach { character ->
             if (character.name.isBlank()) errors += "Character ${character.id} has a blank name"
             if (character.level < 1) errors += "Character ${character.id} has an invalid level"
+            character.image?.let { image ->
+                if (!imageAssetIdRegex.matches(image.assetId) || image.assetId != "img_${image.sha256}") {
+                    errors += "Character ${character.id} has an invalid image asset ID"
+                }
+                if (!revisionRegex.matches(image.sha256)) {
+                    errors += "Character ${character.id} has an invalid image hash"
+                }
+                if (!image.mimeType.startsWith("image/")) {
+                    errors += "Character ${character.id} has an invalid image MIME type"
+                }
+                if (image.byteSize !in 1L..CharacterImageAssets.MAX_IMAGE_BYTES.toLong()) {
+                    errors += "Character ${character.id} has an invalid image size"
+                }
+                if (character.imageUri != null) {
+                    errors += "Character ${character.id} has both portable and legacy image references"
+                }
+            }
 
             val modifiers = data.modifiers.filter { it.characterId == character.id }
             val normalizedNames = modifiers.map { it.name.trim().lowercase() }

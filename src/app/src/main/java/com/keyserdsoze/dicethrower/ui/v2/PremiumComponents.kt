@@ -52,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.keyserdsoze.dicethrower.R
+import com.keyserdsoze.dicethrower.data.CharacterImageAssetStore
 import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterProfile
 import kotlin.math.abs
@@ -129,8 +130,13 @@ fun CharacterAvatar(
     size: Int = 64,
 ) {
     val context = LocalContext.current
-    val bitmap = remember(character.imageUri) {
-        character.imageUri?.let { raw ->
+    val bitmap = remember(character.image, character.imageUri) {
+        val portable = character.image?.let { ref ->
+            CharacterImageAssetStore(context).loadVerified(ref)?.let { bytes ->
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            }
+        }
+        portable ?: character.imageUri?.let { raw ->
             runCatching {
                 context.contentResolver.openInputStream(Uri.parse(raw)).use { stream ->
                     BitmapFactory.decodeStream(stream)

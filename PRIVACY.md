@@ -14,7 +14,7 @@ Dice Thrower does **not** require an account and does not collect, sell, share, 
 
 ## Local app data
 
-Character names, optional character images selected by the user, free-form tags, dice-roll definitions, dashboard organization, settings, roll history, and synchronization revision metadata are stored locally on the device. The app also creates a random, non-personal installation writer ID used only to mark local revisions; that installation ID is stored in Android's private no-backup area so it is not restored by Android Auto Backup. The app does not upload this information to a server in the current release.
+Character names, optional character images selected by the user, free-form tags, dice-roll definitions, dashboard organization, settings, roll history, and synchronization revision metadata are stored locally on the device. Selected character images are copied into the app's private storage so they can be included in user-requested backups; the app stores their MIME type, size and cryptographic content hash for integrity/deduplication. The app also creates a random, non-personal installation writer ID used only to mark local revisions; that installation ID is stored in Android's private no-backup area so it is not restored by Android Auto Backup. The app does not upload this information to a server in the current release.
 
 ## Network access
 

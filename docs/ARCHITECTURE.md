@@ -12,7 +12,7 @@
 
 ## Domain model
 
-`CharacterProfile`: id, name, imageUri, tag, level, order, defaultDiceStyleId.
+`CharacterProfile`: id, name, portable `CharacterImageRef` (plus legacy `imageUri` migration source), tag, level, order, defaultDiceStyleId.
 
 `CharacterModifier`: id, characterId, name, integer value, order.
 
@@ -110,7 +110,7 @@ Supported sides: 2, 3, 4, 6, 10, 12, 20, 100.
 
 ## Persistence and migration
 
-The application stores one versioned JSON document in private SharedPreferences. Storage version 4 adds per-character sync metadata on top of version 3's character-owned dice-style model and roll appearance policies; version 2 introduced character level, modifiers and level rules.
+The application stores one versioned JSON document in private SharedPreferences. Storage version 5 adds portable character-image references on top of version 4's per-character sync metadata. Version 3 introduced the character-owned dice-style model and roll appearance policies; version 2 added character level, modifiers and level rules.
 
 Version-1 data remains readable:
 
@@ -122,9 +122,19 @@ Version-1/2 data also receives safe dice-appearance defaults when read: missing 
 
 Version-1/2/3 data has no sync metadata. `LocalStore` migrates it lazily on first read by computing the current character revision, assigning a local `updatedAt` and recording the installation writer ID. The existing preference key remains unchanged.
 
+Version-1 through version-4 characters may still contain a document `imageUri`. On load, the image layer attempts a lazy import while that URI remains readable. A successful import writes an app-owned asset and clears the URI; a failed import leaves the legacy character untouched so the UI can still attempt the old URI or fall back to initials.
+
+## Portable character images
+
+New character images are copied immediately into private `filesDir/character-images`. `CharacterImageRef` stores a deterministic `img_<sha256>` asset ID, SHA-256 content identity, normalized image MIME type and byte size; imports are capped at 10 MiB. Content-derived IDs deduplicate identical bytes without relying on source-device URIs.
+
+Reads verify size and hash before returning bytes. Missing or corrupt files therefore produce the normal avatar fallback instead of invalidating the character. Unreferenced local files are retained for seven days before deletion, which makes cancelled edits/deletes recoverable from short-lived state while still bounding orphan storage. The same portable asset envelope is intentionally provider-neutral so the later Drive `appDataFolder` repository can upload/download the exact validated bytes rather than any `content://` URI.
+
+Manual backup format v2 embeds only referenced assets as Base64 and validates every character reference against asset ID, size and SHA-256 during encode/decode. Both backup v2 and the provider-neutral sync serializer explicitly omit legacy document URIs. Format v1 remains accepted for backward compatibility. Restoring v2 writes verified assets before committing character data.
+
 ## Sync metadata foundation
 
-Each character owns a `CharacterSyncMetadata` record covering the complete character graph (profile, modifiers, groups, rolls/rules/appearance, dice styles and roll log). `CharacterRevision` canonicalizes that graph with explicit length-prefixed fields and stable ID/key ordering, then hashes UTF-8 bytes with SHA-256. Metadata itself is excluded from the content hash.
+Each character owns a `CharacterSyncMetadata` record covering the complete character graph (profile including portable image identity, modifiers, groups, rolls/rules/appearance, dice styles and roll log). `CharacterRevision` canonicalizes that graph with explicit length-prefixed fields and stable ID/key ordering, then hashes UTF-8 bytes with SHA-256. Metadata itself is excluded from the content hash.
 
 `LocalStore` is the stamping boundary. Unchanged content preserves revision, `updatedAt` and last-writer identity; changed content receives a new revision, the current installation writer ID and a monotonic local `updatedAt`. The random installation writer ID lives in Android's private `noBackupFilesDir`, survives app restarts, is excluded from Android Auto Backup and is reset with the installation. Manual backups preserve character revision/base metadata but do not replace the destination installation's own writer identity.
 

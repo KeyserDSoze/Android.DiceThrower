@@ -21,6 +21,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.Base64
 
 class AppBackupCodecTest {
     @Test
@@ -47,7 +48,7 @@ class AppBackupCodecTest {
         assertEquals(settings, decoded.settings)
         assertEquals("it", decoded.language)
         assertEquals(123456789L, decoded.exportedAt)
-        assertTrue(raw.contains("\"imageMode\": \"uri-reference\""))
+        assertTrue(raw.contains("\"imageMode\": \"portable-assets\""))
         assertTrue(raw.contains("\"diceStyles\""))
         assertTrue(raw.contains("\"characterSyncMetadata\""))
     }
@@ -128,13 +129,110 @@ class AppBackupCodecTest {
         assertTrue(AppDataValidator.validate(migrated).isEmpty())
     }
 
+    @Test
+    fun portableImageRoundTripRestoresValidatedBytes() {
+        val bytes = "portable portrait".toByteArray()
+        val ref = CharacterImageAssets.createRef(bytes, "image/png")
+        val data = SyncMetadataManager.ensureMetadata(
+            AppData(
+                characters = listOf(
+                    CharacterProfile(id = "portable-character", name = "Portable", image = ref),
+                ),
+            ),
+            writerId = "writer",
+            now = 100L,
+        )
+        val raw = AppBackupCodec.encode(
+            data = data,
+            settings = AppSettings(),
+            language = "en",
+            exportedAt = 200L,
+            imageAssets = listOf(PortableCharacterImageAsset(ref, bytes)),
+        )
+
+        val decoded = AppBackupCodec.decode(raw)
+
+        assertEquals(data, decoded.data)
+        assertEquals(ref, decoded.data.characters.single().image)
+        assertTrue(decoded.imageAssets.single().bytes.contentEquals(bytes))
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun backupRejectsMissingPortableImageAsset() {
+        val bytes = "portrait".toByteArray()
+        val ref = CharacterImageAssets.createRef(bytes, "image/webp")
+        val data = SyncMetadataManager.ensureMetadata(
+            AppData(characters = listOf(CharacterProfile(id = "character", name = "Hero", image = ref))),
+            "writer",
+            1L,
+        )
+
+        AppBackupCodec.encode(data, AppSettings(), "en", imageAssets = emptyList())
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun backupRejectsCorruptPortableImageBytes() {
+        val bytes = "portrait".toByteArray()
+        val ref = CharacterImageAssets.createRef(bytes, "image/jpeg")
+        val data = SyncMetadataManager.ensureMetadata(
+            AppData(characters = listOf(CharacterProfile(id = "character", name = "Hero", image = ref))),
+            "writer",
+            1L,
+        )
+        val root = JSONObject(
+            AppBackupCodec.encode(
+                data,
+                AppSettings(),
+                "en",
+                imageAssets = listOf(PortableCharacterImageAsset(ref, bytes)),
+            ),
+        )
+        root.getJSONArray("imageAssets").getJSONObject(0)
+            .put("base64", Base64.getEncoder().encodeToString("tampered".toByteArray()))
+
+        AppBackupCodec.decode(root.toString())
+    }
+
+    @Test
+    fun versionOneBackupStillReadsLegacyImageUri() {
+        val legacyData = JSONObject()
+            .put("characters", org.json.JSONArray().put(
+                JSONObject()
+                    .put("id", "legacy")
+                    .put("name", "Legacy")
+                    .put("imageUri", "content://legacy/portrait"),
+            ))
+            .put("groups", org.json.JSONArray())
+            .put("rolls", org.json.JSONArray())
+            .put("logs", org.json.JSONArray())
+            .put("characterSyncMetadata", org.json.JSONArray().put(
+                JSONObject()
+                    .put("characterId", "legacy")
+                    .put("updatedAt", 50L)
+                    .put("revision", "a".repeat(64))
+                    .put("writerId", "old-writer"),
+            ))
+        val raw = JSONObject()
+            .put("format", AppBackupCodec.FORMAT)
+            .put("formatVersion", 1)
+            .put("data", legacyData)
+            .put("settings", JSONObject())
+            .toString()
+
+        val decoded = AppBackupCodec.decode(raw)
+
+        assertEquals("content://legacy/portrait", decoded.data.characters.single().imageUri)
+        assertNull(decoded.data.characters.single().image)
+        assertTrue(decoded.data.characterSyncMetadata.isEmpty())
+        assertTrue(decoded.imageAssets.isEmpty())
+    }
+
     private fun sampleData(): AppData {
         val data = AppData(
         characters = listOf(
             CharacterProfile(
                 id = "character",
                 name = "Alyndra",
-                imageUri = "content://example/portrait",
                 tag = "Arcane",
                 level = 8,
                 order = 0,

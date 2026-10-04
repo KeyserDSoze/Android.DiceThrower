@@ -10,6 +10,7 @@
     <string name="level">Livello</string>
     <string name="choose_image">Scegli immagine</string>
     <string name="image_selected">Immagine selezionata</string>
+    <string name="image_import_failed">Impossibile importare l’immagine selezionata. Scegli un’altra immagine fino a 10 MiB.</string>
     <string name="create">Crea</string>
     <string name="save">Salva</string>
     <string name="cancel">Annulla</string>

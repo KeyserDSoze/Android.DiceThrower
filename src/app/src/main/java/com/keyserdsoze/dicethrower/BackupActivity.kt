@@ -66,7 +66,7 @@ class BackupActivity : ComponentActivity() {
                     store = store,
                     onClose = { finish() },
                     onRestoreCommitted = { payload ->
-                        store.replaceAll(payload.data, payload.settings)
+                        store.replaceAll(payload.data, payload.settings, payload.imageAssets)
                         AppLocaleManager.setLanguage(this, payload.language)
                         val restart = Intent(this, MainActivity::class.java).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -97,10 +97,12 @@ private fun BackupScreen(
     ) { uri ->
         if (uri != null) {
             runCatching {
+                val data = store.loadData()
                 val raw = AppBackupCodec.encode(
-                    data = store.loadData(),
+                    data = data,
                     settings = store.loadSettings(),
                     language = AppLocaleManager.selectedLanguage(context),
+                    imageAssets = store.backupImageAssets(data),
                 )
                 context.contentResolver.openOutputStream(uri, "wt")?.bufferedWriter().use { writer ->
                     requireNotNull(writer) { "Unable to open backup destination" }
