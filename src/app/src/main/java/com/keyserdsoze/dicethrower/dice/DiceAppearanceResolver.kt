@@ -28,7 +28,7 @@ object DiceAppearanceResolver {
         styles: List<DiceStyle>,
         appearance: RollDiceAppearance,
         result: DiceRollResult,
-        random: Random = Random.Default,
+        random: Random = Random(System.nanoTime()),
     ): List<ResolvedDiceAppearance> {
         val ownedStyles = styles
             .filter { it.characterId == character.id }

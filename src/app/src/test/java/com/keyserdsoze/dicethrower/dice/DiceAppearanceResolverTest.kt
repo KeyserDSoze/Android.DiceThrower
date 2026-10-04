@@ -131,6 +131,29 @@ class DiceAppearanceResolverTest {
         assertEquals(DiceAppearanceResolver.defaultPrimaryColorArgb, resolved.primaryColorArgb)
     }
 
+    @Test
+    fun resolvingRandomAppearanceDoesNotConsumeTheDiceEngineRandom() {
+        val engineWithAppearance = Random(20261004)
+        val engineWithoutAppearance = Random(20261004)
+        val expression = DiceExpression.parse("3d6+1d20")
+
+        val firstWithAppearance = expression.evaluate(engineWithAppearance)
+        DiceAppearanceResolver.resolve(
+            character = character,
+            styles = listOf(blue, steel),
+            appearance = RollDiceAppearance(mode = DiceAppearanceMode.RANDOM_PER_DIE),
+            result = firstWithAppearance,
+            random = Random(99),
+        )
+        val secondWithAppearance = expression.evaluate(engineWithAppearance)
+
+        val firstWithoutAppearance = expression.evaluate(engineWithoutAppearance)
+        val secondWithoutAppearance = expression.evaluate(engineWithoutAppearance)
+
+        assertEquals(firstWithoutAppearance, firstWithAppearance)
+        assertEquals(secondWithoutAppearance, secondWithAppearance)
+    }
+
     private fun resolve(
         appearance: RollDiceAppearance,
         random: Random = Random(1),

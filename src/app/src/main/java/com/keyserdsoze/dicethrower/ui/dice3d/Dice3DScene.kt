@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.keyserdsoze.dicethrower.dice.DiceRollResult
+import com.keyserdsoze.dicethrower.dice.DiceRollVisualEvent
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -25,21 +25,21 @@ import kotlin.math.sqrt
 
 @Composable
 fun Dice3DScene(
-    result: DiceRollResult,
+    event: DiceRollVisualEvent,
     modifier: Modifier = Modifier,
 ) {
     AndroidView(
         modifier = modifier.clip(RoundedCornerShape(24.dp)),
         factory = { context ->
-            DiceGLView(context).also { it.setResult(result) }
+            DiceGLView(context).also { it.setEvent(event) }
         },
-        update = { view -> view.setResult(result) },
+        update = { view -> view.setEvent(event) },
     )
 }
 
 private class DiceGLView(context: Context) : GLSurfaceView(context) {
     private val diceRenderer = DiceSceneRenderer()
-    private var lastSignature: String? = null
+    private var lastEventId: Long? = null
 
     init {
         setEGLContextClientVersion(2)
@@ -49,20 +49,10 @@ private class DiceGLView(context: Context) : GLSurfaceView(context) {
         renderMode = RENDERMODE_CONTINUOUSLY
     }
 
-    fun setResult(result: DiceRollResult) {
-        val signature = buildString {
-            append(result.total)
-            append(':')
-            result.components.forEach { component ->
-                append(component.sides)
-                append('=')
-                append(component.rolls.joinToString(","))
-                append(';')
-            }
-        }
-        if (signature == lastSignature) return
-        lastSignature = signature
-        queueEvent { diceRenderer.setResult(result) }
+    fun setEvent(event: DiceRollVisualEvent) {
+        if (event.id == lastEventId) return
+        lastEventId = event.id
+        queueEvent { diceRenderer.setEvent(event) }
     }
 
     override fun onDetachedFromWindow() {
@@ -75,6 +65,7 @@ private data class VisualDie(
     val sides: Int,
     val value: Int,
     val phase: Float,
+    val renderStyle: DiceRenderStyle,
 )
 
 private data class GpuMesh(
@@ -89,7 +80,10 @@ private class DiceSceneRenderer : GLSurfaceView.Renderer {
     private var normalHandle = 0
     private var mvpHandle = 0
     private var modelHandle = 0
-    private var colorHandle = 0
+    private var primaryColorHandle = 0
+    private var secondaryColorHandle = 0
+    private var materialLightingHandle = 0
+    private var materialAccentHandle = 0
 
     private val projection = FloatArray(16)
     private val view = FloatArray(16)
@@ -101,16 +95,19 @@ private class DiceSceneRenderer : GLSurfaceView.Renderer {
     private var dice: List<VisualDie> = emptyList()
     private var animationStartedAt = SystemClock.elapsedRealtimeNanos()
 
-    fun setResult(result: DiceRollResult) {
+    fun setEvent(event: DiceRollVisualEvent) {
+        val appearanceBySlot = event.appearances.associateBy { it.slotKey }
         dice = buildList {
-            result.components.forEach { component ->
+            event.result.components.forEachIndexed { componentIndex, component ->
                 component.rolls.forEachIndexed { index, value ->
                     if (size < MAX_VISIBLE_DICE) {
+                        val slotKey = "$componentIndex:$index"
                         add(
                             VisualDie(
                                 sides = component.sides,
                                 value = value,
                                 phase = ((component.sides * 37 + value * 19 + index * 53) % 360).toFloat(),
+                                renderStyle = DiceRenderStyleFactory.create(appearanceBySlot[slotKey]),
                             ),
                         )
                     }
@@ -131,7 +128,10 @@ private class DiceSceneRenderer : GLSurfaceView.Renderer {
         normalHandle = GLES20.glGetAttribLocation(program, "aNormal")
         mvpHandle = GLES20.glGetUniformLocation(program, "uMvp")
         modelHandle = GLES20.glGetUniformLocation(program, "uModel")
-        colorHandle = GLES20.glGetUniformLocation(program, "uColor")
+        primaryColorHandle = GLES20.glGetUniformLocation(program, "uPrimaryColor")
+        secondaryColorHandle = GLES20.glGetUniformLocation(program, "uSecondaryColor")
+        materialLightingHandle = GLES20.glGetUniformLocation(program, "uMaterialLighting")
+        materialAccentHandle = GLES20.glGetUniformLocation(program, "uMaterialAccent")
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -195,8 +195,35 @@ private class DiceSceneRenderer : GLSurfaceView.Renderer {
             GLES20.glUniformMatrix4fv(mvpHandle, 1, false, mvp, 0)
             GLES20.glUniformMatrix4fv(modelHandle, 1, false, model, 0)
 
-            val color = dieColor(die.sides, index)
-            GLES20.glUniform4f(colorHandle, color[0], color[1], color[2], 1f)
+            val style = die.renderStyle
+            GLES20.glUniform4f(
+                primaryColorHandle,
+                style.primary.red,
+                style.primary.green,
+                style.primary.blue,
+                style.primary.alpha,
+            )
+            GLES20.glUniform4f(
+                secondaryColorHandle,
+                style.secondary.red,
+                style.secondary.green,
+                style.secondary.blue,
+                style.secondary.alpha,
+            )
+            GLES20.glUniform4f(
+                materialLightingHandle,
+                style.lighting.ambient,
+                style.lighting.diffuse,
+                style.lighting.specular,
+                style.lighting.shininess,
+            )
+            GLES20.glUniform4f(
+                materialAccentHandle,
+                style.lighting.rim,
+                style.lighting.accentMix,
+                style.lighting.innerGlow,
+                0f,
+            )
             GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, gpuMesh.vertexCount)
         }
 
@@ -210,24 +237,6 @@ private class DiceSceneRenderer : GLSurfaceView.Renderer {
             positions = mesh.positions.toFloatBuffer(),
             normals = mesh.normals.toFloatBuffer(),
             vertexCount = mesh.vertexCount,
-        )
-    }
-
-    private fun dieColor(sides: Int, index: Int): FloatArray {
-        val palette = when (sides) {
-            2, 3 -> floatArrayOf(0.26f, 0.69f, 0.96f)
-            4, 6 -> floatArrayOf(0.20f, 0.48f, 0.94f)
-            8, 10 -> floatArrayOf(0.38f, 0.31f, 0.92f)
-            12 -> floatArrayOf(0.55f, 0.27f, 0.88f)
-            20 -> floatArrayOf(0.20f, 0.64f, 0.98f)
-            100 -> floatArrayOf(0.86f, 0.61f, 0.22f)
-            else -> floatArrayOf(0.35f, 0.55f, 0.95f)
-        }
-        val variation = 1f - (index % 3) * 0.055f
-        return floatArrayOf(
-            (palette[0] * variation).coerceAtMost(1f),
-            (palette[1] * variation).coerceAtMost(1f),
-            (palette[2] * variation).coerceAtMost(1f),
         )
     }
 
@@ -294,18 +303,33 @@ private class DiceSceneRenderer : GLSurfaceView.Renderer {
 
         private const val FRAGMENT_SHADER = """
             precision mediump float;
-            uniform vec4 uColor;
+            uniform vec4 uPrimaryColor;
+            uniform vec4 uSecondaryColor;
+            uniform vec4 uMaterialLighting;
+            uniform vec4 uMaterialAccent;
             varying vec3 vNormal;
             varying vec3 vPosition;
 
             void main() {
                 vec3 normal = normalize(vNormal);
                 vec3 lightDirection = normalize(vec3(0.35, 0.78, 0.72));
+                vec3 viewDirection = normalize(vec3(0.0, 0.0, 6.5) - vPosition);
+                vec3 halfDirection = normalize(lightDirection + viewDirection);
                 float diffuse = max(dot(normal, lightDirection), 0.0);
-                float facing = pow(1.0 - abs(normal.z), 2.0);
-                float light = 0.30 + diffuse * 0.72 + facing * 0.18;
-                vec3 goldTint = vec3(1.0, 0.73, 0.30) * facing * 0.10;
-                gl_FragColor = vec4(uColor.rgb * light + goldTint, uColor.a);
+                float specular = pow(max(dot(normal, halfDirection), 0.0), uMaterialLighting.w);
+                float rim = pow(1.0 - max(dot(normal, viewDirection), 0.0), 2.0);
+                float accentAmount = clamp(
+                    uMaterialAccent.y * (0.20 + diffuse * 0.30) + rim * uMaterialAccent.x,
+                    0.0,
+                    0.82
+                );
+                vec3 baseColor = mix(uPrimaryColor.rgb, uSecondaryColor.rgb, accentAmount);
+                float surfaceLight = uMaterialLighting.x + diffuse * uMaterialLighting.y;
+                vec3 highlight = uSecondaryColor.rgb * specular * uMaterialLighting.z;
+                vec3 innerGlow = mix(uPrimaryColor.rgb, uSecondaryColor.rgb, 0.55)
+                    * (1.0 - diffuse) * uMaterialAccent.z;
+                vec3 color = baseColor * surfaceLight + highlight + innerGlow;
+                gl_FragColor = vec4(clamp(color, 0.0, 1.0), uPrimaryColor.a);
             }
         """
     }

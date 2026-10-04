@@ -71,7 +71,7 @@ class DiceExpression private constructor(
             total = components.sumOf { it.subtotal } + constantTotal,
             components = components,
             constantTotal = constantTotal,
-        ).also(DiceRollVisualBus::publish)
+        )
     }
 
     companion object {
