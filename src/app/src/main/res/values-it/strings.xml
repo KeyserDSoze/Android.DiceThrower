@@ -22,6 +22,13 @@
     <string name="connecting_google">Connessione…</string>
     <string name="onboarding_standalone_reassurance">Puoi collegare o scollegare Google in seguito dalle Impostazioni senza eliminare i personaggi locali.</string>
     <string name="account_and_sync">Account e sincronizzazione</string>
+    <string name="sync_now">Sincronizza ora</string>
+    <string name="sync_status_local_only">Sync: solo locale</string>
+    <string name="sync_status_synced">Sync: aggiornato</string>
+    <string name="sync_status_pending">Sync: modifiche in attesa</string>
+    <string name="sync_status_syncing">Sync: sincronizzazione…</string>
+    <string name="sync_status_error">Sync: non disponibile — le modifiche locali sono al sicuro</string>
+    <string name="sync_status_conflict">Sync: conflitto da verificare</string>
     <string name="standalone_mode">Modalità standalone</string>
     <string name="standalone_settings_help">Tutte le funzioni restano disponibili in locale. Collega Google solo se vuoi la sincronizzazione cloud.</string>
     <string name="google_account">Account Google</string>

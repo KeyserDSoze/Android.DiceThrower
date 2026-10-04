@@ -20,11 +20,11 @@ Character names, optional character images selected by the user, free-form tags,
 
 If the user explicitly chooses **Continue with Google**, Dice Thrower uses Google Identity through Android Credential Manager. The app keeps only the Google account's stable identifier, email address and optional display name needed to show connection state. This small record is stored in Android's private no-backup area. Dice Thrower does not store the Google password, ID token, Drive access token or raw credentials.
 
-Google Drive authorization is requested separately and is limited to the private `drive.appdata` scope. The account can be disconnected later; disconnecting revokes this app-data authorization but does not delete local Dice Thrower data. Character upload/download is not implemented by the account-onboarding feature itself and will use this authorization only when the Drive repository/sync features are enabled.
+Google Drive authorization is requested separately and is limited to the private `drive.appdata` scope. When Google is connected, Dice Thrower synchronizes character data, portable character images, revision/deletion metadata and selected roaming preferences through Drive's hidden app-specific data folder on app resume and when the user chooses **Sync now**. Theme, shake and animation preferences remain local to each device. The account can be disconnected later; disconnecting revokes this app-data authorization but does not delete local or already-synchronized remote Dice Thrower data.
 
 ## Network access
 
-The application requests Internet access so an explicitly chosen Google sign-in/authorization flow can contact Google services. Core Dice Thrower features remain offline-first and standalone mode does not require a network connection. The app has no advertising, analytics or tracking backend.
+The application requests Internet access so an explicitly chosen Google sign-in/authorization flow and the optional Drive synchronization can contact Google services. Core Dice Thrower features remain offline-first and standalone mode does not require a network connection. The app has no advertising, analytics or tracking backend.
 
 ## Sensors
 

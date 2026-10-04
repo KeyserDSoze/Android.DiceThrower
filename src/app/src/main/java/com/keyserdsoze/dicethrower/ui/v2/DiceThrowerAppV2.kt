@@ -59,6 +59,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -80,6 +81,8 @@ import com.keyserdsoze.dicethrower.R
 import com.keyserdsoze.dicethrower.data.CharacterImageAssetStore
 import com.keyserdsoze.dicethrower.data.CloudAccountState
 import com.keyserdsoze.dicethrower.data.LocalStore
+import com.keyserdsoze.dicethrower.data.sync.SyncStatus
+import com.keyserdsoze.dicethrower.data.sync.SyncStatusKind
 import com.keyserdsoze.dicethrower.dice.DiceAppearanceResolver
 import com.keyserdsoze.dicethrower.dice.DiceExpression
 import com.keyserdsoze.dicethrower.dice.DiceRollResult
@@ -131,7 +134,11 @@ fun DiceThrowerAppV2(
     cloudAccountState: CloudAccountState,
     accountFlowBusy: Boolean,
     accountFailure: GoogleConnectionFailure?,
+    syncStatus: SyncStatus,
+    dataRefreshVersion: Int,
     onSettingsChanged: (AppSettings) -> Unit,
+    onLocalDataChanged: () -> Unit,
+    onSyncNow: () -> Unit,
     onUseStandalone: () -> Unit,
     onConnectGoogle: () -> Unit,
     onDisconnectGoogle: () -> Unit,
@@ -155,6 +162,11 @@ fun DiceThrowerAppV2(
 
     fun persist(updated: AppData) {
         data = store.saveData(updated)
+        onLocalDataChanged()
+    }
+
+    LaunchedEffect(dataRefreshVersion) {
+        if (dataRefreshVersion > 0) data = store.loadData()
     }
 
     when (route) {
@@ -223,7 +235,9 @@ fun DiceThrowerAppV2(
             cloudAccountState = cloudAccountState,
             accountFlowBusy = accountFlowBusy,
             accountFailure = accountFailure,
+            syncStatus = syncStatus,
             onSettingsChanged = onSettingsChanged,
+            onSyncNow = onSyncNow,
             onConnectGoogle = onConnectGoogle,
             onDisconnectGoogle = onDisconnectGoogle,
             onLanguageChanged = onLanguageChanged,
@@ -1472,7 +1486,9 @@ private fun SettingsScreenV2(
     cloudAccountState: CloudAccountState,
     accountFlowBusy: Boolean,
     accountFailure: GoogleConnectionFailure?,
+    syncStatus: SyncStatus,
     onSettingsChanged: (AppSettings) -> Unit,
+    onSyncNow: () -> Unit,
     onConnectGoogle: () -> Unit,
     onDisconnectGoogle: () -> Unit,
     onLanguageChanged: (String) -> Unit,
@@ -1560,6 +1576,21 @@ private fun SettingsScreenV2(
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.tertiary,
                                     )
+                                }
+                                Text(
+                                    stringResource(syncStatusLabel(syncStatus.kind)),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = when (syncStatus.kind) {
+                                        SyncStatusKind.ERROR -> MaterialTheme.colorScheme.error
+                                        SyncStatusKind.CONFLICT -> MaterialTheme.colorScheme.tertiary
+                                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
+                                )
+                                OutlinedButton(
+                                    onClick = onSyncNow,
+                                    enabled = syncStatus.kind != SyncStatusKind.SYNCING,
+                                ) {
+                                    Text(stringResource(R.string.sync_now))
                                 }
                                 OutlinedButton(
                                     onClick = { confirmDisconnect = true },
@@ -1703,6 +1734,15 @@ private fun SettingsScreenV2(
             }
         }
     }
+}
+
+private fun syncStatusLabel(status: SyncStatusKind): Int = when (status) {
+    SyncStatusKind.LOCAL_ONLY -> R.string.sync_status_local_only
+    SyncStatusKind.SYNCED -> R.string.sync_status_synced
+    SyncStatusKind.PENDING -> R.string.sync_status_pending
+    SyncStatusKind.SYNCING -> R.string.sync_status_syncing
+    SyncStatusKind.ERROR -> R.string.sync_status_error
+    SyncStatusKind.CONFLICT -> R.string.sync_status_conflict
 }
 
 @Composable
