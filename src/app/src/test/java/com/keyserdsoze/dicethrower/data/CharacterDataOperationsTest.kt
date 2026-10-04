@@ -3,8 +3,12 @@ package com.keyserdsoze.dicethrower.data
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterProfile
+import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
+import com.keyserdsoze.dicethrower.model.DiceMaterial
+import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.LevelRuleKind
 import com.keyserdsoze.dicethrower.model.RollDefinition
+import com.keyserdsoze.dicethrower.model.RollDiceAppearance
 import com.keyserdsoze.dicethrower.model.RollGroup
 import com.keyserdsoze.dicethrower.model.RollLevelRule
 import com.keyserdsoze.dicethrower.model.RollLog
@@ -27,6 +31,7 @@ class CharacterDataOperationsTest {
         assertTrue(result.groups.none { it.characterId == "character-a" })
         assertTrue(result.rolls.none { it.characterId == "character-a" })
         assertTrue(result.logs.none { it.characterId == "character-a" })
+        assertTrue(result.diceStyles.none { it.characterId == "character-a" })
         assertEquals(1, result.logs.size)
         assertEquals("character-b", result.logs.single().characterId)
     }
@@ -54,19 +59,26 @@ class CharacterDataOperationsTest {
         val duplicatedModifiers = result.modifiers.filter { it.characterId == duplicate.id }
         val duplicatedGroups = result.groups.filter { it.characterId == duplicate.id }
         val duplicatedRolls = result.rolls.filter { it.characterId == duplicate.id }
+        val duplicatedStyles = result.diceStyles.filter { it.characterId == duplicate.id }.sortedBy { it.order }
 
         assertEquals(1, duplicatedModifiers.size)
         assertEquals(1, duplicatedGroups.size)
         assertEquals(1, duplicatedRolls.size)
+        assertEquals(2, duplicatedStyles.size)
+        assertTrue(duplicatedStyles.none { copied -> data.diceStyles.any { it.id == copied.id } })
+        assertEquals(duplicatedStyles.first().id, duplicate.defaultDiceStyleId)
 
         val duplicatedRoll = duplicatedRolls.single()
         assertEquals(duplicatedGroups.single().id, duplicatedRoll.groupId)
         assertNotEquals("roll-a", duplicatedRoll.id)
         assertEquals(1, duplicatedRoll.levelRules.size)
         assertNotEquals("rule-a", duplicatedRoll.levelRules.single().id)
+        assertEquals(DiceAppearanceMode.UNIFORM, duplicatedRoll.diceAppearance.mode)
+        assertEquals(duplicatedStyles.first().id, duplicatedRoll.diceAppearance.styleId)
 
         assertEquals(data.logs, result.logs)
         assertFalse(result.logs.any { it.characterId == duplicate.id })
+        assertTrue(AppDataValidator.validate(result).isEmpty())
     }
 
     @Test
@@ -91,6 +103,7 @@ class CharacterDataOperationsTest {
                 tag = "Arcane",
                 level = 8,
                 order = 0,
+                defaultDiceStyleId = "style-a",
             ),
             CharacterProfile(
                 id = "character-b",
@@ -122,6 +135,10 @@ class CharacterDataOperationsTest {
                 name = "Fireball",
                 expression = "6d6+{Intelligence}",
                 groupId = "group-a",
+                diceAppearance = RollDiceAppearance(
+                    mode = DiceAppearanceMode.UNIFORM,
+                    styleId = "style-a",
+                ),
                 levelRules = listOf(
                     RollLevelRule(
                         id = "rule-a",
@@ -152,6 +169,26 @@ class CharacterDataOperationsTest {
                 total = 14,
                 detail = "1d20[12] +2",
                 timestamp = 20L,
+            ),
+        ),
+        diceStyles = listOf(
+            DiceStyle(
+                id = "style-a",
+                characterId = "character-a",
+                name = "Arcane",
+                material = DiceMaterial.GLOSSY_RESIN,
+                primaryColorArgb = 0xFF2563EB.toInt(),
+                secondaryColorArgb = 0xFFF6C453.toInt(),
+                order = 0,
+            ),
+            DiceStyle(
+                id = "style-b",
+                characterId = "character-a",
+                name = "Steel",
+                material = DiceMaterial.METAL,
+                primaryColorArgb = 0xFF64748B.toInt(),
+                secondaryColorArgb = 0xFFE2E8F0.toInt(),
+                order = 1,
             ),
         ),
     )

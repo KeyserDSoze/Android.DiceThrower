@@ -4,6 +4,7 @@ import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.RollDiceAppearance
+import java.util.UUID
 
 data class DiceStyleUsage(
     val isCharacterDefault: Boolean,
@@ -13,6 +14,71 @@ data class DiceStyleUsage(
 }
 
 object DiceStyleDataOperations {
+    fun copyStylesFromCharacter(
+        data: AppData,
+        sourceCharacterId: String,
+        destinationCharacterId: String,
+        styleIds: Set<String>,
+        copySourceDefault: Boolean,
+        copySuffix: String,
+        idFactory: () -> String = { UUID.randomUUID().toString() },
+    ): AppData {
+        require(sourceCharacterId != destinationCharacterId) { "Source and destination characters must differ" }
+        require(data.characters.any { it.id == destinationCharacterId }) { "Destination character does not exist" }
+        val sourceCharacter = data.characters.firstOrNull { it.id == sourceCharacterId }
+            ?: return data
+        val sourceStyles = data.diceStyles
+            .filter { it.characterId == sourceCharacterId && it.id in styleIds }
+            .sortedBy { it.order }
+        if (sourceStyles.isEmpty()) return data
+
+        val destinationStyles = data.diceStyles.filter { it.characterId == destinationCharacterId }
+        val names = destinationStyles.mapTo(mutableListOf()) { it.name }
+        var nextOrder = (destinationStyles.maxOfOrNull { it.order } ?: -1) + 1
+        val idMap = linkedMapOf<String, String>()
+        val copied = sourceStyles.map { source ->
+            val copiedName = uniqueCopyName(names, source.name, copySuffix)
+            names += copiedName
+            val copiedId = idFactory()
+            idMap[source.id] = copiedId
+            source.copy(
+                id = copiedId,
+                characterId = destinationCharacterId,
+                name = copiedName,
+                order = nextOrder++,
+            )
+        }
+
+        val mappedDefault = if (copySourceDefault) {
+            sourceCharacter.defaultDiceStyleId?.let(idMap::get)
+        } else {
+            null
+        }
+        return data.copy(
+            characters = if (mappedDefault == null) {
+                data.characters
+            } else {
+                data.characters.map { character ->
+                    if (character.id == destinationCharacterId) {
+                        character.copy(defaultDiceStyleId = mappedDefault)
+                    } else {
+                        character
+                    }
+                }
+            },
+            diceStyles = data.diceStyles + copied,
+        )
+    }
+
+    fun uniqueCopyName(existingNames: Collection<String>, sourceName: String, copySuffix: String): String {
+        if (existingNames.none { it.equals(sourceName, ignoreCase = true) }) return sourceName
+        val base = "$sourceName $copySuffix"
+        if (existingNames.none { it.equals(base, ignoreCase = true) }) return base
+        var index = 2
+        while (existingNames.any { it.equals("$base $index", ignoreCase = true) }) index += 1
+        return "$base $index"
+    }
+
     fun createStyle(data: AppData, style: DiceStyle): AppData {
         require(data.characters.any { it.id == style.characterId }) { "Dice style owner does not exist" }
         require(data.diceStyles.none { it.id == style.id }) { "Dice style ID already exists" }

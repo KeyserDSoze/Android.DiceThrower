@@ -1,6 +1,7 @@
 package com.keyserdsoze.dicethrower.data
 
 import com.keyserdsoze.dicethrower.model.AppData
+import com.keyserdsoze.dicethrower.model.RollDiceAppearance
 import java.util.UUID
 
 object CharacterDataOperations {
@@ -21,6 +22,7 @@ object CharacterDataOperations {
             groups = data.groups.filterNot { it.characterId == characterId },
             rolls = data.rolls.filterNot { it.characterId == characterId },
             logs = data.logs.filterNot { it.characterId == characterId },
+            diceStyles = data.diceStyles.filterNot { it.characterId == characterId },
         )
     }
 
@@ -34,6 +36,9 @@ object CharacterDataOperations {
         require(newName.isNotBlank()) { "Duplicated character name cannot be blank" }
 
         val newCharacterId = idFactory()
+        val styleIdMap = data.diceStyles
+            .filter { it.characterId == characterId }
+            .associate { it.id to idFactory() }
         val groupIdMap = data.groups
             .filter { it.characterId == characterId }
             .associate { it.id to idFactory() }
@@ -42,7 +47,17 @@ object CharacterDataOperations {
             id = newCharacterId,
             name = newName.trim(),
             order = data.characters.size,
+            defaultDiceStyleId = source.defaultDiceStyleId?.let(styleIdMap::get),
         )
+
+        val duplicatedStyles = data.diceStyles
+            .filter { it.characterId == characterId }
+            .map { style ->
+                style.copy(
+                    id = styleIdMap.getValue(style.id),
+                    characterId = newCharacterId,
+                )
+            }
 
         val duplicatedModifiers = data.modifiers
             .filter { it.characterId == characterId }
@@ -69,6 +84,7 @@ object CharacterDataOperations {
                     id = idFactory(),
                     characterId = newCharacterId,
                     groupId = roll.groupId?.let(groupIdMap::get),
+                    diceAppearance = roll.diceAppearance.remapStyles(styleIdMap),
                     levelRules = roll.levelRules.map { rule ->
                         rule.copy(id = idFactory())
                     },
@@ -80,8 +96,15 @@ object CharacterDataOperations {
             modifiers = data.modifiers + duplicatedModifiers,
             groups = data.groups + duplicatedGroups,
             rolls = data.rolls + duplicatedRolls,
+            diceStyles = data.diceStyles + duplicatedStyles,
             // Roll history is intentionally not copied. A duplicate starts with a clean history.
             logs = data.logs,
         )
     }
+
+    private fun RollDiceAppearance.remapStyles(styleIdMap: Map<String, String>): RollDiceAppearance = copy(
+        styleId = styleId?.let(styleIdMap::get),
+        perDieStyleIds = perDieStyleIds.mapValues { (_, styleId) -> styleIdMap.getValue(styleId) },
+        randomStyleIds = randomStyleIds.map(styleIdMap::getValue),
+    )
 }

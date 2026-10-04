@@ -30,10 +30,14 @@ import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -71,7 +75,11 @@ internal fun DiceStyleLibraryV2(
     var creating by remember(character.id) { mutableStateOf(false) }
     var editingStyleId by remember(character.id) { mutableStateOf<String?>(null) }
     var deletingStyleId by remember(character.id) { mutableStateOf<String?>(null) }
+    var copyingFromCharacter by remember(character.id) { mutableStateOf(false) }
     val copySuffix = stringResource(R.string.copy_suffix)
+    val sourceCharacters = data.characters
+        .filter { it.id != character.id }
+        .filter { source -> data.diceStyles.any { it.characterId == source.id } }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(
@@ -93,6 +101,23 @@ internal fun DiceStyleLibraryV2(
             IconButton(onClick = { creating = true }) {
                 Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.new_dice_style))
             }
+        }
+
+        OutlinedButton(
+            enabled = sourceCharacters.isNotEmpty(),
+            onClick = { copyingFromCharacter = true },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(Icons.Rounded.ContentCopy, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.copy_from_character))
+        }
+        if (sourceCharacters.isEmpty()) {
+            Text(
+                text = stringResource(R.string.no_other_dice_styles),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
 
         if (styles.isEmpty()) {
@@ -253,6 +278,150 @@ internal fun DiceStyleLibraryV2(
             )
         }
     }
+
+    if (copyingFromCharacter) {
+        CopyDiceStylesDialog(
+            destinationCharacter = character,
+            data = data,
+            onDismiss = { copyingFromCharacter = false },
+            onCopy = { sourceCharacterId, selectedStyleIds, copyDefault ->
+                onDataChanged(
+                    DiceStyleDataOperations.copyStylesFromCharacter(
+                        data = data,
+                        sourceCharacterId = sourceCharacterId,
+                        destinationCharacterId = character.id,
+                        styleIds = selectedStyleIds,
+                        copySourceDefault = copyDefault,
+                        copySuffix = copySuffix,
+                    ),
+                )
+                copyingFromCharacter = false
+            },
+        )
+    }
+}
+
+@Composable
+private fun CopyDiceStylesDialog(
+    destinationCharacter: CharacterProfile,
+    data: AppData,
+    onDismiss: () -> Unit,
+    onCopy: (sourceCharacterId: String, styleIds: Set<String>, copyDefault: Boolean) -> Unit,
+) {
+    val sourceCharacters = data.characters
+        .filter { it.id != destinationCharacter.id }
+        .filter { source -> data.diceStyles.any { it.characterId == source.id } }
+    var sourceCharacterId by remember(destinationCharacter.id) {
+        mutableStateOf(sourceCharacters.firstOrNull()?.id)
+    }
+    var sourceMenuExpanded by remember { mutableStateOf(false) }
+    var selectedStyleIds by remember(sourceCharacterId) { mutableStateOf(emptySet<String>()) }
+    var copyDefault by remember(sourceCharacterId) { mutableStateOf(false) }
+    val sourceCharacter = sourceCharacters.firstOrNull { it.id == sourceCharacterId }
+    val sourceStyles = data.diceStyles
+        .filter { it.characterId == sourceCharacterId }
+        .sortedBy { it.order }
+    val sourceDefaultSelected = sourceCharacter?.defaultDiceStyleId?.let { it in selectedStyleIds } == true
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.copy_from_character)) },
+        text = {
+            Column(
+                modifier = Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.copy_styles_help),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(stringResource(R.string.source_character), fontWeight = FontWeight.SemiBold)
+                Box {
+                    OutlinedButton(onClick = { sourceMenuExpanded = true }) {
+                        Text(sourceCharacter?.name ?: stringResource(R.string.source_character))
+                    }
+                    DropdownMenu(
+                        expanded = sourceMenuExpanded,
+                        onDismissRequest = { sourceMenuExpanded = false },
+                    ) {
+                        sourceCharacters.forEach { candidate ->
+                            DropdownMenuItem(
+                                text = { Text(candidate.name) },
+                                onClick = {
+                                    sourceCharacterId = candidate.id
+                                    selectedStyleIds = emptySet()
+                                    copyDefault = false
+                                    sourceMenuExpanded = false
+                                },
+                            )
+                        }
+                    }
+                }
+                Text(stringResource(R.string.select_dice_styles), fontWeight = FontWeight.SemiBold)
+                sourceStyles.forEach { style ->
+                    val selected = style.id in selectedStyleIds
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .clickable {
+                                val updated = if (selected) selectedStyleIds - style.id else selectedStyleIds + style.id
+                                selectedStyleIds = updated
+                                if (sourceCharacter?.defaultDiceStyleId?.let { it in updated } != true) copyDefault = false
+                            }
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Checkbox(checked = selected, onCheckedChange = null)
+                        Spacer(Modifier.width(6.dp))
+                        DiceStyleSwatch(style)
+                        Spacer(Modifier.width(10.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(style.name, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                materialLabel(style.material),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (sourceCharacter?.defaultDiceStyleId == style.id) {
+                            Icon(Icons.Rounded.Star, contentDescription = stringResource(R.string.default_style))
+                        }
+                    }
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = sourceDefaultSelected) { copyDefault = !copyDefault },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Checkbox(
+                        checked = copyDefault,
+                        onCheckedChange = { copyDefault = it },
+                        enabled = sourceDefaultSelected,
+                    )
+                    Text(
+                        text = stringResource(R.string.use_copied_default),
+                        color = if (sourceDefaultSelected) {
+                            MaterialTheme.colorScheme.onSurface
+                        } else {
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
+                        },
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = sourceCharacterId != null && selectedStyleIds.isNotEmpty(),
+                onClick = {
+                    sourceCharacterId?.let { onCopy(it, selectedStyleIds, copyDefault) }
+                },
+            ) { Text(stringResource(R.string.copy_selected_styles)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
+    )
 }
 
 @Composable
@@ -442,11 +611,7 @@ internal fun parseDiceColor(raw: String): Int? {
 internal fun formatDiceColor(argb: Int): String = String.format(Locale.ROOT, "#%06X", argb and 0xFFFFFF)
 
 internal fun nextCopyName(existingNames: List<String>, sourceName: String, suffix: String): String {
-    val base = "$sourceName $suffix"
-    if (existingNames.none { it.equals(base, ignoreCase = true) }) return base
-    var index = 2
-    while (existingNames.any { it.equals("$base $index", ignoreCase = true) }) index += 1
-    return "$base $index"
+    return DiceStyleDataOperations.uniqueCopyName(existingNames, sourceName, suffix)
 }
 
 private val diceColorPresets = listOf(

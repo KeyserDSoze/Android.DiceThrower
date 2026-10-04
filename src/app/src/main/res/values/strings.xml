@@ -116,6 +116,13 @@
     <string name="set_default_style">Set as character default</string>
     <string name="duplicate">Duplicate</string>
     <string name="copy_suffix">Copy</string>
+    <string name="copy_from_character">Copy from character</string>
+    <string name="no_other_dice_styles">Create dice styles on another character to copy them here.</string>
+    <string name="copy_styles_help">Choose one or more looks to copy. The new styles belong only to this character and can be edited independently.</string>
+    <string name="source_character">Source character</string>
+    <string name="select_dice_styles">Styles to copy</string>
+    <string name="use_copied_default">Use the copied source default as this character’s default</string>
+    <string name="copy_selected_styles">Copy selected</string>
     <string name="delete_dice_style_title">Delete “%1$s”?</string>
     <string name="delete_dice_style_in_use">This style is in use. Deleting it will safely clear its default/roll references and affected dice will use their fallback appearance.</string>
     <string name="delete_dice_style_unused">This style is not used by any roll or as the character default. Delete it?</string>

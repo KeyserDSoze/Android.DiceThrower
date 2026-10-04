@@ -15,6 +15,90 @@ import org.junit.Test
 
 class DiceStyleDataOperationsTest {
     @Test
+    fun crossCharacterCopyCreatesIndependentOwnedStylesAndUniqueNames() {
+        val sourceStyle = style("steel", 0).copy(name = "Steel", material = DiceMaterial.METAL)
+        val destinationSteel = DiceStyle(
+            id = "existing",
+            characterId = "destination",
+            name = "Steel",
+            material = DiceMaterial.MATTE_RESIN,
+            primaryColorArgb = 0xFF111111.toInt(),
+            secondaryColorArgb = 0xFFEEEEEE.toInt(),
+            order = 0,
+        )
+        val data = AppData(
+            characters = listOf(
+                CharacterProfile(id = "character", name = "Source", defaultDiceStyleId = "steel"),
+                CharacterProfile(id = "destination", name = "Destination", defaultDiceStyleId = "existing"),
+            ),
+            diceStyles = listOf(sourceStyle, destinationSteel),
+        )
+
+        val copied = DiceStyleDataOperations.copyStylesFromCharacter(
+            data = data,
+            sourceCharacterId = "character",
+            destinationCharacterId = "destination",
+            styleIds = setOf("steel"),
+            copySourceDefault = false,
+            copySuffix = "copy",
+            idFactory = { "copied-steel" },
+        )
+
+        val imported = copied.diceStyles.single { it.id == "copied-steel" }
+        assertEquals("destination", imported.characterId)
+        assertEquals("Steel copy", imported.name)
+        assertEquals(sourceStyle.material, imported.material)
+        assertEquals(sourceStyle.primaryColorArgb, imported.primaryColorArgb)
+        assertEquals(sourceStyle.secondaryColorArgb, imported.secondaryColorArgb)
+        assertEquals(1, imported.order)
+        assertEquals("existing", copied.characters.single { it.id == "destination" }.defaultDiceStyleId)
+        assertEquals(sourceStyle, copied.diceStyles.single { it.id == "steel" })
+        assertTrue(AppDataValidator.validate(copied).isEmpty())
+
+        val editedCopy = DiceStyleDataOperations.updateStyle(copied, imported.copy(name = "Destination Steel"))
+        val sourceDeleted = DiceStyleDataOperations.deleteStyle(editedCopy, "steel")
+        assertEquals("Destination Steel", sourceDeleted.diceStyles.single { it.id == "copied-steel" }.name)
+        assertTrue(sourceDeleted.diceStyles.none { it.id == "steel" })
+        assertTrue(AppDataValidator.validate(sourceDeleted).isEmpty())
+    }
+
+    @Test
+    fun selectedSourceDefaultCanBecomeDestinationDefaultWithFreshId() {
+        val data = AppData(
+            characters = listOf(
+                CharacterProfile(id = "character", name = "Source", defaultDiceStyleId = "red"),
+                CharacterProfile(id = "destination", name = "Destination"),
+            ),
+            diceStyles = listOf(style("red", 0), style("blue", 1)),
+        )
+        var nextId = 0
+
+        val copied = DiceStyleDataOperations.copyStylesFromCharacter(
+            data = data,
+            sourceCharacterId = "character",
+            destinationCharacterId = "destination",
+            styleIds = setOf("red", "blue"),
+            copySourceDefault = true,
+            copySuffix = "copy",
+            idFactory = { "import-${nextId++}" },
+        )
+
+        val destination = copied.characters.single { it.id == "destination" }
+        val imported = copied.diceStyles.filter { it.characterId == "destination" }.sortedBy { it.order }
+        assertEquals(listOf("import-0", "import-1"), imported.map { it.id })
+        assertEquals("import-0", destination.defaultDiceStyleId)
+        assertTrue(AppDataValidator.validate(copied).isEmpty())
+    }
+
+    @Test
+    fun copiedNamesAdvanceCaseInsensitivelyWithoutCollision() {
+        val existing = listOf("Steel", "Steel Copy", "steel copy 2")
+
+        assertEquals("Steel Copy 3", DiceStyleDataOperations.uniqueCopyName(existing, "Steel", "Copy"))
+        assertEquals("Gemstone", DiceStyleDataOperations.uniqueCopyName(existing, "Gemstone", "Copy"))
+    }
+
+    @Test
     fun firstCreatedStyleBecomesDefaultAndLaterStylesAppendInOrder() {
         val data = AppData(characters = listOf(CharacterProfile(id = "character", name = "Hero")))
 

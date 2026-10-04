@@ -116,6 +116,13 @@
     <string name="set_default_style">Imposta come predefinito del personaggio</string>
     <string name="duplicate">Duplica</string>
     <string name="copy_suffix">Copia</string>
+    <string name="copy_from_character">Copia da personaggio</string>
+    <string name="no_other_dice_styles">Crea stili dei dadi su un altro personaggio per poterli copiare qui.</string>
+    <string name="copy_styles_help">Scegli uno o più aspetti da copiare. I nuovi stili appartengono solo a questo personaggio e possono essere modificati in modo indipendente.</string>
+    <string name="source_character">Personaggio sorgente</string>
+    <string name="select_dice_styles">Stili da copiare</string>
+    <string name="use_copied_default">Usa il predefinito copiato come predefinito di questo personaggio</string>
+    <string name="copy_selected_styles">Copia selezionati</string>
     <string name="delete_dice_style_title">Eliminare “%1$s”?</string>
     <string name="delete_dice_style_in_use">Questo stile è in uso. Eliminandolo verranno rimossi in sicurezza i riferimenti da predefinito e tiri; i dadi interessati useranno l’aspetto di fallback.</string>
     <string name="delete_dice_style_unused">Questo stile non è usato da alcun tiro né come predefinito del personaggio. Eliminarlo?</string>
