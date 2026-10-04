@@ -4,19 +4,19 @@
 
 ## Obiettivo
 
-Dice Thrower non implementa le regole di un gioco specifico. Un personaggio contiene solo nome, immagine opzionale, tag libero, gruppi ordinabili, tiri ordinabili e storico locale.
+Dice Thrower non implementa le regole di un gioco specifico. Un personaggio contiene nome, immagine opzionale, tag libero, livello, modificatori, gruppi ordinabili, tiri parametrizzabili e storico locale.
 
-Esempi di tiro: `6d6+6`, `4d3+3d6+10`, `1d20+8`.
+Esempi di tiro: `6d6+6`, `4d3+3d6+10`, `1d20+{Intelligenza}`.
 
 Dadi supportati nella prima versione: **d2, d3, d4, d6, d10, d12, d20, d100**.
 
-## UX prevista
+## Esperienza d'uso
 
-1. Home con lista personaggi.
-2. Creazione personaggio: nome, immagine e tag.
-3. Modalità **Edit**: gestione gruppi e tiri.
-4. Modalità **Use**: dashboard ordinata dall'utente.
-5. Tocco su un tiro: schermata pronta al lancio.
+1. Home con lista personaggi, immagine, tag e livello.
+2. Modalità **Use** con dashboard composta dall'utente.
+3. Gruppi espandibili e tiri senza gruppo avviabili direttamente.
+4. Modalità **Edit** con long-press + drag per riordinare dashboard e contenuti dei gruppi.
+5. Editor visuale delle formule con chip per inserire `{level}` e i modificatori del personaggio nel punto del cursore.
 6. Lancio con pulsante configurabile oppure scuotendo il telefono.
 7. Risultato con dettaglio dei singoli dadi e totale.
 8. Log locale con retention configurabile.
@@ -38,6 +38,21 @@ Le espressioni possono usare le variabili tra parentesi graffe:
 - **ogni N livelli** aggiungi l'espressione una volta per ogni intervallo raggiunto.
 
 Salire di livello non riscrive i tiri: la formula effettiva viene risolta al momento del lancio, quindi tutti i tiri parametrizzati si aggiornano automaticamente.
+
+## Visual design
+
+L'identità di Dice Thrower usa una palette **deep navy + electric cyan/blue + violet + gold**. L'app usa Material 3 con superfici leggibili e accenti arcane/cosmic, mentre launcher e materiali store possono essere più cinematografici.
+
+Sono presenti:
+
+- adaptive launcher icon Android 8+;
+- themed/monochrome icon Android 13+;
+- artwork launcher condiviso dall'app;
+- sorgente vettoriale 1024×500 per la feature graphic Play Store;
+- script ripetibile per generare gli asset raster dello store;
+- overview site coerente con la stessa identità visiva.
+
+Vedi `play/assets/README.md`.
 
 ## Privacy e storage
 
@@ -62,7 +77,7 @@ La baseline segue la struttura di Android.ScreenLock:
 
 ## Localizzazione
 
-È predisposto lo stesso set di 40 lingue di Screen Lock. Il bootstrap include inglese e italiano completi e il registry delle 40 lingue; le altre traduzioni verranno completate mantenendo le stesse chiavi.
+È predisposto lo stesso set di 40 lingue di Screen Lock. Inglese e italiano sono già le traduzioni di riferimento complete; le altre lingue condividono il registry e verranno completate quando il vocabolario UI sarà stabilizzato.
 
 ## Tema
 
@@ -70,7 +85,7 @@ L'app supporta **Sistema / Chiaro / Scuro**. Anche il sito GitHub Pages usa tema
 
 ## Dadi 3D
 
-Il dominio e la schermata di tiro sono separati dal renderer. La prima baseline usa una visualizzazione Compose 2D; un renderer 3D potrà essere aggiunto senza cambiare parser, log o modello dati.
+Il dominio e la schermata di tiro sono separati dal renderer. La UI attuale usa una visualizzazione Compose 2D; un renderer 3D potrà essere aggiunto senza cambiare parser, log o modello dati.
 
 ## Sviluppo
 
@@ -81,7 +96,7 @@ gradle :app:testDebugUnitTest :app:assembleDebug
 
 ## Sito
 
-Quando GitHub Pages sarà abilitato sul repository:
+GitHub Pages è distribuito automaticamente dalla workflow dedicata:
 
 - https://keyserdsoze.github.io/Android.DiceThrower/
 - https://keyserdsoze.github.io/Android.DiceThrower/privacy/
