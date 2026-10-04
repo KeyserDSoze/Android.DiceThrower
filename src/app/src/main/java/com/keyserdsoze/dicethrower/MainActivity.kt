@@ -19,6 +19,8 @@ import com.keyserdsoze.dicethrower.data.LocalStore
 import com.keyserdsoze.dicethrower.data.cloud.CloudRepositoryFactory
 import com.keyserdsoze.dicethrower.data.sync.AndroidSyncLocalGateway
 import com.keyserdsoze.dicethrower.data.sync.CloudSyncEngine
+import com.keyserdsoze.dicethrower.data.sync.SyncConflict
+import com.keyserdsoze.dicethrower.data.sync.SyncConflictResolution
 import com.keyserdsoze.dicethrower.data.sync.SyncStatus
 import com.keyserdsoze.dicethrower.data.sync.SyncStatusKind
 import com.keyserdsoze.dicethrower.model.AppSettings
@@ -95,6 +97,7 @@ class MainActivity : ComponentActivity() {
                         },
                         onLocalDataChanged = ::refreshPendingStatus,
                         onSyncNow = ::syncNow,
+                        onResolveConflict = ::resolveConflict,
                         onUseStandalone = {
                             updateCloudAccountState(CloudAccountTransitions.useStandalone())
                             accountFailure = null
@@ -199,10 +202,19 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun syncNow() {
+        syncNow(emptyMap())
+    }
+
+    private fun resolveConflict(conflict: SyncConflict, resolution: SyncConflictResolution) {
+        val key = conflict.characterId ?: CloudSyncEngine.SETTINGS_CONFLICT_KEY
+        syncNow(mapOf(key to resolution))
+    }
+
+    private fun syncNow(resolutions: Map<String, SyncConflictResolution>) {
         if (!cloudAccountState.googleConnected || syncJob?.isActive == true) return
         syncStatus = syncStatus.copy(kind = SyncStatusKind.SYNCING, error = null, conflicts = emptyList())
         syncJob = lifecycleScope.launch {
-            val result = syncEngine.sync()
+            val result = syncEngine.sync(settings.conflictPolicy, resolutions)
             syncStatus = result.status
             if (result.localDataChanged) dataRefreshVersion++
             if (result.localSettingsChanged) settings = store.loadSettings()

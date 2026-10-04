@@ -81,6 +81,9 @@ import com.keyserdsoze.dicethrower.R
 import com.keyserdsoze.dicethrower.data.CharacterImageAssetStore
 import com.keyserdsoze.dicethrower.data.CloudAccountState
 import com.keyserdsoze.dicethrower.data.LocalStore
+import com.keyserdsoze.dicethrower.data.sync.ConflictArea
+import com.keyserdsoze.dicethrower.data.sync.SyncConflict
+import com.keyserdsoze.dicethrower.data.sync.SyncConflictResolution
 import com.keyserdsoze.dicethrower.data.sync.SyncStatus
 import com.keyserdsoze.dicethrower.data.sync.SyncStatusKind
 import com.keyserdsoze.dicethrower.dice.DiceAppearanceResolver
@@ -93,6 +96,7 @@ import com.keyserdsoze.dicethrower.model.AppSettings
 import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterImageRef
 import com.keyserdsoze.dicethrower.model.CharacterProfile
+import com.keyserdsoze.dicethrower.model.ConflictPolicy
 import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.LevelRuleKind
 import com.keyserdsoze.dicethrower.model.RollButtonPosition
@@ -139,6 +143,7 @@ fun DiceThrowerAppV2(
     onSettingsChanged: (AppSettings) -> Unit,
     onLocalDataChanged: () -> Unit,
     onSyncNow: () -> Unit,
+    onResolveConflict: (SyncConflict, SyncConflictResolution) -> Unit,
     onUseStandalone: () -> Unit,
     onConnectGoogle: () -> Unit,
     onDisconnectGoogle: () -> Unit,
@@ -167,6 +172,14 @@ fun DiceThrowerAppV2(
 
     LaunchedEffect(dataRefreshVersion) {
         if (dataRefreshVersion > 0) data = store.loadData()
+    }
+
+    syncStatus.conflicts.firstOrNull()?.let { conflict ->
+        ConflictDialogV2(
+            conflict = conflict,
+            onKeepLocal = { onResolveConflict(conflict, SyncConflictResolution.KEEP_LOCAL) },
+            onUseRemote = { onResolveConflict(conflict, SyncConflictResolution.USE_REMOTE) },
+        )
     }
 
     when (route) {
@@ -1586,6 +1599,35 @@ private fun SettingsScreenV2(
                                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                                     },
                                 )
+                                if (syncStatus.autoResolvedCount > 0) {
+                                    Text(
+                                        stringResource(R.string.sync_conflicts_auto_resolved, syncStatus.autoResolvedCount),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                    )
+                                }
+                                Text(stringResource(R.string.conflict_policy), fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    stringResource(R.string.conflict_policy_help),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    ConflictPolicy.entries.forEach { policy ->
+                                        FilterChip(
+                                            selected = settings.conflictPolicy == policy,
+                                            onClick = { onSettingsChanged(settings.copy(conflictPolicy = policy)) },
+                                            label = {
+                                                Text(
+                                                    stringResource(
+                                                        if (policy == ConflictPolicy.ASK) R.string.conflict_policy_ask
+                                                        else R.string.conflict_policy_latest,
+                                                    ),
+                                                )
+                                            },
+                                        )
+                                    }
+                                }
                                 OutlinedButton(
                                     onClick = onSyncNow,
                                     enabled = syncStatus.kind != SyncStatusKind.SYNCING,
@@ -1735,6 +1777,61 @@ private fun SettingsScreenV2(
         }
     }
 }
+
+@Composable
+private fun ConflictDialogV2(
+    conflict: SyncConflict,
+    onKeepLocal: () -> Unit,
+    onUseRemote: () -> Unit,
+) {
+    val context = LocalContext.current
+    val localTime = conflict.localUpdatedAt?.let { DateFormat.getDateTimeInstance().format(Date(it)) }
+    val remoteTime = conflict.remoteUpdatedAt?.let { DateFormat.getDateTimeInstance().format(Date(it)) }
+    val changedAreasText = conflict.changedAreas.joinToString(", ") { area ->
+        context.getString(conflictAreaLabelResource(area))
+    }
+    AlertDialog(
+        onDismissRequest = {},
+        title = {
+            Text(
+                conflict.characterName?.let { stringResource(R.string.sync_conflict_character_title, it) }
+                    ?: stringResource(R.string.sync_conflict_settings_title),
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.sync_conflict_body))
+                localTime?.let { Text(stringResource(R.string.sync_conflict_local_version, it)) }
+                remoteTime?.let { Text(stringResource(R.string.sync_conflict_drive_version, it)) }
+                if (conflict.changedAreas.isNotEmpty()) {
+                    Text(
+                        stringResource(R.string.sync_conflict_changes) + ": " +
+                            changedAreasText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = onKeepLocal) { Text(stringResource(R.string.keep_this_device)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onUseRemote) { Text(stringResource(R.string.use_drive_version)) }
+        },
+    )
+}
+
+private fun conflictAreaLabelResource(area: ConflictArea): Int = when (area) {
+        ConflictArea.PROFILE -> R.string.conflict_area_profile
+        ConflictArea.IMAGE -> R.string.conflict_area_image
+        ConflictArea.MODIFIERS -> R.string.conflict_area_modifiers
+        ConflictArea.ROLLS -> R.string.conflict_area_rolls
+        ConflictArea.DICE_STYLES -> R.string.conflict_area_styles
+        ConflictArea.HISTORY -> R.string.conflict_area_history
+        ConflictArea.DELETION -> R.string.conflict_area_deletion
+        ConflictArea.SETTINGS -> R.string.conflict_area_settings
+    }
 
 private fun syncStatusLabel(status: SyncStatusKind): Int = when (status) {
     SyncStatusKind.LOCAL_ONLY -> R.string.sync_status_local_only

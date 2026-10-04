@@ -2,6 +2,8 @@ package com.keyserdsoze.dicethrower.model
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
+enum class ConflictPolicy { ASK, LATEST_WINS }
+
 enum class RollButtonPosition {
     TOP_LEFT,
     TOP_CENTER,
@@ -118,6 +120,8 @@ data class AppSettings(
     val showRollButton: Boolean = true,
     val rollButtonPosition: RollButtonPosition = RollButtonPosition.BOTTOM_RIGHT,
     val logRetention: Int = 20,
+    // Device-local by design: this preference never participates in roaming settings sync.
+    val conflictPolicy: ConflictPolicy = ConflictPolicy.ASK,
 )
 
 data class CharacterSyncMetadata(
