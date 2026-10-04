@@ -1,6 +1,8 @@
 package com.keyserdsoze.dicethrower.ui.dice3d
 
 import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.sqrt
@@ -49,17 +51,17 @@ object DiceMeshFactory {
                 4 -> tetrahedronMesh()
                 6 -> cubeMesh()
                 8 -> octahedronMesh()
-                10 -> bipyramidMesh(5, radius = 0.93f, halfHeight = 1.15f)
-                12 -> bipyramidMesh(6, radius = 0.95f, halfHeight = 1.05f)
+                10 -> pentagonalTrapezohedronMesh()
+                12 -> dodecahedronMesh()
                 20 -> icosahedronMesh()
-                100 -> bipyramidMesh(5, radius = 1.0f, halfHeight = 1.20f)
+                100 -> pentagonalTrapezohedronMesh()
                 else -> error("Unreachable")
             }
         }
     }
 
     private fun coinMesh(): DiceMesh {
-        val segments = 16
+        val segments = 20
         val halfHeight = 0.20f
         val radius = 1.0f
         val vertices = mutableListOf<Vec3>()
@@ -127,7 +129,7 @@ object DiceMeshFactory {
     }
 
     private fun cubeMesh(): DiceMesh {
-        val v = listOf(
+        val vertices = listOf(
             Vec3(-1f, -1f, -1f), Vec3(1f, -1f, -1f),
             Vec3(1f, 1f, -1f), Vec3(-1f, 1f, -1f),
             Vec3(-1f, -1f, 1f), Vec3(1f, -1f, 1f),
@@ -141,11 +143,11 @@ object DiceMeshFactory {
             listOf(3, 7, 6, 2),
             listOf(0, 1, 5, 4),
         )
-        return buildMesh(v, faces)
+        return buildMesh(vertices, faces)
     }
 
     private fun octahedronMesh(): DiceMesh {
-        val v = listOf(
+        val vertices = listOf(
             Vec3(1f, 0f, 0f), Vec3(-1f, 0f, 0f),
             Vec3(0f, 1f, 0f), Vec3(0f, -1f, 0f),
             Vec3(0f, 0f, 1f), Vec3(0f, 0f, -1f),
@@ -154,37 +156,86 @@ object DiceMeshFactory {
             listOf(2, 0, 4), listOf(2, 4, 1), listOf(2, 1, 5), listOf(2, 5, 0),
             listOf(3, 4, 0), listOf(3, 1, 4), listOf(3, 5, 1), listOf(3, 0, 5),
         )
-        return buildMesh(v, faces)
+        return buildMesh(vertices, faces)
     }
 
-    private fun bipyramidMesh(
-        equatorCount: Int,
-        radius: Float,
-        halfHeight: Float,
-    ): DiceMesh {
+    /**
+     * A d10 is visually modelled as a pentagonal trapezohedron: two poles and ten
+     * alternating ring vertices create ten kite faces. The same shape is used for
+     * d100 because percentile dice are conventionally represented by a d10 form.
+     */
+    private fun pentagonalTrapezohedronMesh(): DiceMesh {
+        val halfHeight = 1.16f
+        val ringRadius = 0.94f
+        // This ratio makes each top/bottom kite approximately planar for a 36° ring step.
+        val ringHeight = halfHeight * 0.10557281f
         val vertices = mutableListOf(
             Vec3(0f, halfHeight, 0f),
             Vec3(0f, -halfHeight, 0f),
         )
-        repeat(equatorCount) { i ->
-            val angle = (2.0 * PI * i / equatorCount) - PI / 2.0
+
+        repeat(10) { i ->
+            val angle = (2.0 * PI * i / 10.0) - PI / 2.0
             vertices += Vec3(
-                (cos(angle) * radius).toFloat(),
-                0f,
-                (sin(angle) * radius).toFloat(),
+                (cos(angle) * ringRadius).toFloat(),
+                if (i % 2 == 0) ringHeight else -ringHeight,
+                (sin(angle) * ringRadius).toFloat(),
             )
         }
+
         val faces = mutableListOf<List<Int>>()
-        repeat(equatorCount) { i ->
-            val current = 2 + i
-            val next = 2 + ((i + 1) % equatorCount)
-            faces += listOf(0, current, next)
-            faces += listOf(1, next, current)
+        repeat(5) { i ->
+            val high = 2 + (2 * i) % 10
+            val low = 2 + (2 * i + 1) % 10
+            val highNext = 2 + (2 * i + 2) % 10
+            val lowNext = 2 + (2 * i + 3) % 10
+            faces += listOf(0, high, low, highNext)
+            faces += listOf(1, lowNext, highNext, low)
         }
+
         return buildMesh(vertices.normalizeRadius(), faces)
     }
 
+    /**
+     * Builds a true twelve-faced dodecahedron as the dual of the icosahedron.
+     * Every triangular icosahedron face becomes a dodecahedron vertex, while
+     * the five faces around each icosahedron vertex become one pentagonal face.
+     */
+    private fun dodecahedronMesh(): DiceMesh {
+        val (icosaVertices, icosaFaces) = icosahedronGeometry()
+        val dualVertices = icosaFaces.map { face ->
+            val center = face
+                .map(icosaVertices::get)
+                .reduce(Vec3::plus) * (1f / face.size)
+            center.normalized()
+        }
+
+        val pentagons = icosaVertices.indices.map { vertexIndex ->
+            val adjacentFaces = icosaFaces.indices.filter { faceIndex ->
+                vertexIndex in icosaFaces[faceIndex]
+            }
+            require(adjacentFaces.size == 5)
+
+            val axis = icosaVertices[vertexIndex].normalized()
+            val reference = if (abs(axis.y) < 0.9f) Vec3(0f, 1f, 0f) else Vec3(1f, 0f, 0f)
+            val tangent = reference.cross(axis).normalized()
+            val bitangent = axis.cross(tangent).normalized()
+
+            adjacentFaces.sortedBy { faceIndex ->
+                val point = dualVertices[faceIndex]
+                atan2(point.dot(bitangent).toDouble(), point.dot(tangent).toDouble())
+            }
+        }
+
+        return buildMesh(dualVertices.normalizeRadius(), pentagons)
+    }
+
     private fun icosahedronMesh(): DiceMesh {
+        val (vertices, faces) = icosahedronGeometry()
+        return buildMesh(vertices, faces)
+    }
+
+    private fun icosahedronGeometry(): Pair<List<Vec3>, List<List<Int>>> {
         val phi = ((1.0 + sqrt(5.0)) / 2.0).toFloat()
         val vertices = listOf(
             Vec3(-1f, phi, 0f), Vec3(1f, phi, 0f), Vec3(-1f, -phi, 0f), Vec3(1f, -phi, 0f),
@@ -197,7 +248,7 @@ object DiceMeshFactory {
             listOf(3, 9, 4), listOf(3, 4, 2), listOf(3, 2, 6), listOf(3, 6, 8), listOf(3, 8, 9),
             listOf(4, 9, 5), listOf(2, 4, 11), listOf(6, 2, 10), listOf(8, 6, 7), listOf(9, 8, 1),
         )
-        return buildMesh(vertices, faces)
+        return vertices to faces
     }
 
     private fun buildMesh(
