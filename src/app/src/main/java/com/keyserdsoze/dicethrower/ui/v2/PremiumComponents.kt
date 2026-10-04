@@ -114,7 +114,7 @@ fun BrandIcon(
     size: Int = 52,
 ) {
     Image(
-        painter = painterResource(R.mipmap.ic_launcher),
+        painter = painterResource(R.drawable.ic_launcher_art),
         contentDescription = null,
         modifier = modifier
             .size(size.dp)
