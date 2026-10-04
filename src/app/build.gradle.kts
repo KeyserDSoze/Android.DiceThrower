@@ -9,6 +9,7 @@ require(versionParts.size == 3) { "VERSION must be MAJOR.MINOR.PATCH" }
 
 val signingKeyPath = System.getenv("DICETHROWER_KEYSTORE_PATH")
 val signingKeyPassword = System.getenv("DICETHROWER_KEYSTORE_PASSWORD")
+val googleWebClientId = System.getenv("DICETHROWER_GOOGLE_WEB_CLIENT_ID").orEmpty()
 
 android {
     namespace = "com.keyserdsoze.dicethrower"
@@ -21,10 +22,12 @@ android {
         versionCode = versionParts[0] * 10_000 + versionParts[1] * 100 + versionParts[2]
         versionName = semanticVersion
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        resValue("string", "google_web_client_id", googleWebClientId)
     }
 
     buildFeatures {
         compose = true
+        resValues = true
     }
 
     compileOptions {
@@ -81,6 +84,10 @@ dependencies {
     implementation("androidx.compose.animation:animation")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.credentials:credentials:1.6.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.6.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.2.0")
+    implementation("com.google.android.gms:play-services-auth:21.6.0")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")

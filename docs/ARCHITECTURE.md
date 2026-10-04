@@ -142,6 +142,16 @@ Each character owns a `CharacterSyncMetadata` record covering the complete chara
 
 If the model grows substantially, `LocalStore` is the boundary to replace, for example with Room.
 
+## Optional Google account boundary
+
+First launch has an explicit `UNDECIDED` account state and cannot enter the normal app shell until the user chooses standalone or starts the Google flow. Canceling that first Google flow transitions safely to `STANDALONE`; standalone never removes or disables local features and Settings always offers a later connection path.
+
+Authentication and Drive authorization are deliberately separate. `GoogleAccountCoordinator` uses Android Credential Manager + Sign in with Google only to identify the account for local UI/session state, then Google Play services `AuthorizationClient` binds that same account and requests exactly `https://www.googleapis.com/auth/drive.appdata`. The local ID-token result is not treated as a server-side security boundary; Drive access is gated by Google's authorization result. A successful connection stores only stable account ID, email, optional display name and authorization/reconciliation flags. ID/access tokens, Google passwords and raw credentials are never persisted.
+
+`CloudAccountStore` writes that small session/UI record under `noBackupFilesDir`; it is neither Android Auto Backup state nor part of Dice Thrower manual backups. Disconnect revokes the `drive.appdata` grant and clears the Credential Manager session before switching locally to standalone. It never calls `LocalStore`, so disconnect cannot delete the local snapshot.
+
+Every new Google connection starts with `initialReconciliationPending = true`. The Drive repository (#8) and sync engine (#10) must clear it only after they have compared existing local and remote state; this prevents first connection from silently treating either side as authoritative.
+
 ## Shake handling
 
 The accelerometer listener is active only while the roll screen is visible. A debounce window avoids duplicate throws from one physical gesture.
