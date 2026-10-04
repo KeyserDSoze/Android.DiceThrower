@@ -12,7 +12,7 @@
     <string name="backup_import_confirm_title">Replace local Dice Thrower data?</string>
     <string name="backup_import_confirm_body">This validated backup contains %1$d characters and %2$d rolls. Restoring it will replace the current local data and settings.</string>
     <string name="backup_import_replace_action">Restore and restart</string>
-    <string name="backup_image_warning">Character image references are included, but Android document URIs may not work on a different device. Portable embedded images will be added in a later backup format version.</string>
+    <string name="backup_image_warning">Character images are embedded in backup v2 and verified during restore, so they remain portable across devices. Legacy v1 URI references are still supported when accessible.</string>
     <string name="backup_invalid_file">This file is not a valid Dice Thrower backup.</string>
     <string name="backup_unknown_error">The backup operation could not be completed.</string>
     <string name="backup_shortcut_label">Backup &amp; Restore</string>

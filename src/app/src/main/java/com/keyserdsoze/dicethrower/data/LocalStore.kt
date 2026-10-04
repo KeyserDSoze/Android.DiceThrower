@@ -9,6 +9,7 @@ import java.util.UUID
 
 class LocalStore(context: Context) {
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    private val imageAssetStore = CharacterImageAssetStore(context)
     private val writerIdStore = InstallationWriterIdStore(
         File(context.noBackupFilesDir, WRITER_ID_FILE),
     )
@@ -18,12 +19,14 @@ class LocalStore(context: Context) {
         val decoded = runCatching {
             AppDataJsonCodec.decodeData(JSONObject(raw))
         }.getOrDefault(AppData())
+        val portableImages = imageAssetStore.migrateLegacyImages(decoded)
         val migrated = SyncMetadataManager.ensureMetadata(
-            data = decoded,
+            data = portableImages,
             writerId = installationWriterId(),
             now = System.currentTimeMillis(),
         )
         if (migrated != decoded) persistData(migrated)
+        imageAssetStore.cleanupOrphans(migrated)
         return migrated
     }
 
@@ -36,6 +39,7 @@ class LocalStore(context: Context) {
         )
         AppDataValidator.requireValid(stamped)
         persistData(stamped)
+        imageAssetStore.cleanupOrphans(stamped)
         return stamped
     }
 
@@ -57,6 +61,7 @@ class LocalStore(context: Context) {
     fun replaceAll(
         data: AppData,
         settings: AppSettings,
+        imageAssets: List<PortableCharacterImageAsset> = emptyList(),
     ) {
         val migrated = SyncMetadataManager.ensureMetadata(
             data = data,
@@ -64,11 +69,17 @@ class LocalStore(context: Context) {
             now = System.currentTimeMillis(),
         )
         AppDataValidator.requireValid(migrated)
+        imageAssetStore.restorePortableAssets(imageAssets)
+        imageAssetStore.requireReferencedAssetsAvailable(migrated)
         prefs.edit()
             .putString(KEY_DATA, AppDataJsonCodec.encodeData(migrated).toString())
             .putString(KEY_SETTINGS, AppDataJsonCodec.encodeSettings(settings).toString())
             .apply()
+        imageAssetStore.cleanupOrphans(migrated)
     }
+
+    fun backupImageAssets(data: AppData = loadData()): List<PortableCharacterImageAsset> =
+        imageAssetStore.exportReferenced(data)
 
     private fun persistData(data: AppData) {
         prefs.edit()

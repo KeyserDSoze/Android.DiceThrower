@@ -48,10 +48,18 @@ data class RollDiceAppearance(
     val randomStyleIds: List<String> = emptyList(),
 )
 
+data class CharacterImageRef(
+    val assetId: String,
+    val sha256: String,
+    val mimeType: String,
+    val byteSize: Long,
+)
+
 data class CharacterProfile(
     val id: String,
     val name: String,
     val imageUri: String? = null,
+    val image: CharacterImageRef? = null,
     val tag: String = "",
     val level: Int = 1,
     val order: Int = 0,

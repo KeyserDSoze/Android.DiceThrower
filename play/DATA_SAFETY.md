@@ -16,7 +16,7 @@ This file records the intended answers for the first local-only release and must
 The app stores the following only on the user's device:
 
 - character names and levels;
-- optional character image references selected through Android's Storage Access Framework;
+- optional character images selected through Android's Storage Access Framework and copied into private app storage;
 - free-form character tags;
 - locally defined character modifiers;
 - dice-roll names, parameterized expressions and level-scaling rules;
@@ -29,7 +29,7 @@ The app stores the following only on the user's device:
 
 Dice Thrower can export a versioned JSON backup through Android's Storage Access Framework. The user explicitly chooses the destination using the Android document picker. Dice Thrower does not upload the backup, choose a cloud provider, or receive a copy.
 
-Restore is also user-initiated through the Android document picker. The backup is parsed and validated locally before replacing app data. Character image document URIs are currently preserved as references and may not remain readable on another device.
+Restore is also user-initiated through the Android document picker. Backup format v2 embeds referenced character images and validates their SHA-256 hashes locally before replacing app data, making those images portable to another device. Legacy v1 URI references remain readable when the source document permission is still available.
 
 This user-directed file operation does not add an Internet permission or developer-operated data transfer.
 

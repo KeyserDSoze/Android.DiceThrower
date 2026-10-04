@@ -4,6 +4,7 @@ import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.AppSettings
 import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterProfile
+import com.keyserdsoze.dicethrower.model.CharacterImageRef
 import com.keyserdsoze.dicethrower.model.CharacterSyncMetadata
 import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 import com.keyserdsoze.dicethrower.model.DiceMaterial
@@ -20,16 +21,21 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 object AppDataJsonCodec {
-    const val DATA_VERSION = 4
+    const val DATA_VERSION = 5
 
-    fun encodeData(data: AppData): JSONObject = JSONObject()
+    fun encodeData(data: AppData): JSONObject = encodeData(data, includeLegacyImageUris = true)
+
+    fun encodeDataForSync(data: AppData): JSONObject = encodeData(data, includeLegacyImageUris = false)
+
+    private fun encodeData(data: AppData, includeLegacyImageUris: Boolean): JSONObject = JSONObject()
         .put("version", DATA_VERSION)
         .put("characters", JSONArray().apply {
             data.characters.forEach { item ->
                 put(JSONObject()
                     .put("id", item.id)
                     .put("name", item.name)
-                    .put("imageUri", item.imageUri ?: JSONObject.NULL)
+                    .put("imageUri", item.imageUri?.takeIf { includeLegacyImageUris } ?: JSONObject.NULL)
+                    .put("image", item.image?.let(::encodeCharacterImage) ?: JSONObject.NULL)
                     .put("tag", item.tag)
                     .put("level", item.level)
                     .put("order", item.order)
@@ -119,6 +125,7 @@ object AppDataJsonCodec {
                 id = item.getString("id"),
                 name = item.getString("name"),
                 imageUri = item.optNullableString("imageUri"),
+                image = item.optJSONObject("image")?.let(::decodeCharacterImage),
                 tag = item.optString("tag"),
                 level = item.optInt("level", 1).coerceAtLeast(1),
                 order = item.optInt("order"),
@@ -239,6 +246,19 @@ object AppDataJsonCodec {
             item.getString("slot") to item.getString("styleId")
         }.toMap(),
         randomStyleIds = json.optJSONArray("randomStyleIds").mapStrings(),
+    )
+
+    private fun encodeCharacterImage(image: CharacterImageRef): JSONObject = JSONObject()
+        .put("assetId", image.assetId)
+        .put("sha256", image.sha256)
+        .put("mimeType", image.mimeType)
+        .put("byteSize", image.byteSize)
+
+    private fun decodeCharacterImage(json: JSONObject): CharacterImageRef = CharacterImageRef(
+        assetId = json.getString("assetId"),
+        sha256 = json.getString("sha256"),
+        mimeType = json.getString("mimeType"),
+        byteSize = json.getLong("byteSize"),
     )
 
     private fun JSONObject.optNullableString(key: String): String? {

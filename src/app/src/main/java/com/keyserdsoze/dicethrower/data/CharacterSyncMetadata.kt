@@ -21,7 +21,14 @@ object CharacterRevision {
         canonical.section("character")
         canonical.field("id", character.id)
         canonical.field("name", character.name)
-        canonical.field("imageUri", character.imageUri)
+        // Legacy document URIs are local migration sources, never syncable content identity.
+        canonical.field("imageUri", null)
+        character.image?.let { image ->
+            canonical.field("imageAssetId", image.assetId)
+            canonical.field("imageSha256", image.sha256)
+            canonical.field("imageMimeType", image.mimeType)
+            canonical.field("imageByteSize", image.byteSize)
+        }
         canonical.field("tag", character.tag)
         canonical.field("level", character.level)
         canonical.field("order", character.order)

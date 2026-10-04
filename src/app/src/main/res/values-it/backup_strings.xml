@@ -12,7 +12,7 @@
     <string name="backup_import_confirm_title">Sostituire i dati locali di Dice Thrower?</string>
     <string name="backup_import_confirm_body">Questo backup validato contiene %1$d personaggi e %2$d tiri. Il ripristino sostituirà dati e impostazioni locali attuali.</string>
     <string name="backup_import_replace_action">Ripristina e riavvia</string>
-    <string name="backup_image_warning">I riferimenti alle immagini dei personaggi sono inclusi, ma gli URI dei documenti Android potrebbero non funzionare su un altro dispositivo. Le immagini incorporate e portabili arriveranno in una versione successiva del formato backup.</string>
+    <string name="backup_image_warning">Le immagini dei personaggi sono incorporate nel backup v2 e verificate durante il ripristino, quindi restano portabili tra dispositivi. I riferimenti URI legacy del formato v1 restano supportati quando accessibili.</string>
     <string name="backup_invalid_file">Il file non è un backup valido di Dice Thrower.</string>
     <string name="backup_unknown_error">Impossibile completare l’operazione di backup.</string>
     <string name="backup_shortcut_label">Backup e ripristino</string>

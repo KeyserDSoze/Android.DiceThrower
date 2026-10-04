@@ -10,6 +10,7 @@
     <string name="level">Level</string>
     <string name="choose_image">Choose image</string>
     <string name="image_selected">Image selected</string>
+    <string name="image_import_failed">The selected image could not be imported. Choose another image up to 10 MiB.</string>
     <string name="create">Create</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
