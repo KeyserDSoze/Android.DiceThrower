@@ -36,7 +36,7 @@ This user-directed file operation does not itself perform a developer-operated d
 
 ## Optional Google account and Drive authorization
 
-Standalone remains a first-class mode. If the user explicitly connects Google, authentication uses Android Credential Manager and Drive authorization is requested separately through Google Play services with only `drive.appdata`. Disconnect revokes that authorization while preserving the complete local snapshot. The onboarding feature does not yet upload character data; remote repository and sync behavior are tracked separately and require another Data Safety review before release.
+Standalone remains a first-class mode. If the user explicitly connects Google, authentication uses Android Credential Manager and Drive authorization is requested separately through Google Play services with only `drive.appdata`. Disconnect revokes that authorization while preserving the complete local snapshot. A Drive API v3 repository now exists for the hidden `appDataFolder`, but the running app does not yet invoke it to upload character data: reconciliation, conflict policy and runtime sync orchestration remain tracked in #10 and require another Data Safety review before release.
 
 ## Sensors
 

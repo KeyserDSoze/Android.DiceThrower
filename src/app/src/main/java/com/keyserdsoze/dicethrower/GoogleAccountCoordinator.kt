@@ -19,6 +19,7 @@ import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import com.keyserdsoze.dicethrower.data.GoogleAccountIdentity
+import com.keyserdsoze.dicethrower.data.cloud.DRIVE_APPDATA_SCOPE
 
 enum class GoogleConnectionFailure {
     CONFIGURATION,
@@ -137,7 +138,6 @@ class GoogleAccountCoordinator(private val activity: Activity) {
     }
 
     companion object {
-        const val DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata"
         private const val GOOGLE_ACCOUNT_TYPE = "com.google"
     }
 }

@@ -88,6 +88,8 @@ Quando l'utente sceglie un'immagine, Dice Thrower ne copia i byte nello storage 
 
 In preparazione alla sincronizzazione multi-dispositivo, ogni grafo personaggio possiede un `updatedAt`, una revisione SHA-256 del contenuto canonico, l'ID casuale non personale dell'ultimo writer e l'eventuale revisione remota comune. Questi metadati funzionano anche in modalità standalone. Un nuovo collegamento Google viene marcato come `initialReconciliationPending`: la futura sync non potrà considerare la connessione iniziale come autorizzazione a sovrascrivere silenziosamente dati locali o Drive.
 
+Il livello di persistenza remota usa Google Drive API v3 e soltanto l'`appDataFolder` nascosto: nessuna cartella o file Dice Thrower è visibile nel Drive dell'utente. Il formato cloud v1 separa manifest, documenti per-personaggio e immagini portabili, così la futura logica di sync può confrontare revisioni e risolvere conflitti per singolo personaggio. Il repository è sempre protetto dallo stato account: in standalone le chiamate vengono rifiutate prima di acquisire token o effettuare accessi Drive. L'orchestrazione automatica e la politica di conflitto restano responsabilità del successivo sync engine.
+
 ## Stack
 
 La baseline segue la struttura di Android.ScreenLock:

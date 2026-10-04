@@ -128,7 +128,7 @@ Version-1 through version-4 characters may still contain a document `imageUri`. 
 
 New character images are copied immediately into private `filesDir/character-images`. `CharacterImageRef` stores a deterministic `img_<sha256>` asset ID, SHA-256 content identity, normalized image MIME type and byte size; imports are capped at 10 MiB. Content-derived IDs deduplicate identical bytes without relying on source-device URIs.
 
-Reads verify size and hash before returning bytes. Missing or corrupt files therefore produce the normal avatar fallback instead of invalidating the character. Unreferenced local files are retained for seven days before deletion, which makes cancelled edits/deletes recoverable from short-lived state while still bounding orphan storage. The same portable asset envelope is intentionally provider-neutral so the later Drive `appDataFolder` repository can upload/download the exact validated bytes rather than any `content://` URI.
+Reads verify size and hash before returning bytes. Missing or corrupt files therefore produce the normal avatar fallback instead of invalidating the character. Unreferenced local files are retained for seven days before deletion, which makes cancelled edits/deletes recoverable from short-lived state while still bounding orphan storage. The same portable asset envelope is provider-neutral: the Drive `appDataFolder` repository uploads/downloads the exact validated bytes rather than any `content://` URI.
 
 Manual backup format v2 embeds only referenced assets as Base64 and validates every character reference against asset ID, size and SHA-256 during encode/decode. Both backup v2 and the provider-neutral sync serializer explicitly omit legacy document URIs. Format v1 remains accepted for backward compatibility. Restoring v2 writes verified assets before committing character data.
 
@@ -150,7 +150,17 @@ Authentication and Drive authorization are deliberately separate. `GoogleAccount
 
 `CloudAccountStore` writes that small session/UI record under `noBackupFilesDir`; it is neither Android Auto Backup state nor part of Dice Thrower manual backups. Disconnect revokes the `drive.appdata` grant and clears the Credential Manager session before switching locally to standalone. It never calls `LocalStore`, so disconnect cannot delete the local snapshot.
 
-Every new Google connection starts with `initialReconciliationPending = true`. The Drive repository (#8) and sync engine (#10) must clear it only after they have compared existing local and remote state; this prevents first connection from silently treating either side as authoritative.
+Every new Google connection starts with `initialReconciliationPending = true`. The sync engine (#10) must clear it only after it has compared existing local and remote state; this prevents first connection from silently treating either side as authoritative.
+
+## Google Drive app-data repository
+
+Remote persistence uses Google Drive API v3 directly and is confined to the hidden `appDataFolder`; it does not create or discover user-visible Drive folders. `CloudRepositoryFactory` wraps the Drive implementation in `GatedCloudRemoteRepository`, which rejects every operation before token acquisition or transport access unless the saved account state is a fully authorized Google connection. Standalone therefore has no Drive I/O path.
+
+Cloud schema v1 deliberately avoids a whole-database remote blob. It stores one manifest, one JSON document per character graph and independent portable image assets. Character Drive `appProperties` repeat the schema version, stable character ID, `updatedAt`, canonical SHA-256 revision and last-writer installation ID so the sync engine can enumerate and classify remote state before downloading every document. Image files carry their content ID, SHA-256, MIME type and byte length and are revalidated after download.
+
+Logical keys are stable and repository upserts update an existing Drive file. `files.create` is not blindly retried because it has no client idempotency key: after an ambiguous transient create failure the repository lists the stable logical key, adopts the committed file if present, then performs an idempotent update. Reads, updates and deletes use bounded exponential backoff for transient network/429/5xx failures. Authentication/authorization failures, schema mismatches, not-found state and transient transport failures remain distinct exceptions for the sync engine and UI to handle intentionally.
+
+The Drive access token is requested on demand from Google Play services `AuthorizationClient` for the connected account and is used only in the HTTP `Authorization` header; it is never written to app storage. The repository exists independently of sync policy: #10 owns reconciliation/conflict decisions and is the first layer that will invoke it from the running app.
 
 ## Shake handling
 
