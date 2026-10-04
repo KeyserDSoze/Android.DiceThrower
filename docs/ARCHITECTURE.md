@@ -150,6 +150,8 @@ Authentication and Drive authorization are deliberately separate. `GoogleAccount
 
 `CloudAccountStore` writes that small session/UI record under `noBackupFilesDir`; it is neither Android Auto Backup state nor part of Dice Thrower manual backups. Disconnect revokes the `drive.appdata` grant and clears the Credential Manager session before switching locally to standalone. It never calls `LocalStore`, so disconnect cannot delete the local snapshot.
 
+Remote-data deletion is intentionally a different lifecycle action from disconnect. After explicit destructive confirmation, the Drive repository enumerates only files carrying Dice Thrower's `dt_app=dice_thrower` ownership marker and deletes that managed set idempotently. The app then switches locally to standalone before revoking the grant, preventing the just-deleted dataset from being recreated by an automatic resume sync. No `LocalStore` mutation occurs. If Drive authorization is revoked outside Dice Thrower, an authorization-class sync failure also switches locally to standalone and exposes the normal reconnect path without blocking startup.
+
 Every new Google connection starts with `initialReconciliationPending = true`. The sync engine clears it only after a comparison completes without unresolved conflicts or concurrently skipped local writes; this prevents first connection from silently treating either side as authoritative.
 
 ## Google Drive app-data repository

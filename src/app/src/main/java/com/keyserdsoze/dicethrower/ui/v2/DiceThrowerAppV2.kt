@@ -84,6 +84,7 @@ import com.keyserdsoze.dicethrower.data.LocalStore
 import com.keyserdsoze.dicethrower.data.sync.ConflictArea
 import com.keyserdsoze.dicethrower.data.sync.SyncConflict
 import com.keyserdsoze.dicethrower.data.sync.SyncConflictResolution
+import com.keyserdsoze.dicethrower.data.sync.SyncErrorKind
 import com.keyserdsoze.dicethrower.data.sync.SyncStatus
 import com.keyserdsoze.dicethrower.data.sync.SyncStatusKind
 import com.keyserdsoze.dicethrower.dice.DiceAppearanceResolver
@@ -139,6 +140,8 @@ fun DiceThrowerAppV2(
     accountFlowBusy: Boolean,
     accountFailure: GoogleConnectionFailure?,
     syncStatus: SyncStatus,
+    cloudDeleteBusy: Boolean,
+    cloudDeleteFailed: Boolean,
     dataRefreshVersion: Int,
     onSettingsChanged: (AppSettings) -> Unit,
     onLocalDataChanged: () -> Unit,
@@ -147,6 +150,7 @@ fun DiceThrowerAppV2(
     onUseStandalone: () -> Unit,
     onConnectGoogle: () -> Unit,
     onDisconnectGoogle: () -> Unit,
+    onDeleteCloudData: () -> Unit,
     onLanguageChanged: (String) -> Unit,
 ) {
     if (cloudAccountState.onboardingRequired) {
@@ -249,10 +253,13 @@ fun DiceThrowerAppV2(
             accountFlowBusy = accountFlowBusy,
             accountFailure = accountFailure,
             syncStatus = syncStatus,
+            cloudDeleteBusy = cloudDeleteBusy,
+            cloudDeleteFailed = cloudDeleteFailed,
             onSettingsChanged = onSettingsChanged,
             onSyncNow = onSyncNow,
             onConnectGoogle = onConnectGoogle,
             onDisconnectGoogle = onDisconnectGoogle,
+            onDeleteCloudData = onDeleteCloudData,
             onLanguageChanged = onLanguageChanged,
             onBack = { route = RouteV2.CHARACTERS },
         )
@@ -1500,15 +1507,19 @@ private fun SettingsScreenV2(
     accountFlowBusy: Boolean,
     accountFailure: GoogleConnectionFailure?,
     syncStatus: SyncStatus,
+    cloudDeleteBusy: Boolean,
+    cloudDeleteFailed: Boolean,
     onSettingsChanged: (AppSettings) -> Unit,
     onSyncNow: () -> Unit,
     onConnectGoogle: () -> Unit,
     onDisconnectGoogle: () -> Unit,
+    onDeleteCloudData: () -> Unit,
     onLanguageChanged: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     var languageMenu by remember { mutableStateOf(false) }
     var confirmDisconnect by remember { mutableStateOf(false) }
+    var confirmCloudDelete by remember { mutableStateOf(false) }
 
     if (confirmDisconnect) {
         AlertDialog(
@@ -1525,6 +1536,27 @@ private fun SettingsScreenV2(
             },
             dismissButton = {
                 TextButton(onClick = { confirmDisconnect = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
+
+    if (confirmCloudDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmCloudDelete = false },
+            title = { Text(stringResource(R.string.delete_cloud_data_title)) },
+            text = { Text(stringResource(R.string.delete_cloud_data_body)) },
+            confirmButton = {
+                Button(onClick = {
+                    confirmCloudDelete = false
+                    onDeleteCloudData()
+                }) {
+                    Text(stringResource(R.string.delete_cloud_data_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmCloudDelete = false }) {
                     Text(stringResource(R.string.cancel))
                 }
             },
@@ -1599,6 +1631,30 @@ private fun SettingsScreenV2(
                                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                                     },
                                 )
+                                syncStatus.lastSuccessfulSyncAt?.let { timestamp ->
+                                    Text(
+                                        stringResource(
+                                            R.string.last_successful_sync,
+                                            DateFormat.getDateTimeInstance().format(Date(timestamp)),
+                                        ),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                if (syncStatus.pendingCount > 0) {
+                                    Text(
+                                        stringResource(R.string.sync_pending_count, syncStatus.pendingCount),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                syncStatus.error?.let { error ->
+                                    Text(
+                                        stringResource(syncErrorLabel(error)),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                }
                                 if (syncStatus.autoResolvedCount > 0) {
                                     Text(
                                         stringResource(R.string.sync_conflicts_auto_resolved, syncStatus.autoResolvedCount),
@@ -1636,9 +1692,33 @@ private fun SettingsScreenV2(
                                 }
                                 OutlinedButton(
                                     onClick = { confirmDisconnect = true },
-                                    enabled = !accountFlowBusy,
+                                    enabled = !accountFlowBusy && !cloudDeleteBusy,
                                 ) {
                                     Text(stringResource(if (accountFlowBusy) R.string.disconnecting else R.string.disconnect))
+                                }
+                                Text(
+                                    stringResource(R.string.cloud_data_contents),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                OutlinedButton(
+                                    onClick = { confirmCloudDelete = true },
+                                    enabled = !accountFlowBusy && !cloudDeleteBusy,
+                                ) {
+                                    Text(
+                                        stringResource(
+                                            if (cloudDeleteBusy) R.string.deleting_cloud_data
+                                            else R.string.delete_cloud_data,
+                                        ),
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                }
+                                if (cloudDeleteFailed) {
+                                    Text(
+                                        stringResource(R.string.delete_cloud_data_failed),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
                                 }
                             } else {
                                 Text(stringResource(R.string.standalone_mode), fontWeight = FontWeight.SemiBold)
@@ -1840,6 +1920,14 @@ private fun syncStatusLabel(status: SyncStatusKind): Int = when (status) {
     SyncStatusKind.SYNCING -> R.string.sync_status_syncing
     SyncStatusKind.ERROR -> R.string.sync_status_error
     SyncStatusKind.CONFLICT -> R.string.sync_status_conflict
+}
+
+private fun syncErrorLabel(error: SyncErrorKind): Int = when (error) {
+    SyncErrorKind.AUTHORIZATION -> R.string.sync_error_authorization
+    SyncErrorKind.TRANSIENT -> R.string.sync_error_transient
+    SyncErrorKind.SCHEMA -> R.string.sync_error_schema
+    SyncErrorKind.REMOTE_PROTOCOL -> R.string.sync_error_remote
+    SyncErrorKind.UNKNOWN -> R.string.sync_error_unknown
 }
 
 @Composable

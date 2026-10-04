@@ -91,6 +91,29 @@ class DriveCloudRepositoryTest {
         assertEquals(0, transport.files.size)
     }
 
+    @Test
+    fun deleteAllDataRemovesOnlyDiceThrowerManagedFilesAndIsRetrySafe() = runBlocking {
+        val transport = FakeDriveTransport()
+        val repository = DriveCloudRepository(transport)
+        val bytes = "portrait".toByteArray()
+        val ref = CharacterImageAssets.createRef(bytes, "image/png")
+        val character = characterDocument()
+        repository.putCharacter(character)
+        repository.putAsset(CloudAssetDocument(PortableCharacterImageAsset(ref, bytes)))
+        repository.putManifest(CloudManifest(1, 10L, "device-a", listOf(character.metadata)))
+        transport.create(
+            "other-app.json",
+            "application/json",
+            mapOf("dt_app" to "another_app"),
+            "other".toByteArray(),
+        )
+
+        assertEquals(3, repository.deleteAllData())
+        assertEquals(0, repository.deleteAllData())
+        assertEquals(1, transport.files.size)
+        assertEquals("other-app.json", transport.files.values.single().file.name)
+    }
+
     private fun characterDocument(): CloudCharacterDocument {
         val data = SyncMetadataManager.ensureMetadata(
             AppData(characters = listOf(CharacterProfile("hero", "Hero"))),

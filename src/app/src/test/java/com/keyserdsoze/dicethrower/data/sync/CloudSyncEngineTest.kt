@@ -236,6 +236,15 @@ class CloudSyncEngineTest {
             if (fail) throw CloudTransientException("offline")
         }
 
+        override suspend fun deleteAllData(): Int {
+            checkAvailable()
+            val count = characters.size + assets.size + if (manifest != null) 1 else 0
+            characters.clear()
+            assets.clear()
+            manifest = null
+            return count
+        }
+
         override suspend fun readManifest(): CloudManifest? = manifest.also { checkAvailable() }
         override suspend fun putManifest(manifest: CloudManifest) {
             checkAvailable()
