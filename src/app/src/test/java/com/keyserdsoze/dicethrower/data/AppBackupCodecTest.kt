@@ -4,6 +4,7 @@ import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.AppSettings
 import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterProfile
+import com.keyserdsoze.dicethrower.model.CharacterSyncMetadata
 import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 import com.keyserdsoze.dicethrower.model.DiceMaterial
 import com.keyserdsoze.dicethrower.model.DiceStyle
@@ -48,6 +49,7 @@ class AppBackupCodecTest {
         assertEquals(123456789L, decoded.exportedAt)
         assertTrue(raw.contains("\"imageMode\": \"uri-reference\""))
         assertTrue(raw.contains("\"diceStyles\""))
+        assertTrue(raw.contains("\"characterSyncMetadata\""))
     }
 
     @Test(expected = IllegalArgumentException::class)
@@ -117,10 +119,17 @@ class AppBackupCodecTest {
         assertNull(decoded.characters.single().defaultDiceStyleId)
         assertTrue(decoded.modifiers.isEmpty())
         assertTrue(decoded.diceStyles.isEmpty())
+        assertTrue(decoded.characterSyncMetadata.isEmpty())
         assertEquals(DiceAppearanceMode.CHARACTER_DEFAULT, decoded.rolls.single().diceAppearance.mode)
+
+        val migrated = SyncMetadataManager.ensureMetadata(decoded, "local-writer", 500L)
+        assertEquals("local-writer", migrated.characterSyncMetadata.single().writerId)
+        assertEquals(500L, migrated.characterSyncMetadata.single().updatedAt)
+        assertTrue(AppDataValidator.validate(migrated).isEmpty())
     }
 
-    private fun sampleData(): AppData = AppData(
+    private fun sampleData(): AppData {
+        val data = AppData(
         characters = listOf(
             CharacterProfile(
                 id = "character",
@@ -204,5 +213,18 @@ class AppBackupCodecTest {
                 order = 1,
             ),
         ),
-    )
+        )
+        val revision = CharacterRevision.revision(data, "character")
+        return data.copy(
+            characterSyncMetadata = listOf(
+                CharacterSyncMetadata(
+                    characterId = "character",
+                    updatedAt = 1234L,
+                    revision = revision,
+                    writerId = "writer-a",
+                    baseRevision = revision,
+                ),
+            ),
+        )
+    }
 }

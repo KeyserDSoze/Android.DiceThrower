@@ -112,6 +112,14 @@ data class AppSettings(
     val logRetention: Int = 20,
 )
 
+data class CharacterSyncMetadata(
+    val characterId: String,
+    val updatedAt: Long,
+    val revision: String,
+    val writerId: String,
+    val baseRevision: String? = null,
+)
+
 data class AppData(
     val characters: List<CharacterProfile> = emptyList(),
     val modifiers: List<CharacterModifier> = emptyList(),
@@ -119,4 +127,5 @@ data class AppData(
     val rolls: List<RollDefinition> = emptyList(),
     val logs: List<RollLog> = emptyList(),
     val diceStyles: List<DiceStyle> = emptyList(),
+    val characterSyncMetadata: List<CharacterSyncMetadata> = emptyList(),
 )

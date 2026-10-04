@@ -23,6 +23,7 @@ The app stores the following only on the user's device:
 - dashboard grouping and ordering;
 - app settings;
 - dice-roll history.
+- synchronization revision metadata and a random, non-personal local installation writer ID.
 
 ## User-directed backup and restore
 

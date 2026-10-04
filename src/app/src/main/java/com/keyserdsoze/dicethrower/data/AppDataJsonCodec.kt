@@ -4,6 +4,7 @@ import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.AppSettings
 import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterProfile
+import com.keyserdsoze.dicethrower.model.CharacterSyncMetadata
 import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 import com.keyserdsoze.dicethrower.model.DiceMaterial
 import com.keyserdsoze.dicethrower.model.DiceStyle
@@ -19,7 +20,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 object AppDataJsonCodec {
-    const val DATA_VERSION = 3
+    const val DATA_VERSION = 4
 
     fun encodeData(data: AppData): JSONObject = JSONObject()
         .put("version", DATA_VERSION)
@@ -101,6 +102,16 @@ object AppDataJsonCodec {
                     .put("order", style.order))
             }
         })
+        .put("characterSyncMetadata", JSONArray().apply {
+            data.characterSyncMetadata.sortedBy { it.characterId }.forEach { metadata ->
+                put(JSONObject()
+                    .put("characterId", metadata.characterId)
+                    .put("updatedAt", metadata.updatedAt)
+                    .put("revision", metadata.revision)
+                    .put("writerId", metadata.writerId)
+                    .put("baseRevision", metadata.baseRevision ?: JSONObject.NULL))
+            }
+        })
 
     fun decodeData(json: JSONObject): AppData = AppData(
         characters = json.optJSONArray("characters").mapObjects { item ->
@@ -176,6 +187,15 @@ object AppDataJsonCodec {
                 primaryColorArgb = item.optInt("primaryColorArgb", DEFAULT_PRIMARY_COLOR_ARGB),
                 secondaryColorArgb = item.optInt("secondaryColorArgb", DEFAULT_SECONDARY_COLOR_ARGB),
                 order = item.optInt("order"),
+            )
+        },
+        characterSyncMetadata = json.optJSONArray("characterSyncMetadata").mapObjects { item ->
+            CharacterSyncMetadata(
+                characterId = item.getString("characterId"),
+                updatedAt = item.optLong("updatedAt"),
+                revision = item.getString("revision"),
+                writerId = item.getString("writerId"),
+                baseRevision = item.optNullableString("baseRevision"),
             )
         },
     )

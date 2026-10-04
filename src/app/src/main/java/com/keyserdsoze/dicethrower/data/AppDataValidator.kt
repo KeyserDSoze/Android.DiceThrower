@@ -6,6 +6,7 @@ import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 
 object AppDataValidator {
     private val dieSlotRegex = Regex("""\d+:\d+""")
+    private val revisionRegex = Regex("[0-9a-f]{64}")
 
     fun validate(data: AppData): List<String> {
         val errors = mutableListOf<String>()
@@ -19,6 +20,7 @@ object AppDataValidator {
         checkUnique("roll", data.rolls.map { it.id }, errors)
         checkUnique("log", data.logs.map { it.id }, errors)
         checkUnique("dice style", data.diceStyles.map { it.id }, errors)
+        checkUnique("character sync metadata", data.characterSyncMetadata.map { it.characterId }, errors)
         checkUnique(
             "level rule",
             data.rolls.flatMap { roll -> roll.levelRules.map { it.id } },
@@ -45,6 +47,27 @@ object AppDataValidator {
                 } else if (style.characterId != character.id) {
                     errors += "Character ${character.id} references a dice style owned by another character"
                 }
+            }
+        }
+
+        data.characterSyncMetadata.forEach { metadata ->
+            if (metadata.characterId !in characterIds) {
+                errors += "Sync metadata references missing character ${metadata.characterId}"
+                return@forEach
+            }
+            if (metadata.updatedAt < 0L) {
+                errors += "Sync metadata for ${metadata.characterId} has an invalid updatedAt"
+            }
+            if (!revisionRegex.matches(metadata.revision)) {
+                errors += "Sync metadata for ${metadata.characterId} has an invalid revision"
+            } else if (metadata.revision != CharacterRevision.revision(data, metadata.characterId)) {
+                errors += "Sync metadata for ${metadata.characterId} does not match character content"
+            }
+            if (metadata.writerId.isBlank()) {
+                errors += "Sync metadata for ${metadata.characterId} has a blank writer ID"
+            }
+            if (metadata.baseRevision != null && !revisionRegex.matches(metadata.baseRevision)) {
+                errors += "Sync metadata for ${metadata.characterId} has an invalid base revision"
             }
         }
 

@@ -53,7 +53,7 @@ La logica dati supporta duplicazione e cancellazione sicura del personaggio:
 
 ## Backup e ripristino
 
-Dice Thrower dispone di un formato backup JSON versionato e validato. Il backup contiene personaggi, stili dei dadi, modificatori, gruppi, tiri, regole di livello, storico e impostazioni.
+Dice Thrower dispone di un formato backup JSON versionato e validato. Il backup contiene personaggi, stili dei dadi, modificatori, gruppi, tiri, regole di livello, storico, metadati di revisione e impostazioni. L'ID casuale dell'installazione corrente resta invece nello storage locale e non viene trasferito come identità del nuovo dispositivo durante un restore.
 
 La schermata **Backup & Restore** è raggiungibile anche dal long-press sull'icona launcher dell'app. Export e import usano esclusivamente il document picker Android: l'utente sceglie dove salvare o da dove leggere il file e l'app non richiede permessi storage generali né accesso Internet.
 
@@ -79,6 +79,8 @@ Vedi `play/assets/README.md`.
 ## Privacy e storage
 
 La prima versione è completamente locale: nessun account, analytics, tracking, backend o permesso Internet. Personaggi, configurazione e log restano sul dispositivo. Anche backup e restore sono operazioni esplicitamente avviate dall'utente verso un documento scelto tramite Android.
+
+In preparazione alla sincronizzazione multi-dispositivo, ogni grafo personaggio possiede un `updatedAt`, una revisione SHA-256 del contenuto canonico, l'ID casuale non personale dell'ultimo writer e l'eventuale revisione remota comune. Questi metadati funzionano anche in modalità standalone e non attivano alcuna rete o account.
 
 ## Stack
 
