@@ -2,18 +2,23 @@ package com.keyserdsoze.dicethrower.data
 
 import com.keyserdsoze.dicethrower.dice.RollFormulaResolver
 import com.keyserdsoze.dicethrower.model.AppData
+import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 
 object AppDataValidator {
+    private val dieSlotRegex = Regex("""\d+:\d+""")
+
     fun validate(data: AppData): List<String> {
         val errors = mutableListOf<String>()
         val characterIds = data.characters.map { it.id }.toSet()
         val groupById = data.groups.associateBy { it.id }
+        val styleById = data.diceStyles.associateBy { it.id }
 
         checkUnique("character", data.characters.map { it.id }, errors)
         checkUnique("modifier", data.modifiers.map { it.id }, errors)
         checkUnique("group", data.groups.map { it.id }, errors)
         checkUnique("roll", data.rolls.map { it.id }, errors)
         checkUnique("log", data.logs.map { it.id }, errors)
+        checkUnique("dice style", data.diceStyles.map { it.id }, errors)
         checkUnique(
             "level rule",
             data.rolls.flatMap { roll -> roll.levelRules.map { it.id } },
@@ -32,6 +37,15 @@ object AppDataValidator {
             if (normalizedNames.any { it.isBlank() || it == RollFormulaResolver.LEVEL_VARIABLE }) {
                 errors += "Character ${character.id} contains an invalid or reserved modifier name"
             }
+
+            character.defaultDiceStyleId?.let { styleId ->
+                val style = styleById[styleId]
+                if (style == null) {
+                    errors += "Character ${character.id} references a missing default dice style"
+                } else if (style.characterId != character.id) {
+                    errors += "Character ${character.id} references a dice style owned by another character"
+                }
+            }
         }
 
         data.modifiers.forEach { modifier ->
@@ -45,6 +59,13 @@ object AppDataValidator {
                 errors += "Group ${group.id} references a missing character"
             }
             if (group.name.isBlank()) errors += "Group ${group.id} has a blank name"
+        }
+
+        data.diceStyles.forEach { style ->
+            if (style.characterId !in characterIds) {
+                errors += "Dice style ${style.id} references a missing character"
+            }
+            if (style.name.isBlank()) errors += "Dice style ${style.id} has a blank name"
         }
 
         data.rolls.forEach { roll ->
@@ -75,6 +96,26 @@ object AppDataValidator {
                     errors += "Level rule ${rule.id} has an invalid expression"
                 }
             }
+
+            val appearance = roll.diceAppearance
+            if (appearance.mode == DiceAppearanceMode.UNIFORM && appearance.styleId == null) {
+                errors += "Roll ${roll.id} uses uniform dice appearance without a style"
+            }
+            appearance.styleId?.let { styleId ->
+                validateRollStyleReference(roll.id, roll.characterId, styleId, styleById, errors)
+            }
+            appearance.perDieStyleIds.forEach { (slot, styleId) ->
+                if (!dieSlotRegex.matches(slot)) {
+                    errors += "Roll ${roll.id} has an invalid die appearance slot $slot"
+                }
+                validateRollStyleReference(roll.id, roll.characterId, styleId, styleById, errors)
+            }
+            appearance.randomStyleIds.forEach { styleId ->
+                validateRollStyleReference(roll.id, roll.characterId, styleId, styleById, errors)
+            }
+            if (appearance.randomStyleIds.size != appearance.randomStyleIds.distinct().size) {
+                errors += "Roll ${roll.id} contains duplicate random dice style references"
+            }
         }
 
         data.logs.forEach { log ->
@@ -89,6 +130,21 @@ object AppDataValidator {
     fun requireValid(data: AppData) {
         val errors = validate(data)
         require(errors.isEmpty()) { errors.joinToString("; ") }
+    }
+
+    private fun validateRollStyleReference(
+        rollId: String,
+        characterId: String,
+        styleId: String,
+        styleById: Map<String, com.keyserdsoze.dicethrower.model.DiceStyle>,
+        errors: MutableList<String>,
+    ) {
+        val style = styleById[styleId]
+        if (style == null) {
+            errors += "Roll $rollId references a missing dice style"
+        } else if (style.characterId != characterId) {
+            errors += "Roll $rollId references a dice style owned by another character"
+        }
     }
 
     private fun checkUnique(
