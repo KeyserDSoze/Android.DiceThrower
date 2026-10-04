@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -76,17 +77,19 @@ fun ArcaneBackground(
             ),
     ) {
         Canvas(Modifier.fillMaxSize()) {
+            val topGlow = Offset(size.width * 0.12f, size.height * 0.06f)
+            val bottomGlow = Offset(size.width * 0.92f, size.height * 0.82f)
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
                         scheme.primary.copy(alpha = 0.18f),
                         Color.Transparent,
                     ),
-                    center = center.copy(x = size.width * 0.12f, y = size.height * 0.06f),
+                    center = topGlow,
                     radius = size.minDimension * 0.58f,
                 ),
                 radius = size.minDimension * 0.58f,
-                center = center.copy(x = size.width * 0.12f, y = size.height * 0.06f),
+                center = topGlow,
             )
             drawCircle(
                 brush = Brush.radialGradient(
@@ -94,11 +97,11 @@ fun ArcaneBackground(
                         scheme.tertiary.copy(alpha = 0.13f),
                         Color.Transparent,
                     ),
-                    center = center.copy(x = size.width * 0.92f, y = size.height * 0.82f),
+                    center = bottomGlow,
                     radius = size.minDimension * 0.48f,
                 ),
                 radius = size.minDimension * 0.48f,
-                center = center.copy(x = size.width * 0.92f, y = size.height * 0.82f),
+                center = bottomGlow,
             )
         }
         content()
