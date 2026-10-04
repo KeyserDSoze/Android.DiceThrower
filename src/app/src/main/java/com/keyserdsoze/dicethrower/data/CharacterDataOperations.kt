@@ -23,6 +23,7 @@ object CharacterDataOperations {
             rolls = data.rolls.filterNot { it.characterId == characterId },
             logs = data.logs.filterNot { it.characterId == characterId },
             diceStyles = data.diceStyles.filterNot { it.characterId == characterId },
+            characterSyncMetadata = data.characterSyncMetadata.filterNot { it.characterId == characterId },
         )
     }
 

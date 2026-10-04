@@ -1,6 +1,6 @@
 # Privacy Policy — Dice Thrower
 
-_Last updated: 3 October 2026_
+_Last updated: 4 October 2026_
 
 Dice Thrower is developed and published by **Alessandro Rapiti**.
 
@@ -14,7 +14,7 @@ Dice Thrower does **not** require an account and does not collect, sell, share, 
 
 ## Local app data
 
-Character names, optional character images selected by the user, free-form tags, dice-roll definitions, dashboard organization, settings, and roll history are stored locally on the device. The app does not upload this information to a server.
+Character names, optional character images selected by the user, free-form tags, dice-roll definitions, dashboard organization, settings, roll history, and synchronization revision metadata are stored locally on the device. The app also creates a random, non-personal installation writer ID used only to mark local revisions; that installation ID is stored in Android's private no-backup area so it is not restored by Android Auto Backup. The app does not upload this information to a server in the current release.
 
 ## Network access
 

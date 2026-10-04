@@ -132,8 +132,7 @@ fun DiceThrowerAppV2(
     var editMode by remember { mutableStateOf(false) }
 
     fun persist(updated: AppData) {
-        data = updated
-        store.saveData(updated)
+        data = store.saveData(updated)
     }
 
     when (route) {

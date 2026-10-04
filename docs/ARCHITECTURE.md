@@ -110,7 +110,7 @@ Supported sides: 2, 3, 4, 6, 10, 12, 20, 100.
 
 ## Persistence and migration
 
-The application stores one versioned JSON document in private SharedPreferences. Storage version 3 includes the character-owned dice-style model and roll appearance policies introduced after version 2 added character level, modifiers and level rules.
+The application stores one versioned JSON document in private SharedPreferences. Storage version 4 adds per-character sync metadata on top of version 3's character-owned dice-style model and roll appearance policies; version 2 introduced character level, modifiers and level rules.
 
 Version-1 data remains readable:
 
@@ -120,7 +120,15 @@ Version-1 data remains readable:
 
 Version-1/2 data also receives safe dice-appearance defaults when read: missing style collections are empty and rolls use the deterministic built-in glossy-resin fallback until a character style is configured.
 
-The preference key remains unchanged so existing installations migrate transparently.
+Version-1/2/3 data has no sync metadata. `LocalStore` migrates it lazily on first read by computing the current character revision, assigning a local `updatedAt` and recording the installation writer ID. The existing preference key remains unchanged.
+
+## Sync metadata foundation
+
+Each character owns a `CharacterSyncMetadata` record covering the complete character graph (profile, modifiers, groups, rolls/rules/appearance, dice styles and roll log). `CharacterRevision` canonicalizes that graph with explicit length-prefixed fields and stable ID/key ordering, then hashes UTF-8 bytes with SHA-256. Metadata itself is excluded from the content hash.
+
+`LocalStore` is the stamping boundary. Unchanged content preserves revision, `updatedAt` and last-writer identity; changed content receives a new revision, the current installation writer ID and a monotonic local `updatedAt`. The random installation writer ID lives in Android's private `noBackupFilesDir`, survives app restarts, is excluded from Android Auto Backup and is reset with the installation. Manual backups preserve character revision/base metadata but do not replace the destination installation's own writer identity.
+
+`baseRevision` is the last known common remote revision. Conflict classification compares local and remote revisions against that base: equal content is `SAME`; one-sided divergence is `LOCAL_ONLY` or `REMOTE_ONLY`; divergence on both sides is `CONFLICT`. `updatedAt` is deliberately not required to establish a conflict and remains available for later user-facing/latest-wins policy.
 
 If the model grows substantially, `LocalStore` is the boundary to replace, for example with Room.
 
