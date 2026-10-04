@@ -16,22 +16,32 @@ import com.keyserdsoze.dicethrower.data.CloudAccountStore
 import com.keyserdsoze.dicethrower.data.CloudAccountTransitions
 import com.keyserdsoze.dicethrower.data.GoogleAccountIdentity
 import com.keyserdsoze.dicethrower.data.LocalStore
+import com.keyserdsoze.dicethrower.data.cloud.CloudRepositoryFactory
+import com.keyserdsoze.dicethrower.data.sync.AndroidSyncLocalGateway
+import com.keyserdsoze.dicethrower.data.sync.CloudSyncEngine
+import com.keyserdsoze.dicethrower.data.sync.SyncStatus
+import com.keyserdsoze.dicethrower.data.sync.SyncStatusKind
 import com.keyserdsoze.dicethrower.model.AppSettings
 import com.keyserdsoze.dicethrower.ui.dice3d.Dice3DOverlayHost
 import com.keyserdsoze.dicethrower.ui.theme.DiceThrowerTheme
 import com.keyserdsoze.dicethrower.ui.v2.DiceThrowerAppV2
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 
 class MainActivity : ComponentActivity() {
     private lateinit var store: LocalStore
     private lateinit var cloudAccountStore: CloudAccountStore
     private lateinit var googleAccountCoordinator: GoogleAccountCoordinator
+    private lateinit var syncEngine: CloudSyncEngine
     private var settings by mutableStateOf(AppSettings())
     private var selectedLanguage by mutableStateOf(AppLocaleManager.SYSTEM)
     private var cloudAccountState by mutableStateOf(CloudAccountState())
     private var accountFlowBusy by mutableStateOf(false)
     private var accountFailure by mutableStateOf<GoogleConnectionFailure?>(null)
     private var pendingGoogleAccount: GoogleAccountIdentity? = null
+    private var syncStatus by mutableStateOf(SyncStatus(SyncStatusKind.LOCAL_ONLY))
+    private var dataRefreshVersion by mutableStateOf(0)
+    private var syncJob: Job? = null
 
     private val driveAuthorizationLauncher = registerForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult(),
@@ -57,6 +67,11 @@ class MainActivity : ComponentActivity() {
         googleAccountCoordinator = GoogleAccountCoordinator(this)
         settings = store.loadSettings()
         cloudAccountState = cloudAccountStore.load()
+        syncEngine = CloudSyncEngine(
+            local = AndroidSyncLocalGateway(store),
+            remote = CloudRepositoryFactory.create(this) { cloudAccountState },
+        )
+        syncStatus = syncEngine.currentStatus(cloudAccountState.googleConnected)
         selectedLanguage = AppLocaleManager.selectedLanguage(this)
         enableEdgeToEdge()
 
@@ -71,10 +86,15 @@ class MainActivity : ComponentActivity() {
                         cloudAccountState = cloudAccountState,
                         accountFlowBusy = accountFlowBusy,
                         accountFailure = accountFailure,
+                        syncStatus = syncStatus,
+                        dataRefreshVersion = dataRefreshVersion,
                         onSettingsChanged = {
                             settings = it
                             store.saveSettings(it)
+                            refreshPendingStatus()
                         },
+                        onLocalDataChanged = ::refreshPendingStatus,
+                        onSyncNow = ::syncNow,
                         onUseStandalone = {
                             updateCloudAccountState(CloudAccountTransitions.useStandalone())
                             accountFailure = null
@@ -92,6 +112,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::syncEngine.isInitialized && cloudAccountState.googleConnected) syncNow()
     }
 
     private fun connectGoogle() {
@@ -132,6 +157,7 @@ class MainActivity : ComponentActivity() {
         updateCloudAccountState(CloudAccountTransitions.connectGoogle(account))
         accountFlowBusy = false
         accountFailure = null
+        syncNow()
     }
 
     private fun cancelGoogleConnection() {
@@ -152,6 +178,7 @@ class MainActivity : ComponentActivity() {
                 lifecycleScope.launch {
                     googleAccountCoordinator.clearCredentialSession()
                     updateCloudAccountState(CloudAccountTransitions.disconnect())
+                    syncStatus = SyncStatus(SyncStatusKind.LOCAL_ONLY)
                     accountFlowBusy = false
                 }
             },
@@ -165,5 +192,23 @@ class MainActivity : ComponentActivity() {
     private fun updateCloudAccountState(state: CloudAccountState) {
         cloudAccountState = state
         cloudAccountStore.save(state)
+    }
+
+    private fun refreshPendingStatus() {
+        syncStatus = syncEngine.currentStatus(cloudAccountState.googleConnected)
+    }
+
+    private fun syncNow() {
+        if (!cloudAccountState.googleConnected || syncJob?.isActive == true) return
+        syncStatus = syncStatus.copy(kind = SyncStatusKind.SYNCING, error = null, conflicts = emptyList())
+        syncJob = lifecycleScope.launch {
+            val result = syncEngine.sync()
+            syncStatus = result.status
+            if (result.localDataChanged) dataRefreshVersion++
+            if (result.localSettingsChanged) settings = store.loadSettings()
+            if (result.initialReconciliationComplete && cloudAccountState.initialReconciliationPending) {
+                updateCloudAccountState(cloudAccountState.copy(initialReconciliationPending = false))
+            }
+        }
     }
 }

@@ -3,6 +3,7 @@ package com.keyserdsoze.dicethrower.data.cloud
 import com.keyserdsoze.dicethrower.data.AppDataJsonCodec
 import com.keyserdsoze.dicethrower.data.AppDataValidator
 import com.keyserdsoze.dicethrower.model.AppData
+import com.keyserdsoze.dicethrower.model.RollButtonPosition
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -65,6 +66,7 @@ object CloudDocumentCodec {
         require(manifest.characters.map { it.characterId }.distinct().size == manifest.characters.size) {
             "Cloud manifest contains duplicate character IDs"
         }
+        validateManifestExtras(manifest)
         return JSONObject()
             .put("kind", "manifest")
             .put("schemaVersion", manifest.schemaVersion)
@@ -73,6 +75,16 @@ object CloudDocumentCodec {
             .put("characters", JSONArray().apply {
                 manifest.characters.sortedBy { it.characterId }.forEach { put(encodeMetadata(it)) }
             })
+            .put("tombstones", JSONArray().apply {
+                manifest.tombstones.sortedBy { it.characterId }.forEach { tombstone ->
+                    put(JSONObject()
+                        .put("characterId", tombstone.characterId)
+                        .put("deletedAt", tombstone.deletedAt)
+                        .put("writerId", tombstone.writerId)
+                        .put("baseRevision", tombstone.baseRevision))
+                }
+            })
+            .put("settings", manifest.settings?.let(::encodeSettings) ?: JSONObject.NULL)
             .toString()
             .toByteArray(Charsets.UTF_8)
     }
@@ -87,12 +99,78 @@ object CloudDocumentCodec {
         require(characters.map { it.characterId }.distinct().size == characters.size) {
             "Cloud manifest contains duplicate character IDs"
         }
+        val tombstonesArray = root.optJSONArray("tombstones") ?: JSONArray()
+        val tombstones = List(tombstonesArray.length()) { index ->
+            val item = tombstonesArray.getJSONObject(index)
+            CloudCharacterTombstone(
+                characterId = item.getString("characterId"),
+                deletedAt = item.getLong("deletedAt"),
+                writerId = item.getString("writerId"),
+                baseRevision = item.getString("baseRevision"),
+            )
+        }
         CloudManifest(
             schemaVersion = schema,
             generatedAt = root.getLong("generatedAt").also { require(it >= 0L) },
             writerId = root.getString("writerId").also { require(it.isNotBlank()) },
             characters = characters,
-        )
+            tombstones = tombstones,
+            settings = root.optJSONObject("settings")?.let(::decodeSettings),
+        ).also(::validateManifestExtras)
+    }
+
+    private fun encodeSettings(document: CloudSettingsDocument): JSONObject {
+        validateSettings(document)
+        return JSONObject()
+            .put("metadata", JSONObject()
+                .put("updatedAt", document.metadata.updatedAt)
+                .put("revision", document.metadata.revision)
+                .put("writerId", document.metadata.writerId))
+            .put("values", JSONObject()
+                .put("showRollButton", document.values.showRollButton)
+                .put("rollButtonPosition", document.values.rollButtonPosition.name)
+                .put("logRetention", document.values.logRetention))
+    }
+
+    private fun decodeSettings(json: JSONObject): CloudSettingsDocument {
+        val metadata = json.getJSONObject("metadata")
+        val values = json.getJSONObject("values")
+        return CloudSettingsDocument(
+            metadata = CloudSettingsMetadata(
+                updatedAt = metadata.getLong("updatedAt"),
+                revision = metadata.getString("revision"),
+                writerId = metadata.getString("writerId"),
+            ),
+            values = CloudRoamingSettings(
+                showRollButton = values.getBoolean("showRollButton"),
+                rollButtonPosition = RollButtonPosition.valueOf(values.getString("rollButtonPosition")),
+                logRetention = values.getInt("logRetention"),
+            ),
+        ).also(::validateSettings)
+    }
+
+    private fun validateManifestExtras(manifest: CloudManifest) {
+        require(manifest.tombstones.map { it.characterId }.distinct().size == manifest.tombstones.size) {
+            "Cloud manifest contains duplicate tombstones"
+        }
+        require(manifest.characters.map { it.characterId }.toSet()
+            .intersect(manifest.tombstones.map { it.characterId }.toSet()).isEmpty()) {
+            "Cloud manifest contains both a character and tombstone for the same ID"
+        }
+        manifest.tombstones.forEach { tombstone ->
+            require(tombstone.characterId.isNotBlank()) { "Cloud tombstone character ID cannot be blank" }
+            require(tombstone.deletedAt >= 0L) { "Cloud tombstone deletedAt cannot be negative" }
+            require(tombstone.writerId.isNotBlank()) { "Cloud tombstone writer ID cannot be blank" }
+            require(tombstone.baseRevision.matches(Regex("[0-9a-f]{64}"))) { "Invalid cloud tombstone base revision" }
+        }
+        manifest.settings?.let(::validateSettings)
+    }
+
+    private fun validateSettings(document: CloudSettingsDocument) {
+        require(document.metadata.updatedAt >= 0L) { "Cloud settings updatedAt cannot be negative" }
+        require(document.metadata.revision.matches(Regex("[0-9a-f]{64}"))) { "Invalid cloud settings revision" }
+        require(document.metadata.writerId.isNotBlank()) { "Cloud settings writer ID cannot be blank" }
+        require(document.values.logRetention >= 0) { "Cloud log retention cannot be negative" }
     }
 
     private fun validateCharacterDocument(document: CloudCharacterDocument) {

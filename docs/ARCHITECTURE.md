@@ -150,7 +150,7 @@ Authentication and Drive authorization are deliberately separate. `GoogleAccount
 
 `CloudAccountStore` writes that small session/UI record under `noBackupFilesDir`; it is neither Android Auto Backup state nor part of Dice Thrower manual backups. Disconnect revokes the `drive.appdata` grant and clears the Credential Manager session before switching locally to standalone. It never calls `LocalStore`, so disconnect cannot delete the local snapshot.
 
-Every new Google connection starts with `initialReconciliationPending = true`. The sync engine (#10) must clear it only after it has compared existing local and remote state; this prevents first connection from silently treating either side as authoritative.
+Every new Google connection starts with `initialReconciliationPending = true`. The sync engine clears it only after a comparison completes without unresolved conflicts or concurrently skipped local writes; this prevents first connection from silently treating either side as authoritative.
 
 ## Google Drive app-data repository
 
@@ -160,7 +160,17 @@ Cloud schema v1 deliberately avoids a whole-database remote blob. It stores one 
 
 Logical keys are stable and repository upserts update an existing Drive file. `files.create` is not blindly retried because it has no client idempotency key: after an ambiguous transient create failure the repository lists the stable logical key, adopts the committed file if present, then performs an idempotent update. Reads, updates and deletes use bounded exponential backoff for transient network/429/5xx failures. Authentication/authorization failures, schema mismatches, not-found state and transient transport failures remain distinct exceptions for the sync engine and UI to handle intentionally.
 
-The Drive access token is requested on demand from Google Play services `AuthorizationClient` for the connected account and is used only in the HTTP `Authorization` header; it is never written to app storage. The repository exists independently of sync policy: #10 owns reconciliation/conflict decisions and is the first layer that will invoke it from the running app.
+The Drive access token is requested on demand from Google Play services `AuthorizationClient` for the connected account and is used only in the HTTP `Authorization` header; it is never written to app storage.
+
+## Offline-first sync engine
+
+`CloudSyncEngine` runs on app resume and explicit **Sync now** only for a connected Google state. UI writes never wait for Drive: `LocalStore` stamps and persists them immediately, while unsynced character revisions remain distinguishable because `baseRevision != revision`. Network/auth/schema failures become observable sync status and leave the local snapshot usable.
+
+Each pass enumerates remote metadata before transferring documents. Equal revisions transfer nothing; one-sided divergence uploads or downloads one character graph; two-sided divergence is reported as a conflict and deliberately left unresolved for #11. Downloads are committed locally only after all required remote work succeeds. The commit boundary rechecks the expected local revision, so an edit performed while a sync is in flight is never replaced by an older downloaded snapshot. An already-uploaded revision may advance only the known base of a same-device descendant, leaving that newer edit pending for the next pass.
+
+Local deletions are recorded in the private no-backup sync journal before they are forgotten. A remote tombstone carries the last accepted remote revision: an unchanged device can apply the deletion, while delete-vs-edit becomes a conflict. Tombstones are retained in the manifest to prevent an offline stale device from resurrecting a deleted character. The journal also stores roaming-settings revision/base metadata and the timestamp of the last successful pass.
+
+Roaming settings are intentionally narrow: roll-button visibility, roll-button position and log retention sync independently from character documents. Theme, shake enablement and animation/performance preference remain device-local. A settings divergence with no common base is surfaced rather than silently choosing a side.
 
 ## Shake handling
 

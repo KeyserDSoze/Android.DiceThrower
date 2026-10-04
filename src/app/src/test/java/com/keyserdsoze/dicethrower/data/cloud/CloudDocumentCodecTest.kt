@@ -5,6 +5,7 @@ import com.keyserdsoze.dicethrower.data.SyncMetadataManager
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterProfile
+import com.keyserdsoze.dicethrower.model.RollButtonPosition
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -66,6 +67,23 @@ class CloudDocumentCodecTest {
 
         assertTrue(error is CloudSchemaMismatchException)
         assertEquals(99, (error as CloudSchemaMismatchException).actual)
+    }
+
+    @Test
+    fun manifestRoundTripPreservesTombstonesAndRoamingSettings() {
+        val revision = "c".repeat(64)
+        val manifest = CloudManifest(
+            generatedAt = 50L,
+            writerId = "device-a",
+            characters = emptyList(),
+            tombstones = listOf(CloudCharacterTombstone("deleted", 40L, "device-a", revision)),
+            settings = CloudSettingsDocument(
+                CloudSettingsMetadata(45L, revision, "device-a"),
+                CloudRoamingSettings(false, RollButtonPosition.TOP_LEFT, 50),
+            ),
+        )
+
+        assertEquals(manifest, CloudDocumentCodec.decodeManifest(CloudDocumentCodec.encodeManifest(manifest)))
     }
 
     private fun metadata(id: String, hash: Char) = CloudCharacterMetadata(

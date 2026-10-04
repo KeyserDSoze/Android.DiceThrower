@@ -2,6 +2,7 @@ package com.keyserdsoze.dicethrower.data.cloud
 
 import com.keyserdsoze.dicethrower.data.PortableCharacterImageAsset
 import com.keyserdsoze.dicethrower.model.AppData
+import com.keyserdsoze.dicethrower.model.RollButtonPosition
 
 const val CLOUD_SCHEMA_VERSION = 1
 const val DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata"
@@ -19,6 +20,32 @@ data class CloudManifest(
     val generatedAt: Long,
     val writerId: String,
     val characters: List<CloudCharacterMetadata>,
+    val tombstones: List<CloudCharacterTombstone> = emptyList(),
+    val settings: CloudSettingsDocument? = null,
+)
+
+data class CloudCharacterTombstone(
+    val characterId: String,
+    val deletedAt: Long,
+    val writerId: String,
+    val baseRevision: String,
+)
+
+data class CloudSettingsMetadata(
+    val updatedAt: Long,
+    val revision: String,
+    val writerId: String,
+)
+
+data class CloudRoamingSettings(
+    val showRollButton: Boolean,
+    val rollButtonPosition: RollButtonPosition,
+    val logRetention: Int,
+)
+
+data class CloudSettingsDocument(
+    val metadata: CloudSettingsMetadata,
+    val values: CloudRoamingSettings,
 )
 
 data class CloudCharacterDocument(

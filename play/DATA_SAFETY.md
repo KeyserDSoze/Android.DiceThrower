@@ -9,11 +9,11 @@ This file records the intended Data Safety posture and must be re-reviewed befor
 - Advertising: **No**
 - Analytics: **No**
 - Dice Thrower account creation: **No**; optional existing Google account connection is supported
-- Internet permission in the Android manifest: **Yes**, for user-initiated Google identity/authorization and future sync
+- Internet permission in the Android manifest: **Yes**, for user-initiated Google identity/authorization and optional Drive sync
 
-## Data handled locally
+## Local primary copy
 
-The app stores the following only on the user's device:
+The app always stores its primary working copy on the user's device. In standalone it remains only local; with optional Google sync enabled, the character/portable-image/revision data and the roaming preference subset described below are also copied to the user's Drive `appDataFolder`:
 
 - character names and levels;
 - optional character images selected through Android's Storage Access Framework and copied into private app storage;
@@ -36,7 +36,7 @@ This user-directed file operation does not itself perform a developer-operated d
 
 ## Optional Google account and Drive authorization
 
-Standalone remains a first-class mode. If the user explicitly connects Google, authentication uses Android Credential Manager and Drive authorization is requested separately through Google Play services with only `drive.appdata`. Disconnect revokes that authorization while preserving the complete local snapshot. A Drive API v3 repository now exists for the hidden `appDataFolder`, but the running app does not yet invoke it to upload character data: reconciliation, conflict policy and runtime sync orchestration remain tracked in #10 and require another Data Safety review before release.
+Standalone remains a first-class mode. If the user explicitly connects Google, authentication uses Android Credential Manager and Drive authorization is requested separately through Google Play services with only `drive.appdata`. The app then syncs character graphs, portable images, revision/tombstone metadata and the deliberately roaming roll-button/log-retention preferences in Drive's hidden `appDataFolder` on resume and on explicit **Sync now**. Theme, shake and animation preferences remain device-local. Disconnect revokes authorization while preserving the complete local snapshot and does not itself delete remote data. Conflict-resolution policy/UI and the explicit remote-data lifecycle remain tracked in #11/#12 and require another Data Safety review before release.
 
 ## Sensors
 
