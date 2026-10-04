@@ -15,7 +15,7 @@ The private keystore is never committed. GitHub Actions restores it at runtime f
 
 The build receives the decoded temporary file through `DICETHROWER_KEYSTORE_PATH`. A release workflow must invoke Gradle with `-PrequireStableSigning=true`; this makes configuration fail immediately if either signing input is absent or the restored keystore does not exist.
 
-The release workflow is gated by the repository variable `RELEASE_ENABLED=true`. It also requires the non-secret repository variable `DICETHROWER_GOOGLE_WEB_CLIENT_ID` so a published build can never accidentally ship with Google connection disabled.
+The release workflow is gated by the repository variable `RELEASE_ENABLED=true`. By project policy, both OAuth client IDs are kept as repository secrets: `DICETHROWER_GOOGLE_WEB_CLIENT_ID` and `DICETHROWER_GOOGLE_ANDROID_CLIENT_ID`. The Web Client ID is injected into the Android resources for Credential Manager; the Android Client ID is only checked as a release-readiness prerequisite and is never embedded in the APK. A published build therefore cannot accidentally ship with Google connection disabled or with incomplete Android OAuth registration.
 
 Optional Google Play publishing is gated separately with `GOOGLE_PLAY_ENABLED=true`. It consumes the already signed AAB from the GitHub Release, verifies its SHA-256 checksum, and uploads it to the Internal track (or `GOOGLE_PLAY_AUTO_TRACKS` when explicitly configured) using the `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` repository secret.
 

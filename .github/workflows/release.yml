@@ -84,14 +84,19 @@ jobs:
         env:
           DICETHROWER_KEYSTORE_PATH: ${{ runner.temp }}/dicethrower-release.jks
           DICETHROWER_KEYSTORE_PASSWORD: ${{ secrets.DICETHROWER_KEYSTORE_PASSWORD }}
-          DICETHROWER_GOOGLE_WEB_CLIENT_ID: ${{ vars.DICETHROWER_GOOGLE_WEB_CLIENT_ID }}
+          DICETHROWER_GOOGLE_WEB_CLIENT_ID: ${{ secrets.DICETHROWER_GOOGLE_WEB_CLIENT_ID }}
+          DICETHROWER_GOOGLE_ANDROID_CLIENT_ID: ${{ secrets.DICETHROWER_GOOGLE_ANDROID_CLIENT_ID }}
         run: |
           if [[ -z "$DICETHROWER_KEYSTORE_PASSWORD" ]]; then
             echo "Missing repository secret DICETHROWER_KEYSTORE_PASSWORD" >&2
             exit 1
           fi
           if [[ -z "$DICETHROWER_GOOGLE_WEB_CLIENT_ID" ]]; then
-            echo "Missing repository variable DICETHROWER_GOOGLE_WEB_CLIENT_ID" >&2
+            echo "Missing repository secret DICETHROWER_GOOGLE_WEB_CLIENT_ID" >&2
+            exit 1
+          fi
+          if [[ -z "$DICETHROWER_GOOGLE_ANDROID_CLIENT_ID" ]]; then
+            echo "Missing repository secret DICETHROWER_GOOGLE_ANDROID_CLIENT_ID" >&2
             exit 1
           fi
           gradle --no-daemon -PrequireStableSigning=true :app:testDebugUnitTest :app:assembleRelease :app:bundleRelease
