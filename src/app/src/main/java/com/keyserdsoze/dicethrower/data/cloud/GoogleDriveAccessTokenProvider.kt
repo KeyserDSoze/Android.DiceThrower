@@ -30,14 +30,15 @@ class GoogleDriveAccessTokenProvider(
             .build()
         authorizationClient.authorize(request)
             .addOnSuccessListener { result ->
+                val token = result.accessToken
                 when {
                     result.hasResolution() -> continuation.resumeWithException(
                         CloudAuthorizationException("Google Drive app-data authorization requires user action"),
                     )
-                    result.accessToken.isNullOrBlank() -> continuation.resumeWithException(
+                    token.isNullOrBlank() -> continuation.resumeWithException(
                         CloudAuthorizationException("Google Drive did not return an access token"),
                     )
-                    else -> continuation.resume(result.accessToken!!)
+                    else -> continuation.resume(token)
                 }
             }
             .addOnFailureListener { error ->
