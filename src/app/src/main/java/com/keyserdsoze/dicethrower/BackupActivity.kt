@@ -91,6 +91,9 @@ private fun BackupScreen(
     var status by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var pendingImport by remember { mutableStateOf<AppBackupCodec.BackupPayload?>(null) }
+    val exportSuccess = stringResource(R.string.backup_export_success)
+    val unknownError = stringResource(R.string.backup_unknown_error)
+    val invalidFile = stringResource(R.string.backup_invalid_file)
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument(BACKUP_MIME_TYPE),
@@ -110,10 +113,10 @@ private fun BackupScreen(
                 }
             }.onSuccess {
                 error = null
-                status = context.getString(R.string.backup_export_success)
+                status = exportSuccess
             }.onFailure { failure ->
                 status = null
-                error = failure.message ?: context.getString(R.string.backup_unknown_error)
+                error = failure.message ?: unknownError
             }
         }
     }
@@ -134,7 +137,7 @@ private fun BackupScreen(
                 pendingImport = payload
             }.onFailure { failure ->
                 status = null
-                error = failure.message ?: context.getString(R.string.backup_invalid_file)
+                error = failure.message ?: invalidFile
             }
         }
     }
