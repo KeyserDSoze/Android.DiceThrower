@@ -15,7 +15,9 @@ data class ResolvedRollFormula(
 object RollFormulaResolver {
     const val LEVEL_VARIABLE = "level"
 
-    private val variableRegex = Regex("""\{([^{}]+)}""")
+    // Escape both braces explicitly. Android's ICU regex engine rejects a bare closing
+    // brace here even though the desktop JVM regex engine accepts it.
+    private val variableRegex = Regex("""\{([^{}]+)\}""")
 
     fun resolve(
         character: CharacterProfile,
