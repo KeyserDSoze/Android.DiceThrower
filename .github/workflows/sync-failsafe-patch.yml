@@ -74,7 +74,6 @@ jobs:
                       ),
                   )
               }'''
-          # Normalize indentation deliberately after the first one-shot patch.
           replacement = '\n'.join(line[10:] if line.startswith('          ') else line for line in replacement.splitlines())
           engine.write_text(text[:start] + replacement + text[end:])
 
