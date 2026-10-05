@@ -7,13 +7,13 @@
     <string name="backup_export_action">Sicherungsdatei speichern</string>
     <string name="backup_export_success">Sicherung erfolgreich gespeichert.</string>
     <string name="backup_import_title">Sicherung wiederherstellen</string>
-    <string name="backup_import_description">Wähle eine Dice-Thrower-Sicherung. Die Datei wird geprüft, bevor lokale Daten ersetzt werden.</string>
+    <string name="backup_import_description">Wähle eine Dice Thrower Sicherung. Die Datei wird geprüft, bevor lokale Daten ersetzt werden.</string>
     <string name="backup_import_action">Sicherungsdatei auswählen</string>
-    <string name="backup_import_confirm_title">Lokale Dice-Thrower-Daten ersetzen?</string>
+    <string name="backup_import_confirm_title">Lokale Dice Thrower Daten ersetzen?</string>
     <string name="backup_import_confirm_body">Diese geprüfte Sicherung enthält %1$d Charaktere und %2$d Würfe. Beim Wiederherstellen werden die aktuellen lokalen Daten und Einstellungen ersetzt.</string>
     <string name="backup_import_replace_action">Wiederherstellen und neu starten</string>
     <string name="backup_image_warning">Charakterbilder sind in Sicherung v2 eingebettet und werden beim Wiederherstellen geprüft, sodass sie zwischen Geräten übertragbar bleiben. Veraltete URI-Verweise aus v1 werden weiterhin unterstützt, wenn sie zugänglich sind.</string>
-    <string name="backup_invalid_file">Diese Datei ist keine gültige Dice-Thrower-Sicherung.</string>
+    <string name="backup_invalid_file">Diese Datei ist keine gültige Dice Thrower Sicherung.</string>
     <string name="backup_unknown_error">Der Sicherungsvorgang konnte nicht abgeschlossen werden.</string>
     <string name="backup_shortcut_label">Sichern und Wiederherstellen</string>
     <string name="backup_shortcut_short">Sicherung</string>
