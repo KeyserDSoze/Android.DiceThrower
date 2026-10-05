@@ -91,6 +91,7 @@ internal fun DiceStyleLibraryV2(
                     text = stringResource(R.string.dice_styles),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
                     text = stringResource(R.string.dice_styles_help),
@@ -99,7 +100,7 @@ internal fun DiceStyleLibraryV2(
                 )
             }
             IconButton(onClick = { creating = true }) {
-                Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.new_dice_style))
+                Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.new_dice_style), tint = MaterialTheme.colorScheme.onBackground)
             }
         }
 
