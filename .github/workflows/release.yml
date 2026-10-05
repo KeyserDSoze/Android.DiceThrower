@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   release:
-    if: ${{ vars.RELEASE_ENABLED == 'true' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ vars.RELEASE_ENABLED == 'true' || github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'release:') }}
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -179,8 +179,8 @@ jobs:
           VERSION: ${{ needs.release.outputs.version }}
         run: |
           mkdir -p distribution/whatsnew
-          printf 'Dice Thrower %s: first signed release with character-based rolls and optional Drive sync.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
-          printf 'Dice Thrower %s: prima release firmata con tiri per personaggio e sincronizzazione Drive opzionale.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
+          printf 'Dice Thrower %s: fixes Add Roll crashes, hardens local sync recovery, and improves RTL navigation.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
+          printf 'Dice Thrower %s: corregge i crash di Aggiungi tiro, rende più sicuro il recupero sync locale e migliora la navigazione RTL.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
 
       - name: Upload to Google Play Internal testing
         uses: r0adkll/upload-google-play@v1.1.5
