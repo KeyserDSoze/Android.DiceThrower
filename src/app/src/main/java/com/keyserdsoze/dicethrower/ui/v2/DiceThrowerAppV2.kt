@@ -699,7 +699,7 @@ private fun RollLaunchRowV2(
 }
 
 @Composable
-private fun CharacterEditContentV2(
+internal fun CharacterEditContentV2(
     character: CharacterProfile,
     data: AppData,
     onDataChanged: (AppData) -> Unit,
