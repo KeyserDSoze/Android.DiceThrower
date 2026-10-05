@@ -795,7 +795,7 @@ private fun CharacterEditContentV2(
                     modifier = Modifier.weight(1f),
                 )
                 IconButton(onClick = { showAddModifier = true }) {
-                    Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.new_modifier))
+                    Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.new_modifier), tint = MaterialTheme.colorScheme.onBackground)
                 }
             }
         }
@@ -901,7 +901,7 @@ private fun CharacterEditContentV2(
                     modifier = Modifier.weight(1f),
                 )
                 IconButton(onClick = { showAddGroup = true }) {
-                    Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.new_group))
+                    Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.new_group), tint = MaterialTheme.colorScheme.onBackground)
                 }
             }
         }
@@ -981,7 +981,7 @@ private fun CharacterEditContentV2(
                     modifier = Modifier.weight(1f),
                 )
                 IconButton(onClick = { showAddRoll = true }) {
-                    Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.new_roll))
+                    Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.new_roll), tint = MaterialTheme.colorScheme.onBackground)
                 }
             }
         }
@@ -1159,7 +1159,12 @@ private fun SectionTitleV2(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier) {
-        Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
+        Text(
+            title,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Black,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
         Text(
             subtitle,
             style = MaterialTheme.typography.bodySmall,
