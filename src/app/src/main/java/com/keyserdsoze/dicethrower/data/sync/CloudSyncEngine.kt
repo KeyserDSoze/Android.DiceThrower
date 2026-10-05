@@ -32,20 +32,20 @@ class CloudSyncEngine(
         val snapshot = local.snapshot(clock())
         val pending = pendingCount(snapshot)
         SyncStatus(
-            kind = if (pending > 0 || snapshot.journal.lastSuccessfulSyncAt == null) {
-                SyncStatusKind.PENDING
-            } else {
-                SyncStatusKind.SYNCED
-            },
-            pendingCount = pending,
-            lastSuccessfulSyncAt = snapshot.journal.lastSuccessfulSyncAt,
+  kind = if (pending > 0 || snapshot.journal.lastSuccessfulSyncAt == null) {
+      SyncStatusKind.PENDING
+  } else {
+      SyncStatusKind.SYNCED
+  },
+  pendingCount = pending,
+  lastSuccessfulSyncAt = snapshot.journal.lastSuccessfulSyncAt,
         )
     } catch (error: CancellationException) {
         throw error
     } catch (error: Exception) {
         SyncStatus(
-            kind = SyncStatusKind.ERROR,
-            error = errorKind(error),
+  kind = SyncStatusKind.ERROR,
+  error = errorKind(error),
         )
     }
 }
@@ -53,24 +53,27 @@ class CloudSyncEngine(
     suspend fun sync(
         conflictPolicy: ConflictPolicy = ConflictPolicy.ASK,
         resolutions: Map<String, SyncConflictResolution> = emptyMap(),
-    ): SyncRunResult {
-        val startedAt = clock()
-        val snapshot = local.snapshot(startedAt)
-        return try {
-            sync(snapshot, conflictPolicy, resolutions)
-        } catch (error: CancellationException) {
-            throw error
-        } catch (error: Exception) {
-            val latest = local.snapshot(clock())
-            SyncRunResult(
-                status = SyncStatus(
-                    kind = SyncStatusKind.ERROR,
-                    pendingCount = pendingCount(latest),
-                    lastSuccessfulSyncAt = latest.journal.lastSuccessfulSyncAt,
-                    error = errorKind(error),
-                ),
-            )
+    ): SyncRunResult = try {
+        val snapshot = local.snapshot(clock())
+        sync(snapshot, conflictPolicy, resolutions)
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: Exception) {
+        val latest = try {
+  local.snapshot(clock())
+        } catch (cancellation: CancellationException) {
+  throw cancellation
+        } catch (_: Exception) {
+  null
         }
+        SyncRunResult(
+  status = SyncStatus(
+      kind = SyncStatusKind.ERROR,
+      pendingCount = latest?.let(::pendingCount) ?: 0,
+      lastSuccessfulSyncAt = latest?.journal?.lastSuccessfulSyncAt,
+      error = errorKind(error),
+  ),
+        )
     }
 
     private suspend fun sync(

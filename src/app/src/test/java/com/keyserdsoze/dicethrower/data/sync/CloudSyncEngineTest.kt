@@ -230,6 +230,22 @@ class CloudSyncEngineTest {
         assertEquals(SyncErrorKind.UNKNOWN, status.error)
     }
 
+    @Test
+    fun syncReturnsErrorWhenInitialSnapshotFails() = runBlocking {
+        val failingLocal = object : SyncLocalGateway {
+  override fun snapshot(now: Long): LocalSyncSnapshot = error("corrupt sync journal")
+
+  override fun readImageAsset(ref: CharacterImageRef): PortableCharacterImageAsset? = null
+
+  override fun commit(plan: LocalSyncCommitPlan): LocalSyncCommitResult = error("not used")
+        }
+
+        val result = CloudSyncEngine(failingLocal, FakeRemote()) { 100L }.sync()
+
+        assertEquals(SyncStatusKind.ERROR, result.status.kind)
+        assertEquals(SyncErrorKind.UNKNOWN, result.status.error)
+    }
+
     private fun engine(local: FakeLocal, remote: FakeRemote, now: Long): CloudSyncEngine =
         CloudSyncEngine(local, remote) { now }
 
