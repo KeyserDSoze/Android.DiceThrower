@@ -2188,7 +2188,7 @@ private fun GroupDialogV2(
 }
 
 @Composable
-private fun RollDialogV2(
+internal fun RollDialogV2(
     title: String,
     character: CharacterProfile,
     modifiers: List<CharacterModifier>,
