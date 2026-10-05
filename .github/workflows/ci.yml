@@ -66,6 +66,8 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  # Keep an actual Android runtime regression gate: JVM unit tests did not catch
+  # the ICU regex incompatibility that caused the Add Roll production crash.
   instrumentation:
     needs: test
     runs-on: ubuntu-latest
