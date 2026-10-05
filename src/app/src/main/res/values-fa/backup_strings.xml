@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">پشتیبان‌گیری و بازیابی</string>
+    <string name="backup_restore_intro">از شخصیت‌ها، متغیرها، تاس‌ها، قوانین سطح، تنظیمات و تاریخچه پرتاب‌ها یک نسخه پشتیبان محلی بسازید. Dice Thrower چیزی بارگذاری نمی‌کند.</string>
+    <string name="backup_export_title">خروجی گرفتن از پشتیبان</string>
+    <string name="backup_export_description">یک پشتیبان JSON نسخه‌دار را با انتخابگر سند Android ذخیره کنید. محل ذخیره فایل را خودتان انتخاب می‌کنید.</string>
+    <string name="backup_export_action">ذخیره فایل پشتیبان</string>
+    <string name="backup_export_success">نسخه پشتیبان با موفقیت ذخیره شد.</string>
+    <string name="backup_import_title">بازیابی نسخه پشتیبان</string>
+    <string name="backup_import_description">یک پشتیبان Dice Thrower انتخاب کنید. فایل پیش از جایگزینی هر داده محلی اعتبارسنجی می‌شود.</string>
+    <string name="backup_import_action">انتخاب فایل پشتیبان</string>
+    <string name="backup_import_confirm_title">داده محلی Dice Thrower جایگزین شود؟</string>
+    <string name="backup_import_confirm_body">این پشتیبان اعتبارسنجی‌شده شامل %1$d شخصیت و %2$d پرتاب است. بازیابی، داده‌ها و تنظیمات محلی فعلی را جایگزین می‌کند.</string>
+    <string name="backup_import_replace_action">بازیابی و راه‌اندازی مجدد</string>
+    <string name="backup_image_warning">تصاویر شخصیت‌ها در پشتیبان v2 جاسازی و هنگام بازیابی بررسی می‌شوند، بنابراین بین دستگاه‌ها قابل انتقال می‌مانند. ارجاع‌های URI قدیمی v1 نیز در صورت دسترسی همچنان پشتیبانی می‌شوند.</string>
+    <string name="backup_invalid_file">این فایل یک پشتیبان معتبر Dice Thrower نیست.</string>
+    <string name="backup_unknown_error">عملیات پشتیبان‌گیری کامل نشد.</string>
+    <string name="backup_shortcut_label">پشتیبان‌گیری و بازیابی</string>
+    <string name="backup_shortcut_short">پشتیبان</string>
+</resources>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">காப்புப்பிரதி மற்றும் மீட்டமைப்பு</string>
+    <string name="backup_restore_intro">உங்கள் கதாபாத்திரங்கள், மாறிகள், உருட்டல்கள், நிலை விதிகள், அமைப்புகள் மற்றும் உருட்டல் வரலாற்றின் உள்ளூர் காப்புப்பிரதியை உருவாக்கவும். Dice Thrower எதையும் பதிவேற்றாது.</string>
+    <string name="backup_export_title">காப்புப்பிரதியை ஏற்றுமதி செய்</string>
+    <string name="backup_export_description">Android ஆவணத் தேர்வியைப் பயன்படுத்தி பதிப்பிடப்பட்ட JSON காப்புப்பிரதியைச் சேமிக்கவும். கோப்பு எங்கு சேமிக்கப்பட வேண்டும் என்பதை நீங்கள் தேர்வு செய்கிறீர்கள்.</string>
+    <string name="backup_export_action">காப்புப்பிரதி கோப்பைச் சேமி</string>
+    <string name="backup_export_success">காப்புப்பிரதி வெற்றிகரமாகச் சேமிக்கப்பட்டது.</string>
+    <string name="backup_import_title">காப்புப்பிரதியை மீட்டமை</string>
+    <string name="backup_import_description">Dice Thrower காப்புப்பிரதியைத் தேர்வு செய்யவும். உள்ளூர் தரவு மாற்றப்படும் முன் கோப்பு சரிபார்க்கப்படும்.</string>
+    <string name="backup_import_action">காப்புப்பிரதி கோப்பைத் தேர்வு செய்</string>
+    <string name="backup_import_confirm_title">உள்ளூர் Dice Thrower தரவை மாற்றவா?</string>
+    <string name="backup_import_confirm_body">சரிபார்க்கப்பட்ட இந்த காப்புப்பிரதியில் %1$d கதாபாத்திரங்களும் %2$d உருட்டல்களும் உள்ளன. மீட்டமைத்தால் தற்போதைய உள்ளூர் தரவும் அமைப்புகளும் மாற்றப்படும்.</string>
+    <string name="backup_import_replace_action">மீட்டமைத்து மறுதொடக்கம் செய்</string>
+    <string name="backup_image_warning">கதாபாத்திரப் படங்கள் v2 காப்புப்பிரதியில் உட்பொதிக்கப்படுகின்றன மற்றும் மீட்டமைப்பின் போது சரிபார்க்கப்படுகின்றன; எனவே அவை சாதனங்களுக்கு இடையில் மாற்றக்கூடியவையாக இருக்கும். பழைய v1 URI குறிப்புகளும் அணுகக்கூடியபோது தொடர்ந்து ஆதரிக்கப்படும்.</string>
+    <string name="backup_invalid_file">இந்த கோப்பு செல்லுபடியாகும் Dice Thrower காப்புப்பிரதி அல்ல.</string>
+    <string name="backup_unknown_error">காப்புப்பிரதி செயல்பாட்டை முடிக்க முடியவில்லை.</string>
+    <string name="backup_shortcut_label">காப்புப்பிரதி மற்றும் மீட்டமைப்பு</string>
+    <string name="backup_shortcut_short">காப்புப்பிரதி</string>
+</resources>

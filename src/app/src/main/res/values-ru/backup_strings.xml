@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">Резервная копия и восстановление</string>
+    <string name="backup_restore_intro">Создайте локальную резервную копию персонажей, переменных, бросков, правил уровней, настроек и истории бросков. Dice Thrower ничего не загружает в сеть.</string>
+    <string name="backup_export_title">Экспорт резервной копии</string>
+    <string name="backup_export_description">Сохраните версионированную резервную копию JSON через системный выбор документов Android. Место хранения файла выбираете вы.</string>
+    <string name="backup_export_action">Сохранить файл резервной копии</string>
+    <string name="backup_export_success">Резервная копия успешно сохранена.</string>
+    <string name="backup_import_title">Восстановить резервную копию</string>
+    <string name="backup_import_description">Выберите резервную копию Dice Thrower. Перед заменой локальных данных файл будет проверен.</string>
+    <string name="backup_import_action">Выбрать файл резервной копии</string>
+    <string name="backup_import_confirm_title">Заменить локальные данные Dice Thrower?</string>
+    <string name="backup_import_confirm_body">Эта проверенная резервная копия содержит %1$d персонажей и %2$d бросков. Восстановление заменит текущие локальные данные и настройки.</string>
+    <string name="backup_import_replace_action">Восстановить и перезапустить</string>
+    <string name="backup_image_warning">Изображения персонажей встроены в резервную копию v2 и проверяются при восстановлении, поэтому их можно переносить между устройствами. Устаревшие URI-ссылки v1 также поддерживаются, если они доступны.</string>
+    <string name="backup_invalid_file">Этот файл не является допустимой резервной копией Dice Thrower.</string>
+    <string name="backup_unknown_error">Не удалось завершить операцию резервного копирования.</string>
+    <string name="backup_shortcut_label">Резервная копия и восстановление</string>
+    <string name="backup_shortcut_short">Резервная копия</string>
+</resources>

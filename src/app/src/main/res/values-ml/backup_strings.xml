@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">ബാക്കപ്പും പുനഃസ്ഥാപനവും</string>
+    <string name="backup_restore_intro">നിങ്ങളുടെ കഥാപാത്രങ്ങൾ, വേരിയബിളുകൾ, റോളുകൾ, ലെവൽ നിയമങ്ങൾ, ക്രമീകരണങ്ങൾ, റോൾ ചരിത്രം എന്നിവയുടെ പ്രാദേശിക ബാക്കപ്പ് സൃഷ്ടിക്കുക. Dice Thrower ഒന്നും അപ്‌ലോഡ് ചെയ്യില്ല.</string>
+    <string name="backup_export_title">ബാക്കപ്പ് എക്സ്പോർട്ട് ചെയ്യുക</string>
+    <string name="backup_export_description">Android ഡോക്യുമെന്റ് പിക്കർ ഉപയോഗിച്ച് പതിപ്പുള്ള JSON ബാക്കപ്പ് സംരക്ഷിക്കുക. ഫയൽ എവിടെ സൂക്ഷിക്കണമെന്ന് നിങ്ങൾ തിരഞ്ഞെടുക്കുന്നു.</string>
+    <string name="backup_export_action">ബാക്കപ്പ് ഫയൽ സംരക്ഷിക്കുക</string>
+    <string name="backup_export_success">ബാക്കപ്പ് വിജയകരമായി സംരക്ഷിച്ചു.</string>
+    <string name="backup_import_title">ബാക്കപ്പ് പുനഃസ്ഥാപിക്കുക</string>
+    <string name="backup_import_description">ഒരു Dice Thrower ബാക്കപ്പ് തിരഞ്ഞെടുക്കുക. പ്രാദേശിക ഡാറ്റ മാറ്റുന്നതിന് മുമ്പ് ഫയൽ പരിശോധിക്കും.</string>
+    <string name="backup_import_action">ബാക്കപ്പ് ഫയൽ തിരഞ്ഞെടുക്കുക</string>
+    <string name="backup_import_confirm_title">പ്രാദേശിക Dice Thrower ഡാറ്റ മാറ്റണോ?</string>
+    <string name="backup_import_confirm_body">പരിശോധിച്ച ഈ ബാക്കപ്പിൽ %1$d കഥാപാത്രങ്ങളും %2$d റോളുകളും ഉണ്ട്. പുനഃസ്ഥാപിക്കുമ്പോൾ നിലവിലെ പ്രാദേശിക ഡാറ്റയും ക്രമീകരണങ്ങളും മാറ്റപ്പെടും.</string>
+    <string name="backup_import_replace_action">പുനഃസ്ഥാപിച്ച് വീണ്ടും ആരംഭിക്കുക</string>
+    <string name="backup_image_warning">കഥാപാത്ര ചിത്രങ്ങൾ v2 ബാക്കപ്പിൽ ഉൾപ്പെടുത്തി പുനഃസ്ഥാപന സമയത്ത് പരിശോധിക്കുന്നു, അതിനാൽ അവ ഉപകരണങ്ങൾക്കിടയിൽ മാറ്റാനാകും. പഴയ v1 URI റഫറൻസുകൾ ലഭ്യമെങ്കിൽ ഇപ്പോഴും പിന്തുണയ്ക്കുന്നു.</string>
+    <string name="backup_invalid_file">ഈ ഫയൽ സാധുവായ Dice Thrower ബാക്കപ്പ് അല്ല.</string>
+    <string name="backup_unknown_error">ബാക്കപ്പ് പ്രവർത്തനം പൂർത്തിയാക്കാനായില്ല.</string>
+    <string name="backup_shortcut_label">ബാക്കപ്പും പുനഃസ്ഥാപനവും</string>
+    <string name="backup_shortcut_short">ബാക്കപ്പ്</string>
+</resources>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">Αντίγραφο ασφαλείας και επαναφορά</string>
+    <string name="backup_restore_intro">Δημιουργήστε τοπικό αντίγραφο ασφαλείας για χαρακτήρες, μεταβλητές, ρίψεις, κανόνες επιπέδου, ρυθμίσεις και ιστορικό ρίψεων. Το Dice Thrower δεν ανεβάζει τίποτα.</string>
+    <string name="backup_export_title">Εξαγωγή αντιγράφου ασφαλείας</string>
+    <string name="backup_export_description">Αποθηκεύστε ένα JSON αντίγραφο ασφαλείας με έκδοση μέσω του επιλογέα εγγράφων του Android. Εσείς επιλέγετε πού αποθηκεύεται το αρχείο.</string>
+    <string name="backup_export_action">Αποθήκευση αρχείου αντιγράφου</string>
+    <string name="backup_export_success">Το αντίγραφο ασφαλείας αποθηκεύτηκε επιτυχώς.</string>
+    <string name="backup_import_title">Επαναφορά αντιγράφου ασφαλείας</string>
+    <string name="backup_import_description">Επιλέξτε ένα αντίγραφο ασφαλείας του Dice Thrower. Το αρχείο ελέγχεται πριν αντικατασταθούν τοπικά δεδομένα.</string>
+    <string name="backup_import_action">Επιλογή αρχείου αντιγράφου</string>
+    <string name="backup_import_confirm_title">Αντικατάσταση τοπικών δεδομένων Dice Thrower;</string>
+    <string name="backup_import_confirm_body">Αυτό το επαληθευμένο αντίγραφο περιέχει %1$d χαρακτήρες και %2$d ρίψεις. Η επαναφορά θα αντικαταστήσει τα τρέχοντα τοπικά δεδομένα και τις ρυθμίσεις.</string>
+    <string name="backup_import_replace_action">Επαναφορά και επανεκκίνηση</string>
+    <string name="backup_image_warning">Οι εικόνες χαρακτήρων ενσωματώνονται στο αντίγραφο v2 και επαληθεύονται κατά την επαναφορά, ώστε να μεταφέρονται μεταξύ συσκευών. Οι παλιές αναφορές URI της v1 εξακολουθούν να υποστηρίζονται όταν είναι προσβάσιμες.</string>
+    <string name="backup_invalid_file">Αυτό το αρχείο δεν είναι έγκυρο αντίγραφο ασφαλείας Dice Thrower.</string>
+    <string name="backup_unknown_error">Η λειτουργία αντιγράφου ασφαλείας δεν ολοκληρώθηκε.</string>
+    <string name="backup_shortcut_label">Αντίγραφο ασφαλείας και επαναφορά</string>
+    <string name="backup_shortcut_short">Αντίγραφο</string>
+</resources>

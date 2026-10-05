@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">Hifadhi nakala na urejeshaji</string>
+    <string name="backup_restore_intro">Unda nakala ya ndani ya wahusika, vigezo, mirusho, sheria za viwango, mipangilio na historia ya mirusho. Dice Thrower haipakii chochote mtandaoni.</string>
+    <string name="backup_export_title">Hamisha nakala</string>
+    <string name="backup_export_description">Hifadhi nakala ya JSON yenye toleo kwa kutumia kichagua hati cha Android. Unachagua mahali faili itahifadhiwa.</string>
+    <string name="backup_export_action">Hifadhi faili ya nakala</string>
+    <string name="backup_export_success">Nakala imehifadhiwa.</string>
+    <string name="backup_import_title">Rejesha nakala</string>
+    <string name="backup_import_description">Chagua nakala ya Dice Thrower. Faili itathibitishwa kabla ya data yoyote ya ndani kubadilishwa.</string>
+    <string name="backup_import_action">Chagua faili ya nakala</string>
+    <string name="backup_import_confirm_title">Badilisha data ya ndani ya Dice Thrower?</string>
+    <string name="backup_import_confirm_body">Nakala hii iliyothibitishwa ina wahusika %1$d na mirusho %2$d. Urejeshaji utabadilisha data na mipangilio ya sasa ya ndani.</string>
+    <string name="backup_import_replace_action">Rejesha na uanzishe upya</string>
+    <string name="backup_image_warning">Picha za wahusika hujumuishwa kwenye nakala v2 na kuthibitishwa wakati wa urejeshaji, hivyo zinaweza kuhamishwa kati ya vifaa. Marejeleo ya zamani ya URI ya v1 bado yanaungwa mkono yanapopatikana.</string>
+    <string name="backup_invalid_file">Faili hii si nakala halali ya Dice Thrower.</string>
+    <string name="backup_unknown_error">Operesheni ya nakala haikuweza kukamilika.</string>
+    <string name="backup_shortcut_label">Hifadhi nakala na urejeshaji</string>
+    <string name="backup_shortcut_short">Nakala</string>
+</resources>

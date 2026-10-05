@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">Copie de rezervă și restaurare</string>
+    <string name="backup_restore_intro">Creează o copie locală pentru personaje, variabile, aruncări, reguli de nivel, setări și istoricul aruncărilor. Dice Thrower nu încarcă nimic online.</string>
+    <string name="backup_export_title">Exportă copia de rezervă</string>
+    <string name="backup_export_description">Salvează o copie JSON versionată folosind selectorul de documente Android. Tu alegi unde este stocat fișierul.</string>
+    <string name="backup_export_action">Salvează fișierul de rezervă</string>
+    <string name="backup_export_success">Copia de rezervă a fost salvată cu succes.</string>
+    <string name="backup_import_title">Restaurează copia de rezervă</string>
+    <string name="backup_import_description">Alege o copie Dice Thrower. Fișierul este validat înainte de înlocuirea oricăror date locale.</string>
+    <string name="backup_import_action">Alege fișierul de rezervă</string>
+    <string name="backup_import_confirm_title">Înlocuiești datele locale Dice Thrower?</string>
+    <string name="backup_import_confirm_body">Această copie validată conține %1$d personaje și %2$d aruncări. Restaurarea va înlocui datele locale și setările curente.</string>
+    <string name="backup_import_replace_action">Restaurează și repornește</string>
+    <string name="backup_image_warning">Imaginile personajelor sunt incluse în copia v2 și verificate la restaurare, astfel încât rămân transferabile între dispozitive. Referințele URI vechi din v1 sunt încă acceptate când sunt accesibile.</string>
+    <string name="backup_invalid_file">Acest fișier nu este o copie de rezervă Dice Thrower validă.</string>
+    <string name="backup_unknown_error">Operația de copiere de rezervă nu a putut fi finalizată.</string>
+    <string name="backup_shortcut_label">Copie de rezervă și restaurare</string>
+    <string name="backup_shortcut_short">Copie</string>
+</resources>

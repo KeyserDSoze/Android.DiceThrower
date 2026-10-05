@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">Kopia zapasowa i przywracanie</string>
+    <string name="backup_restore_intro">Utwórz lokalną kopię postaci, zmiennych, rzutów, reguł poziomu, ustawień i historii rzutów. Dice Thrower niczego nie wysyła.</string>
+    <string name="backup_export_title">Eksportuj kopię zapasową</string>
+    <string name="backup_export_description">Zapisz wersjonowaną kopię JSON za pomocą selektora dokumentów Androida. Sam wybierasz miejsce zapisania pliku.</string>
+    <string name="backup_export_action">Zapisz plik kopii</string>
+    <string name="backup_export_success">Kopia zapasowa została zapisana.</string>
+    <string name="backup_import_title">Przywróć kopię zapasową</string>
+    <string name="backup_import_description">Wybierz kopię Dice Thrower. Plik zostanie zweryfikowany przed zastąpieniem jakichkolwiek danych lokalnych.</string>
+    <string name="backup_import_action">Wybierz plik kopii</string>
+    <string name="backup_import_confirm_title">Zastąpić lokalne dane Dice Thrower?</string>
+    <string name="backup_import_confirm_body">Ta zweryfikowana kopia zawiera %1$d postaci i %2$d rzutów. Przywrócenie zastąpi bieżące dane lokalne i ustawienia.</string>
+    <string name="backup_import_replace_action">Przywróć i uruchom ponownie</string>
+    <string name="backup_image_warning">Obrazy postaci są osadzane w kopii v2 i sprawdzane podczas przywracania, dzięki czemu można je przenosić między urządzeniami. Starsze odwołania URI z v1 są nadal obsługiwane, jeśli są dostępne.</string>
+    <string name="backup_invalid_file">Ten plik nie jest prawidłową kopią Dice Thrower.</string>
+    <string name="backup_unknown_error">Nie udało się ukończyć operacji tworzenia kopii.</string>
+    <string name="backup_shortcut_label">Kopia zapasowa i przywracanie</string>
+    <string name="backup_shortcut_short">Kopia</string>
+</resources>

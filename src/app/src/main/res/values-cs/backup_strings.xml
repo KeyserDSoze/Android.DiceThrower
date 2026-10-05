@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">Záloha a obnovení</string>
+    <string name="backup_restore_intro">Vytvořte místní zálohu postav, proměnných, hodů, pravidel úrovní, nastavení a historie hodů. Dice Thrower nic neodesílá.</string>
+    <string name="backup_export_title">Exportovat zálohu</string>
+    <string name="backup_export_description">Uložte verzovanou zálohu JSON pomocí výběru dokumentů Androidu. Umístění souboru si zvolíte sami.</string>
+    <string name="backup_export_action">Uložit soubor zálohy</string>
+    <string name="backup_export_success">Záloha byla úspěšně uložena.</string>
+    <string name="backup_import_title">Obnovit zálohu</string>
+    <string name="backup_import_description">Vyberte zálohu Dice Thrower. Soubor bude ověřen před nahrazením jakýchkoli místních dat.</string>
+    <string name="backup_import_action">Vybrat soubor zálohy</string>
+    <string name="backup_import_confirm_title">Nahradit místní data Dice Thrower?</string>
+    <string name="backup_import_confirm_body">Tato ověřená záloha obsahuje %1$d postav a %2$d hodů. Obnovení nahradí aktuální místní data a nastavení.</string>
+    <string name="backup_import_replace_action">Obnovit a restartovat</string>
+    <string name="backup_image_warning">Obrázky postav jsou vloženy do zálohy v2 a při obnovení ověřeny, takže je lze přenášet mezi zařízeními. Starší odkazy URI z v1 jsou nadále podporovány, pokud jsou dostupné.</string>
+    <string name="backup_invalid_file">Tento soubor není platná záloha Dice Thrower.</string>
+    <string name="backup_unknown_error">Operaci zálohování se nepodařilo dokončit.</string>
+    <string name="backup_shortcut_label">Záloha a obnovení</string>
+    <string name="backup_shortcut_short">Záloha</string>
+</resources>

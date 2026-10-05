@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">Biztonsági mentés és visszaállítás</string>
+    <string name="backup_restore_intro">Készíts helyi biztonsági mentést a karakterekről, változókról, dobásokról, szintszabályokról, beállításokról és dobási előzményekről. A Dice Thrower semmit sem tölt fel.</string>
+    <string name="backup_export_title">Biztonsági mentés exportálása</string>
+    <string name="backup_export_description">Ments verziózott JSON biztonsági mentést az Android dokumentumválasztójával. Te döntöd el, hová kerüljön a fájl.</string>
+    <string name="backup_export_action">Biztonsági mentés fájljának mentése</string>
+    <string name="backup_export_success">A biztonsági mentés sikeresen elkészült.</string>
+    <string name="backup_import_title">Biztonsági mentés visszaállítása</string>
+    <string name="backup_import_description">Válassz egy Dice Thrower biztonsági mentést. A fájlt a helyi adatok cseréje előtt ellenőrizzük.</string>
+    <string name="backup_import_action">Biztonsági mentés fájljának kiválasztása</string>
+    <string name="backup_import_confirm_title">Lecseréled a helyi Dice Thrower adatokat?</string>
+    <string name="backup_import_confirm_body">Ez az ellenőrzött mentés %1$d karaktert és %2$d dobást tartalmaz. A visszaállítás lecseréli a jelenlegi helyi adatokat és beállításokat.</string>
+    <string name="backup_import_replace_action">Visszaállítás és újraindítás</string>
+    <string name="backup_image_warning">A karakterképek a v2 mentésbe vannak ágyazva és visszaállításkor ellenőrzésre kerülnek, így eszközök között is átvihetők. A régi v1 URI-hivatkozások továbbra is támogatottak, ha elérhetők.</string>
+    <string name="backup_invalid_file">Ez a fájl nem érvényes Dice Thrower biztonsági mentés.</string>
+    <string name="backup_unknown_error">A biztonsági mentési műveletet nem sikerült befejezni.</string>
+    <string name="backup_shortcut_label">Biztonsági mentés és visszaállítás</string>
+    <string name="backup_shortcut_short">Mentés</string>
+</resources>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">Sandaran dan pemulihan</string>
+    <string name="backup_restore_intro">Buat sandaran setempat bagi watak, pemboleh ubah, balingan, peraturan tahap, tetapan dan sejarah balingan anda. Dice Thrower tidak memuat naik apa-apa.</string>
+    <string name="backup_export_title">Eksport sandaran</string>
+    <string name="backup_export_description">Simpan sandaran JSON berversi menggunakan pemilih dokumen Android. Anda memilih tempat fail disimpan.</string>
+    <string name="backup_export_action">Simpan fail sandaran</string>
+    <string name="backup_export_success">Sandaran berjaya disimpan.</string>
+    <string name="backup_import_title">Pulihkan sandaran</string>
+    <string name="backup_import_description">Pilih sandaran Dice Thrower. Fail disahkan sebelum sebarang data setempat digantikan.</string>
+    <string name="backup_import_action">Pilih fail sandaran</string>
+    <string name="backup_import_confirm_title">Gantikan data Dice Thrower setempat?</string>
+    <string name="backup_import_confirm_body">Sandaran yang disahkan ini mengandungi %1$d watak dan %2$d balingan. Pemulihan akan menggantikan data setempat dan tetapan semasa.</string>
+    <string name="backup_import_replace_action">Pulihkan dan mulakan semula</string>
+    <string name="backup_image_warning">Imej watak dibenamkan dalam sandaran v2 dan disahkan semasa pemulihan, jadi ia kekal mudah dipindahkan antara peranti. Rujukan URI lama v1 masih disokong apabila boleh dicapai.</string>
+    <string name="backup_invalid_file">Fail ini bukan sandaran Dice Thrower yang sah.</string>
+    <string name="backup_unknown_error">Operasi sandaran tidak dapat diselesaikan.</string>
+    <string name="backup_shortcut_label">Sandaran dan pemulihan</string>
+    <string name="backup_shortcut_short">Sandaran</string>
+</resources>

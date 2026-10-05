@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">အရန်သိမ်းခြင်းနှင့် ပြန်လည်ရယူခြင်း</string>
+    <string name="backup_restore_intro">ဇာတ်ကောင်များ၊ ပြောင်းလဲကိန်းများ၊ လှိမ့်မှုများ၊ အဆင့်စည်းမျဉ်းများ၊ ဆက်တင်များနှင့် လှိမ့်မှုမှတ်တမ်းတို့၏ စက်တွင်းအရန်ကို ဖန်တီးပါ။ Dice Thrower သည် မည်သည့်ဒေတာကိုမျှ အပ်လုဒ်မလုပ်ပါ။</string>
+    <string name="backup_export_title">အရန်ကို ထုတ်ယူရန်</string>
+    <string name="backup_export_description">Android စာရွက်စာတမ်းရွေးချယ်ကိရိယာဖြင့် ဗားရှင်းပါ JSON အရန်ကို သိမ်းပါ။ ဖိုင်သိမ်းမည့်နေရာကို သင်ရွေးချယ်ပါသည်။</string>
+    <string name="backup_export_action">အရန်ဖိုင် သိမ်းရန်</string>
+    <string name="backup_export_success">အရန်ကို အောင်မြင်စွာ သိမ်းပြီးပါပြီ။</string>
+    <string name="backup_import_title">အရန်ကို ပြန်လည်ရယူရန်</string>
+    <string name="backup_import_description">Dice Thrower အရန်တစ်ခုကို ရွေးချယ်ပါ။ စက်တွင်းဒေတာကို အစားထိုးမီ ဖိုင်ကို စစ်ဆေးပါမည်။</string>
+    <string name="backup_import_action">အရန်ဖိုင် ရွေးရန်</string>
+    <string name="backup_import_confirm_title">စက်တွင်း Dice Thrower ဒေတာကို အစားထိုးမလား?</string>
+    <string name="backup_import_confirm_body">စစ်ဆေးပြီးသော ဤအရန်တွင် ဇာတ်ကောင် %1$d ခုနှင့် လှိမ့်မှု %2$d ခု ပါရှိသည်။ ပြန်လည်ရယူခြင်းသည် လက်ရှိစက်တွင်းဒေတာနှင့် ဆက်တင်များကို အစားထိုးပါမည်။</string>
+    <string name="backup_import_replace_action">ပြန်လည်ရယူပြီး ပြန်စတင်ရန်</string>
+    <string name="backup_image_warning">ဇာတ်ကောင်ပုံများကို v2 အရန်ထဲတွင် ထည့်သွင်းထားပြီး ပြန်လည်ရယူချိန်တွင် စစ်ဆေးသဖြင့် စက်များအကြား ရွှေ့ပြောင်းနိုင်ပါသည်။ အဟောင်း v1 URI ရည်ညွှန်းချက်များကို ဝင်ရောက်နိုင်သရွေ့ ဆက်လက်ပံ့ပိုးသည်။</string>
+    <string name="backup_invalid_file">ဤဖိုင်သည် မှန်ကန်သော Dice Thrower အရန်မဟုတ်ပါ။</string>
+    <string name="backup_unknown_error">အရန်လုပ်ဆောင်မှုကို မပြီးမြောက်နိုင်ပါ။</string>
+    <string name="backup_shortcut_label">အရန်သိမ်းခြင်းနှင့် ပြန်လည်ရယူခြင်း</string>
+    <string name="backup_shortcut_short">အရန်</string>
+</resources>

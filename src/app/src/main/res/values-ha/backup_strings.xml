@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">Ajiyar baya da maidowa</string>
+    <string name="backup_restore_intro">Ƙirƙiri ajiyar baya ta cikin na’ura don jarumai, canje-canje, jifa, dokokin mataki, saituna da tarihin jifa. Dice Thrower ba ya ɗora komai zuwa intanet.</string>
+    <string name="backup_export_title">Fitar da ajiyar baya</string>
+    <string name="backup_export_description">Ajiye ajiyar JSON mai sigar ta amfani da zaɓin takardun Android. Kai ne za ka zaɓi inda za a adana fayil ɗin.</string>
+    <string name="backup_export_action">Ajiye fayil ɗin ajiyar baya</string>
+    <string name="backup_export_success">An ajiye ajiyar baya cikin nasara.</string>
+    <string name="backup_import_title">Mayar da ajiyar baya</string>
+    <string name="backup_import_description">Zaɓi ajiyar Dice Thrower. Za a tabbatar da fayil ɗin kafin a maye gurbin bayanan cikin na’ura.</string>
+    <string name="backup_import_action">Zaɓi fayil ɗin ajiyar baya</string>
+    <string name="backup_import_confirm_title">A maye gurbin bayanan Dice Thrower na cikin na’ura?</string>
+    <string name="backup_import_confirm_body">Wannan ajiyar da aka tabbatar tana da jarumai %1$d da jifa %2$d. Maidowa zai maye gurbin bayanai da saitunan cikin na’ura na yanzu.</string>
+    <string name="backup_import_replace_action">Mayar sannan a sake farawa</string>
+    <string name="backup_image_warning">Ana saka hotunan jarumai a ajiyar v2 kuma ana tabbatar da su yayin maidowa, don haka ana iya motsa su tsakanin na’urori. Tsoffin nassoshin URI na v1 har yanzu suna aiki idan ana iya samun su.</string>
+    <string name="backup_invalid_file">Wannan fayil ɗin ba ingantaccen ajiyar Dice Thrower ba ne.</string>
+    <string name="backup_unknown_error">Ba a iya kammala aikin ajiyar baya ba.</string>
+    <string name="backup_shortcut_label">Ajiyar baya da maidowa</string>
+    <string name="backup_shortcut_short">Ajiyar baya</string>
+</resources>

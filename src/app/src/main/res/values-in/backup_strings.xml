@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">Cadangan dan pemulihan</string>
+    <string name="backup_restore_intro">Buat cadangan lokal karakter, variabel, lemparan, aturan level, pengaturan, dan riwayat lemparan Anda. Dice Thrower tidak mengunggah apa pun.</string>
+    <string name="backup_export_title">Ekspor cadangan</string>
+    <string name="backup_export_description">Simpan cadangan JSON berversi melalui pemilih dokumen Android. Anda menentukan tempat file disimpan.</string>
+    <string name="backup_export_action">Simpan file cadangan</string>
+    <string name="backup_export_success">Cadangan berhasil disimpan.</string>
+    <string name="backup_import_title">Pulihkan cadangan</string>
+    <string name="backup_import_description">Pilih cadangan Dice Thrower. File akan divalidasi sebelum data lokal diganti.</string>
+    <string name="backup_import_action">Pilih file cadangan</string>
+    <string name="backup_import_confirm_title">Ganti data lokal Dice Thrower?</string>
+    <string name="backup_import_confirm_body">Cadangan tervalidasi ini berisi %1$d karakter dan %2$d lemparan. Pemulihan akan mengganti data lokal dan pengaturan saat ini.</string>
+    <string name="backup_import_replace_action">Pulihkan dan mulai ulang</string>
+    <string name="backup_image_warning">Gambar karakter disematkan dalam cadangan v2 dan diverifikasi saat pemulihan, sehingga tetap dapat dipindahkan antarperangkat. Referensi URI lama v1 tetap didukung jika dapat diakses.</string>
+    <string name="backup_invalid_file">File ini bukan cadangan Dice Thrower yang valid.</string>
+    <string name="backup_unknown_error">Operasi pencadangan tidak dapat diselesaikan.</string>
+    <string name="backup_shortcut_label">Cadangan dan pemulihan</string>
+    <string name="backup_shortcut_short">Cadangan</string>
+</resources>

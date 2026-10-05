@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">Резервне копіювання та відновлення</string>
+    <string name="backup_restore_intro">Створіть локальну резервну копію персонажів, змінних, кидків, правил рівнів, налаштувань та історії кидків. Dice Thrower нічого не завантажує в мережу.</string>
+    <string name="backup_export_title">Експортувати резервну копію</string>
+    <string name="backup_export_description">Збережіть версіоновану резервну копію JSON через системний вибір документів Android. Місце збереження файлу обираєте ви.</string>
+    <string name="backup_export_action">Зберегти файл резервної копії</string>
+    <string name="backup_export_success">Резервну копію успішно збережено.</string>
+    <string name="backup_import_title">Відновити резервну копію</string>
+    <string name="backup_import_description">Оберіть резервну копію Dice Thrower. Файл буде перевірено перед заміною будь-яких локальних даних.</string>
+    <string name="backup_import_action">Обрати файл резервної копії</string>
+    <string name="backup_import_confirm_title">Замінити локальні дані Dice Thrower?</string>
+    <string name="backup_import_confirm_body">Ця перевірена резервна копія містить %1$d персонажів і %2$d кидків. Відновлення замінить поточні локальні дані та налаштування.</string>
+    <string name="backup_import_replace_action">Відновити й перезапустити</string>
+    <string name="backup_image_warning">Зображення персонажів вбудовуються в резервну копію v2 і перевіряються під час відновлення, тому їх можна переносити між пристроями. Старі URI-посилання v1 також підтримуються, якщо вони доступні.</string>
+    <string name="backup_invalid_file">Цей файл не є дійсною резервною копією Dice Thrower.</string>
+    <string name="backup_unknown_error">Не вдалося завершити операцію резервного копіювання.</string>
+    <string name="backup_shortcut_label">Резервне копіювання та відновлення</string>
+    <string name="backup_shortcut_short">Резервна копія</string>
+</resources>

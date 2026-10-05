@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">બેકઅપ અને પુનઃસ્થાપન</string>
+    <string name="backup_restore_intro">તમારા પાત્રો, ચલ, રોલ્સ, લેવલ નિયમો, સેટિંગ્સ અને રોલ ઇતિહાસનો સ્થાનિક બેકઅપ બનાવો. Dice Thrower કંઈપણ અપલોડ કરતું નથી.</string>
+    <string name="backup_export_title">બેકઅપ નિકાસ કરો</string>
+    <string name="backup_export_description">Android દસ્તાવેજ પસંદકર્તા વડે વર્ઝનવાળો JSON બેકઅપ સાચવો. ફાઇલ ક્યાં રાખવી તે તમે પસંદ કરો છો.</string>
+    <string name="backup_export_action">બેકઅપ ફાઇલ સાચવો</string>
+    <string name="backup_export_success">બેકઅપ સફળતાપૂર્વક સાચવાયો.</string>
+    <string name="backup_import_title">બેકઅપ પુનઃસ્થાપિત કરો</string>
+    <string name="backup_import_description">Dice Thrower બેકઅપ પસંદ કરો. કોઈ સ્થાનિક ડેટા બદલાય તે પહેલાં ફાઇલ ચકાસવામાં આવે છે.</string>
+    <string name="backup_import_action">બેકઅપ ફાઇલ પસંદ કરો</string>
+    <string name="backup_import_confirm_title">સ્થાનિક Dice Thrower ડેટા બદલવો?</string>
+    <string name="backup_import_confirm_body">આ ચકાસાયેલ બેકઅપમાં %1$d પાત્રો અને %2$d રોલ્સ છે. પુનઃસ્થાપન વર્તમાન સ્થાનિક ડેટા અને સેટિંગ્સને બદલી દેશે.</string>
+    <string name="backup_import_replace_action">પુનઃસ્થાપિત કરો અને ફરી શરૂ કરો</string>
+    <string name="backup_image_warning">પાત્ર ચિત્રો v2 બેકઅપમાં સામેલ થાય છે અને પુનઃસ્થાપન દરમિયાન ચકાસાય છે, તેથી તે ઉપકરણો વચ્ચે ખસેડી શકાય છે. જૂના v1 URI સંદર્ભો ઉપલબ્ધ હોય ત્યારે હજુ પણ સમર્થિત છે.</string>
+    <string name="backup_invalid_file">આ ફાઇલ માન્ય Dice Thrower બેકઅપ નથી.</string>
+    <string name="backup_unknown_error">બેકઅપ પ્રક્રિયા પૂર્ણ કરી શકાયી નથી.</string>
+    <string name="backup_shortcut_label">બેકઅપ અને પુનઃસ્થાપન</string>
+    <string name="backup_shortcut_short">બેકઅપ</string>
+</resources>

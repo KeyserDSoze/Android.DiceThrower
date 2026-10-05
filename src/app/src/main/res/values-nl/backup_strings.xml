@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">Back-up en herstel</string>
+    <string name="backup_restore_intro">Maak een lokale back-up van je personages, variabelen, worpen, levelregels, instellingen en worpgeschiedenis. Dice Thrower uploadt niets.</string>
+    <string name="backup_export_title">Back-up exporteren</string>
+    <string name="backup_export_description">Sla een JSON-back-up met versie op via de Android-documentkiezer. Je kiest zelf waar het bestand wordt opgeslagen.</string>
+    <string name="backup_export_action">Back-upbestand opslaan</string>
+    <string name="backup_export_success">Back-up is opgeslagen.</string>
+    <string name="backup_import_title">Back-up herstellen</string>
+    <string name="backup_import_description">Kies een Dice Thrower-back-up. Het bestand wordt gecontroleerd voordat lokale gegevens worden vervangen.</string>
+    <string name="backup_import_action">Back-upbestand kiezen</string>
+    <string name="backup_import_confirm_title">Lokale Dice Thrower-gegevens vervangen?</string>
+    <string name="backup_import_confirm_body">Deze gecontroleerde back-up bevat %1$d personages en %2$d worpen. Herstellen vervangt de huidige lokale gegevens en instellingen.</string>
+    <string name="backup_import_replace_action">Herstellen en opnieuw starten</string>
+    <string name="backup_image_warning">Personageafbeeldingen zijn opgenomen in back-up v2 en worden bij herstel gecontroleerd, zodat ze tussen apparaten overdraagbaar blijven. Oude v1-URI-verwijzingen worden nog ondersteund wanneer ze toegankelijk zijn.</string>
+    <string name="backup_invalid_file">Dit bestand is geen geldige Dice Thrower-back-up.</string>
+    <string name="backup_unknown_error">De back-upbewerking kon niet worden voltooid.</string>
+    <string name="backup_shortcut_label">Back-up en herstel</string>
+    <string name="backup_shortcut_short">Back-up</string>
+</resources>

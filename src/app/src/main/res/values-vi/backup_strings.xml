@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">Sao lưu và khôi phục</string>
+    <string name="backup_restore_intro">Tạo bản sao lưu cục bộ cho nhân vật, biến, lượt gieo, quy tắc cấp độ, cài đặt và lịch sử gieo. Dice Thrower không tải dữ liệu nào lên mạng.</string>
+    <string name="backup_export_title">Xuất bản sao lưu</string>
+    <string name="backup_export_description">Lưu bản sao lưu JSON có phiên bản bằng trình chọn tài liệu của Android. Bạn tự chọn nơi lưu tệp.</string>
+    <string name="backup_export_action">Lưu tệp sao lưu</string>
+    <string name="backup_export_success">Đã lưu bản sao lưu thành công.</string>
+    <string name="backup_import_title">Khôi phục bản sao lưu</string>
+    <string name="backup_import_description">Chọn một bản sao lưu Dice Thrower. Tệp sẽ được xác thực trước khi dữ liệu cục bộ bị thay thế.</string>
+    <string name="backup_import_action">Chọn tệp sao lưu</string>
+    <string name="backup_import_confirm_title">Thay thế dữ liệu Dice Thrower cục bộ?</string>
+    <string name="backup_import_confirm_body">Bản sao lưu đã xác thực này có %1$d nhân vật và %2$d lượt gieo. Khôi phục sẽ thay thế dữ liệu cục bộ và cài đặt hiện tại.</string>
+    <string name="backup_import_replace_action">Khôi phục và khởi động lại</string>
+    <string name="backup_image_warning">Ảnh nhân vật được nhúng trong bản sao lưu v2 và xác minh khi khôi phục, nên có thể chuyển giữa các thiết bị. Tham chiếu URI cũ của v1 vẫn được hỗ trợ khi có thể truy cập.</string>
+    <string name="backup_invalid_file">Tệp này không phải là bản sao lưu Dice Thrower hợp lệ.</string>
+    <string name="backup_unknown_error">Không thể hoàn tất thao tác sao lưu.</string>
+    <string name="backup_shortcut_label">Sao lưu và khôi phục</string>
+    <string name="backup_shortcut_short">Sao lưu</string>
+</resources>

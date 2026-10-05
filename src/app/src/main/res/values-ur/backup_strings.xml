@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">بیک اپ اور بحالی</string>
+    <string name="backup_restore_intro">اپنے کرداروں، متغیرات، رولز، لیول قواعد، ترتیبات اور رول ہسٹری کا مقامی بیک اپ بنائیں۔ Dice Thrower کچھ بھی اپ لوڈ نہیں کرتا۔</string>
+    <string name="backup_export_title">بیک اپ برآمد کریں</string>
+    <string name="backup_export_description">Android دستاویز منتخب کرنے والے کے ذریعے ورژن شدہ JSON بیک اپ محفوظ کریں۔ فائل کہاں محفوظ ہو، یہ آپ طے کرتے ہیں۔</string>
+    <string name="backup_export_action">بیک اپ فائل محفوظ کریں</string>
+    <string name="backup_export_success">بیک اپ کامیابی سے محفوظ ہو گیا۔</string>
+    <string name="backup_import_title">بیک اپ بحال کریں</string>
+    <string name="backup_import_description">Dice Thrower بیک اپ منتخب کریں۔ مقامی ڈیٹا بدلنے سے پہلے فائل کی توثیق کی جاتی ہے۔</string>
+    <string name="backup_import_action">بیک اپ فائل منتخب کریں</string>
+    <string name="backup_import_confirm_title">مقامی Dice Thrower ڈیٹا بدلیں؟</string>
+    <string name="backup_import_confirm_body">اس تصدیق شدہ بیک اپ میں %1$d کردار اور %2$d رولز ہیں۔ بحالی موجودہ مقامی ڈیٹا اور ترتیبات کو بدل دے گی۔</string>
+    <string name="backup_import_replace_action">بحال کریں اور دوبارہ شروع کریں</string>
+    <string name="backup_image_warning">کرداروں کی تصاویر بیک اپ v2 میں شامل اور بحالی کے دوران تصدیق کی جاتی ہیں، اس لیے انہیں آلات کے درمیان منتقل کیا جا سکتا ہے۔ پرانے v1 URI حوالہ جات دستیاب ہونے پر اب بھی معاون ہیں۔</string>
+    <string name="backup_invalid_file">یہ فائل درست Dice Thrower بیک اپ نہیں ہے۔</string>
+    <string name="backup_unknown_error">بیک اپ کا عمل مکمل نہیں ہو سکا۔</string>
+    <string name="backup_shortcut_label">بیک اپ اور بحالی</string>
+    <string name="backup_shortcut_short">بیک اپ</string>
+</resources>

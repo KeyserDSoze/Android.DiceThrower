@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">ब्याकअप र पुनर्स्थापना</string>
+    <string name="backup_restore_intro">आफ्ना पात्रहरू, भेरिएबलहरू, रोलहरू, स्तर नियमहरू, सेटिङहरू र रोल इतिहासको स्थानीय ब्याकअप बनाउनुहोस्। Dice Thrower ले केही पनि अपलोड गर्दैन।</string>
+    <string name="backup_export_title">ब्याकअप निर्यात गर्नुहोस्</string>
+    <string name="backup_export_description">Android कागजात चयनकर्ता प्रयोग गरेर संस्करणयुक्त JSON ब्याकअप सुरक्षित गर्नुहोस्। फाइल कहाँ राख्ने भन्ने तपाईंले रोज्नुहुन्छ।</string>
+    <string name="backup_export_action">ब्याकअप फाइल सुरक्षित गर्नुहोस्</string>
+    <string name="backup_export_success">ब्याकअप सफलतापूर्वक सुरक्षित भयो।</string>
+    <string name="backup_import_title">ब्याकअप पुनर्स्थापना गर्नुहोस्</string>
+    <string name="backup_import_description">Dice Thrower ब्याकअप छान्नुहोस्। कुनै स्थानीय डाटा बदल्नु अघि फाइल जाँच गरिन्छ।</string>
+    <string name="backup_import_action">ब्याकअप फाइल छान्नुहोस्</string>
+    <string name="backup_import_confirm_title">स्थानीय Dice Thrower डाटा बदल्ने?</string>
+    <string name="backup_import_confirm_body">यो प्रमाणित ब्याकअपमा %1$d पात्र र %2$d रोल छन्। पुनर्स्थापनाले हालको स्थानीय डाटा र सेटिङहरू बदल्नेछ।</string>
+    <string name="backup_import_replace_action">पुनर्स्थापना गरी पुनः सुरु गर्नुहोस्</string>
+    <string name="backup_image_warning">पात्रका तस्बिरहरू v2 ब्याकअपमा समावेश गरिन्छ र पुनर्स्थापना गर्दा जाँच गरिन्छ, त्यसैले तिनीहरू उपकरणहरूबीच सार्न सकिन्छ। पुराना v1 URI सन्दर्भहरू पहुँचयोग्य हुँदा अझै समर्थित छन्।</string>
+    <string name="backup_invalid_file">यो फाइल मान्य Dice Thrower ब्याकअप होइन।</string>
+    <string name="backup_unknown_error">ब्याकअप कार्य पूरा गर्न सकिएन।</string>
+    <string name="backup_shortcut_label">ब्याकअप र पुनर्स्थापना</string>
+    <string name="backup_shortcut_short">ब्याकअप</string>
+</resources>

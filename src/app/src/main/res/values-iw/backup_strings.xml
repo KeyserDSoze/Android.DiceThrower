@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">גיבוי ושחזור</string>
+    <string name="backup_restore_intro">צור גיבוי מקומי של הדמויות, המשתנים, ההטלות, חוקי הרמות, ההגדרות והיסטוריית ההטלות. Dice Thrower אינו מעלה דבר.</string>
+    <string name="backup_export_title">ייצוא גיבוי</string>
+    <string name="backup_export_description">שמור גיבוי JSON עם גרסה באמצעות בורר המסמכים של Android. אתה בוחר היכן הקובץ יישמר.</string>
+    <string name="backup_export_action">שמירת קובץ גיבוי</string>
+    <string name="backup_export_success">הגיבוי נשמר בהצלחה.</string>
+    <string name="backup_import_title">שחזור גיבוי</string>
+    <string name="backup_import_description">בחר גיבוי של Dice Thrower. הקובץ יאומת לפני החלפת נתונים מקומיים כלשהם.</string>
+    <string name="backup_import_action">בחירת קובץ גיבוי</string>
+    <string name="backup_import_confirm_title">להחליף את הנתונים המקומיים של Dice Thrower?</string>
+    <string name="backup_import_confirm_body">הגיבוי המאומת הזה מכיל %1$d דמויות ו-%2$d הטלות. השחזור יחליף את הנתונים המקומיים וההגדרות הנוכחיים.</string>
+    <string name="backup_import_replace_action">שחזור והפעלה מחדש</string>
+    <string name="backup_image_warning">תמונות הדמויות מוטמעות בגיבוי v2 ומאומתות בזמן השחזור, ולכן נשארות ניידות בין מכשירים. הפניות URI ישנות מ-v1 עדיין נתמכות כאשר הן נגישות.</string>
+    <string name="backup_invalid_file">קובץ זה אינו גיבוי תקין של Dice Thrower.</string>
+    <string name="backup_unknown_error">לא ניתן להשלים את פעולת הגיבוי.</string>
+    <string name="backup_shortcut_label">גיבוי ושחזור</string>
+    <string name="backup_shortcut_short">גיבוי</string>
+</resources>

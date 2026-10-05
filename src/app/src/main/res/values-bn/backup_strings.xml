@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">ব্যাকআপ ও পুনরুদ্ধার</string>
+    <string name="backup_restore_intro">আপনার চরিত্র, ভেরিয়েবল, রোল, লেভেল নিয়ম, সেটিংস এবং রোল ইতিহাসের একটি স্থানীয় ব্যাকআপ তৈরি করুন। Dice Thrower কিছুই আপলোড করে না।</string>
+    <string name="backup_export_title">ব্যাকআপ রপ্তানি করুন</string>
+    <string name="backup_export_description">Android ডকুমেন্ট পিকার ব্যবহার করে সংস্করণযুক্ত JSON ব্যাকআপ সংরক্ষণ করুন। ফাইল কোথায় থাকবে তা আপনি বেছে নিন।</string>
+    <string name="backup_export_action">ব্যাকআপ ফাইল সংরক্ষণ করুন</string>
+    <string name="backup_export_success">ব্যাকআপ সফলভাবে সংরক্ষিত হয়েছে।</string>
+    <string name="backup_import_title">ব্যাকআপ পুনরুদ্ধার করুন</string>
+    <string name="backup_import_description">একটি Dice Thrower ব্যাকআপ বেছে নিন। স্থানীয় ডেটা বদলানোর আগে ফাইলটি যাচাই করা হবে।</string>
+    <string name="backup_import_action">ব্যাকআপ ফাইল বেছে নিন</string>
+    <string name="backup_import_confirm_title">স্থানীয় Dice Thrower ডেটা বদলাবেন?</string>
+    <string name="backup_import_confirm_body">এই যাচাইকৃত ব্যাকআপে %1$dটি চরিত্র এবং %2$dটি রোল রয়েছে। পুনরুদ্ধার করলে বর্তমান স্থানীয় ডেটা ও সেটিংস বদলে যাবে।</string>
+    <string name="backup_import_replace_action">পুনরুদ্ধার করে পুনরায় চালু করুন</string>
+    <string name="backup_image_warning">চরিত্রের ছবি ব্যাকআপ v2-এ অন্তর্ভুক্ত থাকে এবং পুনরুদ্ধারের সময় যাচাই করা হয়, তাই ডিভাইসের মধ্যে স্থানান্তরযোগ্য থাকে। পুরোনো v1 URI রেফারেন্স অ্যাক্সেসযোগ্য হলে এখনও সমর্থিত।</string>
+    <string name="backup_invalid_file">এই ফাইলটি বৈধ Dice Thrower ব্যাকআপ নয়।</string>
+    <string name="backup_unknown_error">ব্যাকআপ কার্যক্রম সম্পন্ন করা যায়নি।</string>
+    <string name="backup_shortcut_label">ব্যাকআপ ও পুনরুদ্ধার</string>
+    <string name="backup_shortcut_short">ব্যাকআপ</string>
+</resources>

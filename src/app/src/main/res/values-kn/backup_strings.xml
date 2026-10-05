@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">ಬ್ಯಾಕಪ್ ಮತ್ತು ಮರುಸ್ಥಾಪನೆ</string>
+    <string name="backup_restore_intro">ನಿಮ್ಮ ಪಾತ್ರಗಳು, ಚರಗಳು, ರೋಲ್‌ಗಳು, ಮಟ್ಟದ ನಿಯಮಗಳು, ಸೆಟ್ಟಿಂಗ್‌ಗಳು ಮತ್ತು ರೋಲ್ ಇತಿಹಾಸದ ಸ್ಥಳೀಯ ಬ್ಯಾಕಪ್ ರಚಿಸಿ. Dice Thrower ಏನನ್ನೂ ಅಪ್‌ಲೋಡ್ ಮಾಡುವುದಿಲ್ಲ.</string>
+    <string name="backup_export_title">ಬ್ಯಾಕಪ್ ರಫ್ತು ಮಾಡಿ</string>
+    <string name="backup_export_description">Android ಡಾಕ್ಯುಮೆಂಟ್ ಪಿಕರ್ ಬಳಸಿ ಆವೃತ್ತಿಯ JSON ಬ್ಯಾಕಪ್ ಉಳಿಸಿ. ಫೈಲ್ ಎಲ್ಲಿ ಸಂಗ್ರಹಿಸಬೇಕು ಎಂಬುದನ್ನು ನೀವು ಆಯ್ಕೆ ಮಾಡುತ್ತೀರಿ.</string>
+    <string name="backup_export_action">ಬ್ಯಾಕಪ್ ಫೈಲ್ ಉಳಿಸಿ</string>
+    <string name="backup_export_success">ಬ್ಯಾಕಪ್ ಯಶಸ್ವಿಯಾಗಿ ಉಳಿಸಲಾಗಿದೆ.</string>
+    <string name="backup_import_title">ಬ್ಯಾಕಪ್ ಮರುಸ್ಥಾಪಿಸಿ</string>
+    <string name="backup_import_description">Dice Thrower ಬ್ಯಾಕಪ್ ಆಯ್ಕೆ ಮಾಡಿ. ಯಾವುದೇ ಸ್ಥಳೀಯ ಡೇಟಾವನ್ನು ಬದಲಿಸುವ ಮೊದಲು ಫೈಲ್ ಪರಿಶೀಲಿಸಲಾಗುತ್ತದೆ.</string>
+    <string name="backup_import_action">ಬ್ಯಾಕಪ್ ಫೈಲ್ ಆಯ್ಕೆ ಮಾಡಿ</string>
+    <string name="backup_import_confirm_title">ಸ್ಥಳೀಯ Dice Thrower ಡೇಟಾವನ್ನು ಬದಲಿಸಬೇಕೆ?</string>
+    <string name="backup_import_confirm_body">ಪರಿಶೀಲಿಸಿದ ಈ ಬ್ಯಾಕಪ್‌ನಲ್ಲಿ %1$d ಪಾತ್ರಗಳು ಮತ್ತು %2$d ರೋಲ್‌ಗಳಿವೆ. ಮರುಸ್ಥಾಪನೆ ಪ್ರಸ್ತುತ ಸ್ಥಳೀಯ ಡೇಟಾ ಮತ್ತು ಸೆಟ್ಟಿಂಗ್‌ಗಳನ್ನು ಬದಲಿಸುತ್ತದೆ.</string>
+    <string name="backup_import_replace_action">ಮರುಸ್ಥಾಪಿಸಿ ಮತ್ತು ಮರುಪ್ರಾರಂಭಿಸಿ</string>
+    <string name="backup_image_warning">ಪಾತ್ರದ ಚಿತ್ರಗಳನ್ನು v2 ಬ್ಯಾಕಪ್‌ನಲ್ಲಿ ಸೇರಿಸಿ ಮರುಸ್ಥಾಪನೆ ವೇಳೆ ಪರಿಶೀಲಿಸಲಾಗುತ್ತದೆ, ಆದ್ದರಿಂದ ಅವು ಸಾಧನಗಳ ನಡುವೆ ಸಾಗಿಸಬಹುದಾಗಿರುತ್ತವೆ. ಹಳೆಯ v1 URI ಉಲ್ಲೇಖಗಳು ಪ್ರವೇಶಿಸಬಹುದಾದಾಗ ಇನ್ನೂ ಬೆಂಬಲಿತವಾಗಿವೆ.</string>
+    <string name="backup_invalid_file">ಈ ಫೈಲ್ ಮಾನ್ಯ Dice Thrower ಬ್ಯಾಕಪ್ ಅಲ್ಲ.</string>
+    <string name="backup_unknown_error">ಬ್ಯಾಕಪ್ ಕಾರ್ಯಾಚರಣೆಯನ್ನು ಪೂರ್ಣಗೊಳಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.</string>
+    <string name="backup_shortcut_label">ಬ್ಯಾಕಪ್ ಮತ್ತು ಮರುಸ್ಥಾಪನೆ</string>
+    <string name="backup_shortcut_short">ಬ್ಯಾಕಪ್</string>
+</resources>

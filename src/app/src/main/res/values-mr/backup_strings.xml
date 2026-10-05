@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">बॅकअप आणि पुनर्संचयित</string>
+    <string name="backup_restore_intro">तुमची पात्रे, चल, रोल्स, लेव्हल नियम, सेटिंग्ज आणि रोल इतिहास यांचा स्थानिक बॅकअप तयार करा. Dice Thrower काहीही अपलोड करत नाही.</string>
+    <string name="backup_export_title">बॅकअप निर्यात करा</string>
+    <string name="backup_export_description">Android दस्तऐवज निवडक वापरून आवृत्तीयुक्त JSON बॅकअप जतन करा. फाइल कुठे साठवायची ते तुम्ही निवडता.</string>
+    <string name="backup_export_action">बॅकअप फाइल जतन करा</string>
+    <string name="backup_export_success">बॅकअप यशस्वीरित्या जतन झाला.</string>
+    <string name="backup_import_title">बॅकअप पुनर्संचयित करा</string>
+    <string name="backup_import_description">Dice Thrower बॅकअप निवडा. कोणताही स्थानिक डेटा बदलण्यापूर्वी फाइल तपासली जाते.</string>
+    <string name="backup_import_action">बॅकअप फाइल निवडा</string>
+    <string name="backup_import_confirm_title">स्थानिक Dice Thrower डेटा बदलायचा?</string>
+    <string name="backup_import_confirm_body">या तपासलेल्या बॅकअपमध्ये %1$d पात्रे आणि %2$d रोल्स आहेत. पुनर्संचयित केल्याने सध्याचा स्थानिक डेटा आणि सेटिंग्ज बदलतील.</string>
+    <string name="backup_import_replace_action">पुनर्संचयित करा आणि पुन्हा सुरू करा</string>
+    <string name="backup_image_warning">पात्रांची चित्रे v2 बॅकअपमध्ये समाविष्ट केली जातात आणि पुनर्संचयित करताना तपासली जातात, त्यामुळे ती उपकरणांदरम्यान हलवता येतात. जुने v1 URI संदर्भ उपलब्ध असल्यास अजूनही समर्थित आहेत.</string>
+    <string name="backup_invalid_file">ही फाइल वैध Dice Thrower बॅकअप नाही.</string>
+    <string name="backup_unknown_error">बॅकअप प्रक्रिया पूर्ण करता आली नाही.</string>
+    <string name="backup_shortcut_label">बॅकअप आणि पुनर्संचयित</string>
+    <string name="backup_shortcut_short">बॅकअप</string>
+</resources>

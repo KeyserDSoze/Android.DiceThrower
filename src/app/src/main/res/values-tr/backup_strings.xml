@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">Yedekleme ve geri yükleme</string>
+    <string name="backup_restore_intro">Karakterlarınızın, değişkenlerin, atışların, seviye kurallarının, ayarların ve atış geçmişinin yerel yedeğini oluşturun. Dice Thrower hiçbir şeyi yüklemez.</string>
+    <string name="backup_export_title">Yedeği dışa aktar</string>
+    <string name="backup_export_description">Android belge seçicisini kullanarak sürümlü bir JSON yedeği kaydedin. Dosyanın nerede saklanacağını siz seçersiniz.</string>
+    <string name="backup_export_action">Yedek dosyasını kaydet</string>
+    <string name="backup_export_success">Yedek başarıyla kaydedildi.</string>
+    <string name="backup_import_title">Yedeği geri yükle</string>
+    <string name="backup_import_description">Bir Dice Thrower yedeği seçin. Yerel veriler değiştirilmeden önce dosya doğrulanır.</string>
+    <string name="backup_import_action">Yedek dosyası seç</string>
+    <string name="backup_import_confirm_title">Yerel Dice Thrower verileri değiştirilsin mi?</string>
+    <string name="backup_import_confirm_body">Doğrulanan bu yedek %1$d karakter ve %2$d atış içeriyor. Geri yükleme mevcut yerel verileri ve ayarları değiştirecektir.</string>
+    <string name="backup_import_replace_action">Geri yükle ve yeniden başlat</string>
+    <string name="backup_image_warning">Karakter görselleri v2 yedeğine gömülür ve geri yükleme sırasında doğrulanır; böylece cihazlar arasında taşınabilir. Eski v1 URI başvuruları erişilebilir olduğunda desteklenmeye devam eder.</string>
+    <string name="backup_invalid_file">Bu dosya geçerli bir Dice Thrower yedeği değil.</string>
+    <string name="backup_unknown_error">Yedekleme işlemi tamamlanamadı.</string>
+    <string name="backup_shortcut_label">Yedekleme ve geri yükleme</string>
+    <string name="backup_shortcut_short">Yedek</string>
+</resources>

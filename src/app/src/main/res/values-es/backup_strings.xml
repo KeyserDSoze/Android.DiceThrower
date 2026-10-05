@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">Copia de seguridad y restauración</string>
+    <string name="backup_restore_intro">Crea una copia local de tus personajes, variables, tiradas, reglas de nivel, ajustes e historial de tiradas. Dice Thrower no sube nada.</string>
+    <string name="backup_export_title">Exportar copia de seguridad</string>
+    <string name="backup_export_description">Guarda una copia JSON con versión mediante el selector de documentos de Android. Tú eliges dónde se almacena el archivo.</string>
+    <string name="backup_export_action">Guardar archivo de copia</string>
+    <string name="backup_export_success">Copia de seguridad guardada correctamente.</string>
+    <string name="backup_import_title">Restaurar copia de seguridad</string>
+    <string name="backup_import_description">Elige una copia de seguridad de Dice Thrower. El archivo se valida antes de sustituir cualquier dato local.</string>
+    <string name="backup_import_action">Elegir archivo de copia</string>
+    <string name="backup_import_confirm_title">¿Sustituir los datos locales de Dice Thrower?</string>
+    <string name="backup_import_confirm_body">Esta copia validada contiene %1$d personajes y %2$d tiradas. Al restaurarla se sustituirán los datos locales y ajustes actuales.</string>
+    <string name="backup_import_replace_action">Restaurar y reiniciar</string>
+    <string name="backup_image_warning">Las imágenes de los personajes se incluyen en la copia v2 y se verifican al restaurar, por lo que siguen siendo portátiles entre dispositivos. Las referencias URI heredadas de v1 siguen siendo compatibles cuando son accesibles.</string>
+    <string name="backup_invalid_file">Este archivo no es una copia de seguridad válida de Dice Thrower.</string>
+    <string name="backup_unknown_error">No se pudo completar la operación de copia de seguridad.</string>
+    <string name="backup_shortcut_label">Copia de seguridad y restauración</string>
+    <string name="backup_shortcut_short">Copia</string>
+</resources>

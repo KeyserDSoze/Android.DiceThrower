@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">النسخ الاحتياطي والاستعادة</string>
+    <string name="backup_restore_intro">أنشئ نسخة احتياطية محلية من الشخصيات والمتغيرات والرميات وقواعد المستويات والإعدادات وسجل الرميات. لا يرفع Dice Thrower أي شيء.</string>
+    <string name="backup_export_title">تصدير نسخة احتياطية</string>
+    <string name="backup_export_description">احفظ نسخة احتياطية JSON ذات إصدار باستخدام منتقي المستندات في Android. أنت تختار مكان حفظ الملف.</string>
+    <string name="backup_export_action">حفظ ملف النسخة الاحتياطية</string>
+    <string name="backup_export_success">تم حفظ النسخة الاحتياطية بنجاح.</string>
+    <string name="backup_import_title">استعادة نسخة احتياطية</string>
+    <string name="backup_import_description">اختر نسخة احتياطية من Dice Thrower. يتم التحقق من الملف قبل استبدال أي بيانات محلية.</string>
+    <string name="backup_import_action">اختيار ملف نسخة احتياطية</string>
+    <string name="backup_import_confirm_title">هل تريد استبدال بيانات Dice Thrower المحلية؟</string>
+    <string name="backup_import_confirm_body">تحتوي هذه النسخة الاحتياطية التي تم التحقق منها على %1$d شخصيات و%2$d رميات. ستؤدي الاستعادة إلى استبدال البيانات والإعدادات المحلية الحالية.</string>
+    <string name="backup_import_replace_action">استعادة وإعادة تشغيل</string>
+    <string name="backup_image_warning">صور الشخصيات مضمنة في النسخة الاحتياطية v2 ويتم التحقق منها أثناء الاستعادة، لذلك تظل قابلة للنقل بين الأجهزة. تظل مراجع URI القديمة من v1 مدعومة عندما تكون متاحة.</string>
+    <string name="backup_invalid_file">هذا الملف ليس نسخة احتياطية صالحة من Dice Thrower.</string>
+    <string name="backup_unknown_error">تعذر إكمال عملية النسخ الاحتياطي.</string>
+    <string name="backup_shortcut_label">النسخ الاحتياطي والاستعادة</string>
+    <string name="backup_shortcut_short">نسخ احتياطي</string>
+</resources>

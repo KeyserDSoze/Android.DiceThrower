@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">ਬੈਕਅੱਪ ਅਤੇ ਬਹਾਲੀ</string>
+    <string name="backup_restore_intro">ਆਪਣੇ ਕਿਰਦਾਰਾਂ, ਵੇਰੀਏਬਲਾਂ, ਰੋਲਾਂ, ਲੈਵਲ ਨਿਯਮਾਂ, ਸੈਟਿੰਗਾਂ ਅਤੇ ਰੋਲ ਇਤਿਹਾਸ ਦਾ ਸਥਾਨਕ ਬੈਕਅੱਪ ਬਣਾਓ। Dice Thrower ਕੁਝ ਵੀ ਅੱਪਲੋਡ ਨਹੀਂ ਕਰਦਾ।</string>
+    <string name="backup_export_title">ਬੈਕਅੱਪ ਨਿਰਯਾਤ ਕਰੋ</string>
+    <string name="backup_export_description">Android ਦਸਤਾਵੇਜ਼ ਚੋਣਕਾਰ ਨਾਲ ਵਰਜਨ ਵਾਲਾ JSON ਬੈਕਅੱਪ ਸੰਭਾਲੋ। ਫਾਈਲ ਕਿੱਥੇ ਸੰਭਾਲਣੀ ਹੈ, ਇਹ ਤੁਸੀਂ ਚੁਣਦੇ ਹੋ।</string>
+    <string name="backup_export_action">ਬੈਕਅੱਪ ਫਾਈਲ ਸੰਭਾਲੋ</string>
+    <string name="backup_export_success">ਬੈਕਅੱਪ ਸਫਲਤਾਪੂਰਵਕ ਸੰਭਾਲਿਆ ਗਿਆ।</string>
+    <string name="backup_import_title">ਬੈਕਅੱਪ ਬਹਾਲ ਕਰੋ</string>
+    <string name="backup_import_description">Dice Thrower ਬੈਕਅੱਪ ਚੁਣੋ। ਕਿਸੇ ਸਥਾਨਕ ਡਾਟੇ ਨੂੰ ਬਦਲਣ ਤੋਂ ਪਹਿਲਾਂ ਫਾਈਲ ਦੀ ਜਾਂਚ ਕੀਤੀ ਜਾਂਦੀ ਹੈ।</string>
+    <string name="backup_import_action">ਬੈਕਅੱਪ ਫਾਈਲ ਚੁਣੋ</string>
+    <string name="backup_import_confirm_title">ਸਥਾਨਕ Dice Thrower ਡਾਟਾ ਬਦਲਣਾ ਹੈ?</string>
+    <string name="backup_import_confirm_body">ਇਸ ਜਾਂਚੇ ਹੋਏ ਬੈਕਅੱਪ ਵਿੱਚ %1$d ਕਿਰਦਾਰ ਅਤੇ %2$d ਰੋਲ ਹਨ। ਬਹਾਲੀ ਮੌਜੂਦਾ ਸਥਾਨਕ ਡਾਟੇ ਅਤੇ ਸੈਟਿੰਗਾਂ ਨੂੰ ਬਦਲ ਦੇਵੇਗੀ।</string>
+    <string name="backup_import_replace_action">ਬਹਾਲ ਕਰੋ ਅਤੇ ਮੁੜ ਸ਼ੁਰੂ ਕਰੋ</string>
+    <string name="backup_image_warning">ਕਿਰਦਾਰ ਚਿੱਤਰ v2 ਬੈਕਅੱਪ ਵਿੱਚ ਸ਼ਾਮਲ ਕੀਤੇ ਜਾਂਦੇ ਹਨ ਅਤੇ ਬਹਾਲੀ ਦੌਰਾਨ ਜਾਂਚੇ ਜਾਂਦੇ ਹਨ, ਇਸ ਲਈ ਉਹ ਡਿਵਾਈਸਾਂ ਵਿਚਕਾਰ ਲਿਜਾਏ ਜਾ ਸਕਦੇ ਹਨ। ਪੁਰਾਣੇ v1 URI ਹਵਾਲੇ ਪਹੁੰਚਯੋਗ ਹੋਣ ਤੇ ਅਜੇ ਵੀ ਸਮਰਥਿਤ ਹਨ।</string>
+    <string name="backup_invalid_file">ਇਹ ਫਾਈਲ ਵੈਧ Dice Thrower ਬੈਕਅੱਪ ਨਹੀਂ ਹੈ।</string>
+    <string name="backup_unknown_error">ਬੈਕਅੱਪ ਕਾਰਵਾਈ ਪੂਰੀ ਨਹੀਂ ਹੋ ਸਕੀ।</string>
+    <string name="backup_shortcut_label">ਬੈਕਅੱਪ ਅਤੇ ਬਹਾਲੀ</string>
+    <string name="backup_shortcut_short">ਬੈਕਅੱਪ</string>
+</resources>

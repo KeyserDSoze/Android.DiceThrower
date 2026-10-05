@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">Sauvegarde et restauration</string>
+    <string name="backup_restore_intro">Créez une sauvegarde locale de vos personnages, variables, jets, règles de niveau, paramètres et historique des jets. Dice Thrower ne téléverse rien.</string>
+    <string name="backup_export_title">Exporter la sauvegarde</string>
+    <string name="backup_export_description">Enregistrez une sauvegarde JSON versionnée avec le sélecteur de documents Android. Vous choisissez où le fichier est stocké.</string>
+    <string name="backup_export_action">Enregistrer le fichier de sauvegarde</string>
+    <string name="backup_export_success">Sauvegarde enregistrée avec succès.</string>
+    <string name="backup_import_title">Restaurer la sauvegarde</string>
+    <string name="backup_import_description">Choisissez une sauvegarde Dice Thrower. Le fichier est validé avant tout remplacement des données locales.</string>
+    <string name="backup_import_action">Choisir un fichier de sauvegarde</string>
+    <string name="backup_import_confirm_title">Remplacer les données locales de Dice Thrower ?</string>
+    <string name="backup_import_confirm_body">Cette sauvegarde validée contient %1$d personnages et %2$d jets. Sa restauration remplacera les données locales et les paramètres actuels.</string>
+    <string name="backup_import_replace_action">Restaurer et redémarrer</string>
+    <string name="backup_image_warning">Les images des personnages sont intégrées à la sauvegarde v2 et vérifiées lors de la restauration, afin de rester transférables entre appareils. Les anciennes références URI v1 restent prises en charge lorsqu’elles sont accessibles.</string>
+    <string name="backup_invalid_file">Ce fichier n’est pas une sauvegarde Dice Thrower valide.</string>
+    <string name="backup_unknown_error">L’opération de sauvegarde n’a pas pu être effectuée.</string>
+    <string name="backup_shortcut_label">Sauvegarde et restauration</string>
+    <string name="backup_shortcut_short">Sauvegarde</string>
+</resources>

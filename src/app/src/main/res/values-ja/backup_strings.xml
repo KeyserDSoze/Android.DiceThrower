@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">バックアップと復元</string>
+    <string name="backup_restore_intro">キャラクター、変数、ロール、レベルルール、設定、ロール履歴のローカルバックアップを作成します。Dice Thrower がデータをアップロードすることはありません。</string>
+    <string name="backup_export_title">バックアップをエクスポート</string>
+    <string name="backup_export_description">Android のドキュメント選択画面を使って、バージョン付き JSON バックアップを保存します。保存場所は自分で選べます。</string>
+    <string name="backup_export_action">バックアップファイルを保存</string>
+    <string name="backup_export_success">バックアップを保存しました。</string>
+    <string name="backup_import_title">バックアップを復元</string>
+    <string name="backup_import_description">Dice Thrower のバックアップを選択します。ローカルデータを置き換える前にファイルを検証します。</string>
+    <string name="backup_import_action">バックアップファイルを選択</string>
+    <string name="backup_import_confirm_title">ローカルの Dice Thrower データを置き換えますか？</string>
+    <string name="backup_import_confirm_body">検証済みのこのバックアップには %1$d 人のキャラクターと %2$d 件のロールが含まれています。復元すると現在のローカルデータと設定が置き換えられます。</string>
+    <string name="backup_import_replace_action">復元して再起動</string>
+    <string name="backup_image_warning">キャラクター画像はバックアップ v2 に埋め込まれ、復元時に検証されるため、端末間で移行できます。旧 v1 の URI 参照も、アクセス可能な場合は引き続きサポートされます。</string>
+    <string name="backup_invalid_file">このファイルは有効な Dice Thrower バックアップではありません。</string>
+    <string name="backup_unknown_error">バックアップ操作を完了できませんでした。</string>
+    <string name="backup_shortcut_label">バックアップと復元</string>
+    <string name="backup_shortcut_short">バックアップ</string>
+</resources>

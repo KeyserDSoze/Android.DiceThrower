@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">బ్యాకప్ మరియు పునరుద్ధరణ</string>
+    <string name="backup_restore_intro">మీ పాత్రలు, వేరియబుల్స్, రోల్స్, లెవల్ నియమాలు, సెట్టింగ్‌లు మరియు రోల్ చరిత్రకు స్థానిక బ్యాకప్ సృష్టించండి. Dice Thrower ఏదీ అప్‌లోడ్ చేయదు.</string>
+    <string name="backup_export_title">బ్యాకప్ ఎగుమతి</string>
+    <string name="backup_export_description">Android డాక్యుమెంట్ పికర్‌తో వెర్షన్ ఉన్న JSON బ్యాకప్‌ను సేవ్ చేయండి. ఫైల్ ఎక్కడ నిల్వ చేయాలో మీరు ఎంచుకుంటారు.</string>
+    <string name="backup_export_action">బ్యాకప్ ఫైల్ సేవ్ చేయండి</string>
+    <string name="backup_export_success">బ్యాకప్ విజయవంతంగా సేవ్ అయింది.</string>
+    <string name="backup_import_title">బ్యాకప్ పునరుద్ధరించండి</string>
+    <string name="backup_import_description">Dice Thrower బ్యాకప్‌ను ఎంచుకోండి. ఏ స్థానిక డేటా మార్పు కంటే ముందు ఫైల్ ధృవీకరించబడుతుంది.</string>
+    <string name="backup_import_action">బ్యాకప్ ఫైల్ ఎంచుకోండి</string>
+    <string name="backup_import_confirm_title">స్థానిక Dice Thrower డేటాను మార్చాలా?</string>
+    <string name="backup_import_confirm_body">ఈ ధృవీకరించిన బ్యాకప్‌లో %1$d పాత్రలు మరియు %2$d రోల్స్ ఉన్నాయి. పునరుద్ధరణ ప్రస్తుత స్థానిక డేటా మరియు సెట్టింగ్‌లను మార్చుతుంది.</string>
+    <string name="backup_import_replace_action">పునరుద్ధరించి మళ్లీ ప్రారంభించండి</string>
+    <string name="backup_image_warning">పాత్ర చిత్రాలు v2 బ్యాకప్‌లో పొందుపరచబడి, పునరుద్ధరణ సమయంలో ధృవీకరించబడతాయి; అందువల్ల అవి పరికరాల మధ్య తరలించవచ్చు. పాత v1 URI సూచనలు అందుబాటులో ఉంటే ఇంకా మద్దతు ఉంటుంది.</string>
+    <string name="backup_invalid_file">ఈ ఫైల్ చెల్లుబాటు అయ్యే Dice Thrower బ్యాకప్ కాదు.</string>
+    <string name="backup_unknown_error">బ్యాకప్ చర్యను పూర్తి చేయలేకపోయాం.</string>
+    <string name="backup_shortcut_label">బ్యాకప్ మరియు పునరుద్ధరణ</string>
+    <string name="backup_shortcut_short">బ్యాకప్</string>
+</resources>

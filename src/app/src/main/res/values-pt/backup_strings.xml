@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">Cópia de segurança e restauro</string>
+    <string name="backup_restore_intro">Crie uma cópia local das suas personagens, variáveis, lançamentos, regras de nível, definições e histórico de lançamentos. O Dice Thrower não envia nada.</string>
+    <string name="backup_export_title">Exportar cópia de segurança</string>
+    <string name="backup_export_description">Guarde uma cópia JSON versionada com o seletor de documentos do Android. Escolhe onde o ficheiro fica guardado.</string>
+    <string name="backup_export_action">Guardar ficheiro de cópia</string>
+    <string name="backup_export_success">Cópia de segurança guardada com sucesso.</string>
+    <string name="backup_import_title">Restaurar cópia de segurança</string>
+    <string name="backup_import_description">Escolha uma cópia de segurança do Dice Thrower. O ficheiro é validado antes de qualquer dado local ser substituído.</string>
+    <string name="backup_import_action">Escolher ficheiro de cópia</string>
+    <string name="backup_import_confirm_title">Substituir os dados locais do Dice Thrower?</string>
+    <string name="backup_import_confirm_body">Esta cópia validada contém %1$d personagens e %2$d lançamentos. O restauro substituirá os dados locais e as definições atuais.</string>
+    <string name="backup_import_replace_action">Restaurar e reiniciar</string>
+    <string name="backup_image_warning">As imagens das personagens são incorporadas na cópia v2 e verificadas durante o restauro, mantendo-se portáteis entre dispositivos. As referências URI antigas da v1 continuam suportadas quando acessíveis.</string>
+    <string name="backup_invalid_file">Este ficheiro não é uma cópia de segurança válida do Dice Thrower.</string>
+    <string name="backup_unknown_error">Não foi possível concluir a operação de cópia de segurança.</string>
+    <string name="backup_shortcut_label">Cópia de segurança e restauro</string>
+    <string name="backup_shortcut_short">Cópia</string>
+</resources>

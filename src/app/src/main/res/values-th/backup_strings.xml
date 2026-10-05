@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">สำรองและกู้คืน</string>
+    <string name="backup_restore_intro">สร้างข้อมูลสำรองในเครื่องสำหรับตัวละคร ตัวแปร การทอย กฎระดับ การตั้งค่า และประวัติการทอย Dice Thrower จะไม่อัปโหลดข้อมูลใด ๆ</string>
+    <string name="backup_export_title">ส่งออกข้อมูลสำรอง</string>
+    <string name="backup_export_description">บันทึกข้อมูลสำรอง JSON แบบมีเวอร์ชันด้วยตัวเลือกเอกสารของ Android คุณเป็นผู้เลือกตำแหน่งจัดเก็บไฟล์</string>
+    <string name="backup_export_action">บันทึกไฟล์สำรอง</string>
+    <string name="backup_export_success">บันทึกข้อมูลสำรองสำเร็จแล้ว</string>
+    <string name="backup_import_title">กู้คืนข้อมูลสำรอง</string>
+    <string name="backup_import_description">เลือกข้อมูลสำรองของ Dice Thrower ระบบจะตรวจสอบไฟล์ก่อนแทนที่ข้อมูลในเครื่อง</string>
+    <string name="backup_import_action">เลือกไฟล์สำรอง</string>
+    <string name="backup_import_confirm_title">แทนที่ข้อมูล Dice Thrower ในเครื่องหรือไม่?</string>
+    <string name="backup_import_confirm_body">ข้อมูลสำรองที่ตรวจสอบแล้วนี้มีตัวละคร %1$d ตัวและการทอย %2$d ครั้ง การกู้คืนจะแทนที่ข้อมูลและการตั้งค่าในเครื่องปัจจุบัน</string>
+    <string name="backup_import_replace_action">กู้คืนและเริ่มใหม่</string>
+    <string name="backup_image_warning">รูปภาพตัวละครจะฝังอยู่ในข้อมูลสำรอง v2 และตรวจสอบระหว่างการกู้คืน จึงย้ายข้ามอุปกรณ์ได้ การอ้างอิง URI แบบเดิมจาก v1 ยังรองรับเมื่อสามารถเข้าถึงได้</string>
+    <string name="backup_invalid_file">ไฟล์นี้ไม่ใช่ข้อมูลสำรอง Dice Thrower ที่ถูกต้อง</string>
+    <string name="backup_unknown_error">ไม่สามารถดำเนินการสำรองให้เสร็จสมบูรณ์ได้</string>
+    <string name="backup_shortcut_label">สำรองและกู้คืน</string>
+    <string name="backup_shortcut_short">สำรอง</string>
+</resources>

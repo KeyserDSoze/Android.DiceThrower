@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">Säkerhetskopiering och återställning</string>
+    <string name="backup_restore_intro">Skapa en lokal säkerhetskopia av dina karaktärer, variabler, kast, nivåregler, inställningar och kasthistorik. Dice Thrower laddar inte upp något.</string>
+    <string name="backup_export_title">Exportera säkerhetskopia</string>
+    <string name="backup_export_description">Spara en versionsmärkt JSON-säkerhetskopia med Androids dokumentväljare. Du väljer var filen lagras.</string>
+    <string name="backup_export_action">Spara säkerhetskopian</string>
+    <string name="backup_export_success">Säkerhetskopian har sparats.</string>
+    <string name="backup_import_title">Återställ säkerhetskopia</string>
+    <string name="backup_import_description">Välj en Dice Thrower-säkerhetskopia. Filen valideras innan lokala data ersätts.</string>
+    <string name="backup_import_action">Välj säkerhetskopieringsfil</string>
+    <string name="backup_import_confirm_title">Ersätta lokala Dice Thrower-data?</string>
+    <string name="backup_import_confirm_body">Den här validerade säkerhetskopian innehåller %1$d karaktärer och %2$d kast. Återställning ersätter nuvarande lokala data och inställningar.</string>
+    <string name="backup_import_replace_action">Återställ och starta om</string>
+    <string name="backup_image_warning">Karaktärsbilder bäddas in i säkerhetskopia v2 och verifieras vid återställning, så de kan flyttas mellan enheter. Äldre URI-referenser från v1 stöds fortfarande när de är åtkomliga.</string>
+    <string name="backup_invalid_file">Den här filen är inte en giltig Dice Thrower-säkerhetskopia.</string>
+    <string name="backup_unknown_error">Säkerhetskopieringen kunde inte slutföras.</string>
+    <string name="backup_shortcut_label">Säkerhetskopiering och återställning</string>
+    <string name="backup_shortcut_short">Säkerhetskopia</string>
+</resources>

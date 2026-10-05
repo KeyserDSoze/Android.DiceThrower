@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_restore_title">备份与恢复</string>
+    <string name="backup_restore_intro">为角色、变量、掷骰、等级规则、设置和掷骰历史创建本地备份。Dice Thrower 不会上传任何内容。</string>
+    <string name="backup_export_title">导出备份</string>
+    <string name="backup_export_description">使用 Android 文档选择器保存带版本的 JSON 备份。文件保存位置由你选择。</string>
+    <string name="backup_export_action">保存备份文件</string>
+    <string name="backup_export_success">备份已成功保存。</string>
+    <string name="backup_import_title">恢复备份</string>
+    <string name="backup_import_description">选择 Dice Thrower 备份。在替换任何本地数据之前会先验证文件。</string>
+    <string name="backup_import_action">选择备份文件</string>
+    <string name="backup_import_confirm_title">替换本地 Dice Thrower 数据？</string>
+    <string name="backup_import_confirm_body">此已验证备份包含 %1$d 个角色和 %2$d 次掷骰。恢复后将替换当前本地数据和设置。</string>
+    <string name="backup_import_replace_action">恢复并重新启动</string>
+    <string name="backup_image_warning">角色图片会嵌入 v2 备份并在恢复时验证，因此可在设备之间迁移。只要能够访问，旧版 v1 URI 引用仍受支持。</string>
+    <string name="backup_invalid_file">此文件不是有效的 Dice Thrower 备份。</string>
+    <string name="backup_unknown_error">无法完成备份操作。</string>
+    <string name="backup_shortcut_label">备份与恢复</string>
+    <string name="backup_shortcut_short">备份</string>
+</resources>
