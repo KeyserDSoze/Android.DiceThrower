@@ -113,7 +113,7 @@ La baseline segue la struttura di Android.ScreenLock:
 
 ## Localizzazione
 
-È predisposto lo stesso set di 40 lingue di Screen Lock. Inglese e italiano sono già le traduzioni di riferimento complete; le altre lingue condividono il registry e verranno completate quando il vocabolario UI sarà stabilizzato.
+L'app include lo stesso set di 40 lingue di Screen Lock. Tutte le locale dichiarate dispongono di risorse Android complete; inglese e italiano restano le traduzioni di riferimento per l'evoluzione del vocabolario UI. La CI verifica automaticamente che ogni locale mantenga la stessa copertura del catalogo predefinito.
 
 ## Tema
 
