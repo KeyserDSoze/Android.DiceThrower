@@ -208,7 +208,11 @@ private fun AppearanceStylePicker(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val selectedName = styles.firstOrNull { it.id == selectedStyleId }?.name
-        ?: if (allowCharacterDefault) stringResource(R.string.appearance_character_default) else styles.first().name
+        ?: if (allowCharacterDefault) {
+            stringResource(R.string.appearance_character_default)
+        } else {
+            styles.firstOrNull()?.name ?: stringResource(R.string.appearance_character_default)
+        }
 
     Box {
         OutlinedButton(onClick = { expanded = true }) {
