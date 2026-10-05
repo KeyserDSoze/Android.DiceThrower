@@ -23,9 +23,7 @@ class LocalStore(context: Context) {
 
     fun loadData(): AppData {
         val raw = prefs.getString(KEY_DATA, null) ?: return AppData()
-        val decoded = runCatching {
-            AppDataJsonCodec.decodeData(JSONObject(raw))
-        }.getOrDefault(AppData())
+        val decoded = decodeStoredData(raw)
         val portableImages = imageAssetStore.migrateLegacyImages(decoded)
         val migrated = SyncMetadataManager.ensureMetadata(
             data = portableImages,
@@ -58,9 +56,7 @@ class LocalStore(context: Context) {
 
     fun loadSettings(): AppSettings {
         val raw = prefs.getString(KEY_SETTINGS, null) ?: return AppSettings()
-        return runCatching {
-            AppDataJsonCodec.decodeSettings(JSONObject(raw))
-        }.getOrDefault(AppSettings())
+        return decodeStoredSettings(raw)
     }
 
     fun saveSettings(settings: AppSettings) {
@@ -178,6 +174,12 @@ class LocalStore(context: Context) {
         private const val WRITER_ID_FILE = "installation_writer_id_v1"
     }
 }
+
+internal fun decodeStoredData(raw: String): AppData =
+    AppDataJsonCodec.decodeData(JSONObject(raw)).also(AppDataValidator::requireValid)
+
+internal fun decodeStoredSettings(raw: String): AppSettings =
+    AppDataJsonCodec.decodeSettings(JSONObject(raw))
 
 internal class InstallationWriterIdStore(
     private val file: File,
