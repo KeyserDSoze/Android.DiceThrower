@@ -25,28 +25,29 @@ TECHNICAL = re.compile(
 )
 
 
-def read(path: Path) -> dict[str, str]:
-    root = ET.parse(path).getroot()
-    values = {}
-    for node in root.findall("string"):
-        name = node.attrib["name"]
-        if name in values:
-            raise ValueError(f"{path}: duplicate key {name}")
-        values[name] = "".join(node.itertext()).strip()
+def read_directory(directory: Path) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for path in sorted(directory.glob("*.xml")):
+        root = ET.parse(path).getroot()
+        for node in root.findall("string"):
+            name = node.attrib["name"]
+            if name in values:
+                raise ValueError(f"{directory}: duplicate key {name} (including {path.name})")
+            values[name] = "".join(node.itertext()).strip()
     return values
 
 
 def main() -> int:
-    source = read(RES / "values" / "strings.xml")
+    source = read_directory(RES / "values")
     source_keys = set(source)
     failures = []
 
     for locale in LOCALES:
-        path = RES / ("values" if locale == "en" else f"values-{locale}") / "strings.xml"
-        if not path.is_file():
-            failures.append(f"{locale}: missing {path.relative_to(ROOT)}")
+        directory = RES / ("values" if locale == "en" else f"values-{locale}")
+        if not directory.is_dir():
+            failures.append(f"{locale}: missing {directory.relative_to(ROOT)}")
             continue
-        values = read(path)
+        values = read_directory(directory)
         keys = set(values)
         missing = source_keys - keys
         extra = keys - source_keys
