@@ -99,10 +99,27 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Run UI regression tests on emulator
+        id: instrumentation-tests
+        continue-on-error: true
         uses: ReactiveCircus/android-emulator-runner@v2
         with:
           api-level: 35
           arch: x86_64
           profile: pixel_6
           disable-animations: true
-          script: cd src && gradle --no-daemon :app:connectedDebugAndroidTest
+          script: cd src && gradle --no-daemon --stacktrace --info :app:connectedDebugAndroidTest
+
+      - name: Upload instrumentation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dice-thrower-instrumentation-${{ github.sha }}
+          path: |
+            src/app/build/reports/androidTests/connected/**
+            src/app/build/outputs/androidTest-results/connected/**
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Enforce instrumentation result
+        if: steps.instrumentation-tests.outcome != 'success'
+        run: exit 1
