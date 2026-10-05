@@ -1,0 +1,307 @@
+name: Apply release blocker hardening patch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-blocker-patch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Apply deterministic release-blocker fixes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{path}: expected exactly one match, found {count}: {old!r}")
+              p.write_text(text.replace(old, new, 1))
+
+          # Android ICU requires both literal braces to be escaped. Keep the same
+          # behavior in V2 and legacy UI so modifiers cannot trigger a second crash.
+          for path in (
+              'src/app/src/main/java/com/keyserdsoze/dicethrower/ui/v2/DiceThrowerAppV2.kt',
+              'src/app/src/main/java/com/keyserdsoze/dicethrower/ui/DiceThrowerApp.kt',
+          ):
+              replace_once(path, 'Regex("""\\{([^{}]+)}""")', 'Regex("""\\{([^{}]+)\\}""")')
+
+          # Use direction-aware icons for RTL locales in the active V2 UI.
+          v2 = Path('src/app/src/main/java/com/keyserdsoze/dicethrower/ui/v2/DiceThrowerAppV2.kt')
+          text = v2.read_text()
+          text = text.replace(
+              'import androidx.compose.material.icons.rounded.ArrowBack',
+              'import androidx.compose.material.icons.automirrored.rounded.ArrowBack',
+          ).replace(
+              'import androidx.compose.material.icons.rounded.KeyboardArrowRight',
+              'import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight',
+          ).replace(
+              'Icons.Rounded.ArrowBack',
+              'Icons.AutoMirrored.Rounded.ArrowBack',
+          ).replace(
+              'Icons.Rounded.KeyboardArrowRight',
+              'Icons.AutoMirrored.Rounded.KeyboardArrowRight',
+          )
+          v2.write_text(text)
+
+          # A connected account must never make app startup depend on a readable
+          # local sync journal. Surface a sync error and preserve local app data.
+          engine = Path('src/app/src/main/java/com/keyserdsoze/dicethrower/data/sync/CloudSyncEngine.kt')
+          text = engine.read_text()
+          start = text.index('    fun currentStatus(connected: Boolean): SyncStatus {')
+          end = text.index('\n\n    suspend fun sync(', start)
+          replacement = '''    fun currentStatus(connected: Boolean): SyncStatus {
+              if (!connected) return SyncStatus(SyncStatusKind.LOCAL_ONLY)
+              return try {
+                  val snapshot = local.snapshot(clock())
+                  val pending = pendingCount(snapshot)
+                  SyncStatus(
+                      kind = if (pending > 0 || snapshot.journal.lastSuccessfulSyncAt == null) {
+                          SyncStatusKind.PENDING
+                      } else {
+                          SyncStatusKind.SYNCED
+                      },
+                      pendingCount = pending,
+                      lastSuccessfulSyncAt = snapshot.journal.lastSuccessfulSyncAt,
+                  )
+              } catch (error: CancellationException) {
+                  throw error
+              } catch (error: Exception) {
+                  SyncStatus(
+                      kind = SyncStatusKind.ERROR,
+                      error = errorKind(error),
+                  )
+              }
+          }'''
+          engine.write_text(text[:start] + replacement + text[end:])
+
+          # Do not silently turn a corrupt sync journal into an empty journal: that
+          # could lose pending deletion/base-revision metadata. Let the sync engine
+          # report ERROR while leaving the file untouched for recovery/diagnosis.
+          replace_once(
+              'src/app/src/main/java/com/keyserdsoze/dicethrower/data/sync/SyncJournalStore.kt',
+              '''        val raw = runCatching { file.takeIf(File::isFile)?.readText() }.getOrNull()
+                      ?: return LocalSyncJournal()
+                  return runCatching { decode(JSONObject(raw)) }.getOrDefault(LocalSyncJournal())''',
+              '''        val raw = file.takeIf(File::isFile)?.readText() ?: return LocalSyncJournal()
+                  return decode(JSONObject(raw))''',
+          )
+
+          # Regression: currentStatus must fail safe when the local snapshot cannot
+          # be read, instead of propagating into Activity startup.
+          engine_test = Path('src/app/src/test/java/com/keyserdsoze/dicethrower/data/sync/CloudSyncEngineTest.kt')
+          text = engine_test.read_text()
+          marker = '    private fun engine(local: FakeLocal, remote: FakeRemote, now: Long): CloudSyncEngine =\n'
+          if marker not in text:
+              raise SystemExit('CloudSyncEngineTest insertion marker not found')
+          test = '''    @Test
+              fun currentStatusReturnsErrorWhenLocalSnapshotFails() {
+                  val failingLocal = object : SyncLocalGateway {
+                      override fun snapshot(now: Long): LocalSyncSnapshot = error("corrupt sync journal")
+
+                      override fun readImageAsset(ref: CharacterImageRef): PortableCharacterImageAsset? = null
+
+                      override fun commit(plan: LocalSyncCommitPlan): LocalSyncCommitResult = error("not used")
+                  }
+
+                  val status = CloudSyncEngine(failingLocal, FakeRemote()) { 100L }.currentStatus(true)
+
+                  assertEquals(SyncStatusKind.ERROR, status.kind)
+                  assertEquals(SyncErrorKind.UNKNOWN, status.error)
+              }
+
+          '''
+          engine_test.write_text(text.replace(marker, test + marker, 1))
+
+          # Regression: corrupt journal bytes must remain present and must not be
+          # interpreted as an empty successful journal.
+          journal_test = Path('src/app/src/test/java/com/keyserdsoze/dicethrower/data/sync/SyncJournalStoreTest.kt')
+          text = journal_test.read_text()
+          text = text.replace(
+              'import org.junit.Assert.assertEquals\n',
+              'import org.junit.Assert.assertEquals\nimport org.junit.Assert.assertThrows\n',
+              1,
+          )
+          marker = '\n}\n'
+          test = '''
+              @Test
+              fun corruptJournalFailsClosedWithoutOverwritingFile() {
+                  val directory = Files.createTempDirectory("dice-sync-journal-corrupt").toFile()
+                  val file = directory.resolve("journal.json")
+                  val store = SyncJournalFileStore(file)
+                  val corrupt = "{not-json"
+
+                  try {
+                      file.writeText(corrupt)
+                      assertThrows(Exception::class.java) { store.load() }
+                      assertEquals(corrupt, file.readText())
+                  } finally {
+                      directory.deleteRecursively()
+                  }
+              }
+          '''
+          pos = text.rfind(marker)
+          if pos < 0:
+              raise SystemExit('SyncJournalStoreTest class end not found')
+          journal_test.write_text(text[:pos] + test + text[pos:])
+
+          # Android instrumentation now covers the exact original Add Roll path,
+          # a modifier-reference render path, and saving a parameterized formula.
+          Path('src/app/src/androidTest/java/com/keyserdsoze/dicethrower/ui/v2/RollDialogV2Test.kt').write_text(r'''package com.keyserdsoze.dicethrower.ui.v2
+
+          import androidx.compose.ui.test.assertIsDisplayed
+          import androidx.compose.ui.test.hasSetTextAction
+          import androidx.compose.ui.test.junit4.createComposeRule
+          import androidx.compose.ui.test.onNodeWithContentDescription
+          import androidx.compose.ui.test.onNodeWithText
+          import androidx.compose.ui.test.performClick
+          import androidx.compose.ui.test.performTextInput
+          import androidx.compose.ui.test.performTextReplacement
+          import com.keyserdsoze.dicethrower.model.AppData
+          import com.keyserdsoze.dicethrower.model.CharacterModifier
+          import com.keyserdsoze.dicethrower.model.CharacterProfile
+          import com.keyserdsoze.dicethrower.model.RollDefinition
+          import com.keyserdsoze.dicethrower.model.ThemeMode
+          import com.keyserdsoze.dicethrower.ui.theme.DiceThrowerTheme
+          import org.junit.Assert.assertEquals
+          import org.junit.Rule
+          import org.junit.Test
+
+          class RollDialogV2Test {
+              @get:Rule
+              val composeRule = createComposeRule()
+
+              @Test
+              fun characterEditorAddRollOpensDialogWithoutCrashing() {
+                  val character = CharacterProfile(id = "character", name = "Test")
+                  composeRule.setContent {
+                      DiceThrowerTheme(themeMode = ThemeMode.DARK) {
+                          CharacterEditContentV2(
+                              character = character,
+                              data = AppData(characters = listOf(character)),
+                              onDataChanged = {},
+                          )
+                      }
+                  }
+
+                  composeRule.onNodeWithContentDescription("New roll").performClick()
+                  composeRule.onNodeWithText("New roll").assertIsDisplayed()
+                  composeRule.onNodeWithText("1d20").assertIsDisplayed()
+              }
+
+              @Test
+              fun characterEditorRendersReferencedModifierWithoutRegexCrash() {
+                  val character = CharacterProfile(id = "character", name = "Test")
+                  val modifier = CharacterModifier(
+                      id = "strength",
+                      characterId = character.id,
+                      name = "Strength",
+                      value = 3,
+                  )
+                  val roll = RollDefinition(
+                      id = "attack",
+                      characterId = character.id,
+                      name = "Attack",
+                      expression = "1d20+{Strength}",
+                  )
+                  composeRule.setContent {
+                      DiceThrowerTheme(themeMode = ThemeMode.DARK) {
+                          CharacterEditContentV2(
+                              character = character,
+                              data = AppData(
+                                  characters = listOf(character),
+                                  modifiers = listOf(modifier),
+                                  rolls = listOf(roll),
+                              ),
+                              onDataChanged = {},
+                          )
+                      }
+                  }
+
+                  composeRule.onNodeWithText("Strength").assertIsDisplayed()
+                  composeRule.onNodeWithText("Used by one or more rolls").assertIsDisplayed()
+              }
+
+              @Test
+              fun newRollDialogRendersWithEmptyOptionalCollections() {
+                  composeRule.setContent {
+                      DiceThrowerTheme(themeMode = ThemeMode.DARK) {
+                          RollDialogV2(
+                              title = "New roll",
+                              character = CharacterProfile(id = "character", name = "Test"),
+                              modifiers = emptyList(),
+                              groups = emptyList(),
+                              existing = null,
+                              onDismiss = {},
+                              onSave = {},
+                          )
+                      }
+                  }
+
+                  composeRule.onNodeWithText("New roll").assertIsDisplayed()
+                  composeRule.onNodeWithText("1d20").assertIsDisplayed()
+              }
+
+              @Test
+              fun newRollDialogSavesParameterizedModifierFormula() {
+                  val character = CharacterProfile(id = "character", name = "Test")
+                  val modifier = CharacterModifier(
+                      id = "strength",
+                      characterId = character.id,
+                      name = "Strength",
+                      value = 3,
+                  )
+                  var saved: RollDefinition? = null
+                  composeRule.setContent {
+                      DiceThrowerTheme(themeMode = ThemeMode.DARK) {
+                          RollDialogV2(
+                              title = "New roll",
+                              character = character,
+                              modifiers = listOf(modifier),
+                              groups = emptyList(),
+                              existing = null,
+                              onDismiss = {},
+                              onSave = { saved = it },
+                          )
+                      }
+                  }
+
+                  composeRule.onAllNodes(hasSetTextAction())[0].performTextInput("Attack")
+                  composeRule.onAllNodes(hasSetTextAction())[1].performTextReplacement("1d20+{Strength}")
+                  composeRule.onNodeWithText("Save").performClick()
+
+                  composeRule.runOnIdle {
+                      assertEquals("Attack", saved?.name)
+                      assertEquals("1d20+{Strength}", saved?.expression)
+                  }
+              }
+          }
+          '''.replace('\n          ', '\n').lstrip())
+          PY
+
+      - name: Commit release-blocker fixes
+        shell: bash
+        run: |
+          git config user.name "Dice Thrower CI"
+          git config user.email "actions@users.noreply.github.com"
+          git add src
+          if git diff --cached --quiet; then
+            echo "No source changes to commit"
+            exit 0
+          fi
+          git commit -m "fix: harden roll and sync crash paths"
+          git push origin HEAD:main
