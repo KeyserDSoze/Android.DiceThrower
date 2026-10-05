@@ -63,19 +63,24 @@ fun ArcaneBackground(
     content: @Composable () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        scheme.background,
-                        scheme.surfaceVariant.copy(alpha = 0.72f),
-                        scheme.background,
+    Surface(
+        modifier = modifier.fillMaxSize(),
+        color = Color.Transparent,
+        contentColor = scheme.onBackground,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            scheme.background,
+                            scheme.surfaceVariant.copy(alpha = 0.72f),
+                            scheme.background,
+                        ),
                     ),
                 ),
-            ),
-    ) {
+        ) {
         Canvas(Modifier.fillMaxSize()) {
             val topGlow = Offset(size.width * 0.12f, size.height * 0.06f)
             val bottomGlow = Offset(size.width * 0.92f, size.height * 0.82f)
@@ -104,7 +109,8 @@ fun ArcaneBackground(
                 center = bottomGlow,
             )
         }
-        content()
+            content()
+        }
     }
 }
 
