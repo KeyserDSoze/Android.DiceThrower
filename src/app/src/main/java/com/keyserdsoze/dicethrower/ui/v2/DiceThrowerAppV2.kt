@@ -2198,7 +2198,7 @@ private fun RollDialogV2(
     onSave: (RollDefinition) -> Unit,
 ) {
     var name by remember(existing?.id) { mutableStateOf(existing?.name ?: "") }
-    var expression by remember(existing?.id) { mutableStateOf(TextFieldValue(existing?.expression ?: "")) }
+    var expression by remember(existing?.id) { mutableStateOf(TextFieldValue(existing?.expression ?: "1d20")) }
     var groupId by remember(existing?.id) { mutableStateOf(existing?.groupId) }
     var groupMenu by remember(existing?.id) { mutableStateOf(false) }
 
