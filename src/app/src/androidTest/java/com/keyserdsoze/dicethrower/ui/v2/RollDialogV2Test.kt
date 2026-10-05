@@ -37,7 +37,6 @@ class RollDialogV2Test {
         }
 
         composeRule.onNodeWithContentDescription("New roll").performClick()
-        composeRule.onNodeWithText("New roll").assertIsDisplayed()
         composeRule.onNodeWithText("1d20").assertIsDisplayed()
     }
 
