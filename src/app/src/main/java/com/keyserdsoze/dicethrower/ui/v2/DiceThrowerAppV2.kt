@@ -1869,12 +1869,12 @@ private fun ConflictDialogV2(
     onKeepLocal: () -> Unit,
     onUseRemote: () -> Unit,
 ) {
-    val context = LocalContext.current
     val localTime = conflict.localUpdatedAt?.let { DateFormat.getDateTimeInstance().format(Date(it)) }
     val remoteTime = conflict.remoteUpdatedAt?.let { DateFormat.getDateTimeInstance().format(Date(it)) }
-    val changedAreasText = conflict.changedAreas.joinToString(", ") { area ->
-        context.getString(conflictAreaLabelResource(area))
+    val changedAreaLabels = conflict.changedAreas.map { area ->
+        stringResource(conflictAreaLabelResource(area))
     }
+    val changedAreasText = changedAreaLabels.joinToString(", ")
     AlertDialog(
         onDismissRequest = {},
         title = {
