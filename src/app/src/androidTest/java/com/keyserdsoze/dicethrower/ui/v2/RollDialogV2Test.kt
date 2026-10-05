@@ -30,6 +30,7 @@ class RollDialogV2Test {
                 CharacterEditContentV2(
                     character = character,
                     data = AppData(characters = listOf(character)),
+                    onOpenGroup = {},
                     onDataChanged = {},
                 )
             }
@@ -64,6 +65,7 @@ class RollDialogV2Test {
                         modifiers = listOf(modifier),
                         rolls = listOf(roll),
                     ),
+                    onOpenGroup = {},
                     onDataChanged = {},
                 )
             }

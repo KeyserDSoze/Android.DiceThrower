@@ -31,7 +31,6 @@ import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.History
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Tune
@@ -44,7 +43,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -61,7 +59,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -80,6 +77,7 @@ import com.keyserdsoze.dicethrower.GoogleConnectionFailure
 import com.keyserdsoze.dicethrower.R
 import com.keyserdsoze.dicethrower.data.CharacterImageAssetStore
 import com.keyserdsoze.dicethrower.data.CloudAccountState
+import com.keyserdsoze.dicethrower.data.DashboardDataOperations
 import com.keyserdsoze.dicethrower.data.LocalStore
 import com.keyserdsoze.dicethrower.data.sync.ConflictArea
 import com.keyserdsoze.dicethrower.data.sync.SyncConflict
@@ -113,7 +111,7 @@ import java.util.Date
 import java.util.UUID
 import kotlin.random.Random
 
-private enum class RouteV2 { CHARACTERS, CHARACTER, ROLL, SETTINGS, LOGS }
+private enum class RouteV2 { CHARACTERS, CHARACTER, GROUP, ROLL, SETTINGS, LOGS }
 
 private sealed interface DashboardEntry {
     val key: String
@@ -166,7 +164,9 @@ fun DiceThrowerAppV2(
     var data by remember { mutableStateOf(store.loadData()) }
     var route by remember { mutableStateOf(RouteV2.CHARACTERS) }
     var selectedCharacterId by remember { mutableStateOf<String?>(null) }
+    var selectedGroupId by remember { mutableStateOf<String?>(null) }
     var selectedRollId by remember { mutableStateOf<String?>(null) }
+    var rollReturnGroupId by remember { mutableStateOf<String?>(null) }
     var editMode by remember { mutableStateOf(false) }
 
     fun persist(updated: AppData) {
@@ -191,6 +191,8 @@ fun DiceThrowerAppV2(
             data = data,
             onOpenCharacter = { id ->
                 selectedCharacterId = id
+                selectedGroupId = null
+                rollReturnGroupId = null
                 editMode = false
                 route = RouteV2.CHARACTER
             },
@@ -214,7 +216,40 @@ fun DiceThrowerAppV2(
                     onOpenLogs = { route = RouteV2.LOGS },
                     onOpenRoll = { rollId ->
                         selectedRollId = rollId
+                        rollReturnGroupId = null
                         route = RouteV2.ROLL
+                    },
+                    onOpenGroup = { groupId ->
+                        selectedGroupId = groupId
+                        route = RouteV2.GROUP
+                    },
+                    onDataChanged = ::persist,
+                )
+            }
+        }
+
+        RouteV2.GROUP -> {
+            val character = data.characters.firstOrNull { it.id == selectedCharacterId }
+            val group = data.groups.firstOrNull {
+                it.id == selectedGroupId && it.characterId == selectedCharacterId
+            }
+            if (character == null || group == null) {
+                route = RouteV2.CHARACTER
+            } else {
+                GroupScreenV2(
+                    character = character,
+                    group = group,
+                    data = data,
+                    editMode = editMode,
+                    onBack = { route = RouteV2.CHARACTER },
+                    onOpenRoll = { rollId ->
+                        selectedRollId = rollId
+                        rollReturnGroupId = group.id
+                        route = RouteV2.ROLL
+                    },
+                    onDeleteGroup = {
+                        persist(DashboardDataOperations.deleteGroup(data, character.id, group.id))
+                        route = RouteV2.CHARACTER
                     },
                     onDataChanged = ::persist,
                 )
@@ -233,7 +268,17 @@ fun DiceThrowerAppV2(
                     diceStyles = data.diceStyles,
                     roll = roll,
                     settings = settings,
-                    onBack = { route = RouteV2.CHARACTER },
+                    onBack = {
+                        route = if (
+                            rollReturnGroupId != null &&
+                            data.groups.any { it.id == rollReturnGroupId && it.characterId == character.id }
+                        ) {
+                            selectedGroupId = rollReturnGroupId
+                            RouteV2.GROUP
+                        } else {
+                            RouteV2.CHARACTER
+                        }
+                    },
                     onLogged = { log ->
                         val logs = (data.logs + log).let { all ->
                             if (settings.logRetention == 0) all
@@ -482,6 +527,7 @@ private fun CharacterScreenV2(
     onToggleMode: () -> Unit,
     onOpenLogs: () -> Unit,
     onOpenRoll: (String) -> Unit,
+    onOpenGroup: (String) -> Unit,
     onDataChanged: (AppData) -> Unit,
 ) {
     ArcaneBackground {
@@ -541,6 +587,7 @@ private fun CharacterScreenV2(
                 CharacterEditContentV2(
                     character = character,
                     data = data,
+                    onOpenGroup = onOpenGroup,
                     onDataChanged = onDataChanged,
                     modifier = Modifier.padding(padding),
                 )
@@ -549,6 +596,7 @@ private fun CharacterScreenV2(
                     character = character,
                     data = data,
                     onOpenRoll = onOpenRoll,
+                    onOpenGroup = onOpenGroup,
                     modifier = Modifier.padding(padding),
                 )
             }
@@ -561,9 +609,9 @@ private fun DashboardContentV2(
     character: CharacterProfile,
     data: AppData,
     onOpenRoll: (String) -> Unit,
+    onOpenGroup: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val expanded = remember { mutableStateMapOf<String, Boolean>() }
     val modifiers = data.modifiers.filter { it.characterId == character.id }
     val activeRolls = data.rolls.filter { it.characterId == character.id && it.enabled }
     val visibleGroups = data.groups
@@ -602,46 +650,37 @@ private fun DashboardContentV2(
                 is DashboardEntry.GroupEntry -> {
                     val group = entry.group
                     val groupRolls = activeRolls.filter { it.groupId == group.id }.sortedBy { it.order }
-                    val isExpanded = expanded[group.id] == true
                     PremiumCard(
-                        modifier = Modifier.fillMaxWidth().clickable {
-                            expanded[group.id] = !isExpanded
-                        },
+                        modifier = Modifier.fillMaxWidth().clickable { onOpenGroup(group.id) },
                     ) {
-                        Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Surface(
-                                    shape = RoundedCornerShape(14.dp),
-                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                ) {
-                                    Icon(
-                                        Icons.Rounded.AutoAwesome,
-                                        contentDescription = null,
-                                        modifier = Modifier.padding(10.dp),
-                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    )
-                                }
-                                Spacer(Modifier.width(12.dp))
-                                Column(Modifier.weight(1f)) {
-                                    Text(group.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                    Text(
-                                        "${groupRolls.size} ${stringResource(R.string.rolls).lowercase()}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                            ) {
                                 Icon(
-                                    if (isExpanded) Icons.Rounded.KeyboardArrowDown else Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                                    Icons.Rounded.AutoAwesome,
                                     contentDescription = null,
+                                    modifier = Modifier.padding(10.dp),
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                 )
                             }
-                            if (isExpanded) {
-                                Spacer(Modifier.height(10.dp))
-                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f))
-                                groupRolls.forEach { roll ->
-                                    RollLaunchRowV2(character, modifiers, roll, onOpenRoll)
-                                }
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(group.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                Text(
+                                    "${groupRolls.size} ${stringResource(R.string.rolls).lowercase()}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                             }
+                            Icon(
+                                Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                                contentDescription = null,
+                            )
                         }
                     }
                 }
@@ -702,6 +741,7 @@ private fun RollLaunchRowV2(
 internal fun CharacterEditContentV2(
     character: CharacterProfile,
     data: AppData,
+    onOpenGroup: (String) -> Unit,
     onDataChanged: (AppData) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -850,9 +890,33 @@ internal fun CharacterEditContentV2(
 
         item {
             SectionTitleV2(
-                title = stringResource(R.string.dashboard_order),
+                title = stringResource(R.string.dashboard),
                 subtitle = stringResource(R.string.drag_to_reorder),
             )
+        }
+
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                OutlinedButton(
+                    onClick = { showAddGroup = true },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.new_group))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.new_group))
+                }
+                Button(
+                    onClick = { showAddRoll = true },
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.new_roll))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.new_roll))
+                }
+            }
         }
 
         itemsIndexed(entries, key = { _, entry -> entry.key }) { index, entry ->
@@ -860,176 +924,86 @@ internal fun CharacterEditContentV2(
                 key = entry.key,
                 canMoveUp = index > 0,
                 canMoveDown = index < entries.lastIndex,
-                onMoveUp = { onDataChanged(moveTopLevel(data, character.id, entry.key, -1)) },
-                onMoveDown = { onDataChanged(moveTopLevel(data, character.id, entry.key, 1)) },
+                onMoveUp = {
+                    onDataChanged(DashboardDataOperations.moveTopLevel(data, character.id, entry.key, -1))
+                },
+                onMoveDown = {
+                    onDataChanged(DashboardDataOperations.moveTopLevel(data, character.id, entry.key, 1))
+                },
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            when (entry) {
-                                is DashboardEntry.GroupEntry -> entry.group.name
-                                is DashboardEntry.RollEntry -> entry.roll.name
-                            },
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Text(
-                            when (entry) {
-                                is DashboardEntry.GroupEntry -> stringResource(R.string.group)
-                                is DashboardEntry.RollEntry -> stringResource(R.string.ungrouped)
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Icon(
-                        imageVector = when (entry) {
-                            is DashboardEntry.GroupEntry -> Icons.Rounded.AutoAwesome
-                            is DashboardEntry.RollEntry -> Icons.Rounded.Casino
-                        },
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
-        }
-
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                SectionTitleV2(
-                    title = stringResource(R.string.groups),
-                    subtitle = stringResource(R.string.group_contents_help),
-                    modifier = Modifier.weight(1f),
-                )
-                IconButton(onClick = { showAddGroup = true }) {
-                    Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.new_group), tint = MaterialTheme.colorScheme.onBackground)
-                }
-            }
-        }
-
-        items(groups, key = { "group-edit-${it.id}" }) { group ->
-            val groupRolls = rolls.filter { it.groupId == group.id }.sortedBy { it.order }
-            PremiumCard(Modifier.fillMaxWidth()) {
-                Column(Modifier.fillMaxWidth().padding(14.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(10.dp))
-                        Text(group.name, modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                        IconButton(onClick = { onDataChanged(deleteGroup(data, character.id, group.id)) }) {
-                            Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.delete))
-                        }
-                    }
-                    if (groupRolls.isEmpty()) {
-                        Text(
-                            stringResource(R.string.empty_group),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    } else {
-                        groupRolls.forEachIndexed { index, roll ->
-                            Spacer(Modifier.height(8.dp))
-                            DragReorderCard(
-                                key = "group-roll-${roll.id}",
-                                canMoveUp = index > 0,
-                                canMoveDown = index < groupRolls.lastIndex,
-                                onMoveUp = {
-                                    onDataChanged(
-                                        data.copy(
-                                            rolls = moveRollInsideGroup(
-                                                data.rolls,
-                                                character.id,
-                                                group.id,
-                                                roll.id,
-                                                -1,
-                                            ),
-                                        ),
-                                    )
-                                },
-                                onMoveDown = {
-                                    onDataChanged(
-                                        data.copy(
-                                            rolls = moveRollInsideGroup(
-                                                data.rolls,
-                                                character.id,
-                                                group.id,
-                                                roll.id,
-                                                1,
-                                            ),
-                                        ),
-                                    )
-                                },
-                            ) {
-                                Column {
-                                    Text(roll.name, fontWeight = FontWeight.SemiBold)
-                                    Text(
-                                        roll.expression,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
+                when (entry) {
+                    is DashboardEntry.GroupEntry -> {
+                        val group = entry.group
+                        val rollCount = rolls.count { it.groupId == group.id }
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable { onOpenGroup(group.id) },
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Rounded.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.width(10.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(group.name, fontWeight = FontWeight.Bold)
+                                Text(
+                                    "$rollCount ${stringResource(R.string.rolls).lowercase()}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                             }
+                            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null)
                         }
+                    }
+
+                    is DashboardEntry.RollEntry -> {
+                        val roll = entry.roll
+                        RollEditorCardV2(
+                            character = character,
+                            modifiers = modifiers,
+                            groups = groups,
+                            diceStyles = diceStyles,
+                            roll = roll,
+                            onEnabledChanged = { enabled ->
+                                onDataChanged(
+                                    data.copy(
+                                        rolls = data.rolls.map { if (it.id == roll.id) it.copy(enabled = enabled) else it },
+                                    ),
+                                )
+                            },
+                            onGroupChanged = { groupId ->
+                                onDataChanged(
+                                    DashboardDataOperations.changeRollGroup(data, character.id, roll.id, groupId),
+                                )
+                            },
+                            onEdit = { editingRollId = roll.id },
+                            onAppearanceChanged = { appearance ->
+                                onDataChanged(
+                                    data.copy(
+                                        rolls = data.rolls.map {
+                                            if (it.id == roll.id) it.copy(diceAppearance = appearance) else it
+                                        },
+                                    ),
+                                )
+                            },
+                            onAddRule = { addRuleRollId = roll.id },
+                            onDeleteRule = { ruleId ->
+                                onDataChanged(
+                                    data.copy(
+                                        rolls = data.rolls.map {
+                                            if (it.id == roll.id) {
+                                                it.copy(levelRules = it.levelRules.filterNot { rule -> rule.id == ruleId })
+                                            } else {
+                                                it
+                                            }
+                                        },
+                                    ),
+                                )
+                            },
+                            onDelete = {
+                                onDataChanged(data.copy(rolls = data.rolls.filterNot { it.id == roll.id }))
+                            },
+                        )
                     }
                 }
             }
-        }
-
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                SectionTitleV2(
-                    title = stringResource(R.string.rolls),
-                    subtitle = stringResource(R.string.roll_editor_help),
-                    modifier = Modifier.weight(1f),
-                )
-                IconButton(onClick = { showAddRoll = true }) {
-                    Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.new_roll), tint = MaterialTheme.colorScheme.onBackground)
-                }
-            }
-        }
-
-        items(
-            rolls.sortedWith(compareBy<RollDefinition> { it.groupId ?: "" }.thenBy { it.order }),
-            key = { "roll-edit-${it.id}" },
-        ) { roll ->
-            RollEditorCardV2(
-                character = character,
-                modifiers = modifiers,
-                groups = groups,
-                diceStyles = diceStyles,
-                roll = roll,
-                onEnabledChanged = { enabled ->
-                    onDataChanged(
-                        data.copy(
-                            rolls = data.rolls.map { if (it.id == roll.id) it.copy(enabled = enabled) else it },
-                        ),
-                    )
-                },
-                onGroupChanged = { groupId ->
-                    onDataChanged(changeRollGroup(data, character.id, roll.id, groupId))
-                },
-                onEdit = { editingRollId = roll.id },
-                onAppearanceChanged = { appearance ->
-                    onDataChanged(
-                        data.copy(
-                            rolls = data.rolls.map {
-                                if (it.id == roll.id) it.copy(diceAppearance = appearance) else it
-                            },
-                        ),
-                    )
-                },
-                onAddRule = { addRuleRollId = roll.id },
-                onDeleteRule = { ruleId ->
-                    onDataChanged(
-                        data.copy(
-                            rolls = data.rolls.map {
-                                if (it.id == roll.id) it.copy(levelRules = it.levelRules.filterNot { rule -> rule.id == ruleId }) else it
-                            },
-                        ),
-                    )
-                },
-                onDelete = {
-                    onDataChanged(data.copy(rolls = data.rolls.filterNot { it.id == roll.id }))
-                },
-            )
         }
     }
 
@@ -1071,17 +1045,19 @@ internal fun CharacterEditContentV2(
         GroupDialogV2(
             onDismiss = { showAddGroup = false },
             onSave = { name ->
+                val group = RollGroup(
+                    id = UUID.randomUUID().toString(),
+                    characterId = character.id,
+                    name = name,
+                    order = DashboardDataOperations.nextTopLevelOrder(data, character.id),
+                )
                 onDataChanged(
                     data.copy(
-                        groups = data.groups + RollGroup(
-                            id = UUID.randomUUID().toString(),
-                            characterId = character.id,
-                            name = name,
-                            order = entries.size,
-                        ),
+                        groups = data.groups + group,
                     ),
                 )
                 showAddGroup = false
+                onOpenGroup(group.id)
             },
         )
     }
@@ -1095,7 +1071,11 @@ internal fun CharacterEditContentV2(
             existing = null,
             onDismiss = { showAddRoll = false },
             onSave = { draft ->
-                val order = if (draft.groupId == null) entries.size else rolls.count { it.groupId == draft.groupId }
+                val order = if (draft.groupId == null) {
+                    DashboardDataOperations.nextTopLevelOrder(data, character.id)
+                } else {
+                    DashboardDataOperations.nextGroupRollOrder(data, character.id, draft.groupId)
+                }
                 onDataChanged(
                     data.copy(
                         rolls = data.rolls + draft.copy(
@@ -1120,11 +1100,7 @@ internal fun CharacterEditContentV2(
                 existing = existing,
                 onDismiss = { editingRollId = null },
                 onSave = { updated ->
-                    onDataChanged(
-                        data.copy(
-                            rolls = data.rolls.map { if (it.id == updated.id) updated else it },
-                        ),
-                    )
+                    onDataChanged(updateRoll(data, character.id, existing, updated))
                     editingRollId = null
                 },
             )
@@ -1133,6 +1109,306 @@ internal fun CharacterEditContentV2(
 
     addRuleRollId?.let { rollId ->
         rolls.firstOrNull { it.id == rollId }?.let { roll ->
+            LevelRuleDialogV2(
+                character = character,
+                modifiers = modifiers,
+                onDismiss = { addRuleRollId = null },
+                onSave = { rule ->
+                    onDataChanged(
+                        data.copy(
+                            rolls = data.rolls.map {
+                                if (it.id == roll.id) it.copy(levelRules = it.levelRules + rule) else it
+                            },
+                        ),
+                    )
+                    addRuleRollId = null
+                },
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun GroupScreenV2(
+    character: CharacterProfile,
+    group: RollGroup,
+    data: AppData,
+    editMode: Boolean,
+    onBack: () -> Unit,
+    onOpenRoll: (String) -> Unit,
+    onDeleteGroup: () -> Unit,
+    onDataChanged: (AppData) -> Unit,
+) {
+    ArcaneBackground {
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                TopAppBar(
+                    colors = transparentTopBarColors(),
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back))
+                        }
+                    },
+                    title = {
+                        Column {
+                            Text(group.name, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.Bold)
+                            Text(
+                                stringResource(R.string.group),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    },
+                    actions = {
+                        if (editMode) {
+                            IconButton(onClick = onDeleteGroup) {
+                                Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.delete))
+                            }
+                        }
+                    },
+                )
+            },
+        ) { padding ->
+            if (editMode) {
+                GroupEditContentV2(
+                    character = character,
+                    group = group,
+                    data = data,
+                    onDataChanged = onDataChanged,
+                    modifier = Modifier.padding(padding),
+                )
+            } else {
+                GroupLaunchContentV2(
+                    character = character,
+                    group = group,
+                    data = data,
+                    onOpenRoll = onOpenRoll,
+                    modifier = Modifier.padding(padding),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GroupLaunchContentV2(
+    character: CharacterProfile,
+    group: RollGroup,
+    data: AppData,
+    onOpenRoll: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val modifiers = data.modifiers.filter { it.characterId == character.id }
+    val rolls = data.rolls
+        .filter { it.characterId == character.id && it.groupId == group.id && it.enabled }
+        .sortedBy { it.order }
+
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        if (rolls.isEmpty()) {
+            item {
+                PremiumCard(Modifier.fillMaxWidth()) {
+                    Text(
+                        stringResource(R.string.empty_group),
+                        modifier = Modifier.padding(24.dp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        items(rolls, key = { it.id }) { roll ->
+            PremiumCard(Modifier.fillMaxWidth().clickable { onOpenRoll(roll.id) }) {
+                RollLaunchRowV2(character, modifiers, roll, onOpenRoll)
+            }
+        }
+    }
+}
+
+@Composable
+private fun GroupEditContentV2(
+    character: CharacterProfile,
+    group: RollGroup,
+    data: AppData,
+    onDataChanged: (AppData) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var showAddRoll by remember { mutableStateOf(false) }
+    var editingRollId by remember { mutableStateOf<String?>(null) }
+    var addRuleRollId by remember { mutableStateOf<String?>(null) }
+
+    val groups = data.groups.filter { it.characterId == character.id }.sortedBy { it.order }
+    val allCharacterRolls = data.rolls.filter { it.characterId == character.id }
+    val groupRolls = allCharacterRolls.filter { it.groupId == group.id }.sortedBy { it.order }
+    val modifiers = data.modifiers.filter { it.characterId == character.id }.sortedBy { it.order }
+    val diceStyles = data.diceStyles.filter { it.characterId == character.id }.sortedBy { it.order }
+
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 40.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        item {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                SectionTitleV2(
+                    title = stringResource(R.string.rolls),
+                    subtitle = stringResource(R.string.group_contents_help),
+                    modifier = Modifier.weight(1f),
+                )
+                Button(onClick = { showAddRoll = true }) {
+                    Icon(Icons.Rounded.Add, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.new_roll))
+                }
+            }
+        }
+
+        if (groupRolls.isEmpty()) {
+            item {
+                PremiumCard(Modifier.fillMaxWidth()) {
+                    Text(
+                        stringResource(R.string.empty_group),
+                        modifier = Modifier.padding(20.dp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+
+        itemsIndexed(groupRolls, key = { _, roll -> roll.id }) { index, roll ->
+            DragReorderCard(
+                key = "group-roll-${roll.id}",
+                canMoveUp = index > 0,
+                canMoveDown = index < groupRolls.lastIndex,
+                onMoveUp = {
+                    onDataChanged(
+                        data.copy(
+                            rolls = DashboardDataOperations.moveRollInsideGroup(
+                                data.rolls,
+                                character.id,
+                                group.id,
+                                roll.id,
+                                -1,
+                            ),
+                        ),
+                    )
+                },
+                onMoveDown = {
+                    onDataChanged(
+                        data.copy(
+                            rolls = DashboardDataOperations.moveRollInsideGroup(
+                                data.rolls,
+                                character.id,
+                                group.id,
+                                roll.id,
+                                1,
+                            ),
+                        ),
+                    )
+                },
+            ) {
+                RollEditorCardV2(
+                    character = character,
+                    modifiers = modifiers,
+                    groups = groups,
+                    diceStyles = diceStyles,
+                    roll = roll,
+                    onEnabledChanged = { enabled ->
+                        onDataChanged(
+                            data.copy(
+                                rolls = data.rolls.map { if (it.id == roll.id) it.copy(enabled = enabled) else it },
+                            ),
+                        )
+                    },
+                    onGroupChanged = { groupId ->
+                        onDataChanged(
+                            DashboardDataOperations.changeRollGroup(data, character.id, roll.id, groupId),
+                        )
+                    },
+                    onEdit = { editingRollId = roll.id },
+                    onAppearanceChanged = { appearance ->
+                        onDataChanged(
+                            data.copy(
+                                rolls = data.rolls.map {
+                                    if (it.id == roll.id) it.copy(diceAppearance = appearance) else it
+                                },
+                            ),
+                        )
+                    },
+                    onAddRule = { addRuleRollId = roll.id },
+                    onDeleteRule = { ruleId ->
+                        onDataChanged(
+                            data.copy(
+                                rolls = data.rolls.map {
+                                    if (it.id == roll.id) {
+                                        it.copy(levelRules = it.levelRules.filterNot { rule -> rule.id == ruleId })
+                                    } else {
+                                        it
+                                    }
+                                },
+                            ),
+                        )
+                    },
+                    onDelete = {
+                        onDataChanged(data.copy(rolls = data.rolls.filterNot { it.id == roll.id }))
+                    },
+                )
+            }
+        }
+    }
+
+    if (showAddRoll) {
+        RollDialogV2(
+            title = stringResource(R.string.new_roll),
+            character = character,
+            modifiers = modifiers,
+            groups = groups,
+            existing = null,
+            initialGroupId = group.id,
+            onDismiss = { showAddRoll = false },
+            onSave = { draft ->
+                val order = if (draft.groupId == null) {
+                    DashboardDataOperations.nextTopLevelOrder(data, character.id)
+                } else {
+                    DashboardDataOperations.nextGroupRollOrder(data, character.id, draft.groupId)
+                }
+                onDataChanged(
+                    data.copy(
+                        rolls = data.rolls + draft.copy(
+                            id = UUID.randomUUID().toString(),
+                            characterId = character.id,
+                            order = order,
+                        ),
+                    ),
+                )
+                showAddRoll = false
+            },
+        )
+    }
+
+    editingRollId?.let { id ->
+        allCharacterRolls.firstOrNull { it.id == id }?.let { existing ->
+            RollDialogV2(
+                title = stringResource(R.string.edit_roll),
+                character = character,
+                modifiers = modifiers,
+                groups = groups,
+                existing = existing,
+                onDismiss = { editingRollId = null },
+                onSave = { updated ->
+                    onDataChanged(updateRoll(data, character.id, existing, updated))
+                    editingRollId = null
+                },
+            )
+        }
+    }
+
+    addRuleRollId?.let { rollId ->
+        allCharacterRolls.firstOrNull { it.id == rollId }?.let { roll ->
             LevelRuleDialogV2(
                 character = character,
                 modifiers = modifiers,
@@ -2194,12 +2470,13 @@ internal fun RollDialogV2(
     modifiers: List<CharacterModifier>,
     groups: List<RollGroup>,
     existing: RollDefinition?,
+    initialGroupId: String? = null,
     onDismiss: () -> Unit,
     onSave: (RollDefinition) -> Unit,
 ) {
     var name by remember(existing?.id) { mutableStateOf(existing?.name ?: "") }
     var expression by remember(existing?.id) { mutableStateOf(TextFieldValue(existing?.expression ?: "1d20")) }
-    var groupId by remember(existing?.id) { mutableStateOf(existing?.groupId) }
+    var groupId by remember(existing?.id, initialGroupId) { mutableStateOf(existing?.groupId ?: initialGroupId) }
     var groupMenu by remember(existing?.id) { mutableStateOf(false) }
 
     val validExpression = RollFormulaResolver.validateTemplate(expression.text, character.level, modifiers)
@@ -2382,88 +2659,23 @@ private fun dashboardEntries(
     (groups.map { DashboardEntry.GroupEntry(it) } + ungroupedRolls.map { DashboardEntry.RollEntry(it) })
         .sortedWith(compareBy<DashboardEntry> { it.order }.thenBy { it.key })
 
-private fun moveTopLevel(
+private fun updateRoll(
     data: AppData,
     characterId: String,
-    key: String,
-    direction: Int,
+    existing: RollDefinition,
+    updated: RollDefinition,
 ): AppData {
-    val groups = data.groups.filter { it.characterId == characterId }
-    val ungrouped = data.rolls.filter { it.characterId == characterId && it.groupId == null }
-    val entries = dashboardEntries(groups, ungrouped).toMutableList()
-    val index = entries.indexOfFirst { it.key == key }
-    val target = index + direction
-    if (index < 0 || target !in entries.indices) return data
-    val tmp = entries[index]
-    entries[index] = entries[target]
-    entries[target] = tmp
-    val orderByKey = entries.mapIndexed { order, entry -> entry.key to order }.toMap()
-
-    return data.copy(
-        groups = data.groups.map { group ->
-            orderByKey["group-${group.id}"]?.let { group.copy(order = it) } ?: group
-        },
-        rolls = data.rolls.map { roll ->
-            if (roll.groupId == null) orderByKey["roll-${roll.id}"]?.let { roll.copy(order = it) } ?: roll else roll
+    val targetGroupId = updated.groupId
+    val replaced = data.copy(
+        rolls = data.rolls.map {
+            if (it.id == updated.id) updated.copy(groupId = existing.groupId, order = existing.order) else it
         },
     )
-}
-
-private fun moveRollInsideGroup(
-    all: List<RollDefinition>,
-    characterId: String,
-    groupId: String,
-    rollId: String,
-    direction: Int,
-): List<RollDefinition> {
-    val local = all.filter { it.characterId == characterId && it.groupId == groupId }.sortedBy { it.order }.toMutableList()
-    val index = local.indexOfFirst { it.id == rollId }
-    val target = index + direction
-    if (index < 0 || target !in local.indices) return all
-    val tmp = local[index]
-    local[index] = local[target]
-    local[target] = tmp
-    val order = local.mapIndexed { i, roll -> roll.id to i }.toMap()
-    return all.map { roll -> order[roll.id]?.let { roll.copy(order = it) } ?: roll }
-}
-
-private fun changeRollGroup(
-    data: AppData,
-    characterId: String,
-    rollId: String,
-    newGroupId: String?,
-): AppData {
-    val roll = data.rolls.firstOrNull { it.id == rollId && it.characterId == characterId } ?: return data
-    if (roll.groupId == newGroupId) return data
-    val others = data.rolls.filterNot { it.id == rollId }
-    val order = if (newGroupId == null) {
-        dashboardEntries(
-            data.groups.filter { it.characterId == characterId },
-            others.filter { it.characterId == characterId && it.groupId == null },
-        ).size
+    return if (existing.groupId == targetGroupId) {
+        replaced
     } else {
-        others.count { it.characterId == characterId && it.groupId == newGroupId }
+        DashboardDataOperations.changeRollGroup(replaced, characterId, updated.id, targetGroupId)
     }
-    return data.copy(rolls = others + roll.copy(groupId = newGroupId, order = order))
-}
-
-private fun deleteGroup(
-    data: AppData,
-    characterId: String,
-    groupId: String,
-): AppData {
-    val remainingGroups = data.groups.filterNot { it.id == groupId }
-    val existingUngrouped = data.rolls.filter { it.characterId == characterId && it.groupId == null }
-    var nextOrder = dashboardEntries(
-        remainingGroups.filter { it.characterId == characterId },
-        existingUngrouped,
-    ).size
-    val rolls = data.rolls.map { roll ->
-        if (roll.characterId == characterId && roll.groupId == groupId) {
-            roll.copy(groupId = null, order = nextOrder++)
-        } else roll
-    }
-    return data.copy(groups = remainingGroups, rolls = rolls)
 }
 
 private fun modifierIsReferenced(
