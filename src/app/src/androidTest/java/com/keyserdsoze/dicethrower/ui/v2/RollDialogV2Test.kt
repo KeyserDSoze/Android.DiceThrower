@@ -26,13 +26,13 @@ class RollDialogV2Test {
     fun characterEditorAddRollOpensDialogWithoutCrashing() {
         val character = CharacterProfile(id = "character", name = "Test")
         composeRule.setContent {
-  DiceThrowerTheme(themeMode = ThemeMode.DARK) {
-      CharacterEditContentV2(
-          character = character,
-          data = AppData(characters = listOf(character)),
-          onDataChanged = {},
-      )
-  }
+            DiceThrowerTheme(themeMode = ThemeMode.DARK) {
+                CharacterEditContentV2(
+                    character = character,
+                    data = AppData(characters = listOf(character)),
+                    onDataChanged = {},
+                )
+            }
         }
 
         composeRule.onNodeWithContentDescription("New roll").performClick()
@@ -44,29 +44,29 @@ class RollDialogV2Test {
     fun characterEditorRendersReferencedModifierWithoutRegexCrash() {
         val character = CharacterProfile(id = "character", name = "Test")
         val modifier = CharacterModifier(
-  id = "strength",
-  characterId = character.id,
-  name = "Strength",
-  value = 3,
+            id = "strength",
+            characterId = character.id,
+            name = "Strength",
+            value = 3,
         )
         val roll = RollDefinition(
-  id = "attack",
-  characterId = character.id,
-  name = "Attack",
-  expression = "1d20+{Strength}",
+            id = "attack",
+            characterId = character.id,
+            name = "Attack",
+            expression = "1d20+{Strength}",
         )
         composeRule.setContent {
-  DiceThrowerTheme(themeMode = ThemeMode.DARK) {
-      CharacterEditContentV2(
-          character = character,
-          data = AppData(
-              characters = listOf(character),
-              modifiers = listOf(modifier),
-              rolls = listOf(roll),
-          ),
-          onDataChanged = {},
-      )
-  }
+            DiceThrowerTheme(themeMode = ThemeMode.DARK) {
+                CharacterEditContentV2(
+                    character = character,
+                    data = AppData(
+                        characters = listOf(character),
+                        modifiers = listOf(modifier),
+                        rolls = listOf(roll),
+                    ),
+                    onDataChanged = {},
+                )
+            }
         }
 
         composeRule.onNodeWithText("Strength").assertIsDisplayed()
@@ -76,17 +76,17 @@ class RollDialogV2Test {
     @Test
     fun newRollDialogRendersWithEmptyOptionalCollections() {
         composeRule.setContent {
-  DiceThrowerTheme(themeMode = ThemeMode.DARK) {
-      RollDialogV2(
-          title = "New roll",
-          character = CharacterProfile(id = "character", name = "Test"),
-          modifiers = emptyList(),
-          groups = emptyList(),
-          existing = null,
-          onDismiss = {},
-          onSave = {},
-      )
-  }
+            DiceThrowerTheme(themeMode = ThemeMode.DARK) {
+                RollDialogV2(
+                    title = "New roll",
+                    character = CharacterProfile(id = "character", name = "Test"),
+                    modifiers = emptyList(),
+                    groups = emptyList(),
+                    existing = null,
+                    onDismiss = {},
+                    onSave = {},
+                )
+            }
         }
 
         composeRule.onNodeWithText("New roll").assertIsDisplayed()
@@ -97,24 +97,24 @@ class RollDialogV2Test {
     fun newRollDialogSavesParameterizedModifierFormula() {
         val character = CharacterProfile(id = "character", name = "Test")
         val modifier = CharacterModifier(
-  id = "strength",
-  characterId = character.id,
-  name = "Strength",
-  value = 3,
+            id = "strength",
+            characterId = character.id,
+            name = "Strength",
+            value = 3,
         )
         var saved: RollDefinition? = null
         composeRule.setContent {
-  DiceThrowerTheme(themeMode = ThemeMode.DARK) {
-      RollDialogV2(
-          title = "New roll",
-          character = character,
-          modifiers = listOf(modifier),
-          groups = emptyList(),
-          existing = null,
-          onDismiss = {},
-          onSave = { saved = it },
-      )
-  }
+            DiceThrowerTheme(themeMode = ThemeMode.DARK) {
+                RollDialogV2(
+                    title = "New roll",
+                    character = character,
+                    modifiers = listOf(modifier),
+                    groups = emptyList(),
+                    existing = null,
+                    onDismiss = {},
+                    onSave = { saved = it },
+                )
+            }
         }
 
         composeRule.onAllNodes(hasSetTextAction())[0].performTextInput("Attack")
@@ -122,8 +122,8 @@ class RollDialogV2Test {
         composeRule.onNodeWithText("Save").performClick()
 
         composeRule.runOnIdle {
-  assertEquals("Attack", saved?.name)
-  assertEquals("1d20+{Strength}", saved?.expression)
+            assertEquals("Attack", saved?.name)
+            assertEquals("1d20+{Strength}", saved?.expression)
         }
     }
 }
