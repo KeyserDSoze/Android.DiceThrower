@@ -23,7 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.AccountCircle
-import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Casino
 import androidx.compose.material.icons.rounded.Cloud
@@ -32,7 +32,7 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.AlertDialog
@@ -451,7 +451,7 @@ private fun CharactersScreenV2(
                                 }
                                 LevelBadge(character.level)
                                 Spacer(Modifier.width(6.dp))
-                                Icon(Icons.Rounded.KeyboardArrowRight, contentDescription = null)
+                                Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null)
                             }
                         }
                     }
@@ -492,7 +492,7 @@ private fun CharacterScreenV2(
                     colors = transparentTopBarColors(),
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.Rounded.ArrowBack, contentDescription = stringResource(R.string.back))
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back))
                         }
                     },
                     title = {
@@ -631,7 +631,7 @@ private fun DashboardContentV2(
                                     )
                                 }
                                 Icon(
-                                    if (isExpanded) Icons.Rounded.KeyboardArrowDown else Icons.Rounded.KeyboardArrowRight,
+                                    if (isExpanded) Icons.Rounded.KeyboardArrowDown else Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                                     contentDescription = null,
                                 )
                             }
@@ -694,7 +694,7 @@ private fun RollLaunchRowV2(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Icon(Icons.Rounded.KeyboardArrowRight, contentDescription = null)
+        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null)
     }
 }
 
@@ -1372,7 +1372,7 @@ private fun RollScreenV2(
                     colors = transparentTopBarColors(),
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.Rounded.ArrowBack, contentDescription = stringResource(R.string.back))
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back))
                         }
                     },
                     title = { Text(roll.name, fontWeight = FontWeight.Bold) },
@@ -1576,7 +1576,7 @@ private fun SettingsScreenV2(
                     colors = transparentTopBarColors(),
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.Rounded.ArrowBack, contentDescription = stringResource(R.string.back))
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back))
                         }
                     },
                     title = {
@@ -1978,7 +1978,7 @@ private fun LogsScreenV2(
                     colors = transparentTopBarColors(),
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.Rounded.ArrowBack, contentDescription = stringResource(R.string.back))
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back))
                         }
                     },
                     title = { Text("${stringResource(R.string.logs)} · ${character.name}", fontWeight = FontWeight.Bold) },
@@ -2470,7 +2470,7 @@ private fun modifierIsReferenced(
     modifierName: String,
     rolls: List<RollDefinition>,
 ): Boolean {
-    val variableRegex = Regex("""\{([^{}]+)}""")
+    val variableRegex = Regex("""\{([^{}]+)\}""")
     return rolls.any { roll ->
         (listOf(roll.expression) + roll.levelRules.map { it.expression }).any { expression ->
             variableRegex.findAll(expression).any { match ->

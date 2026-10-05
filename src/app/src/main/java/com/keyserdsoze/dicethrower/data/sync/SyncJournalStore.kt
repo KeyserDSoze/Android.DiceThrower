@@ -21,9 +21,8 @@ class SyncJournalStore(context: Context) {
 
 internal class SyncJournalFileStore(private val file: File) {
     fun load(): LocalSyncJournal {
-        val raw = runCatching { file.takeIf(File::isFile)?.readText() }.getOrNull()
-            ?: return LocalSyncJournal()
-        return runCatching { decode(JSONObject(raw)) }.getOrDefault(LocalSyncJournal())
+        val raw = file.takeIf(File::isFile)?.readText() ?: return LocalSyncJournal()
+        return decode(JSONObject(raw))
     }
 
     fun save(journal: LocalSyncJournal) {

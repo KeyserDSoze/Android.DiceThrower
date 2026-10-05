@@ -27,10 +27,11 @@ class CloudSyncEngine(
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     fun currentStatus(connected: Boolean): SyncStatus {
-        if (!connected) return SyncStatus(SyncStatusKind.LOCAL_ONLY)
+    if (!connected) return SyncStatus(SyncStatusKind.LOCAL_ONLY)
+    return try {
         val snapshot = local.snapshot(clock())
         val pending = pendingCount(snapshot)
-        return SyncStatus(
+        SyncStatus(
             kind = if (pending > 0 || snapshot.journal.lastSuccessfulSyncAt == null) {
                 SyncStatusKind.PENDING
             } else {
@@ -39,7 +40,15 @@ class CloudSyncEngine(
             pendingCount = pending,
             lastSuccessfulSyncAt = snapshot.journal.lastSuccessfulSyncAt,
         )
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: Exception) {
+        SyncStatus(
+            kind = SyncStatusKind.ERROR,
+            error = errorKind(error),
+        )
     }
+}
 
     suspend fun sync(
         conflictPolicy: ConflictPolicy = ConflictPolicy.ASK,

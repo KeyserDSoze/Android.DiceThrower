@@ -1115,7 +1115,7 @@ private fun modifierIsReferenced(
     modifierName: String,
     rolls: List<RollDefinition>,
 ): Boolean {
-    val variableRegex = Regex("""\{([^{}]+)}""")
+    val variableRegex = Regex("""\{([^{}]+)\}""")
     return rolls.any { roll ->
         val expressions = listOf(roll.expression) + roll.levelRules.map { it.expression }
         expressions.any { expression ->

@@ -2,6 +2,7 @@ package com.keyserdsoze.dicethrower.data.sync
 
 import java.nio.file.Files
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class SyncJournalStoreTest {
@@ -26,4 +27,20 @@ class SyncJournalStoreTest {
             directory.deleteRecursively()
         }
     }
+    @Test
+    fun corruptJournalFailsClosedWithoutOverwritingFile() {
+        val directory = Files.createTempDirectory("dice-sync-journal-corrupt").toFile()
+        val file = directory.resolve("journal.json")
+        val store = SyncJournalFileStore(file)
+        val corrupt = "{not-json"
+
+        try {
+            file.writeText(corrupt)
+            assertThrows(Exception::class.java) { store.load() }
+            assertEquals(corrupt, file.readText())
+        } finally {
+            directory.deleteRecursively()
+        }
+    }
+
 }
