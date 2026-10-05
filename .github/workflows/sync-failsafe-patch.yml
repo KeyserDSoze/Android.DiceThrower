@@ -1,0 +1,116 @@
+name: Apply sync fail-safe patch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/sync-failsafe-patch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Harden sync snapshot failures
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          engine = Path('src/app/src/main/java/com/keyserdsoze/dicethrower/data/sync/CloudSyncEngine.kt')
+          text = engine.read_text()
+          start = text.index('    fun currentStatus(connected: Boolean): SyncStatus {')
+          end = text.index('\n\n    private suspend fun sync(', start)
+          replacement = '''    fun currentStatus(connected: Boolean): SyncStatus {
+              if (!connected) return SyncStatus(SyncStatusKind.LOCAL_ONLY)
+              return try {
+                  val snapshot = local.snapshot(clock())
+                  val pending = pendingCount(snapshot)
+                  SyncStatus(
+                      kind = if (pending > 0 || snapshot.journal.lastSuccessfulSyncAt == null) {
+                          SyncStatusKind.PENDING
+                      } else {
+                          SyncStatusKind.SYNCED
+                      },
+                      pendingCount = pending,
+                      lastSuccessfulSyncAt = snapshot.journal.lastSuccessfulSyncAt,
+                  )
+              } catch (error: CancellationException) {
+                  throw error
+              } catch (error: Exception) {
+                  SyncStatus(
+                      kind = SyncStatusKind.ERROR,
+                      error = errorKind(error),
+                  )
+              }
+          }
+
+              suspend fun sync(
+                  conflictPolicy: ConflictPolicy = ConflictPolicy.ASK,
+                  resolutions: Map<String, SyncConflictResolution> = emptyMap(),
+              ): SyncRunResult = try {
+                  val snapshot = local.snapshot(clock())
+                  sync(snapshot, conflictPolicy, resolutions)
+              } catch (error: CancellationException) {
+                  throw error
+              } catch (error: Exception) {
+                  val latest = try {
+                      local.snapshot(clock())
+                  } catch (cancellation: CancellationException) {
+                      throw cancellation
+                  } catch (_: Exception) {
+                      null
+                  }
+                  SyncRunResult(
+                      status = SyncStatus(
+                          kind = SyncStatusKind.ERROR,
+                          pendingCount = latest?.let(::pendingCount) ?: 0,
+                          lastSuccessfulSyncAt = latest?.journal?.lastSuccessfulSyncAt,
+                          error = errorKind(error),
+                      ),
+                  )
+              }'''
+          # Normalize indentation deliberately after the first one-shot patch.
+          replacement = '\n'.join(line[10:] if line.startswith('          ') else line for line in replacement.splitlines())
+          engine.write_text(text[:start] + replacement + text[end:])
+
+          test_file = Path('src/app/src/test/java/com/keyserdsoze/dicethrower/data/sync/CloudSyncEngineTest.kt')
+          text = test_file.read_text()
+          marker = '    private fun engine(local: FakeLocal, remote: FakeRemote, now: Long): CloudSyncEngine =\n'
+          test = '''    @Test
+              fun syncReturnsErrorWhenInitialSnapshotFails() = runBlocking {
+                  val failingLocal = object : SyncLocalGateway {
+                      override fun snapshot(now: Long): LocalSyncSnapshot = error("corrupt sync journal")
+
+                      override fun readImageAsset(ref: CharacterImageRef): PortableCharacterImageAsset? = null
+
+                      override fun commit(plan: LocalSyncCommitPlan): LocalSyncCommitResult = error("not used")
+                  }
+
+                  val result = CloudSyncEngine(failingLocal, FakeRemote()) { 100L }.sync()
+
+                  assertEquals(SyncStatusKind.ERROR, result.status.kind)
+                  assertEquals(SyncErrorKind.UNKNOWN, result.status.error)
+              }
+
+          '''
+          test = '\n'.join(line[10:] if line.startswith('          ') else line for line in test.splitlines()) + '\n'
+          if 'fun syncReturnsErrorWhenInitialSnapshotFails()' not in text:
+              if marker not in text:
+                  raise SystemExit('CloudSyncEngineTest insertion marker not found')
+              text = text.replace(marker, test + marker, 1)
+          test_file.write_text(text)
+          PY
+
+      - name: Commit sync fail-safe
+        shell: bash
+        run: |
+          git config user.name "Dice Thrower CI"
+          git config user.email "actions@users.noreply.github.com"
+          git add src/app/src/main/java/com/keyserdsoze/dicethrower/data/sync/CloudSyncEngine.kt src/app/src/test/java/com/keyserdsoze/dicethrower/data/sync/CloudSyncEngineTest.kt
+          git commit -m "fix: fail safe when sync snapshot is unreadable"
+          git push origin HEAD:main
