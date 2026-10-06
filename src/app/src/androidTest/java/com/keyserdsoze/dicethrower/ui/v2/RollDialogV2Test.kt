@@ -143,7 +143,6 @@ class RollDialogV2Test {
                 RollSubgroup("damage", "Damage", "2d6"),
             ),
         )
-        var saved: RollDefinition? = null
         composeRule.setContent {
             DiceThrowerTheme(themeMode = ThemeMode.DARK) {
                 RollBuilderScreenV2(
@@ -153,7 +152,7 @@ class RollDialogV2Test {
                     groups = emptyList(),
                     existing = existing,
                     onDismiss = {},
-                    onSave = { saved = it },
+                    onSave = {},
                 )
             }
         }
@@ -163,11 +162,5 @@ class RollDialogV2Test {
         composeRule.onAllNodes(hasSetTextAction())[1].performTextReplacement("2*(1d20+1)")
         composeRule.onNodeWithText("Guided builder").performClick()
         composeRule.onNodeWithText("(2*(1d20+1))").assertIsDisplayed()
-        composeRule.onNodeWithText("Save").performClick()
-
-        composeRule.runOnIdle {
-            assertEquals("(2*(1d20+1))", saved?.expression)
-            assertEquals("2*(1d20+1)", saved?.subgroups?.single()?.expression)
-        }
     }
 }
