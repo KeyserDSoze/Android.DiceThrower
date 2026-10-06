@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">အန်စာတုံးစားပွဲ</string><string name="dice_table_help">လှိမ့်တိုင်းအတွက် ဤဇာတ်ကောင်၏ ကိုယ်ပိုင်စားပွဲကို ရွေးပါ။</string>
+    <string name="table_arcane">မှော်ဆန်</string><string name="table_oak">ဝက်သစ်ချ</string><string name="table_emerald">မြ</string><string name="table_obsidian">အော့ဘ်စီဒီယန်</string>
+    <string name="statistics">စာရင်းအင်း</string><string name="roll_again">ထပ်လှိမ့်</string>
+</resources>

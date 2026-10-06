@@ -9,6 +9,7 @@ import com.keyserdsoze.dicethrower.model.ConflictPolicy
 import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 import com.keyserdsoze.dicethrower.model.DiceMaterial
 import com.keyserdsoze.dicethrower.model.DiceStyle
+import com.keyserdsoze.dicethrower.model.DiceTableTheme
 import com.keyserdsoze.dicethrower.model.LevelRuleKind
 import com.keyserdsoze.dicethrower.model.RollButtonPosition
 import com.keyserdsoze.dicethrower.model.RollDefinition
@@ -120,6 +121,7 @@ class AppBackupCodecTest {
 
         assertEquals(1, decoded.characters.single().level)
         assertNull(decoded.characters.single().defaultDiceStyleId)
+        assertEquals(DiceTableTheme.ARCANE, decoded.characters.single().diceTableTheme)
         assertTrue(decoded.modifiers.isEmpty())
         assertTrue(decoded.diceStyles.isEmpty())
         assertTrue(decoded.characterSyncMetadata.isEmpty())
@@ -239,6 +241,7 @@ class AppBackupCodecTest {
                 level = 8,
                 order = 0,
                 defaultDiceStyleId = "style-blue",
+                diceTableTheme = DiceTableTheme.EMERALD,
             ),
         ),
         modifiers = listOf(

@@ -13,7 +13,10 @@ class DiceMeshFactoryTest {
             val mesh = DiceMeshFactory.create(sides)
             assertTrue("d$sides should have vertices", mesh.vertexCount > 0)
             assertEquals(0, mesh.vertexCount % 3)
+            assertTrue("d$sides should have numbered faces", mesh.numberVertexCount > 0)
+            assertEquals(0, mesh.numberVertexCount % 3)
             assertEquals(mesh.positions.size, mesh.normals.size)
+            assertEquals(mesh.numberPositions.size, mesh.numberNormals.size)
         }
     }
 

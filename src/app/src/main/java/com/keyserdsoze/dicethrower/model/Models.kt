@@ -25,6 +25,13 @@ enum class DiceMaterial {
     GEMSTONE,
 }
 
+enum class DiceTableTheme {
+    ARCANE,
+    OAK,
+    EMERALD,
+    OBSIDIAN,
+}
+
 enum class DiceAppearanceMode {
     CHARACTER_DEFAULT,
     UNIFORM,
@@ -66,6 +73,7 @@ data class CharacterProfile(
     val level: Int = 1,
     val order: Int = 0,
     val defaultDiceStyleId: String? = null,
+    val diceTableTheme: DiceTableTheme = DiceTableTheme.ARCANE,
 )
 
 data class CharacterModifier(

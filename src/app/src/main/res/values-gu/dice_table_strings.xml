@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">પાસાની મેજ</string><string name="dice_table_help">દરેક રોલ માટે આ પાત્રની વ્યક્તિગત મેજ પસંદ કરો.</string>
+    <string name="table_arcane">રહસ્યમય</string><string name="table_oak">ઓક</string><string name="table_emerald">પન્ના</string><string name="table_obsidian">ઓબ્સિડિયન</string>
+    <string name="statistics">આંકડા</string><string name="roll_again">ફરી રોલ કરો</string>
+</resources>

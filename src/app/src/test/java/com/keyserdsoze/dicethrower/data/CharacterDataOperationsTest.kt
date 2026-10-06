@@ -6,6 +6,7 @@ import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 import com.keyserdsoze.dicethrower.model.DiceMaterial
 import com.keyserdsoze.dicethrower.model.DiceStyle
+import com.keyserdsoze.dicethrower.model.DiceTableTheme
 import com.keyserdsoze.dicethrower.model.LevelRuleKind
 import com.keyserdsoze.dicethrower.model.RollDefinition
 import com.keyserdsoze.dicethrower.model.RollDiceAppearance
@@ -55,6 +56,7 @@ class CharacterDataOperationsTest {
         assertEquals(data.characters.size, duplicate.order)
         assertNotEquals("character-a", duplicate.id)
         assertEquals(data.characters.first().level, duplicate.level)
+        assertEquals(DiceTableTheme.OBSIDIAN, duplicate.diceTableTheme)
 
         val duplicatedModifiers = result.modifiers.filter { it.characterId == duplicate.id }
         val duplicatedGroups = result.groups.filter { it.characterId == duplicate.id }
@@ -104,6 +106,7 @@ class CharacterDataOperationsTest {
                 level = 8,
                 order = 0,
                 defaultDiceStyleId = "style-a",
+                diceTableTheme = DiceTableTheme.OBSIDIAN,
             ),
             CharacterProfile(
                 id = "character-b",

@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">Meja dadu</string><string name="dice_table_help">Pilih meja pribadi karakter ini untuk setiap lemparan.</string>
+    <string name="table_arcane">Arkane</string><string name="table_oak">Ek</string><string name="table_emerald">Zamrud</string><string name="table_obsidian">Obsidian</string>
+    <string name="statistics">Statistik</string><string name="roll_again">Lempar lagi</string>
+</resources>

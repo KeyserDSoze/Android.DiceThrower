@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">Bàn xúc xắc</string><string name="dice_table_help">Chọn bàn riêng của nhân vật này cho mỗi lần tung.</string>
+    <string name="table_arcane">Huyền bí</string><string name="table_oak">Gỗ sồi</string><string name="table_emerald">Ngọc lục bảo</string><string name="table_obsidian">Hắc diện thạch</string>
+    <string name="statistics">Thống kê</string><string name="roll_again">Tung lại</string>
+</resources>

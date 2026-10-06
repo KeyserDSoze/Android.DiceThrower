@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">ದಾಳದ ಮೇಜು</string><string name="dice_table_help">ಪ್ರತಿ ರೋಲ್‌ಗೆ ಈ ಪಾತ್ರದ ವೈಯಕ್ತಿಕ ಮೇಜನ್ನು ಆಯ್ಕೆಮಾಡಿ.</string>
+    <string name="table_arcane">ಮಾಂತ್ರಿಕ</string><string name="table_oak">ಓಕ್</string><string name="table_emerald">ಪಚ್ಚೆ</string><string name="table_obsidian">ಅಬ್ಸಿಡಿಯನ್</string>
+    <string name="statistics">ಅಂಕಿಅಂಶಗಳು</string><string name="roll_again">ಮತ್ತೆ ರೋಲ್ ಮಾಡಿ</string>
+</resources>

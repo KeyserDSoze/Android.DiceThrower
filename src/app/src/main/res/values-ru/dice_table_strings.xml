@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">Стол для кубиков</string><string name="dice_table_help">Выберите личный стол этого персонажа для каждого броска.</string>
+    <string name="table_arcane">Магический</string><string name="table_oak">Дуб</string><string name="table_emerald">Изумруд</string><string name="table_obsidian">Обсидиан</string>
+    <string name="statistics">Статистика</string><string name="roll_again">Бросить снова</string>
+</resources>

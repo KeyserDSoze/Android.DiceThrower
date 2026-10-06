@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">میز تاس</string><string name="dice_table_help">میز شخصی این شخصیت را برای هر پرتاب انتخاب کنید.</string>
+    <string name="table_arcane">جادویی</string><string name="table_oak">بلوط</string><string name="table_emerald">زمرد</string><string name="table_obsidian">ابسیدین</string>
+    <string name="statistics">آمار</string><string name="roll_again">دوباره بینداز</string>
+</resources>

@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">Zar masası</string><string name="dice_table_help">Her atış için bu karakterin kişisel masasını seçin.</string>
+    <string name="table_arcane">Gizemli</string><string name="table_oak">Meşe</string><string name="table_emerald">Zümrüt</string><string name="table_obsidian">Obsidyen</string>
+    <string name="statistics">İstatistikler</string><string name="roll_again">Tekrar at</string>
+</resources>

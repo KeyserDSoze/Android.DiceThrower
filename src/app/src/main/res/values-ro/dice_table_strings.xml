@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">Masă de zaruri</string><string name="dice_table_help">Alege masa personală a acestui personaj pentru fiecare aruncare.</string>
+    <string name="table_arcane">Arcană</string><string name="table_oak">Stejar</string><string name="table_emerald">Smarald</string><string name="table_obsidian">Obsidian</string>
+    <string name="statistics">Statistici</string><string name="roll_again">Aruncă din nou</string>
+</resources>

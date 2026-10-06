@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">Mesa de dados</string><string name="dice_table_help">Escolha a mesa pessoal deste personagem para cada lançamento.</string>
+    <string name="table_arcane">Arcana</string><string name="table_oak">Carvalho</string><string name="table_emerald">Esmeralda</string><string name="table_obsidian">Obsidiana</string>
+    <string name="statistics">Estatísticas</string><string name="roll_again">Rolar novamente</string>
+</resources>

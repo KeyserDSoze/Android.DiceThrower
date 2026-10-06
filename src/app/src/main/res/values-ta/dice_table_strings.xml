@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">பகடை மேசை</string><string name="dice_table_help">ஒவ்வொரு உருட்டலுக்கும் இந்தக் கதாபாத்திரத்தின் தனிப்பட்ட மேசையைத் தேர்ந்தெடுக்கவும்.</string>
+    <string name="table_arcane">மந்திர</string><string name="table_oak">ஓக்</string><string name="table_emerald">மரகதம்</string><string name="table_obsidian">அப்சிடியன்</string>
+    <string name="statistics">புள்ளிவிவரங்கள்</string><string name="roll_again">மீண்டும் உருட்டு</string>
+</resources>

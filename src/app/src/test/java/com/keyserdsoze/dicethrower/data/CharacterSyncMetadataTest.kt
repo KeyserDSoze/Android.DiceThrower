@@ -3,6 +3,7 @@ package com.keyserdsoze.dicethrower.data
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterProfile
+import com.keyserdsoze.dicethrower.model.DiceTableTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -38,6 +39,19 @@ class CharacterSyncMetadataTest {
         assertNotEquals(
             CharacterRevision.revision(initial, CHARACTER_ID),
             CharacterRevision.revision(renamed, CHARACTER_ID),
+        )
+    }
+
+    @Test
+    fun changingCharacterTableChangesRevision() {
+        val initial = sampleData()
+        val changed = initial.copy(
+            characters = initial.characters.map { it.copy(diceTableTheme = DiceTableTheme.EMERALD) },
+        )
+
+        assertNotEquals(
+            CharacterRevision.revision(initial, CHARACTER_ID),
+            CharacterRevision.revision(changed, CHARACTER_ID),
         )
     }
 

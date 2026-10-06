@@ -20,7 +20,7 @@
 
 `RollDefinition`: id, characterId, name, base expression, groupId, enabled, order, levelRules, diceAppearance.
 
-`DiceStyle`: character-owned visual style with material, primary/secondary colors and stable ordering. Roll appearance policies reference style IDs and never participate in dice math.
+`DiceStyle`: character-owned visual style with material, primary/secondary colors and stable ordering. Roll appearance policies reference style IDs and never participate in dice math. `CharacterProfile.diceTableTheme` selects the persisted per-character roll table.
 
 `RollLevelRule`: id, kind, trigger, expression.
 
@@ -110,7 +110,7 @@ Supported sides: 2, 3, 4, 6, 10, 12, 20, 100.
 
 ## Persistence and migration
 
-The application stores one versioned JSON document in private SharedPreferences. Storage version 5 adds portable character-image references on top of version 4's per-character sync metadata. Version 3 introduced the character-owned dice-style model and roll appearance policies; version 2 added character level, modifiers and level rules.
+The application stores one versioned JSON document in private SharedPreferences. Storage version 6 adds the per-character dice-table theme; version 5 added portable character-image references on top of version 4's per-character sync metadata. Version 3 introduced the character-owned dice-style model and roll appearance policies; version 2 added character level, modifiers and level rules.
 
 Version-1 data remains readable:
 
@@ -180,11 +180,13 @@ Roaming settings are intentionally narrow: roll-button visibility, roll-button p
 
 ## Shake handling
 
-The accelerometer listener is active only while the roll screen is visible. A debounce window avoids duplicate throws from one physical gesture.
+The accelerometer listener is active on a fresh roll screen until the first throw. A debounce window avoids duplicate throws from one physical gesture; after that first throw, the listener stays disarmed and rerolls require the explicit **Roll again** action.
 
 ## 3D renderer
 
-The OpenGL ES 2.0 renderer consumes an already-produced numerical result plus the fully resolved appearance for each visible die. Physics/animation never decides the numerical result: the dice engine decides first, then the UI resolves appearance, then the renderer visualizes both.
+The OpenGL ES 2.0 renderer consumes an already-produced numerical result plus the fully resolved appearance for each visible die. Its lightweight rigid-body layer handles table boundaries, pairwise die collisions, damping and settling only after the logical result exists. Physics/animation never decides the numerical result: the dice engine decides first, then the UI resolves appearance, then the renderer visualizes both.
+
+Face numerals are generated as small triangle meshes anchored to each logical die face, so they share the die model transform and remain readable while the die rotates. The table palette is selected from `CharacterProfile.diceTableTheme`; changing it participates in backup, character revision hashing and cloud sync. Once physics settles, Compose reveals only the total. A result strictly above the mathematical mean triggers the multicolour celebration; detailed component values remain in the statistics bottom sheet.
 
 Renderer material profiles map the domain-level `GLOSSY_RESIN`, `MATTE_RESIN`, `METAL` and `GEMSTONE` values to lightweight shader parameters for ambient/diffuse/specular response, rim accents and gemstone inner glow. Both primary and secondary style colors feed the shader. Renderer fallback is deterministic and matches `DiceAppearanceResolver` defaults if a visual slot is unexpectedly missing.
 

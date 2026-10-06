@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">ডাইস টেবিল</string><string name="dice_table_help">প্রতিটি রোলের জন্য এই চরিত্রের ব্যক্তিগত টেবিল বেছে নিন।</string>
+    <string name="table_arcane">রহস্যময়</string><string name="table_oak">ওক</string><string name="table_emerald">পান্না</string><string name="table_obsidian">অবসিডিয়ান</string>
+    <string name="statistics">পরিসংখ্যান</string><string name="roll_again">আবার রোল করুন</string>
+</resources>

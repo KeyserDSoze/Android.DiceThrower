@@ -25,4 +25,11 @@ class DiceExpressionTest {
         val result = DiceExpression.parse("1d2-10").evaluate(Random(1))
         assertTrue(result.total in -9..-8)
     }
+
+    @Test
+    fun expectedTotalUsesDiceMeansSignsAndConstants() {
+        val result = DiceExpression.parse("2d6-1d4+3").evaluate(Random(7))
+
+        assertEquals(7.5, result.expectedTotal(), 0.0001)
+    }
 }

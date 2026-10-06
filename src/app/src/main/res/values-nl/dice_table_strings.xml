@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">Dobbeltafel</string><string name="dice_table_help">Kies de persoonlijke tafel van dit personage voor elke worp.</string>
+    <string name="table_arcane">Arcanisch</string><string name="table_oak">Eiken</string><string name="table_emerald">Smaragd</string><string name="table_obsidian">Obsidiaan</string>
+    <string name="statistics">Statistieken</string><string name="roll_again">Opnieuw gooien</string>
+</resources>

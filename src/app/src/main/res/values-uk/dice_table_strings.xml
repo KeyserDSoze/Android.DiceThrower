@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">Стіл для кубиків</string><string name="dice_table_help">Виберіть особистий стіл цього персонажа для кожного кидка.</string>
+    <string name="table_arcane">Магічний</string><string name="table_oak">Дуб</string><string name="table_emerald">Смарагд</string><string name="table_obsidian">Обсидіан</string>
+    <string name="statistics">Статистика</string><string name="roll_again">Кинути знову</string>
+</resources>

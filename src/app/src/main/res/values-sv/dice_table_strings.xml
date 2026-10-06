@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">Tärningsbord</string><string name="dice_table_help">Välj den här figurens personliga bord för varje kast.</string>
+    <string name="table_arcane">Arkan</string><string name="table_oak">Ek</string><string name="table_emerald">Smaragd</string><string name="table_obsidian">Obsidian</string>
+    <string name="statistics">Statistik</string><string name="roll_again">Kasta igen</string>
+</resources>

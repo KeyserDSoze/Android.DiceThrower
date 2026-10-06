@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">Stół do kości</string><string name="dice_table_help">Wybierz osobisty stół tej postaci do każdego rzutu.</string>
+    <string name="table_arcane">Arkaniczny</string><string name="table_oak">Dąb</string><string name="table_emerald">Szmaragd</string><string name="table_obsidian">Obsydian</string>
+    <string name="statistics">Statystyki</string><string name="roll_again">Rzuć ponownie</string>
+</resources>

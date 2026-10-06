@@ -33,6 +33,7 @@ object CharacterRevision {
         canonical.field("level", character.level)
         canonical.field("order", character.order)
         canonical.field("defaultDiceStyleId", character.defaultDiceStyleId)
+        canonical.field("diceTableTheme", character.diceTableTheme.name)
 
         data.modifiers.filter { it.characterId == characterId }.sortedBy { it.id }.forEach { modifier ->
             canonical.section("modifier")

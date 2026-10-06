@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">ਪਾਸਿਆਂ ਦੀ ਮੇਜ਼</string><string name="dice_table_help">ਹਰ ਰੋਲ ਲਈ ਇਸ ਕਿਰਦਾਰ ਦੀ ਨਿੱਜੀ ਮੇਜ਼ ਚੁਣੋ।</string>
+    <string name="table_arcane">ਰਹੱਸਮਈ</string><string name="table_oak">ਓਕ</string><string name="table_emerald">ਪੰਨਾ</string><string name="table_obsidian">ਓਬਸੀਡੀਅਨ</string>
+    <string name="statistics">ਅੰਕੜੇ</string><string name="roll_again">ਦੁਬਾਰਾ ਰੋਲ ਕਰੋ</string>
+</resources>

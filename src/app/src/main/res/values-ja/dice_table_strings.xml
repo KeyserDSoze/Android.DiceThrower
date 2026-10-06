@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">ダイステーブル</string><string name="dice_table_help">このキャラクターが毎回のロールで使う専用テーブルを選びます。</string>
+    <string name="table_arcane">秘術</string><string name="table_oak">オーク</string><string name="table_emerald">エメラルド</string><string name="table_obsidian">黒曜石</string>
+    <string name="statistics">統計</string><string name="roll_again">もう一度振る</string>
+</resources>

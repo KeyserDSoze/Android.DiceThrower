@@ -20,7 +20,7 @@ Dadi supportati nella prima versione: **d2, d3, d4, d6, d10, d12, d20, d100**.
 6. Aspetto dei singoli tiri configurabile: predefinito, uniforme, per dado, casuale uniforme o casuale per dado, con pool opzionale.
 7. Editor visuale delle formule con chip per inserire `{level}` e i modificatori del personaggio nel punto del cursore.
 8. Lancio con pulsante configurabile oppure scuotendo il telefono.
-9. Animazione OpenGL ES dei dadi 3D, seguita da dettaglio dei singoli risultati e totale.
+9. Tavolo OpenGL ES personalizzabile per personaggio con dadi numerati, collisioni fisiche, reveal animato del totale e statistiche separate.
 10. Log locale con retention configurabile.
 11. Backup e restore locale validato tramite Android Storage Access Framework.
 
@@ -121,7 +121,7 @@ L'app supporta **Sistema / Chiaro / Scuro**. Anche il sito GitHub Pages usa tema
 
 ## Dadi 3D
 
-Il risultato numerico viene sempre deciso dal motore di dadi prima della grafica. Un renderer **OpenGL ES 2.0** mostra poi l'animazione 3D senza poter alterare il risultato, mantenendo log e test deterministici.
+Il risultato numerico viene sempre deciso dal motore di dadi prima della grafica. Un renderer **OpenGL ES 2.0** mostra poi dadi numerati su un tavolo scelto per personaggio, con collisioni tra dadi/bordi, senza poter alterare il risultato. Il totale compare solo a simulazione conclusa; il dettaglio resta disponibile nelle statistiche.
 
 Le forme visuali includono geometrie dedicate per d2, d3, d4, d6, d10, d12, d20 e d100. Il d10/d100 usa una forma trapezoedrica e il d12 viene costruito come vero dodecaedro, duale dell'icosaedro. L'overlay mostra anche i risultati individuali e il totale.
 

@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">Τραπέζι ζαριών</string><string name="dice_table_help">Επιλέξτε το προσωπικό τραπέζι αυτού του χαρακτήρα για κάθε ρίψη.</string>
+    <string name="table_arcane">Μυστικιστικό</string><string name="table_oak">Δρυς</string><string name="table_emerald">Σμαράγδι</string><string name="table_obsidian">Οψιδιανός</string>
+    <string name="statistics">Στατιστικά</string><string name="roll_again">Ρίξε ξανά</string>
+</resources>

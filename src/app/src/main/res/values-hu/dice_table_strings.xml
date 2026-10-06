@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">Kockaasztal</string><string name="dice_table_help">Válaszd ki a karakter saját asztalát minden dobáshoz.</string>
+    <string name="table_arcane">Misztikus</string><string name="table_oak">Tölgy</string><string name="table_emerald">Smaragd</string><string name="table_obsidian">Obszidián</string>
+    <string name="statistics">Statisztikák</string><string name="roll_again">Dobás újra</string>
+</resources>

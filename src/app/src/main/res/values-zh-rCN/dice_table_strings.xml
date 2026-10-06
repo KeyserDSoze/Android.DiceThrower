@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">骰子桌</string><string name="dice_table_help">为这个角色选择每次掷骰使用的专属桌面。</string>
+    <string name="table_arcane">奥术</string><string name="table_oak">橡木</string><string name="table_emerald">翡翠</string><string name="table_obsidian">黑曜石</string>
+    <string name="statistics">统计</string><string name="roll_again">再次掷骰</string>
+</resources>

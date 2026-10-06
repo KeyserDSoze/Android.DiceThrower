@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">Würfeltisch</string><string name="dice_table_help">Wähle für jeden Wurf den persönlichen Tisch dieses Charakters.</string>
+    <string name="table_arcane">Arkan</string><string name="table_oak">Eiche</string><string name="table_emerald">Smaragd</string><string name="table_obsidian">Obsidian</string>
+    <string name="statistics">Statistiken</string><string name="roll_again">Erneut würfeln</string>
+</resources>

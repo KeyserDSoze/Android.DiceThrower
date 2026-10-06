@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">Teburin ludo</string><string name="dice_table_help">Zaɓi tebur na musamman na wannan hali don kowace jefa.</string>
+    <string name="table_arcane">Sihiri</string><string name="table_oak">Oak</string><string name="table_emerald">Emerald</string><string name="table_obsidian">Obsidian</string>
+    <string name="statistics">Ƙididdiga</string><string name="roll_again">Sake jefa</string>
+</resources>

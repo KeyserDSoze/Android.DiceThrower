@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">שולחן קוביות</string><string name="dice_table_help">בחרו את השולחן האישי של הדמות לכל הטלה.</string>
+    <string name="table_arcane">מאגי</string><string name="table_oak">אלון</string><string name="table_emerald">אזמרגד</string><string name="table_obsidian">אובסידיאן</string>
+    <string name="statistics">סטטיסטיקה</string><string name="roll_again">להטיל שוב</string>
+</resources>

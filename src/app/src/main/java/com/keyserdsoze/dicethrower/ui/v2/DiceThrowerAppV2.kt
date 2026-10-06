@@ -2,7 +2,9 @@ package com.keyserdsoze.dicethrower.ui.v2
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,10 +44,10 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -64,7 +66,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -86,9 +90,10 @@ import com.keyserdsoze.dicethrower.data.sync.SyncErrorKind
 import com.keyserdsoze.dicethrower.data.sync.SyncStatus
 import com.keyserdsoze.dicethrower.data.sync.SyncStatusKind
 import com.keyserdsoze.dicethrower.dice.DiceAppearanceResolver
+import com.keyserdsoze.dicethrower.dice.DiceComponent
 import com.keyserdsoze.dicethrower.dice.DiceExpression
 import com.keyserdsoze.dicethrower.dice.DiceRollResult
-import com.keyserdsoze.dicethrower.dice.DiceRollVisualBus
+import com.keyserdsoze.dicethrower.dice.DiceRollVisualEvent
 import com.keyserdsoze.dicethrower.dice.RollFormulaResolver
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.AppSettings
@@ -97,6 +102,7 @@ import com.keyserdsoze.dicethrower.model.CharacterImageRef
 import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.ConflictPolicy
 import com.keyserdsoze.dicethrower.model.DiceStyle
+import com.keyserdsoze.dicethrower.model.DiceTableTheme
 import com.keyserdsoze.dicethrower.model.LevelRuleKind
 import com.keyserdsoze.dicethrower.model.RollButtonPosition
 import com.keyserdsoze.dicethrower.model.RollDiceAppearance
@@ -106,9 +112,12 @@ import com.keyserdsoze.dicethrower.model.RollLevelRule
 import com.keyserdsoze.dicethrower.model.RollLog
 import com.keyserdsoze.dicethrower.model.ThemeMode
 import com.keyserdsoze.dicethrower.sensor.ShakeDetector
+import com.keyserdsoze.dicethrower.ui.dice3d.Dice3DScene
 import java.text.DateFormat
 import java.util.Date
 import java.util.UUID
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.random.Random
 
 private enum class RouteV2 { CHARACTERS, CHARACTER, GROUP, ROLL, SETTINGS, LOGS }
@@ -817,6 +826,21 @@ internal fun CharacterEditContentV2(
         }
 
         item {
+            DiceTablePickerV2(
+                character = character,
+                onThemeChanged = { tableTheme ->
+                    onDataChanged(
+                        data.copy(
+                            characters = data.characters.map {
+                                if (it.id == character.id) it.copy(diceTableTheme = tableTheme) else it
+                            },
+                        ),
+                    )
+                },
+            )
+        }
+
+        item {
             DiceStyleLibraryV2(
                 character = character,
                 data = data,
@@ -1124,6 +1148,45 @@ internal fun CharacterEditContentV2(
                     addRuleRollId = null
                 },
             )
+        }
+    }
+}
+
+@Composable
+private fun DiceTablePickerV2(
+    character: CharacterProfile,
+    onThemeChanged: (DiceTableTheme) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        SectionTitleV2(
+            title = stringResource(R.string.dice_table),
+            subtitle = stringResource(R.string.dice_table_help),
+        )
+        DiceTableTheme.values().toList().chunked(2).forEach { themes ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                themes.forEach { theme ->
+                    FilterChip(
+                        selected = character.diceTableTheme == theme,
+                        onClick = { onThemeChanged(theme) },
+                        label = {
+                            Text(
+                                stringResource(
+                                    when (theme) {
+                                        DiceTableTheme.ARCANE -> R.string.table_arcane
+                                        DiceTableTheme.OAK -> R.string.table_oak
+                                        DiceTableTheme.EMERALD -> R.string.table_emerald
+                                        DiceTableTheme.OBSIDIAN -> R.string.table_obsidian
+                                    },
+                                ),
+                            )
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
         }
     }
 }
@@ -1605,11 +1668,34 @@ private fun RollScreenV2(
     val formula = remember(character.level, modifiers, roll) {
         RollFormulaResolver.resolve(character, modifiers, roll)
     }
+    val parsedExpression = remember(formula.expression) { DiceExpression.parse(formula.expression) }
     val appearanceRandom = remember(roll.id) { Random(System.nanoTime()) }
-    var outcome by remember(roll.id) { mutableStateOf<DiceRollResult?>(null) }
+    val previewResult = remember(formula.expression) { parsedExpression.previewResult() }
+    val previewAppearances = remember(character, diceStyles, roll.diceAppearance, formula.expression) {
+        DiceAppearanceResolver.resolve(
+            character = character,
+            styles = diceStyles,
+            appearance = roll.diceAppearance,
+            result = previewResult,
+            random = Random(roll.id.hashCode()),
+        )
+    }
+    val previewEvent = remember(roll.id, formula.expression, previewAppearances) {
+        DiceRollVisualEvent(
+            id = -kotlin.math.abs(roll.id.hashCode().toLong()).coerceAtLeast(1L),
+            result = previewResult,
+            appearances = previewAppearances,
+        )
+    }
+    var visualEvent by remember(roll.id, formula.expression) { mutableStateOf(previewEvent) }
+    var outcome by remember(roll.id, formula.expression) { mutableStateOf<DiceRollResult?>(null) }
+    var hasRolled by remember(roll.id) { mutableStateOf(false) }
+    var resultRevealed by remember(roll.id, formula.expression) { mutableStateOf(false) }
+    var showStats by remember(roll.id) { mutableStateOf(false) }
 
     fun throwDice() {
-        val result = DiceExpression.parse(formula.expression).evaluate()
+        if (hasRolled && !resultRevealed) return
+        val result = parsedExpression.evaluate()
         val appearances = DiceAppearanceResolver.resolve(
             character = character,
             styles = diceStyles,
@@ -1617,8 +1703,15 @@ private fun RollScreenV2(
             result = result,
             random = appearanceRandom,
         )
-        DiceRollVisualBus.publish(result, appearances)
+        visualEvent = DiceRollVisualEvent(
+            id = System.nanoTime(),
+            result = result,
+            appearances = appearances,
+        )
         outcome = result
+        hasRolled = true
+        resultRevealed = false
+        showStats = false
         onLogged(
             RollLog(
                 id = UUID.randomUUID().toString(),
@@ -1633,8 +1726,9 @@ private fun RollScreenV2(
         )
     }
 
-    DisposableEffect(settings.shakeEnabled, roll.id, formula.expression) {
-        val detector = if (settings.shakeEnabled) {
+    // Shake starts the first throw only. Every reroll is deliberately button-only.
+    DisposableEffect(settings.shakeEnabled, hasRolled, roll.id, formula.expression) {
+        val detector = if (settings.shakeEnabled && !hasRolled) {
             ShakeDetector(context, ::throwDice).also { it.start() }
         } else null
         onDispose { detector?.stop() }
@@ -1655,39 +1749,57 @@ private fun RollScreenV2(
                 )
             },
         ) { padding ->
-            Box(Modifier.fillMaxSize().padding(padding)) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(22.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
+            Column(
+                modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(999.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                    ) {
+                    Column {
+                        Text(roll.expression, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                         Text(
                             "${stringResource(R.string.level)} ${character.level}",
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                    }
-
-                    Icon(
-                        Icons.Rounded.Casino,
-                        contentDescription = null,
-                        modifier = Modifier.size(62.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-
-                    Text(roll.expression, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    if (formula.expression != roll.expression) {
-                        Text(
-                            "${stringResource(R.string.resolved_expression)}: ${formula.expression}",
+                            style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                    if (formula.expression != roll.expression) {
+                        Text(
+                            formula.expression,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
 
+                Box(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Dice3DScene(
+                        event = visualEvent,
+                        tableTheme = character.diceTableTheme,
+                        animateRoll = hasRolled && settings.animationsEnabled,
+                        onSettled = { eventId ->
+                            if (hasRolled && eventId == visualEvent.id) resultRevealed = true
+                        },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    if (resultRevealed) {
+                        outcome?.let { value ->
+                            RollTotalReveal(
+                                total = value.total,
+                                aboveAverage = value.total > value.expectedTotal(),
+                            )
+                        }
+                    }
+                }
+
+                if (!hasRolled) {
                     Text(
                         when {
                             settings.shakeEnabled && settings.showRollButton -> stringResource(R.string.shake_to_throw)
@@ -1697,28 +1809,125 @@ private fun RollScreenV2(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-
-                    Spacer(Modifier.height(4.dp))
-                    if (settings.animationsEnabled) {
-                        AnimatedContent(targetState = outcome, label = "roll-result") { value ->
-                            ResultContentV2(value)
-                        }
-                    } else {
-                        ResultContentV2(outcome)
-                    }
                 }
 
-                if (settings.showRollButton) {
-                    FloatingActionButton(
-                        onClick = ::throwDice,
-                        modifier = Modifier
-                            .align(settings.rollButtonPosition.toAlignment())
-                            .padding(20.dp),
-                    ) {
-                        Icon(Icons.Rounded.Casino, contentDescription = stringResource(R.string.throw_dice))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (!hasRolled && (settings.showRollButton || !settings.shakeEnabled)) {
+                        Button(onClick = ::throwDice, modifier = Modifier.weight(1f)) {
+                            Icon(Icons.Rounded.Casino, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.throw_dice))
+                        }
+                    }
+                    if (hasRolled && resultRevealed) {
+                        OutlinedButton(onClick = { showStats = true }, modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.statistics))
+                        }
+                        Button(onClick = ::throwDice, modifier = Modifier.weight(1f)) {
+                            Icon(Icons.Rounded.Casino, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.roll_again))
+                        }
                     }
                 }
             }
+        }
+    }
+
+    if (showStats) {
+        ModalBottomSheet(onDismissRequest = { showStats = false }) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp).padding(bottom = 28.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    stringResource(R.string.statistics),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Black,
+                )
+                ResultContentV2(outcome)
+            }
+        }
+    }
+}
+
+private fun DiceExpression.previewResult(): DiceRollResult {
+    val components = diceShape().map { shape ->
+        DiceComponent(
+            count = shape.count,
+            sides = shape.sides,
+            sign = shape.sign,
+            rolls = List(shape.count) { ((shape.sides + 1) / 2).coerceAtLeast(1) },
+        )
+    }
+    return DiceRollResult(
+        total = components.sumOf { it.subtotal },
+        components = components,
+        constantTotal = 0,
+    )
+}
+
+@Composable
+private fun RollTotalReveal(total: Int, aboveAverage: Boolean) {
+    val scale = remember(total) { Animatable(0.62f) }
+    LaunchedEffect(total) { scale.animateTo(1f, animationSpec = tween(durationMillis = 520)) }
+    Box(contentAlignment = Alignment.Center) {
+        if (aboveAverage) CelebrationBurst()
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = if (aboveAverage) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+            shadowElevation = 14.dp,
+            modifier = Modifier.graphicsLayer {
+                scaleX = scale.value
+                scaleY = scale.value
+                alpha = scale.value
+            },
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 32.dp, vertical = 18.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(stringResource(R.string.total), style = MaterialTheme.typography.labelLarge)
+                Text(
+                    total.toString(),
+                    style = MaterialTheme.typography.displayLarge,
+                    fontWeight = FontWeight.Black,
+                    color = if (aboveAverage) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CelebrationBurst() {
+    val progress = remember { Animatable(0f) }
+    LaunchedEffect(Unit) { progress.animateTo(1f, animationSpec = tween(1250)) }
+    val colors = listOf(Color(0xFFFFC857), Color(0xFF43D9AD), Color(0xFF7C6CFF), Color(0xFFFF5D8F))
+    Canvas(Modifier.size(300.dp)) {
+        val center = Offset(size.width / 2f, size.height / 2f)
+        repeat(24) { index ->
+            val angle = index * (Math.PI * 2.0 / 24.0)
+            val startRadius = 48f + progress.value * 34f
+            val endRadius = 62f + progress.value * 92f
+            val start = Offset(
+                center.x + cos(angle).toFloat() * startRadius,
+                center.y + sin(angle).toFloat() * startRadius,
+            )
+            val end = Offset(
+                center.x + cos(angle).toFloat() * endRadius,
+                center.y + sin(angle).toFloat() * endRadius,
+            )
+            drawLine(
+                color = colors[index % colors.size].copy(alpha = 1f - progress.value * 0.78f),
+                start = start,
+                end = end,
+                strokeWidth = 7f,
+            )
         }
     }
 }

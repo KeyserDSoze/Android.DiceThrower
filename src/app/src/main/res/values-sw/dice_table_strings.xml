@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">Meza ya kete</string><string name="dice_table_help">Chagua meza binafsi ya mhusika huyu kwa kila urushaji.</string>
+    <string name="table_arcane">Ya kichawi</string><string name="table_oak">Mwaloni</string><string name="table_emerald">Zumaridi</string><string name="table_obsidian">Obsidiani</string>
+    <string name="statistics">Takwimu</string><string name="roll_again">Rusha tena</string>
+</resources>

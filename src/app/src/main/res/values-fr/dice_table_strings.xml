@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">Table de dés</string><string name="dice_table_help">Choisissez la table personnelle de ce personnage pour chaque lancer.</string>
+    <string name="table_arcane">Arcanique</string><string name="table_oak">Chêne</string><string name="table_emerald">Émeraude</string><string name="table_obsidian">Obsidienne</string>
+    <string name="statistics">Statistiques</string><string name="roll_again">Relancer</string>
+</resources>

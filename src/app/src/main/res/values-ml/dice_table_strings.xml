@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">ഡൈസ് മേശ</string><string name="dice_table_help">ഓരോ റോളിനും ഈ കഥാപാത്രത്തിന്റെ വ്യക്തിഗത മേശ തിരഞ്ഞെടുക്കുക.</string>
+    <string name="table_arcane">മാന്ത്രികം</string><string name="table_oak">ഓക്ക്</string><string name="table_emerald">മരതകം</string><string name="table_obsidian">ഒബ്സിഡിയൻ</string>
+    <string name="statistics">സ്ഥിതിവിവരക്കണക്കുകൾ</string><string name="roll_again">വീണ്ടും റോൾ ചെയ്യുക</string>
+</resources>

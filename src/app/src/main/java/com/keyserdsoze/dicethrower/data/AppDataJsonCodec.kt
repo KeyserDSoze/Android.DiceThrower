@@ -10,6 +10,7 @@ import com.keyserdsoze.dicethrower.model.ConflictPolicy
 import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 import com.keyserdsoze.dicethrower.model.DiceMaterial
 import com.keyserdsoze.dicethrower.model.DiceStyle
+import com.keyserdsoze.dicethrower.model.DiceTableTheme
 import com.keyserdsoze.dicethrower.model.LevelRuleKind
 import com.keyserdsoze.dicethrower.model.RollButtonPosition
 import com.keyserdsoze.dicethrower.model.RollDefinition
@@ -22,7 +23,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 object AppDataJsonCodec {
-    const val DATA_VERSION = 5
+    const val DATA_VERSION = 6
 
     fun encodeData(data: AppData): JSONObject = encodeData(data, includeLegacyImageUris = true)
 
@@ -40,7 +41,8 @@ object AppDataJsonCodec {
                     .put("tag", item.tag)
                     .put("level", item.level)
                     .put("order", item.order)
-                    .put("defaultDiceStyleId", item.defaultDiceStyleId ?: JSONObject.NULL))
+                    .put("defaultDiceStyleId", item.defaultDiceStyleId ?: JSONObject.NULL)
+                    .put("diceTableTheme", item.diceTableTheme.name))
             }
         })
         .put("modifiers", JSONArray().apply {
@@ -131,6 +133,10 @@ object AppDataJsonCodec {
                 level = item.optInt("level", 1).coerceAtLeast(1),
                 order = item.optInt("order"),
                 defaultDiceStyleId = item.optNullableString("defaultDiceStyleId"),
+                diceTableTheme = enumValueOrDefault(
+                    item.optString("diceTableTheme"),
+                    DiceTableTheme.ARCANE,
+                ),
             )
         },
         modifiers = json.optJSONArray("modifiers").mapObjects { item ->

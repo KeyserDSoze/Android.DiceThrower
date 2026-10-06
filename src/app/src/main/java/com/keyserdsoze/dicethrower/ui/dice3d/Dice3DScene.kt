@@ -12,34 +12,42 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.keyserdsoze.dicethrower.dice.DiceRollVisualEvent
+import com.keyserdsoze.dicethrower.model.DiceTableTheme
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
-import kotlin.math.PI
 import kotlin.math.ceil
-import kotlin.math.min
-import kotlin.math.sin
 import kotlin.math.sqrt
 
 @Composable
 fun Dice3DScene(
     event: DiceRollVisualEvent,
     modifier: Modifier = Modifier,
+    tableTheme: DiceTableTheme = DiceTableTheme.ARCANE,
+    animateRoll: Boolean = true,
+    onSettled: (Long) -> Unit = {},
 ) {
     AndroidView(
         modifier = modifier.clip(RoundedCornerShape(24.dp)),
         factory = { context ->
-            DiceGLView(context).also { it.setEvent(event) }
+            DiceGLView(context).also {
+                it.onSettled = onSettled
+                it.setScene(event, tableTheme, animateRoll)
+            }
         },
-        update = { view -> view.setEvent(event) },
+        update = { view ->
+            view.onSettled = onSettled
+            view.setScene(event, tableTheme, animateRoll)
+        },
     )
 }
 
 private class DiceGLView(context: Context) : GLSurfaceView(context) {
-    private val diceRenderer = DiceSceneRenderer()
-    private var lastEventId: Long? = null
+    var onSettled: (Long) -> Unit = {}
+    private val diceRenderer = DiceSceneRenderer { eventId -> post { onSettled(eventId) } }
+    private var lastSceneKey: Triple<Long, DiceTableTheme, Boolean>? = null
 
     init {
         setEGLContextClientVersion(2)
@@ -49,10 +57,11 @@ private class DiceGLView(context: Context) : GLSurfaceView(context) {
         renderMode = RENDERMODE_CONTINUOUSLY
     }
 
-    fun setEvent(event: DiceRollVisualEvent) {
-        if (event.id == lastEventId) return
-        lastEventId = event.id
-        queueEvent { diceRenderer.setEvent(event) }
+    fun setScene(event: DiceRollVisualEvent, tableTheme: DiceTableTheme, animateRoll: Boolean) {
+        val key = Triple(event.id, tableTheme, animateRoll)
+        if (key == lastSceneKey) return
+        lastSceneKey = key
+        queueEvent { diceRenderer.setEvent(event, tableTheme, animateRoll) }
     }
 
     override fun onDetachedFromWindow() {
@@ -72,9 +81,14 @@ private data class GpuMesh(
     val positions: FloatBuffer,
     val normals: FloatBuffer,
     val vertexCount: Int,
+    val numberPositions: FloatBuffer,
+    val numberNormals: FloatBuffer,
+    val numberVertexCount: Int,
 )
 
-private class DiceSceneRenderer : GLSurfaceView.Renderer {
+private class DiceSceneRenderer(
+    private val onSettled: (Long) -> Unit,
+) : GLSurfaceView.Renderer {
     private var program = 0
     private var positionHandle = 0
     private var normalHandle = 0
@@ -93,9 +107,20 @@ private class DiceSceneRenderer : GLSurfaceView.Renderer {
 
     private val gpuMeshes = mutableMapOf<Int, GpuMesh>()
     private var dice: List<VisualDie> = emptyList()
-    private var animationStartedAt = SystemClock.elapsedRealtimeNanos()
+    private var tableTheme = DiceTableTheme.ARCANE
+    private var physics: DiceTablePhysics? = null
+    private var animateRoll = true
+    private var currentEventId = 0L
+    private var lastFrameAt = SystemClock.elapsedRealtimeNanos()
+    private var settledReported = false
 
-    fun setEvent(event: DiceRollVisualEvent) {
+    private val tablePositions = floatArrayOf(
+        -2.95f, -3.7f, -0.72f, 2.95f, -3.7f, -0.72f, 2.95f, 3.7f, -0.72f,
+        -2.95f, -3.7f, -0.72f, 2.95f, 3.7f, -0.72f, -2.95f, 3.7f, -0.72f,
+    ).toFloatBuffer()
+    private val tableNormals = FloatArray(18) { index -> if (index % 3 == 2) 1f else 0f }.toFloatBuffer()
+
+    fun setEvent(event: DiceRollVisualEvent, tableTheme: DiceTableTheme, animateRoll: Boolean) {
         val appearanceBySlot = event.appearances.associateBy { it.slotKey }
         dice = buildList {
             event.result.components.forEachIndexed { componentIndex, component ->
@@ -114,11 +139,16 @@ private class DiceSceneRenderer : GLSurfaceView.Renderer {
                 }
             }
         }
-        animationStartedAt = SystemClock.elapsedRealtimeNanos()
+        this.tableTheme = tableTheme
+        this.animateRoll = animateRoll
+        currentEventId = event.id
+        physics = if (animateRoll) DiceTablePhysics(dice.size, event.id) else null
+        lastFrameAt = SystemClock.elapsedRealtimeNanos()
+        settledReported = false
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
-        GLES20.glClearColor(0.025f, 0.035f, 0.09f, 1f)
+        GLES20.glClearColor(0.018f, 0.022f, 0.04f, 1f)
         GLES20.glEnable(GLES20.GL_DEPTH_TEST)
         GLES20.glEnable(GLES20.GL_CULL_FACE)
         GLES20.glCullFace(GLES20.GL_BACK)
@@ -142,46 +172,37 @@ private class DiceSceneRenderer : GLSurfaceView.Renderer {
 
     override fun onDrawFrame(gl: GL10?) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
-        if (program == 0 || dice.isEmpty()) return
+        if (program == 0) return
 
-        val elapsed = (SystemClock.elapsedRealtimeNanos() - animationStartedAt) / 1_000_000_000f
+        val now = SystemClock.elapsedRealtimeNanos()
+        val deltaSeconds = (now - lastFrameAt) / 1_000_000_000f
+        lastFrameAt = now
+        physics?.step(deltaSeconds)
+
         val count = dice.size
-        val columns = ceil(sqrt(count.toFloat())).toInt().coerceAtLeast(1)
-        val rows = ceil(count.toFloat() / columns).toInt().coerceAtLeast(1)
-        val dieScale = when {
-            count <= 1 -> 1.16f
-            count <= 4 -> 0.88f
-            count <= 9 -> 0.67f
-            else -> 0.53f
+        val dieScale = physics?.radius?.times(0.92f) ?: when {
+            count <= 1 -> 0.72f
+            count <= 4 -> 0.62f
+            count <= 8 -> 0.52f
+            else -> 0.44f
         }
-        val spacingX = 2.15f * dieScale
-        val spacingY = 2.02f * dieScale
-        val cameraZ = 5.7f + rows * 0.34f
+        val states = physics?.states() ?: staticStates(count, dieScale)
 
-        Matrix.setLookAtM(view, 0, 0f, 0f, cameraZ, 0f, 0f, 0f, 0f, 1f, 0f)
+        Matrix.setLookAtM(view, 0, 0f, -0.12f, 8.8f, 0f, 0f, 0f, 0f, 1f, 0f)
         GLES20.glUseProgram(program)
         GLES20.glEnableVertexAttribArray(positionHandle)
         GLES20.glEnableVertexAttribArray(normalHandle)
 
-        dice.forEachIndexed { index, die ->
-            val row = index / columns
-            val column = index % columns
-            val rowCount = min(columns, count - row * columns)
-            val x = (column - (rowCount - 1) / 2f) * spacingX
-            val yBase = ((rows - 1) / 2f - row) * spacingY
+        drawTable()
 
-            val burstProgress = (elapsed / 0.95f).coerceIn(0f, 1f)
-            val bounce = if (elapsed < 0.95f) {
-                (sin(burstProgress * PI).toFloat() * 0.55f) * (1f - burstProgress * 0.45f)
-            } else {
-                sin((elapsed - 0.95f) * 1.8f + die.phase) * 0.025f
-            }
-            val fastSpin = if (elapsed < 0.95f) elapsed * 620f else 589f + (elapsed - 0.95f) * 13f
+        dice.forEachIndexed { index, die ->
+            val state = states[index]
 
             Matrix.setIdentityM(model, 0)
-            Matrix.translateM(model, 0, x, yBase + bounce, 0f)
-            Matrix.rotateM(model, 0, fastSpin + die.phase, 0.72f, 1f, 0.32f)
-            Matrix.rotateM(model, 0, fastSpin * 0.71f + die.value * 17f, 1f, 0.26f, 0.83f)
+            Matrix.translateM(model, 0, state.x, state.y, 0f)
+            Matrix.rotateM(model, 0, state.angleX + die.phase * 0.17f, 1f, 0f, 0f)
+            Matrix.rotateM(model, 0, state.angleY + die.value * 3.7f, 0f, 1f, 0f)
+            Matrix.rotateM(model, 0, state.angleZ, 0f, 0f, 1f)
             Matrix.scaleM(model, 0, dieScale, dieScale, dieScale)
 
             Matrix.multiplyMM(viewModel, 0, view, 0, model, 0)
@@ -225,10 +246,71 @@ private class DiceSceneRenderer : GLSurfaceView.Renderer {
                 0f,
             )
             GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, gpuMesh.vertexCount)
+
+            gpuMesh.numberPositions.position(0)
+            gpuMesh.numberNormals.position(0)
+            GLES20.glVertexAttribPointer(positionHandle, 3, GLES20.GL_FLOAT, false, 0, gpuMesh.numberPositions)
+            GLES20.glVertexAttribPointer(normalHandle, 3, GLES20.GL_FLOAT, false, 0, gpuMesh.numberNormals)
+            val luminance = style.primary.red * 0.299f + style.primary.green * 0.587f + style.primary.blue * 0.114f
+            val numeral = if (luminance > 0.58f) 0.045f else 0.97f
+            GLES20.glUniform4f(primaryColorHandle, numeral, numeral, numeral, 1f)
+            GLES20.glUniform4f(secondaryColorHandle, numeral, numeral, numeral, 1f)
+            GLES20.glUniform4f(materialLightingHandle, 1f, 0.18f, 0f, 4f)
+            GLES20.glUniform4f(materialAccentHandle, 0f, 0f, 0f, 0f)
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, gpuMesh.numberVertexCount)
         }
 
         GLES20.glDisableVertexAttribArray(positionHandle)
         GLES20.glDisableVertexAttribArray(normalHandle)
+
+        val settled = physics?.isSettled == true || (!animateRoll && currentEventId != 0L)
+        if (settled && !settledReported) {
+            settledReported = true
+            onSettled(currentEventId)
+        }
+    }
+
+    private fun drawTable() {
+        Matrix.setIdentityM(model, 0)
+        Matrix.multiplyMM(viewModel, 0, view, 0, model, 0)
+        Matrix.multiplyMM(mvp, 0, projection, 0, viewModel, 0)
+        tablePositions.position(0)
+        tableNormals.position(0)
+        GLES20.glVertexAttribPointer(positionHandle, 3, GLES20.GL_FLOAT, false, 0, tablePositions)
+        GLES20.glVertexAttribPointer(normalHandle, 3, GLES20.GL_FLOAT, false, 0, tableNormals)
+        GLES20.glUniformMatrix4fv(mvpHandle, 1, false, mvp, 0)
+        GLES20.glUniformMatrix4fv(modelHandle, 1, false, model, 0)
+        val palette = tableTheme.palette()
+        GLES20.glUniform4f(primaryColorHandle, palette[0], palette[1], palette[2], 1f)
+        GLES20.glUniform4f(secondaryColorHandle, palette[3], palette[4], palette[5], 1f)
+        GLES20.glUniform4f(materialLightingHandle, 0.76f, 0.36f, 0.08f, 12f)
+        GLES20.glUniform4f(materialAccentHandle, 0.12f, 0.24f, 0f, 0f)
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 6)
+    }
+
+    private fun staticStates(count: Int, scale: Float): List<DiceTablePhysics.State> {
+        if (count == 0) return emptyList()
+        val columns = ceil(sqrt(count.toFloat())).toInt().coerceAtLeast(1)
+        val rows = ceil(count.toFloat() / columns).toInt().coerceAtLeast(1)
+        return List(count) { index ->
+            val row = index / columns
+            val column = index % columns
+            val rowCount = (count - row * columns).coerceAtMost(columns)
+            DiceTablePhysics.State(
+                x = (column - (rowCount - 1) / 2f) * scale * 2.35f,
+                y = ((rows - 1) / 2f - row) * scale * 2.15f,
+                angleX = 18f + index * 7f,
+                angleY = -24f + index * 19f,
+                angleZ = index * 13f,
+            )
+        }
+    }
+
+    private fun DiceTableTheme.palette(): FloatArray = when (this) {
+        DiceTableTheme.ARCANE -> floatArrayOf(0.075f, 0.055f, 0.18f, 0.40f, 0.24f, 0.72f)
+        DiceTableTheme.OAK -> floatArrayOf(0.25f, 0.105f, 0.035f, 0.64f, 0.34f, 0.10f)
+        DiceTableTheme.EMERALD -> floatArrayOf(0.025f, 0.20f, 0.125f, 0.12f, 0.52f, 0.29f)
+        DiceTableTheme.OBSIDIAN -> floatArrayOf(0.025f, 0.028f, 0.035f, 0.54f, 0.39f, 0.12f)
     }
 
     private fun gpuMesh(sides: Int): GpuMesh = gpuMeshes.getOrPut(sides) {
@@ -237,6 +319,9 @@ private class DiceSceneRenderer : GLSurfaceView.Renderer {
             positions = mesh.positions.toFloatBuffer(),
             normals = mesh.normals.toFloatBuffer(),
             vertexCount = mesh.vertexCount,
+            numberPositions = mesh.numberPositions.toFloatBuffer(),
+            numberNormals = mesh.numberNormals.toFloatBuffer(),
+            numberVertexCount = mesh.numberVertexCount,
         )
     }
 

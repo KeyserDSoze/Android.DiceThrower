@@ -16,6 +16,11 @@ data class DiceRollResult(
     val components: List<DiceComponent>,
     val constantTotal: Int,
 ) {
+    /** Mathematical mean of this roll shape, independent from the sampled face values. */
+    fun expectedTotal(): Double = constantTotal + components.sumOf { component ->
+        component.sign * component.count * (component.sides + 1) / 2.0
+    }
+
     fun detail(): String {
         val dice = components.joinToString(" | ") { component ->
             val prefix = if (component.sign < 0) "-" else "+"

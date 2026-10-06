@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">Stůl na kostky</string><string name="dice_table_help">Vyberte osobní stůl této postavy pro každý hod.</string>
+    <string name="table_arcane">Arkánní</string><string name="table_oak">Dub</string><string name="table_emerald">Smaragd</string><string name="table_obsidian">Obsidián</string>
+    <string name="statistics">Statistiky</string><string name="roll_again">Hodit znovu</string>
+</resources>

@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">پانسے کی میز</string><string name="dice_table_help">ہر رول کے لیے اس کردار کی ذاتی میز منتخب کریں۔</string>
+    <string name="table_arcane">پراسرار</string><string name="table_oak">بلوط</string><string name="table_emerald">زمرد</string><string name="table_obsidian">آبسیڈین</string>
+    <string name="statistics">اعداد و شمار</string><string name="roll_again">دوبارہ رول کریں</string>
+</resources>

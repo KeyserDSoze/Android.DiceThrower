@@ -1,0 +1,5 @@
+<resources>
+    <string name="dice_table">पासा टेबल</string><string name="dice_table_help">हरेक रोलका लागि यो पात्रको व्यक्तिगत टेबल छान्नुहोस्।</string>
+    <string name="table_arcane">रहस्यमय</string><string name="table_oak">ओक</string><string name="table_emerald">पन्ना</string><string name="table_obsidian">ओब्सिडियन</string>
+    <string name="statistics">तथ्याङ्क</string><string name="roll_again">फेरि रोल गर्नुहोस्</string>
+</resources>

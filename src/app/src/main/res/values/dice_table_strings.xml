@@ -1,0 +1,10 @@
+<resources>
+    <string name="dice_table">Dice table</string>
+    <string name="dice_table_help">Choose this character’s personal table for every roll.</string>
+    <string name="table_arcane">Arcane</string>
+    <string name="table_oak">Oak</string>
+    <string name="table_emerald">Emerald</string>
+    <string name="table_obsidian">Obsidian</string>
+    <string name="statistics">Statistics</string>
+    <string name="roll_again">Roll again</string>
+</resources>
