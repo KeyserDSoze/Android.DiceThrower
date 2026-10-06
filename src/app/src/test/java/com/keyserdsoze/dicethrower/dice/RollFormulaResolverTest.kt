@@ -207,6 +207,27 @@ class RollFormulaResolverTest {
     }
 
     @Test
+    fun subgroupComponentMappingIsStableForAppearanceOverrides() {
+        val roll = RollDefinition(
+            id = "combo",
+            characterId = character.id,
+            name = "Combo",
+            expression = "(2d6+1d8)+(1d20)",
+            subgroups = listOf(
+                RollSubgroup("damage", "Damage", "2d6+1d8"),
+                RollSubgroup("attack", "Attack", "1d20"),
+            ),
+        )
+
+        val resolved = RollFormulaResolver.resolve(character, modifiers, roll)
+
+        assertEquals(
+            mapOf(0 to "damage", 1 to "damage", 2 to "attack"),
+            resolved.subgroupIdByComponentIndex(),
+        )
+    }
+
+    @Test
     fun rejectsUnknownVariables() {
         assertFalse(
             RollFormulaResolver.validateTemplate(

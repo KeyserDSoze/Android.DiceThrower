@@ -3,8 +3,10 @@ package com.keyserdsoze.dicethrower.data
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterProfile
+import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 import com.keyserdsoze.dicethrower.model.DiceTableTheme
 import com.keyserdsoze.dicethrower.model.RollDefinition
+import com.keyserdsoze.dicethrower.model.RollDiceAppearance
 import com.keyserdsoze.dicethrower.model.RollSubgroup
 import com.keyserdsoze.dicethrower.model.RollSubgroupOperator
 import org.junit.Assert.assertEquals
@@ -104,6 +106,39 @@ class CharacterSyncMetadataTest {
             CharacterRevision.revision(changed, CHARACTER_ID),
         )
         assertTrue(CharacterRevision.canonicalContent(grouped, CHARACTER_ID).contains("rollSubgroup"))
+    }
+
+    @Test
+    fun changingSubgroupAppearanceChangesCanonicalRevision() {
+        val base = sampleData().copy(
+            rolls = listOf(
+                RollDefinition(
+                    id = "combo",
+                    characterId = CHARACTER_ID,
+                    name = "Combo",
+                    expression = "(1d20)+(2d6)",
+                    subgroups = listOf(
+                        RollSubgroup("attack", "Attack", "1d20"),
+                        RollSubgroup("damage", "Damage", "2d6"),
+                    ),
+                ),
+            ),
+        )
+        val changed = base.copy(
+            rolls = base.rolls.map { roll ->
+                roll.copy(
+                    diceAppearance = RollDiceAppearance(
+                        mode = DiceAppearanceMode.PER_DIE,
+                        subgroupStyleIds = mapOf("damage" to "style"),
+                    ),
+                )
+            },
+        )
+
+        assertNotEquals(
+            CharacterRevision.revision(base, CHARACTER_ID),
+            CharacterRevision.revision(changed, CHARACTER_ID),
+        )
     }
 
     @Test

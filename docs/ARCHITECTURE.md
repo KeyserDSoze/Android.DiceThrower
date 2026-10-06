@@ -116,7 +116,7 @@ Supported sides: 2, 3, 4, 6, 8, 10, 12, 20, 100.
 
 ## Persistence and migration
 
-The application stores one versioned JSON document in private SharedPreferences. Storage version 8 adds an optional portable custom dice-table image; version 7 adds optional roll subgroups while preserving the canonical expression; version 6 added the per-character dice-table theme; version 5 added portable character-image references on top of version 4's per-character sync metadata. Version 3 introduced the character-owned dice-style model and roll appearance policies; version 2 added character level, modifiers and level rules.
+The application stores one versioned JSON document in private SharedPreferences. Storage version 9 adds optional dice-style overrides keyed by roll subgroup; version 8 adds an optional portable custom dice-table image; version 7 adds optional roll subgroups while preserving the canonical expression; version 6 added the per-character dice-table theme; version 5 added portable character-image references on top of version 4's per-character sync metadata. Version 3 introduced the character-owned dice-style model and roll appearance policies; version 2 added character level, modifiers and level rules.
 
 Version-1 data remains readable:
 
@@ -207,7 +207,7 @@ The editor's d20 preview creates a visual-only `DiceRollVisualEvent` from the un
 
 Cross-character style copy is value-based, never reference-based: selected source styles receive fresh IDs and destination ownership, name collisions are resolved locally, and the source default is mapped only when the user explicitly requests it. Full character duplication applies the same invariant to the whole style graph by remapping the character default and every roll appearance reference to newly duplicated style IDs.
 
-Roll appearance assignment is edited independently from roll math. `DiceAppearanceResolver.slotsFor` derives stable `componentIndex:dieIndex` keys from the parsed expression shape without evaluating it. The UI supports character-default, uniform, per-die, random-uniform and random-per-die policies; random policies may restrict selection to an explicit character-owned style pool. Saving a changed expression reconciles per-die references against the new resolved slot set, preserving compatible keys and dropping obsolete ones. Newly introduced/unassigned slots deterministically fall back to the character default.
+Roll appearance assignment is edited independently from roll math. `DiceAppearanceResolver.slotsFor` derives stable `componentIndex:dieIndex` keys from the parsed expression shape without evaluating it, while resolved subgroup metadata maps component indexes back to stable subgroup IDs. The UI supports character-default, uniform, per-die, random-uniform and random-per-die policies; in per-die mode a subgroup style is the fallback for its dice and an explicit single-die slot override has higher precedence. Random policies may restrict selection to an explicit character-owned style pool. Saving a changed expression reconciles both subgroup and per-die references, preserving compatible keys and dropping obsolete ones. Newly introduced/unassigned slots deterministically fall back to the character default.
 
 ## Localization
 

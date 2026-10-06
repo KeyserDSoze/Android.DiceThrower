@@ -188,10 +188,12 @@ object DiceStyleDataOperations {
 
     private fun RollDiceAppearance.references(styleId: String): Boolean =
         this.styleId == styleId ||
+            styleId in subgroupStyleIds.values ||
             styleId in perDieStyleIds.values ||
             styleId in randomStyleIds
 
     private fun RollDiceAppearance.withoutStyle(styleId: String): RollDiceAppearance {
+        val cleanedSubgroups = subgroupStyleIds.filterValues { it != styleId }
         val cleanedPerDie = perDieStyleIds.filterValues { it != styleId }
         val hadExplicitRandomPool = randomStyleIds.isNotEmpty()
         val cleanedRandom = randomStyleIds.filterNot { it == styleId }
@@ -199,7 +201,7 @@ object DiceStyleDataOperations {
         if (mode == DiceAppearanceMode.UNIFORM && this.styleId == styleId) {
             return RollDiceAppearance()
         }
-        if (mode == DiceAppearanceMode.PER_DIE && cleanedPerDie.isEmpty()) {
+        if (mode == DiceAppearanceMode.PER_DIE && cleanedSubgroups.isEmpty() && cleanedPerDie.isEmpty()) {
             return RollDiceAppearance()
         }
         if (
@@ -211,6 +213,7 @@ object DiceStyleDataOperations {
 
         return copy(
             styleId = this.styleId.takeUnless { it == styleId },
+            subgroupStyleIds = cleanedSubgroups,
             perDieStyleIds = cleanedPerDie,
             randomStyleIds = cleanedRandom,
         )

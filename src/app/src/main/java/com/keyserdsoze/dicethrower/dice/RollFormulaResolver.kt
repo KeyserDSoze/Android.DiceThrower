@@ -45,6 +45,16 @@ fun ResolvedRollFormula.subgroupResults(outcome: DiceRollResult): List<ResolvedR
     }
 }
 
+fun ResolvedRollFormula.subgroupIdByComponentIndex(): Map<Int, String> = buildMap {
+    var componentIndex = 0
+    subgroups.forEach { subgroup ->
+        val componentCount = DiceExpression.parse(subgroup.expression).diceShape().size
+        repeat(componentCount) {
+            put(componentIndex++, subgroup.id)
+        }
+    }
+}
+
 object RollFormulaResolver {
     const val LEVEL_VARIABLE = "level"
 

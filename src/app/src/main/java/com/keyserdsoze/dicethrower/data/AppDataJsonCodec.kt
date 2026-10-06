@@ -25,7 +25,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 object AppDataJsonCodec {
-    const val DATA_VERSION = 8
+    const val DATA_VERSION = 9
 
     fun encodeData(data: AppData): JSONObject = encodeData(data, includeLegacyImageUris = true)
 
@@ -263,6 +263,11 @@ object AppDataJsonCodec {
     private fun encodeDiceAppearance(appearance: RollDiceAppearance): JSONObject = JSONObject()
         .put("mode", appearance.mode.name)
         .put("styleId", appearance.styleId ?: JSONObject.NULL)
+        .put("subgroupStyleIds", JSONArray().apply {
+            appearance.subgroupStyleIds.toSortedMap().forEach { (subgroupId, styleId) ->
+                put(JSONObject().put("subgroupId", subgroupId).put("styleId", styleId))
+            }
+        })
         .put("perDieStyleIds", JSONArray().apply {
             appearance.perDieStyleIds.toSortedMap().forEach { (slot, styleId) ->
                 put(JSONObject().put("slot", slot).put("styleId", styleId))
@@ -275,6 +280,9 @@ object AppDataJsonCodec {
     private fun decodeDiceAppearance(json: JSONObject): RollDiceAppearance = RollDiceAppearance(
         mode = enumValueOrDefault(json.optString("mode"), DiceAppearanceMode.CHARACTER_DEFAULT),
         styleId = json.optNullableString("styleId"),
+        subgroupStyleIds = json.optJSONArray("subgroupStyleIds").mapObjects { item ->
+            item.getString("subgroupId") to item.getString("styleId")
+        }.toMap(),
         perDieStyleIds = json.optJSONArray("perDieStyleIds").mapObjects { item ->
             item.getString("slot") to item.getString("styleId")
         }.toMap(),

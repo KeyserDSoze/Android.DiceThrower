@@ -76,6 +76,24 @@ class DiceAppearanceResolverTest {
     }
 
     @Test
+    fun subgroupStyleAppliesToItsDiceAndSingleDieOverrideWins() {
+        val resolved = DiceAppearanceResolver.resolve(
+            character = character,
+            styles = listOf(blue, steel),
+            appearance = RollDiceAppearance(
+                mode = DiceAppearanceMode.PER_DIE,
+                subgroupStyleIds = mapOf("attack" to "steel", "check" to "blue"),
+                perDieStyleIds = mapOf("0:1" to "blue"),
+            ),
+            result = result,
+            subgroupIdByComponentIndex = mapOf(0 to "attack", 1 to "check"),
+            random = Random(1),
+        )
+
+        assertEquals(listOf("steel", "blue", "steel", "blue"), resolved.map { it.sourceStyleId })
+    }
+
+    @Test
     fun expressionChangesPreserveCompatiblePerDieSlotsAndDropObsoleteOnes() {
         val original = DiceAppearanceResolver.slotsFor(DiceExpression.parse("4d6+1d20"))
         assertEquals(listOf("0:0", "0:1", "0:2", "0:3", "1:0"), original.map { it.key })
@@ -90,6 +108,23 @@ class DiceAppearanceResolverTest {
         assertEquals(listOf("0:0", "0:1", "1:0"), changed.map { it.key })
         assertEquals(setOf("0:0", "0:1", "1:0"), reconciled.perDieStyleIds.keys)
         assertEquals(DiceAppearanceMode.PER_DIE, reconciled.mode)
+    }
+
+    @Test
+    fun reconcileDropsOverridesForRemovedSubgroups() {
+        val appearance = RollDiceAppearance(
+            mode = DiceAppearanceMode.PER_DIE,
+            subgroupStyleIds = mapOf("attack" to "steel", "removed" to "blue"),
+        )
+        val slots = DiceAppearanceResolver.slotsFor(DiceExpression.parse("1d20"))
+
+        val reconciled = DiceAppearanceResolver.reconcileSlots(
+            appearance,
+            slots,
+            subgroupIds = listOf("attack"),
+        )
+
+        assertEquals(mapOf("attack" to "steel"), reconciled.subgroupStyleIds)
     }
 
     @Test

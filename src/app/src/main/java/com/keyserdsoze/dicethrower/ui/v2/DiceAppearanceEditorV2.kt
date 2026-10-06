@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.keyserdsoze.dicethrower.R
 import com.keyserdsoze.dicethrower.dice.DiceAppearanceResolver
 import com.keyserdsoze.dicethrower.dice.DiceExpression
+import com.keyserdsoze.dicethrower.dice.ResolvedRollSubgroup
 import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 import com.keyserdsoze.dicethrower.model.DiceStyle
@@ -44,6 +45,7 @@ internal fun DiceAppearanceEditorV2(
     character: CharacterProfile,
     diceStyles: List<DiceStyle>,
     resolvedExpression: String?,
+    resolvedSubgroups: List<ResolvedRollSubgroup> = emptyList(),
     appearance: RollDiceAppearance,
     onAppearanceChanged: (RollDiceAppearance) -> Unit,
 ) {
@@ -52,6 +54,19 @@ internal fun DiceAppearanceEditorV2(
         resolvedExpression?.let { expression ->
             runCatching { DiceAppearanceResolver.slotsFor(DiceExpression.parse(expression)) }.getOrDefault(emptyList())
         }.orEmpty()
+    }
+    val subgroupByComponent = remember(resolvedSubgroups) {
+        buildMap {
+            var componentIndex = 0
+            resolvedSubgroups.forEachIndexed { subgroupIndex, subgroup ->
+                val componentCount = runCatching {
+                    DiceExpression.parse(subgroup.expression).diceShape().size
+                }.getOrDefault(0)
+                repeat(componentCount) {
+                    put(componentIndex++, subgroupIndex to subgroup)
+                }
+            }
+        }
     }
     var modeMenuExpanded by remember { mutableStateOf(false) }
 
@@ -147,18 +162,50 @@ internal fun DiceAppearanceEditorV2(
                     )
                     DiceAppearanceMode.PER_DIE -> {
                         HorizontalDivider()
+                        val shownSubgroups = mutableSetOf<String>()
                         slots.forEach { slot ->
+                            val subgroupEntry = subgroupByComponent[slot.componentIndex]
+                            val subgroup = subgroupEntry?.second
+                            if (subgroup != null && shownSubgroups.add(subgroup.id)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        subgroup.name.ifBlank {
+                                            "${stringResource(R.string.roll_subgroups)} ${subgroupEntry.first + 1}"
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                    AppearanceStylePicker(
+                                        styles = styles,
+                                        character = character,
+                                        selectedStyleId = appearance.subgroupStyleIds[subgroup.id],
+                                        allowCharacterDefault = true,
+                                        onSelected = { styleId ->
+                                            val updated = appearance.subgroupStyleIds.toMutableMap()
+                                            if (styleId == null) updated.remove(subgroup.id) else updated[subgroup.id] = styleId
+                                            onAppearanceChanged(appearance.copy(subgroupStyleIds = updated))
+                                        },
+                                    )
+                                }
+                            }
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
+                                val slotLabel = stringResource(
+                                    R.string.dice_slot_label,
+                                    slot.componentIndex + 1,
+                                    slot.sides,
+                                    slot.dieIndex + 1,
+                                )
                                 Text(
-                                    stringResource(
-                                        R.string.dice_slot_label,
-                                        slot.componentIndex + 1,
-                                        slot.sides,
-                                        slot.dieIndex + 1,
-                                    ),
+                                    subgroup?.name
+                                        ?.takeIf { it.isNotBlank() }
+                                        ?.let { name -> "$name · $slotLabel" }
+                                        ?: slotLabel,
                                     modifier = Modifier.weight(1f),
                                     style = MaterialTheme.typography.bodySmall,
                                 )

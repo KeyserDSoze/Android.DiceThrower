@@ -48,9 +48,16 @@ object DiceAppearanceResolver {
     fun reconcileSlots(
         appearance: RollDiceAppearance,
         slots: Collection<DiceAppearanceSlot>,
+        subgroupIds: Collection<String>? = null,
     ): RollDiceAppearance {
         val validKeys = slots.mapTo(mutableSetOf()) { it.key }
+        val validSubgroups = subgroupIds?.toSet()
         return appearance.copy(
+            subgroupStyleIds = if (validSubgroups == null) {
+                appearance.subgroupStyleIds
+            } else {
+                appearance.subgroupStyleIds.filterKeys(validSubgroups::contains)
+            },
             perDieStyleIds = appearance.perDieStyleIds.filterKeys(validKeys::contains),
         )
     }
@@ -60,6 +67,7 @@ object DiceAppearanceResolver {
         styles: List<DiceStyle>,
         appearance: RollDiceAppearance,
         result: DiceRollResult,
+        subgroupIdByComponentIndex: Map<Int, String> = emptyMap(),
         random: Random = Random(System.nanoTime()),
     ): List<ResolvedDiceAppearance> {
         val ownedStyles = styles
@@ -85,7 +93,11 @@ object DiceAppearanceResolver {
                     val style = when (appearance.mode) {
                         DiceAppearanceMode.CHARACTER_DEFAULT -> defaultStyle
                         DiceAppearanceMode.UNIFORM -> resolveStyle(appearance.styleId) ?: defaultStyle
-                        DiceAppearanceMode.PER_DIE -> resolveStyle(appearance.perDieStyleIds[slot]) ?: defaultStyle
+                        DiceAppearanceMode.PER_DIE -> {
+                            val subgroupStyleId = subgroupIdByComponentIndex[componentIndex]
+                                ?.let(appearance.subgroupStyleIds::get)
+                            resolveStyle(appearance.perDieStyleIds[slot] ?: subgroupStyleId) ?: defaultStyle
+                        }
                         DiceAppearanceMode.RANDOM_UNIFORM -> uniformRandomStyle
                         DiceAppearanceMode.RANDOM_PER_DIE -> randomPool().randomOrNull(random) ?: defaultStyle
                     }

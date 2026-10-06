@@ -13,6 +13,7 @@ import com.keyserdsoze.dicethrower.model.RollDiceAppearance
 import com.keyserdsoze.dicethrower.model.RollGroup
 import com.keyserdsoze.dicethrower.model.RollLevelRule
 import com.keyserdsoze.dicethrower.model.RollLog
+import com.keyserdsoze.dicethrower.model.RollSubgroup
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
@@ -95,6 +96,44 @@ class CharacterDataOperationsTest {
                 newName = "Copy",
             ),
         )
+    }
+
+    @Test
+    fun duplicateCharacterRemapsSubgroupAppearanceOverride() {
+        val source = sampleData()
+        val grouped = source.copy(
+            rolls = source.rolls.map { roll ->
+                if (roll.id != "roll-a") roll else roll.copy(
+                    expression = "(6d6+{Intelligence})",
+                    subgroups = listOf(RollSubgroup("damage", "Damage", "6d6+{Intelligence}")),
+                    diceAppearance = RollDiceAppearance(
+                        mode = DiceAppearanceMode.PER_DIE,
+                        subgroupStyleIds = mapOf("damage" to "style-a"),
+                    ),
+                )
+            },
+        )
+        var counter = 0
+
+        val result = CharacterDataOperations.duplicateCharacter(
+            data = grouped,
+            characterId = "character-a",
+            newName = "Copy",
+            idFactory = { "copy-${counter++}" },
+        )
+        val duplicate = result.characters.last()
+        val duplicatedRoll = result.rolls.single { it.characterId == duplicate.id }
+        val duplicatedSubgroup = duplicatedRoll.subgroups.single()
+        val duplicatedStyleId = result.diceStyles
+            .first { it.characterId == duplicate.id && it.order == 0 }
+            .id
+
+        assertNotEquals("damage", duplicatedSubgroup.id)
+        assertEquals(
+            mapOf(duplicatedSubgroup.id to duplicatedStyleId),
+            duplicatedRoll.diceAppearance.subgroupStyleIds,
+        )
+        assertTrue(AppDataValidator.validate(result).isEmpty())
     }
 
     private fun sampleData(): AppData = AppData(

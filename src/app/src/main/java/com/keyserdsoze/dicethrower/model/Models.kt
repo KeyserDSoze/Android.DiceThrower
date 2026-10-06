@@ -58,6 +58,7 @@ data class DiceStyle(
 data class RollDiceAppearance(
     val mode: DiceAppearanceMode = DiceAppearanceMode.CHARACTER_DEFAULT,
     val styleId: String? = null,
+    val subgroupStyleIds: Map<String, String> = emptyMap(),
     val perDieStyleIds: Map<String, String> = emptyMap(),
     val randomStyleIds: List<String> = emptyList(),
 )

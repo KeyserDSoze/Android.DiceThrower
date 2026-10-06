@@ -161,6 +161,12 @@ object AppDataValidator {
             appearance.styleId?.let { styleId ->
                 validateRollStyleReference(roll.id, roll.characterId, styleId, styleById, errors)
             }
+            appearance.subgroupStyleIds.forEach { (subgroupId, styleId) ->
+                if (roll.subgroups.none { it.id == subgroupId }) {
+                    errors += "Roll ${roll.id} has an appearance override for missing subgroup $subgroupId"
+                }
+                validateRollStyleReference(roll.id, roll.characterId, styleId, styleById, errors)
+            }
             appearance.perDieStyleIds.forEach { (slot, styleId) ->
                 if (!dieSlotRegex.matches(slot)) {
                     errors += "Roll ${roll.id} has an invalid die appearance slot $slot"

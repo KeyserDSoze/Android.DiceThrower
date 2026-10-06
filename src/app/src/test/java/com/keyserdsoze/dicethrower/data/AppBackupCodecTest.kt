@@ -165,6 +165,16 @@ class AppBackupCodecTest {
     fun groupedRollsRoundTripThroughPortableBackup() {
         val data = AppData(
             characters = listOf(CharacterProfile(id = "hero", name = "Hero", level = 5)),
+            diceStyles = listOf(
+                DiceStyle(
+                    id = "damage-style",
+                    characterId = "hero",
+                    name = "Damage",
+                    material = DiceMaterial.METAL,
+                    primaryColorArgb = 0xFFAA0000.toInt(),
+                    secondaryColorArgb = 0xFFFFFFFF.toInt(),
+                ),
+            ),
             rolls = listOf(
                 RollDefinition(
                     id = "combo",
@@ -174,6 +184,10 @@ class AppBackupCodecTest {
                     subgroups = listOf(
                         RollSubgroup("attack", "Attack", "1d20+{level}"),
                         RollSubgroup("damage", "Damage", "2d6*2"),
+                    ),
+                    diceAppearance = RollDiceAppearance(
+                        mode = DiceAppearanceMode.PER_DIE,
+                        subgroupStyleIds = mapOf("damage" to "damage-style"),
                     ),
                 ),
             ),
@@ -189,6 +203,10 @@ class AppBackupCodecTest {
 
         assertEquals(data, decoded.data)
         assertEquals(data.rolls.single().subgroups, decoded.data.rolls.single().subgroups)
+        assertEquals(
+            mapOf("damage" to "damage-style"),
+            decoded.data.rolls.single().diceAppearance.subgroupStyleIds,
+        )
     }
 
     @Test

@@ -85,6 +85,9 @@ object CharacterRevision {
             canonical.section("diceAppearance")
             canonical.field("mode", roll.diceAppearance.mode.name)
             canonical.field("styleId", roll.diceAppearance.styleId)
+            roll.diceAppearance.subgroupStyleIds.toSortedMap().forEach { (subgroupId, styleId) ->
+                canonical.field("subgroup:$subgroupId", styleId)
+            }
             roll.diceAppearance.perDieStyleIds.toSortedMap().forEach { (slot, styleId) ->
                 canonical.field("perDie:$slot", styleId)
             }

@@ -81,16 +81,19 @@ object CharacterDataOperations {
         val duplicatedRolls = data.rolls
             .filter { it.characterId == characterId }
             .map { roll ->
+                val subgroupIdMap = roll.subgroups.associate { subgroup -> subgroup.id to idFactory() }
                 roll.copy(
                     id = idFactory(),
                     characterId = newCharacterId,
                     groupId = roll.groupId?.let(groupIdMap::get),
-                    diceAppearance = roll.diceAppearance.remapStyles(styleIdMap),
+                    diceAppearance = roll.diceAppearance
+                        .remapStyles(styleIdMap)
+                        .remapSubgroups(subgroupIdMap),
                     levelRules = roll.levelRules.map { rule ->
                         rule.copy(id = idFactory())
                     },
                     subgroups = roll.subgroups.map { subgroup ->
-                        subgroup.copy(id = idFactory())
+                        subgroup.copy(id = subgroupIdMap.getValue(subgroup.id))
                     },
                 )
             }
@@ -108,7 +111,12 @@ object CharacterDataOperations {
 
     private fun RollDiceAppearance.remapStyles(styleIdMap: Map<String, String>): RollDiceAppearance = copy(
         styleId = styleId?.let(styleIdMap::get),
+        subgroupStyleIds = subgroupStyleIds.mapValues { (_, styleId) -> styleIdMap.getValue(styleId) },
         perDieStyleIds = perDieStyleIds.mapValues { (_, styleId) -> styleIdMap.getValue(styleId) },
         randomStyleIds = randomStyleIds.map(styleIdMap::getValue),
+    )
+
+    private fun RollDiceAppearance.remapSubgroups(subgroupIdMap: Map<String, String>): RollDiceAppearance = copy(
+        subgroupStyleIds = subgroupStyleIds.mapKeys { (subgroupId, _) -> subgroupIdMap.getValue(subgroupId) },
     )
 }

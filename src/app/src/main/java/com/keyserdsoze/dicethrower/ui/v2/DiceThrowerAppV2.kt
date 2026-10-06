@@ -104,6 +104,7 @@ import com.keyserdsoze.dicethrower.dice.DiceExpression
 import com.keyserdsoze.dicethrower.dice.DiceRollResult
 import com.keyserdsoze.dicethrower.dice.DiceRollVisualEvent
 import com.keyserdsoze.dicethrower.dice.RollFormulaResolver
+import com.keyserdsoze.dicethrower.dice.subgroupIdByComponentIndex
 import com.keyserdsoze.dicethrower.dice.subgroupResults
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.AppSettings
@@ -766,7 +767,8 @@ private fun RollLaunchRowV2(
     roll: RollDefinition,
     onOpenRoll: (String) -> Unit,
 ) {
-    val resolved = runCatching { RollFormulaResolver.resolve(character, modifiers, roll).expression }.getOrNull()
+    val resolvedFormula = runCatching { RollFormulaResolver.resolve(character, modifiers, roll) }.getOrNull()
+    val resolved = resolvedFormula?.expression
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1700,6 +1702,7 @@ private fun RollEditorCardV2(
                 character = character,
                 diceStyles = diceStyles,
                 resolvedExpression = resolved,
+                resolvedSubgroups = resolvedFormula?.subgroups.orEmpty(),
                 appearance = roll.diceAppearance,
                 onAppearanceChanged = onAppearanceChanged,
             )
@@ -1782,12 +1785,16 @@ private fun RollScreenV2(
     val parsedExpression = remember(formula.expression) { DiceExpression.parse(formula.expression) }
     val appearanceRandom = remember(roll.id) { Random(System.nanoTime()) }
     val previewResult = remember(formula.expression) { parsedExpression.previewResult() }
+    val subgroupIdByComponentIndex = remember(formula.subgroups) {
+        formula.subgroupIdByComponentIndex()
+    }
     val previewAppearances = remember(character, diceStyles, roll.diceAppearance, formula.expression) {
         DiceAppearanceResolver.resolve(
             character = character,
             styles = diceStyles,
             appearance = roll.diceAppearance,
             result = previewResult,
+            subgroupIdByComponentIndex = subgroupIdByComponentIndex,
             random = Random(roll.id.hashCode()),
         )
     }
@@ -1812,6 +1819,7 @@ private fun RollScreenV2(
             styles = diceStyles,
             appearance = roll.diceAppearance,
             result = result,
+            subgroupIdByComponentIndex = subgroupIdByComponentIndex,
             random = appearanceRandom,
         )
         visualEvent = DiceRollVisualEvent(
@@ -3177,7 +3185,11 @@ internal fun RollBuilderScreenV2(
                         }.getOrDefault(emptyList())
                         onSave(
                             saved.copy(
-                                diceAppearance = DiceAppearanceResolver.reconcileSlots(saved.diceAppearance, slots),
+                                diceAppearance = DiceAppearanceResolver.reconcileSlots(
+                                    saved.diceAppearance,
+                                    slots,
+                                    saved.subgroups.map { it.id },
+                                ),
                             ),
                         )
                     },
@@ -3394,7 +3406,11 @@ internal fun RollDialogV2(
                     }.getOrDefault(emptyList())
                     onSave(
                         saved.copy(
-                            diceAppearance = DiceAppearanceResolver.reconcileSlots(saved.diceAppearance, slots),
+                            diceAppearance = DiceAppearanceResolver.reconcileSlots(
+                                saved.diceAppearance,
+                                slots,
+                                saved.subgroups.map { it.id },
+                            ),
                         ),
                     )
                 },

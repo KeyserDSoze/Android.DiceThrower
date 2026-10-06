@@ -7,6 +7,7 @@ import com.keyserdsoze.dicethrower.model.DiceMaterial
 import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.RollDefinition
 import com.keyserdsoze.dicethrower.model.RollDiceAppearance
+import com.keyserdsoze.dicethrower.model.RollSubgroup
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertFalse
@@ -246,9 +247,11 @@ class DiceStyleDataOperationsTest {
                     id = "per-die",
                     characterId = "character",
                     name = "Per die",
-                    expression = "2d6",
+                    expression = "(2d6)",
+                    subgroups = listOf(RollSubgroup("damage", "Damage", "2d6")),
                     diceAppearance = RollDiceAppearance(
                         mode = DiceAppearanceMode.PER_DIE,
+                        subgroupStyleIds = mapOf("damage" to "red"),
                         perDieStyleIds = mapOf("0:0" to "red", "0:1" to "blue"),
                     ),
                 ),
@@ -274,6 +277,7 @@ class DiceStyleDataOperationsTest {
             mapOf("0:1" to "blue"),
             updated.rolls.first { it.id == "per-die" }.diceAppearance.perDieStyleIds,
         )
+        assertTrue(updated.rolls.first { it.id == "per-die" }.diceAppearance.subgroupStyleIds.isEmpty())
         assertEquals(
             listOf("blue"),
             updated.rolls.first { it.id == "random" }.diceAppearance.randomStyleIds,

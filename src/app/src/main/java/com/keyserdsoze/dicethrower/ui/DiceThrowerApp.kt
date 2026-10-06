@@ -66,6 +66,7 @@ import com.keyserdsoze.dicethrower.dice.DiceExpression
 import com.keyserdsoze.dicethrower.dice.DiceRollResult
 import com.keyserdsoze.dicethrower.dice.DiceRollVisualBus
 import com.keyserdsoze.dicethrower.dice.RollFormulaResolver
+import com.keyserdsoze.dicethrower.dice.subgroupIdByComponentIndex
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.AppSettings
 import com.keyserdsoze.dicethrower.model.CharacterModifier
@@ -1625,6 +1626,9 @@ private fun RollScreen(
     val formula = remember(character.level, modifiers, roll) {
         RollFormulaResolver.resolve(character, modifiers, roll)
     }
+    val subgroupIdByComponentIndex = remember(formula.subgroups) {
+        formula.subgroupIdByComponentIndex()
+    }
     val appearanceRandom = remember(roll.id) { Random(System.nanoTime()) }
     var outcome by remember(roll.id) { mutableStateOf<DiceRollResult?>(null) }
 
@@ -1635,6 +1639,7 @@ private fun RollScreen(
             styles = diceStyles,
             appearance = roll.diceAppearance,
             result = result,
+            subgroupIdByComponentIndex = subgroupIdByComponentIndex,
             random = appearanceRandom,
         )
         DiceRollVisualBus.publish(result, appearances)
