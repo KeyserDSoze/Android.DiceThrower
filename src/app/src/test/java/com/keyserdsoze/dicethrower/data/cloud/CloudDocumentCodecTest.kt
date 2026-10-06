@@ -41,7 +41,7 @@ class CloudDocumentCodecTest {
         val decoded = CloudDocumentCodec.decodeCharacter(encoded)
 
         assertEquals("character-a", decoded.metadata.characterId)
-        assertEquals(listOf(image.assetId, tableImage.assetId), decoded.metadata.assetIds)
+        assertEquals(listOf(image.assetId, tableImage.assetId).sorted(), decoded.metadata.assetIds)
         assertEquals("Alyndra", decoded.data.characters.single().name)
         assertEquals(tableImage, decoded.data.characters.single().diceTableImage)
         assertEquals(null, decoded.data.characters.single().imageUri)

@@ -31,7 +31,7 @@ object CloudDocumentCodec {
                 updatedAt = sync.updatedAt,
                 revision = sync.revision,
                 writerId = sync.writerId,
-                assetIds = listOfNotNull(character.image?.assetId, character.diceTableImage?.assetId).distinct(),
+                assetIds = listOfNotNull(character.image?.assetId, character.diceTableImage?.assetId).distinct().sorted(),
             ),
             data = slice,
         )
@@ -186,7 +186,8 @@ object CloudDocumentCodec {
         require(document.metadata.revision == sync.revision) { "Cloud revision mismatch" }
         require(document.metadata.writerId == sync.writerId) { "Cloud writer mismatch" }
         require(
-            document.metadata.assetIds == listOfNotNull(character.image?.assetId, character.diceTableImage?.assetId).distinct(),
+            document.metadata.assetIds ==
+                listOfNotNull(character.image?.assetId, character.diceTableImage?.assetId).distinct().sorted(),
         ) { "Cloud asset reference mismatch" }
     }
 
@@ -217,7 +218,7 @@ object CloudDocumentCodec {
         require(metadata.revision.matches(Regex("[0-9a-f]{64}"))) { "Invalid cloud revision" }
         require(metadata.writerId.isNotBlank()) { "Cloud writer ID cannot be blank" }
         require(metadata.assetIds.distinct().size == metadata.assetIds.size) { "Duplicate cloud asset reference" }
-        require(metadata.assetIds.size <= 1 && metadata.assetIds.all { it.matches(Regex("img_[0-9a-f]{64}")) }) {
+        require(metadata.assetIds.size <= 2 && metadata.assetIds.all { it.matches(Regex("img_[0-9a-f]{64}")) }) {
             "Invalid cloud asset reference"
         }
     }
