@@ -1757,7 +1757,11 @@ private fun ResultContent(outcome: DiceRollResult?) {
         outcome.components.forEach { component ->
             Card {
                 Text(
-                    text = "${if (component.sign < 0) "-" else ""}${component.count}d${component.sides}: ${component.rolls.joinToString(" · ")}",
+                    text = "${when (component.sign) {
+                        1 -> ""
+                        -1 -> "-"
+                        else -> "${component.sign}x"
+                    }}${component.count}d${component.sides}: ${component.rolls.joinToString(" · ")}",
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
                 )
             }

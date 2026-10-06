@@ -17,7 +17,13 @@ class DiceExpressionTest {
 
     @Test(expected = IllegalArgumentException::class)
     fun rejectsUnsupportedDice() {
-        DiceExpression.parse("1d8+2")
+        DiceExpression.parse("1d5+2")
+    }
+
+    @Test
+    fun supportsD8UsedByGuidedBuilder() {
+        val result = DiceExpression.parse("1d8").evaluate(Random(3))
+        assertTrue(result.total in 1..8)
     }
 
     @Test
@@ -31,5 +37,29 @@ class DiceExpressionTest {
         val result = DiceExpression.parse("2d6-1d4+3").evaluate(Random(7))
 
         assertEquals(7.5, result.expectedTotal(), 0.0001)
+    }
+
+    @Test
+    fun supportsParenthesesAndScalarMultiplication() {
+        val result = DiceExpression.parse("(1d2+2)*3").evaluate(Random(7))
+
+        assertTrue(result.total in 9..12)
+        assertEquals(6, result.constantTotal)
+        assertEquals(3, result.components.single().sign)
+        assertEquals(10.5, result.expectedTotal(), 0.0001)
+    }
+
+    @Test
+    fun supportsScalarBeforeDiceExpression() {
+        val result = DiceExpression.parse("2*(1d6-1)").evaluate(Random(12))
+
+        assertEquals(2, result.components.single().sign)
+        assertEquals(-2, result.constantTotal)
+        assertEquals(-2, DiceExpression.parse("2*(1d6-1)").constantTotal())
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun rejectsDiceToDiceMultiplicationToKeepStatisticsLinear() {
+        DiceExpression.parse("1d6*1d8")
     }
 }

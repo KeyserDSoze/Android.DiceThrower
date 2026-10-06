@@ -18,8 +18,11 @@ import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
+import kotlin.math.acos
 import kotlin.math.ceil
+import kotlin.math.max
 import kotlin.math.sqrt
+import kotlin.math.tan
 
 @Composable
 fun Dice3DScene(
@@ -84,7 +87,25 @@ private data class GpuMesh(
     val numberPositions: FloatBuffer,
     val numberNormals: FloatBuffer,
     val numberVertexCount: Int,
+    val valueFaceNormals: FloatArray,
 )
+
+internal object DiceTableViewport {
+    const val HALF_WIDTH = 2.65f
+    const val HALF_HEIGHT = 4.45f
+    private const val VERTICAL_FOV_DEGREES = 36f
+    const val FOV_DEGREES = VERTICAL_FOV_DEGREES
+    private const val VIEWPORT_PADDING = 1.055f
+
+    fun cameraDistanceFor(aspect: Float): Float {
+        val safeAspect = aspect.coerceAtLeast(0.25f)
+        val halfFovRadians = Math.toRadians(VERTICAL_FOV_DEGREES.toDouble() / 2.0)
+        val tangent = tan(halfFovRadians).toFloat()
+        val vertical = HALF_HEIGHT * VIEWPORT_PADDING / tangent
+        val horizontal = HALF_WIDTH * VIEWPORT_PADDING / (tangent * safeAspect)
+        return max(vertical, horizontal)
+    }
+}
 
 private class DiceSceneRenderer(
     private val onSettled: (Long) -> Unit,
@@ -113,10 +134,15 @@ private class DiceSceneRenderer(
     private var currentEventId = 0L
     private var lastFrameAt = SystemClock.elapsedRealtimeNanos()
     private var settledReported = false
+    private var cameraDistance = 14f
 
     private val tablePositions = floatArrayOf(
-        -2.95f, -3.7f, -0.72f, 2.95f, -3.7f, -0.72f, 2.95f, 3.7f, -0.72f,
-        -2.95f, -3.7f, -0.72f, 2.95f, 3.7f, -0.72f, -2.95f, 3.7f, -0.72f,
+        -DiceTableViewport.HALF_WIDTH, -DiceTableViewport.HALF_HEIGHT, TABLE_Z,
+        DiceTableViewport.HALF_WIDTH, -DiceTableViewport.HALF_HEIGHT, TABLE_Z,
+        DiceTableViewport.HALF_WIDTH, DiceTableViewport.HALF_HEIGHT, TABLE_Z,
+        -DiceTableViewport.HALF_WIDTH, -DiceTableViewport.HALF_HEIGHT, TABLE_Z,
+        DiceTableViewport.HALF_WIDTH, DiceTableViewport.HALF_HEIGHT, TABLE_Z,
+        -DiceTableViewport.HALF_WIDTH, DiceTableViewport.HALF_HEIGHT, TABLE_Z,
     ).toFloatBuffer()
     private val tableNormals = FloatArray(18) { index -> if (index % 3 == 2) 1f else 0f }.toFloatBuffer()
 
@@ -167,7 +193,8 @@ private class DiceSceneRenderer(
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
         val aspect = if (height == 0) 1f else width.toFloat() / height.toFloat()
-        Matrix.perspectiveM(projection, 0, 36f, aspect, 0.1f, 30f)
+        cameraDistance = DiceTableViewport.cameraDistanceFor(aspect)
+        Matrix.perspectiveM(projection, 0, DiceTableViewport.FOV_DEGREES, aspect, 0.1f, 60f)
     }
 
     override fun onDrawFrame(gl: GL10?) {
@@ -187,8 +214,9 @@ private class DiceSceneRenderer(
             else -> 0.44f
         }
         val states = physics?.states() ?: staticStates(count, dieScale)
+        val diceSettled = physics?.isSettled == true || !animateRoll
 
-        Matrix.setLookAtM(view, 0, 0f, -0.12f, 8.8f, 0f, 0f, 0f, 0f, 1f, 0f)
+        Matrix.setLookAtM(view, 0, 0f, -0.12f, cameraDistance, 0f, 0f, 0f, 0f, 1f, 0f)
         GLES20.glUseProgram(program)
         GLES20.glEnableVertexAttribArray(positionHandle)
         GLES20.glEnableVertexAttribArray(normalHandle)
@@ -200,15 +228,22 @@ private class DiceSceneRenderer(
 
             Matrix.setIdentityM(model, 0)
             Matrix.translateM(model, 0, state.x, state.y, 0f)
-            Matrix.rotateM(model, 0, state.angleX + die.phase * 0.17f, 1f, 0f, 0f)
-            Matrix.rotateM(model, 0, state.angleY + die.value * 3.7f, 0f, 1f, 0f)
-            Matrix.rotateM(model, 0, state.angleZ, 0f, 0f, 1f)
+            val gpuMesh = gpuMesh(die.sides)
+            if (diceSettled) {
+                // The logical engine has already chosen [die.value]. Once motion settles we
+                // rotate that numbered face toward the camera instead of leaving a random pose.
+                Matrix.rotateM(model, 0, die.phase, 0f, 0f, 1f)
+                alignResolvedFace(model, die, gpuMesh)
+            } else {
+                Matrix.rotateM(model, 0, state.angleX + die.phase * 0.17f, 1f, 0f, 0f)
+                Matrix.rotateM(model, 0, state.angleY + die.value * 3.7f, 0f, 1f, 0f)
+                Matrix.rotateM(model, 0, state.angleZ, 0f, 0f, 1f)
+            }
             Matrix.scaleM(model, 0, dieScale, dieScale, dieScale)
 
             Matrix.multiplyMM(viewModel, 0, view, 0, model, 0)
             Matrix.multiplyMM(mvp, 0, projection, 0, viewModel, 0)
 
-            val gpuMesh = gpuMesh(die.sides)
             gpuMesh.positions.position(0)
             gpuMesh.normals.position(0)
             GLES20.glVertexAttribPointer(positionHandle, 3, GLES20.GL_FLOAT, false, 0, gpuMesh.positions)
@@ -322,7 +357,28 @@ private class DiceSceneRenderer(
             numberPositions = mesh.numberPositions.toFloatBuffer(),
             numberNormals = mesh.numberNormals.toFloatBuffer(),
             numberVertexCount = mesh.numberVertexCount,
+            valueFaceNormals = mesh.valueFaceNormals,
         )
+    }
+
+    private fun alignResolvedFace(model: FloatArray, die: VisualDie, mesh: GpuMesh) {
+        val numberedFaceCount = mesh.valueFaceNormals.size / 3
+        if (numberedFaceCount == 0) return
+        val faceIndex = if (die.sides == 100) {
+            if (die.value == 100) 0 else (die.value / 10).coerceIn(0, numberedFaceCount - 1)
+        } else {
+            (die.value - 1).coerceIn(0, numberedFaceCount - 1)
+        }
+        val offset = faceIndex * 3
+        val nx = mesh.valueFaceNormals[offset]
+        val ny = mesh.valueFaceNormals[offset + 1]
+        val nz = mesh.valueFaceNormals[offset + 2].coerceIn(-1f, 1f)
+        val axisLength = sqrt(nx * nx + ny * ny)
+        val angle = Math.toDegrees(acos(nz).toDouble()).toFloat()
+        when {
+            axisLength > 0.0001f -> Matrix.rotateM(model, 0, angle, ny / axisLength, -nx / axisLength, 0f)
+            nz < 0f -> Matrix.rotateM(model, 0, 180f, 1f, 0f, 0f)
+        }
     }
 
     private fun FloatArray.toFloatBuffer(): FloatBuffer = ByteBuffer
@@ -369,6 +425,7 @@ private class DiceSceneRenderer(
 
     companion object {
         private const val MAX_VISIBLE_DICE = 12
+        private const val TABLE_Z = -0.72f
 
         private const val VERTEX_SHADER = """
             uniform mat4 uMvp;

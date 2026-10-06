@@ -2,4 +2,5 @@
     <string name="dice_table">Table de dés</string><string name="dice_table_help">Choisissez la table personnelle de ce personnage pour chaque lancer.</string>
     <string name="table_arcane">Arcanique</string><string name="table_oak">Chêne</string><string name="table_emerald">Émeraude</string><string name="table_obsidian">Obsidienne</string>
     <string name="statistics">Statistiques</string><string name="roll_again">Relancer</string>
+    <string name="guided_builder">Création guidée</string><string name="advanced_formula">Formule avancée</string><string name="roll_subgroups">Parties du jet</string><string name="roll_subgroups_help">Gardez le jet ensemble ou divisez-le en parties nommées, comme attaque et dégâts.</string><string name="add_subgroup">Ajouter une partie</string><string name="subgroup_name">Nom de la partie (facultatif)</string><string name="constant_value">Constante</string><string name="multiplier">Multiplicateur</string><string name="clear_expression">Effacer la formule</string>
 </resources>

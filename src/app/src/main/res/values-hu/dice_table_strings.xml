@@ -2,4 +2,5 @@
     <string name="dice_table">Kockaasztal</string><string name="dice_table_help">Válaszd ki a karakter saját asztalát minden dobáshoz.</string>
     <string name="table_arcane">Misztikus</string><string name="table_oak">Tölgy</string><string name="table_emerald">Smaragd</string><string name="table_obsidian">Obszidián</string>
     <string name="statistics">Statisztikák</string><string name="roll_again">Dobás újra</string>
+    <string name="guided_builder">Irányított szerkesztő</string><string name="advanced_formula">Haladó képlet</string><string name="roll_subgroups">Dobás részei</string><string name="roll_subgroups_help">Tartsd egyben a dobást, vagy oszd elnevezett részekre, például támadásra és sebzésre.</string><string name="add_subgroup">Rész hozzáadása</string><string name="subgroup_name">Rész neve (opcionális)</string><string name="constant_value">Konstans</string><string name="multiplier">Szorzó</string><string name="clear_expression">Képlet törlése</string>
 </resources>

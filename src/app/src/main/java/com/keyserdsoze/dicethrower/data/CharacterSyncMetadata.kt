@@ -69,6 +69,13 @@ object CharacterRevision {
                 canonical.field("trigger", rule.trigger)
                 canonical.field("expression", rule.expression)
             }
+            roll.subgroups.forEach { subgroup ->
+                canonical.section("rollSubgroup")
+                canonical.field("id", subgroup.id)
+                canonical.field("name", subgroup.name)
+                canonical.field("expression", subgroup.expression)
+                canonical.field("operator", subgroup.operator.name)
+            }
             canonical.section("diceAppearance")
             canonical.field("mode", roll.diceAppearance.mode.name)
             canonical.field("styleId", roll.diceAppearance.styleId)

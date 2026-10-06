@@ -8,7 +8,7 @@ Dice Thrower non implementa le regole di un gioco specifico. Un personaggio cont
 
 Esempi di tiro: `6d6+6`, `4d3+3d6+10`, `1d20+{Intelligenza}`.
 
-Dadi supportati nella prima versione: **d2, d3, d4, d6, d10, d12, d20, d100**.
+Dadi supportati nella prima versione: **d2, d3, d4, d6, d8, d10, d12, d20, d100**.
 
 ## Esperienza d'uso
 
@@ -18,7 +18,7 @@ Dadi supportati nella prima versione: **d2, d3, d4, d6, d10, d12, d20, d100**.
 4. Modalità **Edit** con long-press + drag per riordinare dashboard e contenuti dei gruppi.
 5. Libreria di stili dei dadi per personaggio con materiali, due colori, stile predefinito e anteprima 3D live.
 6. Aspetto dei singoli tiri configurabile: predefinito, uniforme, per dado, casuale uniforme o casuale per dado, con pool opzionale.
-7. Editor visuale delle formule con chip per inserire `{level}` e i modificatori del personaggio nel punto del cursore.
+7. Builder guidato dei tiri con parti nominate (per esempio colpire/danni), dadi, costanti, variabili, moltiplicatori e modalità formula avanzata.
 8. Lancio con pulsante configurabile oppure scuotendo il telefono.
 9. Tavolo OpenGL ES personalizzabile per personaggio con dadi numerati, collisioni fisiche, reveal animato del totale e statistiche separate.
 10. Log locale con retention configurabile.
@@ -41,6 +41,8 @@ Le espressioni possono usare le variabili tra parentesi graffe:
 - **ogni N livelli** aggiungi l'espressione una volta per ogni intervallo raggiunto.
 
 Salire di livello non riscrive i tiri: la formula effettiva viene risolta al momento del lancio, quindi tutti i tiri parametrizzati si aggiornano automaticamente.
+
+Il builder può dividere lo stesso tiro in parti nominate che contribuiscono con `+` o `−` allo stesso totale. La stringa matematica resta la rappresentazione canonica e può essere modificata direttamente in modalità avanzata. Sono supportate parentesi e moltiplicazioni per fattori scalari, ad esempio `(1d6+2)*3`; le regole periodiche coprono anche espressioni negative. Il livello è modificabile direttamente oppure con i controlli level up/down.
 
 ## Gestione personaggi
 

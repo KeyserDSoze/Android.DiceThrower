@@ -2,4 +2,5 @@
     <string name="dice_table">میز تاس</string><string name="dice_table_help">میز شخصی این شخصیت را برای هر پرتاب انتخاب کنید.</string>
     <string name="table_arcane">جادویی</string><string name="table_oak">بلوط</string><string name="table_emerald">زمرد</string><string name="table_obsidian">ابسیدین</string>
     <string name="statistics">آمار</string><string name="roll_again">دوباره بینداز</string>
+    <string name="guided_builder">سازنده هدایت‌شده</string><string name="advanced_formula">فرمول پیشرفته</string><string name="roll_subgroups">بخش‌های پرتاب</string><string name="roll_subgroups_help">کل پرتاب را یکجا نگه دارید یا آن را به بخش‌های نام‌دار مانند حمله و آسیب تقسیم کنید.</string><string name="add_subgroup">افزودن بخش</string><string name="subgroup_name">نام بخش (اختیاری)</string><string name="constant_value">ثابت</string><string name="multiplier">ضریب</string><string name="clear_expression">پاک کردن فرمول</string>
 </resources>

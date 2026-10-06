@@ -18,8 +18,8 @@ class DiceTablePhysicsTest {
 
         assertEquals(first.states(), second.states())
         first.states().forEach { state ->
-            assertTrue(state.x in -2.55f..2.55f)
-            assertTrue(state.y in -3.25f..3.25f)
+            assertTrue(state.x in -DiceTableViewport.HALF_WIDTH..DiceTableViewport.HALF_WIDTH)
+            assertTrue(state.y in -DiceTableViewport.HALF_HEIGHT..DiceTableViewport.HALF_HEIGHT)
         }
     }
 
@@ -37,6 +37,18 @@ class DiceTablePhysicsTest {
                 val dy = second.y - first.y
                 assertTrue(sqrt(dx * dx + dy * dy) >= physics.radius * 1.95f)
             }
+        }
+    }
+
+    @Test
+    fun cameraAlwaysFitsCompleteTableOnCommonPhoneViewports() {
+        listOf(0.42f, 0.50f, 0.60f, 1f, 1.8f).forEach { aspect ->
+            val distance = DiceTableViewport.cameraDistanceFor(aspect)
+            val halfVertical = distance * kotlin.math.tan(Math.toRadians(18.0)).toFloat()
+            val halfHorizontal = halfVertical * aspect
+
+            assertTrue(halfVertical > DiceTableViewport.HALF_HEIGHT)
+            assertTrue(halfHorizontal > DiceTableViewport.HALF_WIDTH)
         }
     }
 }

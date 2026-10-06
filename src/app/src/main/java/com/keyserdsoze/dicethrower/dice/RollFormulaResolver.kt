@@ -5,12 +5,45 @@ import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.LevelRuleKind
 import com.keyserdsoze.dicethrower.model.RollDefinition
 import com.keyserdsoze.dicethrower.model.RollLevelRule
+import com.keyserdsoze.dicethrower.model.RollSubgroup
+import com.keyserdsoze.dicethrower.model.RollSubgroupOperator
 import java.util.Locale
 
 data class ResolvedRollFormula(
     val expression: String,
     val appliedRules: List<RollLevelRule>,
+    val subgroups: List<ResolvedRollSubgroup> = emptyList(),
 )
+
+data class ResolvedRollSubgroup(
+    val id: String,
+    val name: String,
+    val operator: RollSubgroupOperator,
+    val expression: String,
+)
+
+data class ResolvedRollSubgroupResult(
+    val subgroup: ResolvedRollSubgroup,
+    val result: DiceRollResult,
+)
+
+fun ResolvedRollFormula.subgroupResults(outcome: DiceRollResult): List<ResolvedRollSubgroupResult> {
+    var componentIndex = 0
+    return subgroups.map { subgroup ->
+        val parsed = DiceExpression.parse(subgroup.expression)
+        val componentCount = parsed.diceShape().size
+        val components = outcome.components.drop(componentIndex).take(componentCount)
+        componentIndex += componentCount
+        val operatorScale = if (subgroup.operator == RollSubgroupOperator.SUBTRACT) -1 else 1
+        val constant = parsed.constantTotal() * operatorScale
+        val result = DiceRollResult(
+            total = components.sumOf { it.subtotal } + constant,
+            components = components,
+            constantTotal = constant,
+        )
+        ResolvedRollSubgroupResult(subgroup, result)
+    }
+}
 
 object RollFormulaResolver {
     const val LEVEL_VARIABLE = "level"
@@ -26,7 +59,24 @@ object RollFormulaResolver {
     ): ResolvedRollFormula {
         val characterModifiers = modifiers.filter { it.characterId == character.id }
         val variables = buildVariableMap(character.level, characterModifiers)
-        val pieces = mutableListOf(resolveExpression(roll.expression, variables))
+        val resolvedSubgroups = roll.subgroups.map { subgroup ->
+            ResolvedRollSubgroup(
+                id = subgroup.id,
+                name = subgroup.name,
+                operator = subgroup.operator,
+                expression = resolveExpression(subgroup.expression, variables),
+            )
+        }
+        val baseExpression = if (resolvedSubgroups.isEmpty()) {
+            resolveExpression(roll.expression, variables)
+        } else {
+            canonicalExpression(
+                resolvedSubgroups.map { subgroup ->
+                    RollSubgroup(subgroup.id, subgroup.name, subgroup.expression, subgroup.operator)
+                },
+            )
+        }
+        val pieces = mutableListOf(baseExpression)
         val appliedRules = mutableListOf<RollLevelRule>()
 
         roll.levelRules.forEach { rule ->
@@ -52,7 +102,21 @@ object RollFormulaResolver {
         return ResolvedRollFormula(
             expression = parsed.source,
             appliedRules = appliedRules,
+            subgroups = resolvedSubgroups,
         )
+    }
+
+    fun canonicalExpression(subgroups: List<RollSubgroup>): String {
+        require(subgroups.isNotEmpty()) { "At least one roll subgroup is required" }
+        return subgroups.mapIndexed { index, subgroup ->
+            require(subgroup.expression.isNotBlank()) { "Roll subgroup expression cannot be blank" }
+            val wrapped = "(${subgroup.expression.trim()})"
+            when {
+                index == 0 && subgroup.operator == RollSubgroupOperator.ADD -> wrapped
+                subgroup.operator == RollSubgroupOperator.SUBTRACT -> "-$wrapped"
+                else -> "+$wrapped"
+            }
+        }.joinToString("")
     }
 
     fun validateTemplate(

@@ -14,6 +14,8 @@ data class DiceMesh(
     /** Triangle geometry for face numerals, slightly lifted to avoid z-fighting. */
     val numberPositions: FloatArray,
     val numberNormals: FloatArray,
+    /** Outward normal for each numbered face, in numeric/label order. */
+    val valueFaceNormals: FloatArray,
 ) {
     val vertexCount: Int get() = positions.size / 3
     val numberVertexCount: Int get() = numberPositions.size / 3
@@ -294,6 +296,7 @@ object DiceMeshFactory {
         val normals = mutableListOf<Float>()
         val numberPositions = mutableListOf<Float>()
         val numberNormals = mutableListOf<Float>()
+        val valueFaceNormals = mutableListOf<Float>()
 
         faces.forEach { polygon ->
             require(polygon.size >= 3)
@@ -321,7 +324,12 @@ object DiceMeshFactory {
         }
 
         labelFaceIndices.zip(labels).forEach { (faceIndex, label) ->
-            appendFaceNumber(faces[faceIndex].map(vertices::get), label, numberPositions, numberNormals)
+            val polygon = faces[faceIndex].map(vertices::get)
+            appendFaceNumber(polygon, label, numberPositions, numberNormals)
+            val normal = outwardFaceNormal(polygon)
+            valueFaceNormals += normal.x
+            valueFaceNormals += normal.y
+            valueFaceNormals += normal.z
         }
 
         return DiceMesh(
@@ -329,6 +337,7 @@ object DiceMeshFactory {
             normals = normals.toFloatArray(),
             numberPositions = numberPositions.toFloatArray(),
             numberNormals = numberNormals.toFloatArray(),
+            valueFaceNormals = valueFaceNormals.toFloatArray(),
         )
     }
 
@@ -339,12 +348,14 @@ object DiceMeshFactory {
         normals: MutableList<Float>,
     ) {
         val center = polygon.reduce(Vec3::plus) * (1f / polygon.size)
-        var normal = (polygon[1] - polygon[0]).cross(polygon[2] - polygon[0]).normalized()
-        if (normal.dot(center) < 0f) normal = normal * -1f
+        val normal = outwardFaceNormal(polygon)
         val tangent = (polygon[0] - center).normalized()
         val bitangent = normal.cross(tangent).normalized()
         val faceRadius = polygon.minOf { point -> sqrt((point - center).dot(point - center)) }
-        val digitScale = faceRadius * if (label.length == 1) 0.72f else 0.48f
+        // High-face-count dice (especially d20/d100) get crowded quickly. A slightly
+        // smaller face label preserves breathing room and makes neighbouring values easier
+        // to distinguish while the die is moving.
+        val digitScale = faceRadius * if (label.length == 1) 0.58f else 0.39f
         val totalWidth = label.length * 0.72f * digitScale
         val startX = -(totalWidth - 0.72f * digitScale) / 2f
 
@@ -366,6 +377,13 @@ object DiceMeshFactory {
                 )
             }
         }
+    }
+
+    private fun outwardFaceNormal(polygon: List<Vec3>): Vec3 {
+        val center = polygon.reduce(Vec3::plus) * (1f / polygon.size)
+        var normal = (polygon[1] - polygon[0]).cross(polygon[2] - polygon[0]).normalized()
+        if (normal.dot(center) < 0f) normal = normal * -1f
+        return normal
     }
 
     private fun appendQuad(

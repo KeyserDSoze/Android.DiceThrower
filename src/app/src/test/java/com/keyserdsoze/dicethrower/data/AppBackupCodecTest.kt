@@ -17,6 +17,8 @@ import com.keyserdsoze.dicethrower.model.RollDiceAppearance
 import com.keyserdsoze.dicethrower.model.RollGroup
 import com.keyserdsoze.dicethrower.model.RollLevelRule
 import com.keyserdsoze.dicethrower.model.RollLog
+import com.keyserdsoze.dicethrower.model.RollSubgroup
+import com.keyserdsoze.dicethrower.model.RollSubgroupOperator
 import com.keyserdsoze.dicethrower.model.ThemeMode
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -126,11 +128,36 @@ class AppBackupCodecTest {
         assertTrue(decoded.diceStyles.isEmpty())
         assertTrue(decoded.characterSyncMetadata.isEmpty())
         assertEquals(DiceAppearanceMode.CHARACTER_DEFAULT, decoded.rolls.single().diceAppearance.mode)
+        assertTrue(decoded.rolls.single().subgroups.isEmpty())
 
         val migrated = SyncMetadataManager.ensureMetadata(decoded, "local-writer", 500L)
         assertEquals("local-writer", migrated.characterSyncMetadata.single().writerId)
         assertEquals(500L, migrated.characterSyncMetadata.single().updatedAt)
         assertTrue(AppDataValidator.validate(migrated).isEmpty())
+    }
+
+    @Test
+    fun groupedRollsRoundTripThroughDataCodec() {
+        val data = AppData(
+            characters = listOf(CharacterProfile(id = "hero", name = "Hero", level = 5)),
+            rolls = listOf(
+                RollDefinition(
+                    id = "combo",
+                    characterId = "hero",
+                    name = "Attack and damage",
+                    expression = "(1d20+{level})-(1d4)",
+                    subgroups = listOf(
+                        RollSubgroup("attack", "Attack", "1d20+{level}"),
+                        RollSubgroup("penalty", "Penalty", "1d4", RollSubgroupOperator.SUBTRACT),
+                    ),
+                ),
+            ),
+        )
+
+        val decoded = AppDataJsonCodec.decodeData(AppDataJsonCodec.encodeData(data))
+
+        assertEquals(data, decoded)
+        assertTrue(AppDataValidator.validate(decoded).isEmpty())
     }
 
     @Test

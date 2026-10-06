@@ -2,4 +2,5 @@
     <string name="dice_table">ডাইস টেবিল</string><string name="dice_table_help">প্রতিটি রোলের জন্য এই চরিত্রের ব্যক্তিগত টেবিল বেছে নিন।</string>
     <string name="table_arcane">রহস্যময়</string><string name="table_oak">ওক</string><string name="table_emerald">পান্না</string><string name="table_obsidian">অবসিডিয়ান</string>
     <string name="statistics">পরিসংখ্যান</string><string name="roll_again">আবার রোল করুন</string>
+    <string name="guided_builder">নির্দেশিত নির্মাতা</string><string name="advanced_formula">উন্নত সূত্র</string><string name="roll_subgroups">রোলের অংশ</string><string name="roll_subgroups_help">পুরো রোল একসাথে রাখুন বা আক্রমণ ও ক্ষতির মতো নামযুক্ত অংশে ভাগ করুন।</string><string name="add_subgroup">অংশ যোগ করুন</string><string name="subgroup_name">অংশের নাম (ঐচ্ছিক)</string><string name="constant_value">ধ্রুবক</string><string name="multiplier">গুণক</string><string name="clear_expression">সূত্র মুছুন</string>
 </resources>

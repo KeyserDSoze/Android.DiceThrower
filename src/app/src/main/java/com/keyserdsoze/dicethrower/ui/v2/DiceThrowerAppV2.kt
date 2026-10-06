@@ -6,6 +6,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.Casino
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.CloudOff
@@ -63,6 +65,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -95,6 +98,7 @@ import com.keyserdsoze.dicethrower.dice.DiceExpression
 import com.keyserdsoze.dicethrower.dice.DiceRollResult
 import com.keyserdsoze.dicethrower.dice.DiceRollVisualEvent
 import com.keyserdsoze.dicethrower.dice.RollFormulaResolver
+import com.keyserdsoze.dicethrower.dice.subgroupResults
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.AppSettings
 import com.keyserdsoze.dicethrower.model.CharacterModifier
@@ -110,6 +114,8 @@ import com.keyserdsoze.dicethrower.model.RollDefinition
 import com.keyserdsoze.dicethrower.model.RollGroup
 import com.keyserdsoze.dicethrower.model.RollLevelRule
 import com.keyserdsoze.dicethrower.model.RollLog
+import com.keyserdsoze.dicethrower.model.RollSubgroup
+import com.keyserdsoze.dicethrower.model.RollSubgroupOperator
 import com.keyserdsoze.dicethrower.model.ThemeMode
 import com.keyserdsoze.dicethrower.sensor.ShakeDetector
 import com.keyserdsoze.dicethrower.ui.dice3d.Dice3DScene
@@ -760,12 +766,56 @@ internal fun CharacterEditContentV2(
     var showAddRoll by remember { mutableStateOf(false) }
     var editingRollId by remember { mutableStateOf<String?>(null) }
     var addRuleRollId by remember { mutableStateOf<String?>(null) }
+    var levelText by remember(character.id) { mutableStateOf(character.level.toString()) }
+
+    LaunchedEffect(character.level) {
+        if (levelText.toIntOrNull() != character.level) levelText = character.level.toString()
+    }
 
     val groups = data.groups.filter { it.characterId == character.id }.sortedBy { it.order }
     val rolls = data.rolls.filter { it.characterId == character.id }
     val modifiers = data.modifiers.filter { it.characterId == character.id }.sortedBy { it.order }
     val diceStyles = data.diceStyles.filter { it.characterId == character.id }.sortedBy { it.order }
     val entries = dashboardEntries(groups, rolls.filter { it.groupId == null })
+
+    val builderRoll = editingRollId?.let { id -> rolls.firstOrNull { it.id == id } }
+    if (showAddRoll || builderRoll != null) {
+        RollBuilderScreenV2(
+            title = stringResource(if (builderRoll == null) R.string.new_roll else R.string.edit_roll),
+            character = character,
+            modifiers = modifiers,
+            groups = groups,
+            existing = builderRoll,
+            onDismiss = {
+                showAddRoll = false
+                editingRollId = null
+            },
+            onSave = { draft ->
+                if (builderRoll == null) {
+                    val order = if (draft.groupId == null) {
+                        DashboardDataOperations.nextTopLevelOrder(data, character.id)
+                    } else {
+                        DashboardDataOperations.nextGroupRollOrder(data, character.id, draft.groupId)
+                    }
+                    onDataChanged(
+                        data.copy(
+                            rolls = data.rolls + draft.copy(
+                                id = UUID.randomUUID().toString(),
+                                characterId = character.id,
+                                order = order,
+                            ),
+                        ),
+                    )
+                } else {
+                    onDataChanged(updateRoll(data, character.id, builderRoll, draft))
+                }
+                showAddRoll = false
+                editingRollId = null
+            },
+            modifier = modifier,
+        )
+        return
+    }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -784,18 +834,36 @@ internal fun CharacterEditContentV2(
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(18.dp),
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(stringResource(R.string.level), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(
-                            character.level.toString(),
-                            style = MaterialTheme.typography.displaySmall,
-                            fontWeight = FontWeight.Black,
-                        )
-                    }
+                    OutlinedTextField(
+                        value = levelText,
+                        onValueChange = { raw ->
+                            val candidate = raw.filter(Char::isDigit).take(4)
+                            if (candidate.isBlank() || (candidate.toIntOrNull() ?: 0) >= 1) {
+                                levelText = candidate
+                                candidate.toIntOrNull()?.let { newLevel ->
+                                    if (newLevel != character.level) {
+                                        onDataChanged(
+                                            data.copy(
+                                                characters = data.characters.map {
+                                                    if (it.id == character.id) it.copy(level = newLevel) else it
+                                                },
+                                            ),
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                        label = { Text(stringResource(R.string.level)) },
+                        singleLine = true,
+                        modifier = Modifier.width(96.dp),
+                    )
+                    Spacer(Modifier.weight(1f))
                     OutlinedButton(
                         enabled = character.level > 1,
                         onClick = {
+                            levelText = (character.level - 1).coerceAtLeast(1).toString()
                             onDataChanged(
                                 data.copy(
                                     characters = data.characters.map {
@@ -808,6 +876,7 @@ internal fun CharacterEditContentV2(
                     Spacer(Modifier.width(8.dp))
                     Button(
                         onClick = {
+                            levelText = (character.level + 1).toString()
                             onDataChanged(
                                 data.copy(
                                     characters = data.characters.map {
@@ -1086,51 +1155,6 @@ internal fun CharacterEditContentV2(
         )
     }
 
-    if (showAddRoll) {
-        RollDialogV2(
-            title = stringResource(R.string.new_roll),
-            character = character,
-            modifiers = modifiers,
-            groups = groups,
-            existing = null,
-            onDismiss = { showAddRoll = false },
-            onSave = { draft ->
-                val order = if (draft.groupId == null) {
-                    DashboardDataOperations.nextTopLevelOrder(data, character.id)
-                } else {
-                    DashboardDataOperations.nextGroupRollOrder(data, character.id, draft.groupId)
-                }
-                onDataChanged(
-                    data.copy(
-                        rolls = data.rolls + draft.copy(
-                            id = UUID.randomUUID().toString(),
-                            characterId = character.id,
-                            order = order,
-                        ),
-                    ),
-                )
-                showAddRoll = false
-            },
-        )
-    }
-
-    editingRollId?.let { id ->
-        rolls.firstOrNull { it.id == id }?.let { existing ->
-            RollDialogV2(
-                title = stringResource(R.string.edit_roll),
-                character = character,
-                modifiers = modifiers,
-                groups = groups,
-                existing = existing,
-                onDismiss = { editingRollId = null },
-                onSave = { updated ->
-                    onDataChanged(updateRoll(data, character.id, existing, updated))
-                    editingRollId = null
-                },
-            )
-        }
-    }
-
     addRuleRollId?.let { rollId ->
         rolls.firstOrNull { it.id == rollId }?.let { roll ->
             LevelRuleDialogV2(
@@ -1310,6 +1334,46 @@ private fun GroupEditContentV2(
     val modifiers = data.modifiers.filter { it.characterId == character.id }.sortedBy { it.order }
     val diceStyles = data.diceStyles.filter { it.characterId == character.id }.sortedBy { it.order }
 
+    val builderRoll = editingRollId?.let { id -> allCharacterRolls.firstOrNull { it.id == id } }
+    if (showAddRoll || builderRoll != null) {
+        RollBuilderScreenV2(
+            title = stringResource(if (builderRoll == null) R.string.new_roll else R.string.edit_roll),
+            character = character,
+            modifiers = modifiers,
+            groups = groups,
+            existing = builderRoll,
+            initialGroupId = group.id,
+            onDismiss = {
+                showAddRoll = false
+                editingRollId = null
+            },
+            onSave = { draft ->
+                if (builderRoll == null) {
+                    val order = if (draft.groupId == null) {
+                        DashboardDataOperations.nextTopLevelOrder(data, character.id)
+                    } else {
+                        DashboardDataOperations.nextGroupRollOrder(data, character.id, draft.groupId)
+                    }
+                    onDataChanged(
+                        data.copy(
+                            rolls = data.rolls + draft.copy(
+                                id = UUID.randomUUID().toString(),
+                                characterId = character.id,
+                                order = order,
+                            ),
+                        ),
+                    )
+                } else {
+                    onDataChanged(updateRoll(data, character.id, builderRoll, draft))
+                }
+                showAddRoll = false
+                editingRollId = null
+            },
+            modifier = modifier,
+        )
+        return
+    }
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 40.dp),
@@ -1421,52 +1485,6 @@ private fun GroupEditContentV2(
                     },
                 )
             }
-        }
-    }
-
-    if (showAddRoll) {
-        RollDialogV2(
-            title = stringResource(R.string.new_roll),
-            character = character,
-            modifiers = modifiers,
-            groups = groups,
-            existing = null,
-            initialGroupId = group.id,
-            onDismiss = { showAddRoll = false },
-            onSave = { draft ->
-                val order = if (draft.groupId == null) {
-                    DashboardDataOperations.nextTopLevelOrder(data, character.id)
-                } else {
-                    DashboardDataOperations.nextGroupRollOrder(data, character.id, draft.groupId)
-                }
-                onDataChanged(
-                    data.copy(
-                        rolls = data.rolls + draft.copy(
-                            id = UUID.randomUUID().toString(),
-                            characterId = character.id,
-                            order = order,
-                        ),
-                    ),
-                )
-                showAddRoll = false
-            },
-        )
-    }
-
-    editingRollId?.let { id ->
-        allCharacterRolls.firstOrNull { it.id == id }?.let { existing ->
-            RollDialogV2(
-                title = stringResource(R.string.edit_roll),
-                character = character,
-                modifiers = modifiers,
-                groups = groups,
-                existing = existing,
-                onDismiss = { editingRollId = null },
-                onSave = { updated ->
-                    onDataChanged(updateRoll(data, character.id, existing, updated))
-                    editingRollId = null
-                },
-            )
         }
     }
 
@@ -1626,6 +1644,11 @@ private fun RollEditorCardV2(
                 )
             } else {
                 roll.levelRules.forEach { rule ->
+                    val signedRuleExpression = if (rule.expression.trimStart().startsWith("-")) {
+                        rule.expression
+                    } else {
+                        "+${rule.expression}"
+                    }
                     Surface(
                         shape = RoundedCornerShape(14.dp),
                         color = MaterialTheme.colorScheme.surfaceVariant,
@@ -1636,8 +1659,8 @@ private fun RollEditorCardV2(
                         ) {
                             Text(
                                 text = when (rule.kind) {
-                                    LevelRuleKind.FROM_LEVEL -> "${stringResource(R.string.from_level)} ${rule.trigger}  ·  +${rule.expression}"
-                                    LevelRuleKind.EVERY_LEVELS -> "${stringResource(R.string.every_levels)} ${rule.trigger}  ·  +${rule.expression}"
+                                    LevelRuleKind.FROM_LEVEL -> "${stringResource(R.string.from_level)} ${rule.trigger}  ·  $signedRuleExpression"
+                                    LevelRuleKind.EVERY_LEVELS -> "${stringResource(R.string.every_levels)} ${rule.trigger}  ·  $signedRuleExpression"
                                 },
                                 modifier = Modifier.weight(1f),
                                 style = MaterialTheme.typography.bodySmall,
@@ -1739,43 +1762,62 @@ private fun RollScreenV2(
             containerColor = Color.Transparent,
             topBar = {
                 TopAppBar(
+                    modifier = Modifier.height(52.dp),
                     colors = transparentTopBarColors(),
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back))
+                            Icon(
+                                Icons.AutoMirrored.Rounded.ArrowBack,
+                                contentDescription = stringResource(R.string.back),
+                                modifier = Modifier.size(20.dp),
+                            )
                         }
                     },
-                    title = { Text(roll.name, fontWeight = FontWeight.Bold) },
+                    title = {
+                        Row(
+                            modifier = Modifier
+                                .clickable { showStats = true }
+                                .padding(horizontal = 4.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Text(
+                                roll.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Icon(
+                                Icons.Rounded.BarChart,
+                                contentDescription = stringResource(R.string.statistics),
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    },
+                    actions = {
+                        if (hasRolled) {
+                            IconButton(
+                                onClick = ::throwDice,
+                                enabled = resultRevealed,
+                            ) {
+                                Icon(
+                                    Icons.Rounded.Casino,
+                                    contentDescription = stringResource(R.string.roll_again),
+                                    modifier = Modifier.size(22.dp),
+                                )
+                            }
+                        }
+                    },
                 )
             },
         ) { padding ->
             Column(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 14.dp, vertical = 10.dp),
+                modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 10.dp, vertical = 6.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Column {
-                        Text(roll.expression, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        Text(
-                            "${stringResource(R.string.level)} ${character.level}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    if (formula.expression != roll.expression) {
-                        Text(
-                            formula.expression,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-
                 Box(
                     modifier = Modifier.fillMaxWidth().weight(1f),
                     contentAlignment = Alignment.Center,
@@ -1811,27 +1853,11 @@ private fun RollScreenV2(
                     )
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (!hasRolled && (settings.showRollButton || !settings.shakeEnabled)) {
-                        Button(onClick = ::throwDice, modifier = Modifier.weight(1f)) {
-                            Icon(Icons.Rounded.Casino, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.throw_dice))
-                        }
-                    }
-                    if (hasRolled && resultRevealed) {
-                        OutlinedButton(onClick = { showStats = true }, modifier = Modifier.weight(1f)) {
-                            Text(stringResource(R.string.statistics))
-                        }
-                        Button(onClick = ::throwDice, modifier = Modifier.weight(1f)) {
-                            Icon(Icons.Rounded.Casino, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.roll_again))
-                        }
+                if (!hasRolled && (settings.showRollButton || !settings.shakeEnabled)) {
+                    Button(onClick = ::throwDice, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Rounded.Casino, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.throw_dice))
                     }
                 }
             }
@@ -1849,6 +1875,66 @@ private fun RollScreenV2(
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Black,
                 )
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(stringResource(R.string.expression), style = MaterialTheme.typography.labelMedium)
+                        Text(roll.expression, fontWeight = FontWeight.Bold)
+                        if (formula.expression != roll.expression) {
+                            Text(
+                                stringResource(R.string.resolved_expression),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(formula.expression, fontWeight = FontWeight.Bold)
+                        }
+                        Text(
+                            "${stringResource(R.string.level)} ${character.level}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                outcome?.let { rolled ->
+                    formula.subgroupResults(rolled).forEachIndexed { index, grouped ->
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        grouped.subgroup.name.ifBlank { "${roll.name} ${index + 1}" },
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                    Text(
+                                        grouped.subgroup.expression,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    )
+                                    Text(
+                                        grouped.result.detail(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    )
+                                }
+                                Text(
+                                    grouped.result.total.toString(),
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Black,
+                                )
+                            }
+                        }
+                    }
+                }
                 ResultContentV2(outcome)
             }
         }
@@ -1969,7 +2055,11 @@ private fun ResultContentV2(outcome: DiceRollResult?) {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            "${if (component.sign < 0) "−" else ""}${component.count}d${component.sides}",
+                            "${when (component.sign) {
+                                1 -> ""
+                                -1 -> "−"
+                                else -> "${component.sign}×"
+                            }}${component.count}d${component.sides}",
                             modifier = Modifier.width(72.dp),
                             fontWeight = FontWeight.Bold,
                         )
@@ -2673,6 +2763,393 @@ private fun GroupDialogV2(
 }
 
 @Composable
+private fun RollBuilderScreenV2(
+    title: String,
+    character: CharacterProfile,
+    modifiers: List<CharacterModifier>,
+    groups: List<RollGroup>,
+    existing: RollDefinition?,
+    initialGroupId: String? = null,
+    onDismiss: () -> Unit,
+    onSave: (RollDefinition) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var name by remember(existing?.id) { mutableStateOf(existing?.name ?: "") }
+    var groupId by remember(existing?.id, initialGroupId) { mutableStateOf(existing?.groupId ?: initialGroupId) }
+    var groupMenu by remember(existing?.id) { mutableStateOf(false) }
+    var advancedMode by remember(existing?.id) { mutableStateOf(false) }
+    var subgroups by remember(existing?.id) {
+        mutableStateOf(
+            existing?.subgroups?.takeIf { it.isNotEmpty() } ?: listOf(
+                RollSubgroup(
+                    id = UUID.randomUUID().toString(),
+                    expression = existing?.expression ?: "1d20",
+                ),
+            ),
+        )
+    }
+    val guidedExpression = remember(subgroups) {
+        runCatching { RollFormulaResolver.canonicalExpression(subgroups) }.getOrDefault("")
+    }
+    var advancedExpression by remember(existing?.id) {
+        mutableStateOf(TextFieldValue(existing?.expression ?: guidedExpression.ifBlank { "1d20" }))
+    }
+    LaunchedEffect(guidedExpression, advancedMode) {
+        if (!advancedMode && guidedExpression.isNotBlank()) {
+            advancedExpression = TextFieldValue(guidedExpression)
+        }
+    }
+
+    val groupsValid = subgroups.isNotEmpty() && subgroups.all { subgroup ->
+        subgroup.expression.isNotBlank() &&
+            RollFormulaResolver.validateTemplate(subgroup.expression, character.level, modifiers)
+    }
+    val expressionToSave = if (advancedMode) advancedExpression.text.trim() else guidedExpression
+    val expressionValid = RollFormulaResolver.validateTemplate(expressionToSave, character.level, modifiers)
+    val valid = name.isNotBlank() && expressionValid && (advancedMode || groupsValid)
+
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 28.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back))
+                }
+                Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
+            }
+        }
+
+        item {
+            PremiumCard(Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text(stringResource(R.string.roll_name)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Box {
+                        OutlinedButton(onClick = { groupMenu = true }) {
+                            Text(groups.firstOrNull { it.id == groupId }?.name ?: stringResource(R.string.ungrouped))
+                        }
+                        DropdownMenu(expanded = groupMenu, onDismissRequest = { groupMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.ungrouped)) },
+                                onClick = {
+                                    groupId = null
+                                    groupMenu = false
+                                },
+                            )
+                            groups.forEach { group ->
+                                DropdownMenuItem(
+                                    text = { Text(group.name) },
+                                    onClick = {
+                                        groupId = group.id
+                                        groupMenu = false
+                                    },
+                                )
+                            }
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = !advancedMode,
+                            onClick = { advancedMode = false },
+                            label = { Text(stringResource(R.string.guided_builder)) },
+                        )
+                        FilterChip(
+                            selected = advancedMode,
+                            onClick = { advancedMode = true },
+                            label = { Text(stringResource(R.string.advanced_formula)) },
+                        )
+                    }
+                }
+            }
+        }
+
+        if (advancedMode) {
+            item {
+                PremiumCard(Modifier.fillMaxWidth()) {
+                    ParameterizedExpressionField(
+                        value = advancedExpression,
+                        onValueChange = { advancedExpression = it },
+                        label = stringResource(R.string.expression),
+                        modifiers = modifiers,
+                        isValid = expressionValid,
+                        helper = stringResource(R.string.expression_hint),
+                        errorText = stringResource(R.string.invalid_expression),
+                        modifier = Modifier.padding(16.dp),
+                    )
+                }
+            }
+        } else {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    SectionTitleV2(
+                        title = stringResource(R.string.roll_subgroups),
+                        subtitle = stringResource(R.string.roll_subgroups_help),
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(
+                        onClick = {
+                            subgroups = subgroups + RollSubgroup(
+                                id = UUID.randomUUID().toString(),
+                                expression = "1d6",
+                            )
+                        },
+                    ) {
+                        Icon(Icons.Rounded.Add, contentDescription = null)
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(R.string.add_subgroup))
+                    }
+                }
+            }
+
+            itemsIndexed(subgroups, key = { _, subgroup -> subgroup.id }) { index, subgroup ->
+                PremiumCard(Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (index > 0) {
+                                FilterChip(
+                                    selected = subgroup.operator == RollSubgroupOperator.ADD,
+                                    onClick = {
+                                        subgroups = subgroups.map {
+                                            if (it.id == subgroup.id) it.copy(operator = RollSubgroupOperator.ADD) else it
+                                        }
+                                    },
+                                    label = { Text("+") },
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                FilterChip(
+                                    selected = subgroup.operator == RollSubgroupOperator.SUBTRACT,
+                                    onClick = {
+                                        subgroups = subgroups.map {
+                                            if (it.id == subgroup.id) it.copy(operator = RollSubgroupOperator.SUBTRACT) else it
+                                        }
+                                    },
+                                    label = { Text("−") },
+                                )
+                                Spacer(Modifier.width(8.dp))
+                            }
+                            OutlinedTextField(
+                                value = subgroup.name,
+                                onValueChange = { updatedName ->
+                                    subgroups = subgroups.map {
+                                        if (it.id == subgroup.id) it.copy(name = updatedName) else it
+                                    }
+                                },
+                                label = { Text(stringResource(R.string.subgroup_name)) },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f),
+                            )
+                            if (subgroups.size > 1) {
+                                IconButton(onClick = { subgroups = subgroups.filterNot { it.id == subgroup.id } }) {
+                                    Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.delete))
+                                }
+                            }
+                        }
+                        GuidedExpressionEditorV2(
+                            value = subgroup.expression,
+                            character = character,
+                            modifiers = modifiers,
+                            onValueChange = { updatedExpression ->
+                                subgroups = subgroups.map {
+                                    if (it.id == subgroup.id) it.copy(expression = updatedExpression) else it
+                                }
+                            },
+                        )
+                    }
+                }
+            }
+
+            item {
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                ) {
+                    Column(Modifier.fillMaxWidth().padding(14.dp)) {
+                        Text(stringResource(R.string.resolved_expression), style = MaterialTheme.typography.labelMedium)
+                        Text(expressionToSave, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.cancel))
+                }
+                Button(
+                    enabled = valid,
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        val preserveSubgroups = !advancedMode || expressionToSave == guidedExpression
+                        val saved = (existing ?: RollDefinition(
+                            id = "",
+                            characterId = character.id,
+                            name = "",
+                            expression = "1d20",
+                        )).copy(
+                            name = name.trim(),
+                            expression = expressionToSave,
+                            groupId = groupId,
+                            subgroups = if (preserveSubgroups) subgroups else emptyList(),
+                        )
+                        val slots = runCatching {
+                            val resolved = RollFormulaResolver.resolve(character, modifiers, saved).expression
+                            DiceAppearanceResolver.slotsFor(DiceExpression.parse(resolved))
+                        }.getOrDefault(emptyList())
+                        onSave(
+                            saved.copy(
+                                diceAppearance = DiceAppearanceResolver.reconcileSlots(saved.diceAppearance, slots),
+                            ),
+                        )
+                    },
+                ) { Text(stringResource(R.string.save)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GuidedExpressionEditorV2(
+    value: String,
+    character: CharacterProfile,
+    modifiers: List<CharacterModifier>,
+    onValueChange: (String) -> Unit,
+) {
+    var countText by remember { mutableStateOf("1") }
+    var sides by remember { mutableStateOf(20) }
+    var sidesMenu by remember { mutableStateOf(false) }
+    var subtractNext by remember { mutableStateOf(false) }
+    var constantText by remember { mutableStateOf("1") }
+    var multiplierText by remember { mutableStateOf("2") }
+    val valid = RollFormulaResolver.validateTemplate(value, character.level, modifiers)
+
+    fun appendTerm(term: String) {
+        onValueChange(
+            when {
+                value.isBlank() && subtractNext -> "-$term"
+                value.isBlank() -> term
+                subtractNext -> "$value-$term"
+                else -> "$value+$term"
+            },
+        )
+    }
+
+    OutlinedTextField(
+        value = value,
+        onValueChange = {},
+        readOnly = true,
+        isError = value.isNotBlank() && !valid,
+        label = { Text(stringResource(R.string.expression)) },
+        supportingText = {
+            Text(stringResource(if (valid) R.string.expression_hint else R.string.invalid_expression))
+        },
+        modifier = Modifier.fillMaxWidth(),
+    )
+
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+        FilterChip(selected = !subtractNext, onClick = { subtractNext = false }, label = { Text("+") })
+        FilterChip(selected = subtractNext, onClick = { subtractNext = true }, label = { Text("−") })
+        OutlinedTextField(
+            value = countText,
+            onValueChange = { countText = it.filter(Char::isDigit).take(3) },
+            label = { Text("#") },
+            singleLine = true,
+            modifier = Modifier.width(68.dp),
+        )
+        Box {
+            OutlinedButton(onClick = { sidesMenu = true }) { Text("d$sides") }
+            DropdownMenu(expanded = sidesMenu, onDismissRequest = { sidesMenu = false }) {
+                DiceExpression.supportedSides.sorted().forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text("d$option") },
+                        onClick = {
+                            sides = option
+                            sidesMenu = false
+                        },
+                    )
+                }
+            }
+        }
+        Button(
+            enabled = (countText.toIntOrNull() ?: 0) in 1..100,
+            onClick = { appendTerm("${countText.toInt()}d$sides") },
+        ) { Text(stringResource(R.string.add)) }
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TextButton(onClick = { appendTerm("{level}d$sides") }) { Text("{level}d$sides") }
+        TextButton(onClick = { appendTerm("{level}") }) { Text("{level}") }
+        modifiers.forEach { modifier ->
+            TextButton(onClick = { appendTerm("{${modifier.name}}") }) { Text("{${modifier.name}}") }
+        }
+    }
+
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        OutlinedTextField(
+            value = constantText,
+            onValueChange = { constantText = it.filter { char -> char.isDigit() }.take(5) },
+            label = { Text(stringResource(R.string.constant_value)) },
+            singleLine = true,
+            modifier = Modifier.width(108.dp),
+        )
+        OutlinedButton(
+            enabled = constantText.toIntOrNull() != null,
+            onClick = { appendTerm(constantText) },
+        ) { Text(stringResource(R.string.add)) }
+        IconButton(onClick = { onValueChange("") }) {
+            Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.clear_expression))
+        }
+    }
+
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        OutlinedTextField(
+            value = multiplierText,
+            onValueChange = { raw ->
+                multiplierText = raw.filterIndexed { index, char -> char.isDigit() || (index == 0 && char == '-') }.take(5)
+            },
+            label = { Text(stringResource(R.string.multiplier)) },
+            singleLine = true,
+            modifier = Modifier.width(112.dp),
+        )
+        OutlinedButton(
+            enabled = value.isNotBlank() && multiplierText.toIntOrNull() != null,
+            onClick = { onValueChange("($value)*${multiplierText.toInt()}") },
+        ) { Text("×") }
+        TextButton(
+            enabled = value.isNotBlank(),
+            onClick = { onValueChange("($value)*{level}") },
+        ) { Text("× {level}") }
+    }
+}
+
+@Composable
 internal fun RollDialogV2(
     title: String,
     character: CharacterProfile,
@@ -2749,6 +3226,11 @@ internal fun RollDialogV2(
                             name = name.trim(),
                             expression = expression.text.trim(),
                             groupId = groupId,
+                            subgroups = if (expression.text.trim() == existing?.expression) {
+                                existing.subgroups
+                            } else {
+                                emptyList()
+                            },
                         )
                     val slots = runCatching {
                         val resolved = RollFormulaResolver.resolve(character, modifiers, saved).expression

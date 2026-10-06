@@ -7,4 +7,13 @@
     <string name="table_obsidian">Obsidian</string>
     <string name="statistics">Statistics</string>
     <string name="roll_again">Roll again</string>
+    <string name="guided_builder">Guided builder</string>
+    <string name="advanced_formula">Advanced formula</string>
+    <string name="roll_subgroups">Roll parts</string>
+    <string name="roll_subgroups_help">Keep the whole roll together or split it into named parts such as attack and damage.</string>
+    <string name="add_subgroup">Add part</string>
+    <string name="subgroup_name">Part name (optional)</string>
+    <string name="constant_value">Constant</string>
+    <string name="multiplier">Multiplier</string>
+    <string name="clear_expression">Clear expression</string>
 </resources>

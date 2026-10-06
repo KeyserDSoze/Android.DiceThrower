@@ -2,4 +2,5 @@
     <string name="dice_table">Meza ya kete</string><string name="dice_table_help">Chagua meza binafsi ya mhusika huyu kwa kila urushaji.</string>
     <string name="table_arcane">Ya kichawi</string><string name="table_oak">Mwaloni</string><string name="table_emerald">Zumaridi</string><string name="table_obsidian">Obsidiani</string>
     <string name="statistics">Takwimu</string><string name="roll_again">Rusha tena</string>
+    <string name="guided_builder">Kiunda chenye mwongozo</string><string name="advanced_formula">Fomula ya kina</string><string name="roll_subgroups">Sehemu za urushaji</string><string name="roll_subgroups_help">Weka urushaji wote pamoja au ugawanye katika sehemu zenye majina kama shambulio na uharibifu.</string><string name="add_subgroup">Ongeza sehemu</string><string name="subgroup_name">Jina la sehemu (si lazima)</string><string name="constant_value">Thabiti</string><string name="multiplier">Kizidishi</string><string name="clear_expression">Futa fomula</string>
 </resources>

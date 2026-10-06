@@ -2,4 +2,5 @@
     <string name="dice_table">Bàn xúc xắc</string><string name="dice_table_help">Chọn bàn riêng của nhân vật này cho mỗi lần tung.</string>
     <string name="table_arcane">Huyền bí</string><string name="table_oak">Gỗ sồi</string><string name="table_emerald">Ngọc lục bảo</string><string name="table_obsidian">Hắc diện thạch</string>
     <string name="statistics">Thống kê</string><string name="roll_again">Tung lại</string>
+    <string name="guided_builder">Trình tạo có hướng dẫn</string><string name="advanced_formula">Công thức nâng cao</string><string name="roll_subgroups">Các phần của lượt đổ</string><string name="roll_subgroups_help">Giữ toàn bộ lượt đổ cùng nhau hoặc chia thành các phần có tên như tấn công và sát thương.</string><string name="add_subgroup">Thêm phần</string><string name="subgroup_name">Tên phần (không bắt buộc)</string><string name="constant_value">Hằng số</string><string name="multiplier">Hệ số nhân</string><string name="clear_expression">Xóa công thức</string>
 </resources>

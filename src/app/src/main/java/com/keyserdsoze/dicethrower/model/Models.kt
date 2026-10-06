@@ -18,6 +18,11 @@ enum class LevelRuleKind {
     EVERY_LEVELS,
 }
 
+enum class RollSubgroupOperator {
+    ADD,
+    SUBTRACT,
+}
+
 enum class DiceMaterial {
     GLOSSY_RESIN,
     MATTE_RESIN,
@@ -91,6 +96,13 @@ data class RollLevelRule(
     val expression: String,
 )
 
+data class RollSubgroup(
+    val id: String,
+    val name: String = "",
+    val expression: String,
+    val operator: RollSubgroupOperator = RollSubgroupOperator.ADD,
+)
+
 data class RollGroup(
     val id: String,
     val characterId: String,
@@ -107,6 +119,7 @@ data class RollDefinition(
     val enabled: Boolean = true,
     val order: Int = 0,
     val levelRules: List<RollLevelRule> = emptyList(),
+    val subgroups: List<RollSubgroup> = emptyList(),
     val diceAppearance: RollDiceAppearance = RollDiceAppearance(),
 )
 

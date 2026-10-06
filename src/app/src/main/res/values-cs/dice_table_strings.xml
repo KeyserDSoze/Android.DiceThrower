@@ -2,4 +2,5 @@
     <string name="dice_table">Stůl na kostky</string><string name="dice_table_help">Vyberte osobní stůl této postavy pro každý hod.</string>
     <string name="table_arcane">Arkánní</string><string name="table_oak">Dub</string><string name="table_emerald">Smaragd</string><string name="table_obsidian">Obsidián</string>
     <string name="statistics">Statistiky</string><string name="roll_again">Hodit znovu</string>
+    <string name="guided_builder">Průvodce tvorbou</string><string name="advanced_formula">Pokročilý vzorec</string><string name="roll_subgroups">Části hodu</string><string name="roll_subgroups_help">Ponechte celý hod pohromadě nebo jej rozdělte na pojmenované části, například útok a zranění.</string><string name="add_subgroup">Přidat část</string><string name="subgroup_name">Název části (volitelné)</string><string name="constant_value">Konstanta</string><string name="multiplier">Násobitel</string><string name="clear_expression">Vymazat vzorec</string>
 </resources>

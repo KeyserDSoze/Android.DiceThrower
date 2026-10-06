@@ -27,6 +27,11 @@ object AppDataValidator {
             data.rolls.flatMap { roll -> roll.levelRules.map { it.id } },
             errors,
         )
+        checkUnique(
+            "roll subgroup",
+            data.rolls.flatMap { roll -> roll.subgroups.map { it.id } },
+            errors,
+        )
 
         data.characters.forEach { character ->
             if (character.name.isBlank()) errors += "Character ${character.id} has a blank name"
@@ -120,6 +125,17 @@ object AppDataValidator {
             val modifiers = data.modifiers.filter { it.characterId == character.id }
             if (!RollFormulaResolver.validateTemplate(roll.expression, character.level, modifiers)) {
                 errors += "Roll ${roll.id} has an invalid expression"
+            }
+            roll.subgroups.forEach { subgroup ->
+                if (!RollFormulaResolver.validateTemplate(subgroup.expression, character.level, modifiers)) {
+                    errors += "Roll subgroup ${subgroup.id} has an invalid expression"
+                }
+            }
+            if (roll.subgroups.isNotEmpty()) {
+                val canonical = runCatching { RollFormulaResolver.canonicalExpression(roll.subgroups) }.getOrNull()
+                if (canonical == null || canonical != roll.expression) {
+                    errors += "Roll ${roll.id} subgroup formula does not match its canonical expression"
+                }
             }
 
             roll.groupId?.let { groupId ->

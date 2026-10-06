@@ -2,4 +2,5 @@
     <string name="dice_table">Τραπέζι ζαριών</string><string name="dice_table_help">Επιλέξτε το προσωπικό τραπέζι αυτού του χαρακτήρα για κάθε ρίψη.</string>
     <string name="table_arcane">Μυστικιστικό</string><string name="table_oak">Δρυς</string><string name="table_emerald">Σμαράγδι</string><string name="table_obsidian">Οψιδιανός</string>
     <string name="statistics">Στατιστικά</string><string name="roll_again">Ρίξε ξανά</string>
+    <string name="guided_builder">Καθοδηγούμενη δημιουργία</string><string name="advanced_formula">Σύνθετος τύπος</string><string name="roll_subgroups">Μέρη ρίψης</string><string name="roll_subgroups_help">Κρατήστε ολόκληρη τη ρίψη μαζί ή χωρίστε τη σε ονομασμένα μέρη, όπως επίθεση και ζημιά.</string><string name="add_subgroup">Προσθήκη μέρους</string><string name="subgroup_name">Όνομα μέρους (προαιρετικό)</string><string name="constant_value">Σταθερά</string><string name="multiplier">Πολλαπλασιαστής</string><string name="clear_expression">Εκκαθάριση τύπου</string>
 </resources>

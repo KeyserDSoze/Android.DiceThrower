@@ -2,4 +2,5 @@
     <string name="dice_table">Würfeltisch</string><string name="dice_table_help">Wähle für jeden Wurf den persönlichen Tisch dieses Charakters.</string>
     <string name="table_arcane">Arkan</string><string name="table_oak">Eiche</string><string name="table_emerald">Smaragd</string><string name="table_obsidian">Obsidian</string>
     <string name="statistics">Statistiken</string><string name="roll_again">Erneut würfeln</string>
+    <string name="guided_builder">Geführter Editor</string><string name="advanced_formula">Erweiterte Formel</string><string name="roll_subgroups">Wurfteile</string><string name="roll_subgroups_help">Behalte den ganzen Wurf zusammen oder teile ihn in benannte Teile wie Angriff und Schaden.</string><string name="add_subgroup">Teil hinzufügen</string><string name="subgroup_name">Name des Teils (optional)</string><string name="constant_value">Konstante</string><string name="multiplier">Multiplikator</string><string name="clear_expression">Formel löschen</string>
 </resources>

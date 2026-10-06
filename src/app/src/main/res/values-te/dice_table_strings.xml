@@ -2,4 +2,5 @@
     <string name="dice_table">డైస్ టేబుల్</string><string name="dice_table_help">ప్రతి రోల్ కోసం ఈ పాత్ర వ్యక్తిగత టేబుల్‌ను ఎంచుకోండి.</string>
     <string name="table_arcane">మాయా</string><string name="table_oak">ఓక్</string><string name="table_emerald">మరకతం</string><string name="table_obsidian">అబ్సిడియన్</string>
     <string name="statistics">గణాంకాలు</string><string name="roll_again">మళ్లీ రోల్ చేయి</string>
+    <string name="guided_builder">మార్గదర్శక బిల్డర్</string><string name="advanced_formula">అధునాతన సూత్రం</string><string name="roll_subgroups">రోల్ భాగాలు</string><string name="roll_subgroups_help">మొత్తం రోల్‌ను కలిపి ఉంచండి లేదా దాడి, నష్టం వంటి పేరు గల భాగాలుగా విభజించండి.</string><string name="add_subgroup">భాగం జోడించండి</string><string name="subgroup_name">భాగం పేరు (ఐచ్ఛికం)</string><string name="constant_value">స్థిరాంకం</string><string name="multiplier">గుణకం</string><string name="clear_expression">సూత్రాన్ని క్లియర్ చేయండి</string>
 </resources>

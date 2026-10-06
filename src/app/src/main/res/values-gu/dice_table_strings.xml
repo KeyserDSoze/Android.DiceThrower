@@ -2,4 +2,5 @@
     <string name="dice_table">પાસાની મેજ</string><string name="dice_table_help">દરેક રોલ માટે આ પાત્રની વ્યક્તિગત મેજ પસંદ કરો.</string>
     <string name="table_arcane">રહસ્યમય</string><string name="table_oak">ઓક</string><string name="table_emerald">પન્ના</string><string name="table_obsidian">ઓબ્સિડિયન</string>
     <string name="statistics">આંકડા</string><string name="roll_again">ફરી રોલ કરો</string>
+    <string name="guided_builder">માર્ગદર્શિત બિલ્ડર</string><string name="advanced_formula">અદ્યતન સૂત્ર</string><string name="roll_subgroups">રોલના ભાગો</string><string name="roll_subgroups_help">સમગ્ર રોલને સાથે રાખો અથવા હુમલો અને નુકસાન જેવા નામવાળા ભાગોમાં વહેંચો.</string><string name="add_subgroup">ભાગ ઉમેરો</string><string name="subgroup_name">ભાગનું નામ (વૈકલ્પિક)</string><string name="constant_value">અચળ</string><string name="multiplier">ગુણક</string><string name="clear_expression">સૂત્ર સાફ કરો</string>
 </resources>

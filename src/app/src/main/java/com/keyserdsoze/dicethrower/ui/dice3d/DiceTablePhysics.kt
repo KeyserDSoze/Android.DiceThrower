@@ -17,8 +17,8 @@ import kotlin.random.Random
 internal class DiceTablePhysics(
     count: Int,
     seed: Long,
-    private val halfWidth: Float = 2.55f,
-    private val halfHeight: Float = 3.25f,
+    private val halfWidth: Float = DiceTableViewport.HALF_WIDTH,
+    private val halfHeight: Float = DiceTableViewport.HALF_HEIGHT,
 ) {
     private data class Body(
         var x: Float,

@@ -2,4 +2,5 @@
     <string name="dice_table">Masă de zaruri</string><string name="dice_table_help">Alege masa personală a acestui personaj pentru fiecare aruncare.</string>
     <string name="table_arcane">Arcană</string><string name="table_oak">Stejar</string><string name="table_emerald">Smarald</string><string name="table_obsidian">Obsidian</string>
     <string name="statistics">Statistici</string><string name="roll_again">Aruncă din nou</string>
+    <string name="guided_builder">Constructor ghidat</string><string name="advanced_formula">Formulă avansată</string><string name="roll_subgroups">Părțile aruncării</string><string name="roll_subgroups_help">Păstrează întreaga aruncare împreună sau împarte-o în părți denumite, precum atac și daune.</string><string name="add_subgroup">Adaugă parte</string><string name="subgroup_name">Numele părții (opțional)</string><string name="constant_value">Constantă</string><string name="multiplier">Multiplicator</string><string name="clear_expression">Șterge formula</string>
 </resources>

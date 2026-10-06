@@ -7,4 +7,13 @@
     <string name="table_obsidian">Ossidiana</string>
     <string name="statistics">Statistiche</string>
     <string name="roll_again">Tira di nuovo</string>
+    <string name="guided_builder">Creazione guidata</string>
+    <string name="advanced_formula">Formula avanzata</string>
+    <string name="roll_subgroups">Parti del tiro</string>
+    <string name="roll_subgroups_help">Tieni tutto nello stesso tiro oppure dividilo in parti, ad esempio colpire e danni.</string>
+    <string name="add_subgroup">Aggiungi parte</string>
+    <string name="subgroup_name">Nome parte (facoltativo)</string>
+    <string name="constant_value">Costante</string>
+    <string name="multiplier">Moltiplicatore</string>
+    <string name="clear_expression">Svuota formula</string>
 </resources>

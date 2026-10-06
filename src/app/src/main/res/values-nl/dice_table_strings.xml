@@ -2,4 +2,5 @@
     <string name="dice_table">Dobbeltafel</string><string name="dice_table_help">Kies de persoonlijke tafel van dit personage voor elke worp.</string>
     <string name="table_arcane">Arcanisch</string><string name="table_oak">Eiken</string><string name="table_emerald">Smaragd</string><string name="table_obsidian">Obsidiaan</string>
     <string name="statistics">Statistieken</string><string name="roll_again">Opnieuw gooien</string>
+    <string name="guided_builder">Begeleide maker</string><string name="advanced_formula">Geavanceerde formule</string><string name="roll_subgroups">Delen van de worp</string><string name="roll_subgroups_help">Houd de hele worp bij elkaar of splits hem in benoemde delen, zoals aanval en schade.</string><string name="add_subgroup">Deel toevoegen</string><string name="subgroup_name">Naam van deel (optioneel)</string><string name="constant_value">Constante</string><string name="multiplier">Vermenigvuldiger</string><string name="clear_expression">Formule wissen</string>
 </resources>

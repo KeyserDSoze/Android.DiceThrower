@@ -89,6 +89,9 @@ object CharacterDataOperations {
                     levelRules = roll.levelRules.map { rule ->
                         rule.copy(id = idFactory())
                     },
+                    subgroups = roll.subgroups.map { subgroup ->
+                        subgroup.copy(id = idFactory())
+                    },
                 )
             }
 

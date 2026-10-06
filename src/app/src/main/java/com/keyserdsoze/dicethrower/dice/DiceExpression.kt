@@ -23,7 +23,11 @@ data class DiceRollResult(
 
     fun detail(): String {
         val dice = components.joinToString(" | ") { component ->
-            val prefix = if (component.sign < 0) "-" else "+"
+            val prefix = when (component.sign) {
+                1 -> "+"
+                -1 -> "-"
+                else -> "${if (component.sign > 0) "+" else ""}${component.sign}x"
+            }
             "$prefix${component.count}d${component.sides}[${component.rolls.joinToString(",")}]"
         }
         val constant = if (constantTotal == 0) "" else {
@@ -42,90 +46,234 @@ data class DiceTermShape(
 
 class DiceExpression private constructor(
     val source: String,
-    private val terms: List<Term>,
+    private val root: Node,
 ) {
-    sealed interface Term {
-        val sign: Int
-
-        data class Dice(
-            val count: Int,
-            val sides: Int,
-            override val sign: Int,
-        ) : Term
-
-        data class Constant(
-            val value: Int,
-            override val sign: Int,
-        ) : Term
+    private sealed interface Node {
+        data class Dice(val count: Int, val sides: Int) : Node
+        data class Constant(val value: Int) : Node
+        data class Add(val left: Node, val right: Node) : Node
+        data class Subtract(val left: Node, val right: Node) : Node
+        data class Multiply(val left: Node, val right: Node) : Node
+        data class Negate(val value: Node) : Node
     }
 
     fun evaluate(random: Random = Random.Default): DiceRollResult {
-        val components = mutableListOf<DiceComponent>()
-        var constantTotal = 0
-
-        terms.forEach { term ->
-            when (term) {
-                is Term.Constant -> constantTotal += term.value * term.sign
-                is Term.Dice -> {
-                    val rolls = List(term.count) { random.nextInt(1, term.sides + 1) }
-                    components += DiceComponent(
-                        count = term.count,
-                        sides = term.sides,
-                        sign = term.sign,
-                        rolls = rolls,
-                    )
-                }
-            }
-        }
-
+        val evaluated = evaluateNode(root, random)
         return DiceRollResult(
-            total = components.sumOf { it.subtotal } + constantTotal,
-            components = components,
-            constantTotal = constantTotal,
+            total = evaluated.total,
+            components = evaluated.components,
+            constantTotal = evaluated.constantTotal,
         )
     }
 
-    fun diceShape(): List<DiceTermShape> = terms.filterIsInstance<Term.Dice>().map { term ->
-        DiceTermShape(count = term.count, sides = term.sides, sign = term.sign)
+    fun diceShape(): List<DiceTermShape> = buildList {
+        collectDice(root, 1, this)
+    }
+
+    /** Constant contribution after all linear operators/multipliers have been applied. */
+    fun constantTotal(): Int = constantContribution(root)
+
+    private data class EvaluatedNode(
+        val total: Int,
+        val constantTotal: Int,
+        val components: List<DiceComponent>,
+    )
+
+    private fun evaluateNode(node: Node, random: Random): EvaluatedNode = when (node) {
+        is Node.Constant -> EvaluatedNode(node.value, node.value, emptyList())
+        is Node.Dice -> {
+            val rolls = List(node.count) { random.nextInt(1, node.sides + 1) }
+            val component = DiceComponent(node.count, node.sides, 1, rolls)
+            EvaluatedNode(component.subtotal, 0, listOf(component))
+        }
+        is Node.Add -> combine(evaluateNode(node.left, random), evaluateNode(node.right, random), 1)
+        is Node.Subtract -> combine(evaluateNode(node.left, random), evaluateNode(node.right, random), -1)
+        is Node.Negate -> evaluateNode(node.value, random).scale(-1)
+        is Node.Multiply -> {
+            val leftConstant = constantValue(node.left)
+            val rightConstant = constantValue(node.right)
+            when {
+                leftConstant != null -> evaluateNode(node.right, random).scale(leftConstant)
+                rightConstant != null -> evaluateNode(node.left, random).scale(rightConstant)
+                else -> error("Dice-to-dice multiplication is not supported")
+            }
+        }
+    }
+
+    private fun combine(left: EvaluatedNode, right: EvaluatedNode, rightScale: Int): EvaluatedNode {
+        val scaledRight = right.scale(rightScale)
+        return EvaluatedNode(
+            total = left.total + scaledRight.total,
+            constantTotal = left.constantTotal + scaledRight.constantTotal,
+            components = left.components + scaledRight.components,
+        )
+    }
+
+    private fun EvaluatedNode.scale(factor: Int): EvaluatedNode = EvaluatedNode(
+        total = total * factor,
+        constantTotal = constantTotal * factor,
+        components = components.map { it.copy(sign = it.sign * factor) },
+    )
+
+    private fun collectDice(node: Node, multiplier: Int, output: MutableList<DiceTermShape>) {
+        when (node) {
+            is Node.Constant -> Unit
+            is Node.Dice -> output += DiceTermShape(node.count, node.sides, multiplier)
+            is Node.Add -> {
+                collectDice(node.left, multiplier, output)
+                collectDice(node.right, multiplier, output)
+            }
+            is Node.Subtract -> {
+                collectDice(node.left, multiplier, output)
+                collectDice(node.right, -multiplier, output)
+            }
+            is Node.Negate -> collectDice(node.value, -multiplier, output)
+            is Node.Multiply -> {
+                val leftConstant = constantValue(node.left)
+                val rightConstant = constantValue(node.right)
+                when {
+                    leftConstant != null -> collectDice(node.right, multiplier * leftConstant, output)
+                    rightConstant != null -> collectDice(node.left, multiplier * rightConstant, output)
+                    else -> error("Dice-to-dice multiplication is not supported")
+                }
+            }
+        }
+    }
+
+    private fun constantValue(node: Node): Int? = when (node) {
+        is Node.Constant -> node.value
+        is Node.Dice -> null
+        is Node.Add -> combineConstants(node.left, node.right, Int::plus)
+        is Node.Subtract -> combineConstants(node.left, node.right, Int::minus)
+        is Node.Multiply -> combineConstants(node.left, node.right, Int::times)
+        is Node.Negate -> constantValue(node.value)?.let { -it }
+    }
+
+    private fun constantContribution(node: Node): Int = when (node) {
+        is Node.Constant -> node.value
+        is Node.Dice -> 0
+        is Node.Add -> constantContribution(node.left) + constantContribution(node.right)
+        is Node.Subtract -> constantContribution(node.left) - constantContribution(node.right)
+        is Node.Negate -> -constantContribution(node.value)
+        is Node.Multiply -> {
+            val leftConstant = constantValue(node.left)
+            val rightConstant = constantValue(node.right)
+            when {
+                leftConstant != null -> leftConstant * constantContribution(node.right)
+                rightConstant != null -> rightConstant * constantContribution(node.left)
+                else -> error("Dice-to-dice multiplication is not supported")
+            }
+        }
+    }
+
+    private fun combineConstants(left: Node, right: Node, operation: (Int, Int) -> Int): Int? {
+        val leftValue = constantValue(left) ?: return null
+        val rightValue = constantValue(right) ?: return null
+        return operation(leftValue, rightValue)
     }
 
     companion object {
-        val supportedSides = setOf(2, 3, 4, 6, 10, 12, 20, 100)
-        private val tokenRegex = Regex("""([+-]?)(?:(\d*)[dD](\d+)|(\d+))""")
+        val supportedSides = setOf(2, 3, 4, 6, 8, 10, 12, 20, 100)
 
         fun parse(raw: String): DiceExpression {
             val normalized = raw.replace("\\s+".toRegex(), "")
             require(normalized.isNotBlank()) { "Expression cannot be empty" }
+            val root = Parser(normalized).parse()
+            require(isLinear(root)) { "Multiplication between two dice expressions is not supported" }
+            return DiceExpression(source = normalized, root = root)
+        }
 
-            val terms = mutableListOf<Term>()
-            var cursor = 0
+        private fun isLinear(node: Node): Boolean = when (node) {
+            is Node.Constant, is Node.Dice -> true
+            is Node.Add -> isLinear(node.left) && isLinear(node.right)
+            is Node.Subtract -> isLinear(node.left) && isLinear(node.right)
+            is Node.Negate -> isLinear(node.value)
+            is Node.Multiply -> isLinear(node.left) && isLinear(node.right) &&
+                !(containsDice(node.left) && containsDice(node.right))
+        }
 
-            tokenRegex.findAll(normalized).forEach { match ->
-                require(match.range.first == cursor) { "Invalid dice expression near position $cursor" }
-                cursor = match.range.last + 1
+        private fun containsDice(node: Node): Boolean = when (node) {
+            is Node.Constant -> false
+            is Node.Dice -> true
+            is Node.Add -> containsDice(node.left) || containsDice(node.right)
+            is Node.Subtract -> containsDice(node.left) || containsDice(node.right)
+            is Node.Multiply -> containsDice(node.left) || containsDice(node.right)
+            is Node.Negate -> containsDice(node.value)
+        }
 
-                val sign = if (match.groupValues[1] == "-") -1 else 1
-                val sidesText = match.groupValues[3]
+        private class Parser(private val source: String) {
+            private var cursor = 0
 
-                if (sidesText.isNotEmpty()) {
-                    val count = match.groupValues[2].ifEmpty { "1" }.toInt()
+            fun parse(): Node {
+                val result = parseAddSubtract()
+                require(cursor == source.length) { "Invalid dice expression near position $cursor" }
+                return result
+            }
+
+            private fun parseAddSubtract(): Node {
+                var result = parseMultiply()
+                while (cursor < source.length && (source[cursor] == '+' || source[cursor] == '-')) {
+                    val operator = source[cursor++]
+                    val right = parseMultiply()
+                    result = if (operator == '+') Node.Add(result, right) else Node.Subtract(result, right)
+                }
+                return result
+            }
+
+            private fun parseMultiply(): Node {
+                var result = parseUnary()
+                while (cursor < source.length && source[cursor] == '*') {
+                    cursor++
+                    result = Node.Multiply(result, parseUnary())
+                }
+                return result
+            }
+
+            private fun parseUnary(): Node {
+                if (cursor < source.length && source[cursor] == '+') {
+                    cursor++
+                    return parseUnary()
+                }
+                if (cursor < source.length && source[cursor] == '-') {
+                    cursor++
+                    return Node.Negate(parseUnary())
+                }
+                return parsePrimary()
+            }
+
+            private fun parsePrimary(): Node {
+                require(cursor < source.length) { "Unexpected end of dice expression" }
+                if (source[cursor] == '(') {
+                    cursor++
+                    val nested = parseAddSubtract()
+                    require(cursor < source.length && source[cursor] == ')') {
+                        "Missing closing parenthesis near position $cursor"
+                    }
+                    cursor++
+                    return nested
+                }
+
+                val countOrValue = readDigits()
+                if (cursor < source.length && (source[cursor] == 'd' || source[cursor] == 'D')) {
+                    cursor++
+                    val sidesText = readDigits()
+                    require(sidesText.isNotEmpty()) { "Missing die sides near position $cursor" }
+                    val count = countOrValue.ifEmpty { "1" }.toInt()
                     val sides = sidesText.toInt()
                     require(count in 1..100) { "Dice count must be between 1 and 100" }
                     require(sides in supportedSides) { "Unsupported die d$sides" }
-                    terms += Term.Dice(count = count, sides = sides, sign = sign)
-                } else {
-                    terms += Term.Constant(
-                        value = match.groupValues[4].toInt(),
-                        sign = sign,
-                    )
+                    return Node.Dice(count, sides)
                 }
+
+                require(countOrValue.isNotEmpty()) { "Expected a number or die near position $cursor" }
+                return Node.Constant(countOrValue.toInt())
             }
 
-            require(cursor == normalized.length && terms.isNotEmpty()) {
-                "Invalid dice expression"
+            private fun readDigits(): String {
+                val start = cursor
+                while (cursor < source.length && source[cursor].isDigit()) cursor++
+                return source.substring(start, cursor)
             }
-
-            return DiceExpression(source = normalized, terms = terms)
         }
     }
 }

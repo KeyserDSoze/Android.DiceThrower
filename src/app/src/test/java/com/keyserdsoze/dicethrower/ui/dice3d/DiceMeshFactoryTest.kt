@@ -17,6 +17,8 @@ class DiceMeshFactoryTest {
             assertEquals(0, mesh.numberVertexCount % 3)
             assertEquals(mesh.positions.size, mesh.normals.size)
             assertEquals(mesh.numberPositions.size, mesh.numberNormals.size)
+            val expectedNumberedFaces = if (sides == 100) 10 else sides
+            assertEquals("d$sides face normals", expectedNumberedFaces * 3, mesh.valueFaceNormals.size)
         }
     }
 
@@ -51,6 +53,16 @@ class DiceMeshFactoryTest {
                         normal[2] * normal[2],
                 )
                 assertTrue("d$sides normal length=$length", abs(length - 1f) < 0.001f)
+            }
+        }
+    }
+
+    @Test
+    fun numberedFaceNormalsAreUnitLength() {
+        listOf(2, 3, 4, 6, 8, 10, 12, 20, 100).forEach { sides ->
+            DiceMeshFactory.create(sides).valueFaceNormals.toList().chunked(3).forEach { normal ->
+                val length = sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2])
+                assertTrue("d$sides numbered face normal length=$length", abs(length - 1f) < 0.001f)
             }
         }
     }

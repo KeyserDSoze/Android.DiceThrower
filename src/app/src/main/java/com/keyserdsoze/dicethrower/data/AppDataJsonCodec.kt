@@ -18,12 +18,14 @@ import com.keyserdsoze.dicethrower.model.RollDiceAppearance
 import com.keyserdsoze.dicethrower.model.RollGroup
 import com.keyserdsoze.dicethrower.model.RollLevelRule
 import com.keyserdsoze.dicethrower.model.RollLog
+import com.keyserdsoze.dicethrower.model.RollSubgroup
+import com.keyserdsoze.dicethrower.model.RollSubgroupOperator
 import com.keyserdsoze.dicethrower.model.ThemeMode
 import org.json.JSONArray
 import org.json.JSONObject
 
 object AppDataJsonCodec {
-    const val DATA_VERSION = 6
+    const val DATA_VERSION = 7
 
     fun encodeData(data: AppData): JSONObject = encodeData(data, includeLegacyImageUris = true)
 
@@ -81,6 +83,15 @@ object AppDataJsonCodec {
                                 .put("kind", rule.kind.name)
                                 .put("trigger", rule.trigger)
                                 .put("expression", rule.expression))
+                        }
+                    })
+                    .put("subgroups", JSONArray().apply {
+                        item.subgroups.forEach { subgroup ->
+                            put(JSONObject()
+                                .put("id", subgroup.id)
+                                .put("name", subgroup.name)
+                                .put("expression", subgroup.expression)
+                                .put("operator", subgroup.operator.name))
                         }
                     })
                     .put("diceAppearance", encodeDiceAppearance(item.diceAppearance)))
@@ -174,6 +185,17 @@ object AppDataJsonCodec {
                         ),
                         trigger = rule.optInt("trigger", 1).coerceAtLeast(1),
                         expression = rule.getString("expression"),
+                    )
+                },
+                subgroups = item.optJSONArray("subgroups").mapObjects { subgroup ->
+                    RollSubgroup(
+                        id = subgroup.getString("id"),
+                        name = subgroup.optString("name"),
+                        expression = subgroup.getString("expression"),
+                        operator = enumValueOrDefault(
+                            subgroup.optString("operator"),
+                            RollSubgroupOperator.ADD,
+                        ),
                     )
                 },
                 diceAppearance = item.optJSONObject("diceAppearance")?.let(::decodeDiceAppearance)

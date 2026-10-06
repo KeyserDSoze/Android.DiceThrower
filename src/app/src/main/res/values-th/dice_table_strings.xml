@@ -2,4 +2,5 @@
     <string name="dice_table">โต๊ะลูกเต๋า</string><string name="dice_table_help">เลือกโต๊ะส่วนตัวของตัวละครนี้สำหรับการทอยทุกครั้ง</string>
     <string name="table_arcane">อาคม</string><string name="table_oak">โอ๊ก</string><string name="table_emerald">มรกต</string><string name="table_obsidian">ออบซิเดียน</string>
     <string name="statistics">สถิติ</string><string name="roll_again">ทอยอีกครั้ง</string>
+    <string name="guided_builder">ตัวสร้างแบบแนะนำ</string><string name="advanced_formula">สูตรขั้นสูง</string><string name="roll_subgroups">ส่วนของการทอย</string><string name="roll_subgroups_help">เก็บการทอยทั้งหมดไว้ด้วยกันหรือแบ่งเป็นส่วนที่มีชื่อ เช่น การโจมตีและความเสียหาย</string><string name="add_subgroup">เพิ่มส่วน</string><string name="subgroup_name">ชื่อส่วน (ไม่บังคับ)</string><string name="constant_value">ค่าคงที่</string><string name="multiplier">ตัวคูณ</string><string name="clear_expression">ล้างสูตร</string>
 </resources>

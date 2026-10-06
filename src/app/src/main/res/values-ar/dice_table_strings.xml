@@ -2,4 +2,5 @@
     <string name="dice_table">طاولة النرد</string><string name="dice_table_help">اختر الطاولة الخاصة بهذه الشخصية لكل رمية.</string>
     <string name="table_arcane">سحرية</string><string name="table_oak">بلوط</string><string name="table_emerald">زمرد</string><string name="table_obsidian">سبج</string>
     <string name="statistics">الإحصاءات</string><string name="roll_again">ارمِ مجددًا</string>
+    <string name="guided_builder">إنشاء موجّه</string><string name="advanced_formula">صيغة متقدمة</string><string name="roll_subgroups">أجزاء الرمية</string><string name="roll_subgroups_help">أبقِ الرمية كاملة أو قسّمها إلى أجزاء مسماة مثل الهجوم والضرر.</string><string name="add_subgroup">إضافة جزء</string><string name="subgroup_name">اسم الجزء (اختياري)</string><string name="constant_value">ثابت</string><string name="multiplier">مضاعف</string><string name="clear_expression">مسح الصيغة</string>
 </resources>

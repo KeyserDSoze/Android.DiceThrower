@@ -18,7 +18,9 @@
 
 `RollGroup`: id, characterId, name, order.
 
-`RollDefinition`: id, characterId, name, base expression, groupId, enabled, order, levelRules, diceAppearance.
+`RollDefinition`: id, characterId, name, canonical expression, groupId, enabled, order, levelRules, optional ordered subgroups, diceAppearance.
+
+`RollSubgroup`: stable id, optional name, parametric expression and additive/subtractive operator. Subgroups are builder/statistics metadata; the canonical `RollDefinition.expression` remains the portable mathematical representation and legacy rolls keep an empty subgroup list.
 
 `DiceStyle`: character-owned visual style with material, primary/secondary colors and stable ordering. Roll appearance policies reference style IDs and never participate in dice math. `CharacterProfile.diceTableTheme` selects the persisted per-character roll table.
 
@@ -98,25 +100,30 @@ Level-up therefore affects every parameterized roll immediately without mutating
 
 ## Dice expressions
 
-After parameter resolution, the grammar is:
+After parameter resolution, the grammar is linear arithmetic with explicit precedence:
 
 ```
-expression := term (("+" | "-") term)*
-term       := dice | integer
+expression := product (("+" | "-") product)*
+product    := unary ("*" unary)*
+unary      := ("+" | "-") unary | primary
+primary    := dice | integer | "(" expression ")"
 dice       := [count] "d" sides
 ```
 
-Supported sides: 2, 3, 4, 6, 10, 12, 20, 100.
+Multiplication is intentionally scalar: at least one operand must be dice-free. This keeps component statistics and mathematical expectation exact while supporting formulas such as `(1d6+2)*3` and `{level}*1d6`; `1d6*1d8` is rejected.
+
+Supported sides: 2, 3, 4, 6, 8, 10, 12, 20, 100.
 
 ## Persistence and migration
 
-The application stores one versioned JSON document in private SharedPreferences. Storage version 6 adds the per-character dice-table theme; version 5 added portable character-image references on top of version 4's per-character sync metadata. Version 3 introduced the character-owned dice-style model and roll appearance policies; version 2 added character level, modifiers and level rules.
+The application stores one versioned JSON document in private SharedPreferences. Storage version 7 adds optional roll subgroups while preserving the canonical expression; version 6 added the per-character dice-table theme; version 5 added portable character-image references on top of version 4's per-character sync metadata. Version 3 introduced the character-owned dice-style model and roll appearance policies; version 2 added character level, modifiers and level rules.
 
 Version-1 data remains readable:
 
 - missing character level defaults to 1;
 - missing modifiers default to an empty list;
 - missing roll level rules default to an empty list.
+- missing roll subgroups default to an empty list, so every legacy expression remains valid without migration rewriting.
 
 Version-1/2 data also receives safe dice-appearance defaults when read: missing style collections are empty and rolls use the deterministic built-in glossy-resin fallback until a character style is configured.
 
@@ -186,7 +193,7 @@ The accelerometer listener is active on a fresh roll screen until the first thro
 
 The OpenGL ES 2.0 renderer consumes an already-produced numerical result plus the fully resolved appearance for each visible die. Its lightweight rigid-body layer handles table boundaries, pairwise die collisions, damping and settling only after the logical result exists. Physics/animation never decides the numerical result: the dice engine decides first, then the UI resolves appearance, then the renderer visualizes both.
 
-Face numerals are generated as small triangle meshes anchored to each logical die face, so they share the die model transform and remain readable while the die rotates. The table palette is selected from `CharacterProfile.diceTableTheme`; changing it participates in backup, character revision hashing and cloud sync. Once physics settles, Compose reveals only the total. A result strictly above the mathematical mean triggers the multicolour celebration; detailed component values remain in the statistics bottom sheet.
+Face numerals are generated as small triangle meshes anchored to each logical die face, so they share the die model transform and remain readable while the die rotates. The renderer records each numbered face normal and, after physics settles, aligns the face selected by the already-resolved logical value toward the camera. The viewport camera is fitted from the table bounds/aspect ratio, and the physics bounds match the visible felt so dice can reach a rail without being clipped outside the table. The table palette is selected from `CharacterProfile.diceTableTheme`; changing it participates in backup, character revision hashing and cloud sync. Once physics settles, Compose reveals only the total. A result strictly above the mathematical mean triggers the multicolour celebration; detailed component and subgroup values remain in the statistics bottom sheet.
 
 Renderer material profiles map the domain-level `GLOSSY_RESIN`, `MATTE_RESIN`, `METAL` and `GEMSTONE` values to lightweight shader parameters for ambient/diffuse/specular response, rim accents and gemstone inner glow. Both primary and secondary style colors feed the shader. Renderer fallback is deterministic and matches `DiceAppearanceResolver` defaults if a visual slot is unexpectedly missing.
 

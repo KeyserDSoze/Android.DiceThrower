@@ -5,6 +5,8 @@ import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.LevelRuleKind
 import com.keyserdsoze.dicethrower.model.RollDefinition
 import com.keyserdsoze.dicethrower.model.RollLevelRule
+import com.keyserdsoze.dicethrower.model.RollSubgroup
+import com.keyserdsoze.dicethrower.model.RollSubgroupOperator
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -110,6 +112,70 @@ class RollFormulaResolverTest {
 
         assertEquals("1d6", resolved.expression)
         assertTrue(resolved.appliedRules.isEmpty())
+    }
+
+    @Test
+    fun periodicRulesCanReduceTheRoll() {
+        val roll = RollDefinition(
+            id = "fatigue",
+            characterId = character.id,
+            name = "Fatigue",
+            expression = "3d6",
+            levelRules = listOf(
+                RollLevelRule(
+                    id = "penalty",
+                    kind = LevelRuleKind.EVERY_LEVELS,
+                    trigger = 2,
+                    expression = "-1d4",
+                ),
+            ),
+        )
+
+        val resolved = RollFormulaResolver.resolve(character, modifiers, roll)
+
+        assertEquals("3d6-1d4-1d4", resolved.expression)
+        assertEquals(listOf(roll.levelRules.single()), resolved.appliedRules)
+    }
+
+    @Test
+    fun resolvesSubgroupsIntoCanonicalFormula() {
+        val roll = RollDefinition(
+            id = "attack-damage",
+            characterId = character.id,
+            name = "Attack + damage",
+            expression = "(1d20+{Intelligenza})+(2d6)",
+            subgroups = listOf(
+                RollSubgroup("attack", "Attack", "1d20+{Intelligenza}"),
+                RollSubgroup("damage", "Damage", "2d6"),
+            ),
+        )
+
+        val resolved = RollFormulaResolver.resolve(character, modifiers, roll)
+
+        assertEquals("(1d20+3)+(2d6)", resolved.expression)
+        assertEquals(listOf("1d20+3", "2d6"), resolved.subgroups.map { it.expression })
+    }
+
+    @Test
+    fun subgroupResultsPreserveAggregateSigns() {
+        val roll = RollDefinition(
+            id = "contest",
+            characterId = character.id,
+            name = "Contest",
+            expression = "(1d20+2)-(1d6)",
+            subgroups = listOf(
+                RollSubgroup("attack", "Attack", "1d20+2"),
+                RollSubgroup("penalty", "Penalty", "1d6", RollSubgroupOperator.SUBTRACT),
+            ),
+        )
+        val resolved = RollFormulaResolver.resolve(character, modifiers, roll)
+        val outcome = DiceExpression.parse(resolved.expression).evaluate(kotlin.random.Random(42))
+
+        val grouped = resolved.subgroupResults(outcome)
+
+        assertEquals(2, grouped.size)
+        assertEquals(outcome.total, grouped.sumOf { it.result.total })
+        assertTrue(grouped[1].result.total < 0)
     }
 
     @Test

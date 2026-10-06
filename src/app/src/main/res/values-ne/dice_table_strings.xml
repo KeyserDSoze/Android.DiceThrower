@@ -2,4 +2,5 @@
     <string name="dice_table">पासा टेबल</string><string name="dice_table_help">हरेक रोलका लागि यो पात्रको व्यक्तिगत टेबल छान्नुहोस्।</string>
     <string name="table_arcane">रहस्यमय</string><string name="table_oak">ओक</string><string name="table_emerald">पन्ना</string><string name="table_obsidian">ओब्सिडियन</string>
     <string name="statistics">तथ्याङ्क</string><string name="roll_again">फेरि रोल गर्नुहोस्</string>
+    <string name="guided_builder">निर्देशित बिल्डर</string><string name="advanced_formula">उन्नत सूत्र</string><string name="roll_subgroups">रोलका भागहरू</string><string name="roll_subgroups_help">पूरै रोललाई सँगै राख्नुहोस् वा आक्रमण र क्षति जस्ता नाम दिइएका भागहरूमा विभाजन गर्नुहोस्।</string><string name="add_subgroup">भाग थप्नुहोस्</string><string name="subgroup_name">भागको नाम (वैकल्पिक)</string><string name="constant_value">स्थिरांक</string><string name="multiplier">गुणक</string><string name="clear_expression">सूत्र खाली गर्नुहोस्</string>
 </resources>
