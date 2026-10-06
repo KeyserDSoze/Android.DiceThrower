@@ -2,6 +2,7 @@ package com.keyserdsoze.dicethrower.data
 
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.CharacterSyncMetadata
+import com.keyserdsoze.dicethrower.model.DiceTableTheme
 import java.security.MessageDigest
 
 enum class SyncChangeState {
@@ -33,7 +34,12 @@ object CharacterRevision {
         canonical.field("level", character.level)
         canonical.field("order", character.order)
         canonical.field("defaultDiceStyleId", character.defaultDiceStyleId)
-        canonical.field("diceTableTheme", character.diceTableTheme.name)
+        // ARCANE is the v6 default. Omitting it from the canonical form intentionally keeps
+        // pre-v6 character revisions valid during upgrade and for older Drive documents.
+        // Non-default tables still participate in the revision and therefore sync normally.
+        if (character.diceTableTheme != DiceTableTheme.ARCANE) {
+            canonical.field("diceTableTheme", character.diceTableTheme.name)
+        }
 
         data.modifiers.filter { it.characterId == characterId }.sortedBy { it.id }.forEach { modifier ->
             canonical.section("modifier")

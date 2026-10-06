@@ -56,6 +56,22 @@ class CharacterSyncMetadataTest {
     }
 
     @Test
+    fun defaultArcaneTableKeepsVersionFiveCanonicalRevision() {
+        val legacyCharacterOnly = AppData(
+            characters = listOf(CharacterProfile(id = CHARACTER_ID, name = "Alyndra")),
+        )
+
+        assertEquals(
+            "afa7f3bff7c22213e5bc6cfaa8ed142f13a8dc1de74f0630533769e2a94bec1b",
+            CharacterRevision.revision(legacyCharacterOnly, CHARACTER_ID),
+        )
+        assertTrue(
+            !CharacterRevision.canonicalContent(legacyCharacterOnly, CHARACTER_ID)
+                .contains("diceTableTheme"),
+        )
+    }
+
+    @Test
     fun unchangedContentKeepsStableMetadata() {
         val initial = SyncMetadataManager.ensureMetadata(sampleData(), "writer-a", 100L)
         val unchanged = SyncMetadataManager.reconcileLocalEdit(
