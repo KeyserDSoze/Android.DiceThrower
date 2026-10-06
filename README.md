@@ -42,7 +42,7 @@ Le espressioni possono usare le variabili tra parentesi graffe:
 
 Salire di livello non riscrive i tiri: la formula effettiva viene risolta al momento del lancio, quindi tutti i tiri parametrizzati si aggiornano automaticamente.
 
-Il builder può dividere lo stesso tiro in parti nominate che contribuiscono con `+` o `−` allo stesso totale. La stringa matematica resta la rappresentazione canonica e può essere modificata direttamente in modalità avanzata. Sono supportate parentesi e moltiplicazioni per fattori scalari, ad esempio `(1d6+2)*3`; le regole periodiche coprono anche espressioni negative. Il livello è modificabile direttamente oppure con i controlli level up/down.
+Il builder può dividere lo stesso tiro in parti nominate, riordinarle e combinarle con `+` o `−` nello stesso totale. Dadi, costanti, variabili e moltiplicatori possono essere aggiunti senza digitare la formula. La stringa matematica resta la rappresentazione canonica e può essere modificata direttamente in modalità avanzata; tornando alla modalità guidata, una modifica valida viene preservata come gruppo modificabile. Sono supportate parentesi e moltiplicazioni per fattori scalari, ad esempio `(1d6+2)*3`; le regole periodiche coprono anche espressioni negative. Il livello è modificabile direttamente oppure con i controlli level up/down.
 
 ## Gestione personaggi
 

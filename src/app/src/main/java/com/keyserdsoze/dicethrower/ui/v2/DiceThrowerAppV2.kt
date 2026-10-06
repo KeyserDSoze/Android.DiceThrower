@@ -134,6 +134,46 @@ import kotlin.random.Random
 
 private enum class RouteV2 { CHARACTERS, CHARACTER, GROUP, ROLL, SETTINGS, LOGS }
 
+internal fun moveRollSubgroup(
+    subgroups: List<RollSubgroup>,
+    index: Int,
+    offset: Int,
+): List<RollSubgroup> {
+    if (index !in subgroups.indices) return subgroups
+    val target = index + offset
+    if (target !in subgroups.indices) return subgroups
+    return subgroups.toMutableList().apply {
+        val moving = removeAt(index)
+        add(target, moving)
+    }
+}
+
+internal fun guidedSubgroupsFromAdvancedExpression(
+    expression: String,
+    current: List<RollSubgroup>,
+    level: Int,
+    modifiers: List<CharacterModifier>,
+    idFactory: () -> String = { UUID.randomUUID().toString() },
+): List<RollSubgroup>? {
+    val candidate = expression.trim()
+    if (!RollFormulaResolver.validateTemplate(candidate, level, modifiers)) return null
+
+    val currentCanonical = runCatching {
+        RollFormulaResolver.canonicalExpression(current)
+    }.getOrNull()
+    if (candidate == currentCanonical) return current
+
+    val previousSingle = current.singleOrNull()
+    return listOf(
+        RollSubgroup(
+            id = previousSingle?.id ?: idFactory(),
+            name = previousSingle?.name.orEmpty(),
+            expression = candidate,
+            operator = RollSubgroupOperator.ADD,
+        ),
+    )
+}
+
 private sealed interface DashboardEntry {
     val key: String
     val order: Int
@@ -2838,7 +2878,7 @@ private fun GroupDialogV2(
 }
 
 @Composable
-private fun RollBuilderScreenV2(
+internal fun RollBuilderScreenV2(
     title: String,
     character: CharacterProfile,
     modifiers: List<CharacterModifier>,
@@ -2939,12 +2979,27 @@ private fun RollBuilderScreenV2(
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterChip(
                             selected = !advancedMode,
-                            onClick = { advancedMode = false },
+                            onClick = {
+                                guidedSubgroupsFromAdvancedExpression(
+                                    expression = advancedExpression.text,
+                                    current = subgroups,
+                                    level = character.level,
+                                    modifiers = modifiers,
+                                )?.let { imported ->
+                                    subgroups = imported
+                                    advancedMode = false
+                                }
+                            },
                             label = { Text(stringResource(R.string.guided_builder)) },
                         )
                         FilterChip(
                             selected = advancedMode,
-                            onClick = { advancedMode = true },
+                            onClick = {
+                                if (!advancedMode) {
+                                    advancedExpression = TextFieldValue(guidedExpression)
+                                }
+                                advancedMode = true
+                            },
                             label = { Text(stringResource(R.string.advanced_formula)) },
                         )
                     }
@@ -3036,6 +3091,32 @@ private fun RollBuilderScreenV2(
                             if (subgroups.size > 1) {
                                 IconButton(onClick = { subgroups = subgroups.filterNot { it.id == subgroup.id } }) {
                                     Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.delete))
+                                }
+                            }
+                        }
+                        if (subgroups.size > 1) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                IconButton(
+                                    enabled = index > 0,
+                                    onClick = { subgroups = moveRollSubgroup(subgroups, index, -1) },
+                                ) {
+                                    Icon(
+                                        Icons.Rounded.KeyboardArrowUp,
+                                        contentDescription = stringResource(R.string.move_up),
+                                    )
+                                }
+                                IconButton(
+                                    enabled = index < subgroups.lastIndex,
+                                    onClick = { subgroups = moveRollSubgroup(subgroups, index, 1) },
+                                ) {
+                                    Icon(
+                                        Icons.Rounded.KeyboardArrowDown,
+                                        contentDescription = stringResource(R.string.move_down),
+                                    )
                                 }
                             }
                         }

@@ -3,6 +3,7 @@ package com.keyserdsoze.dicethrower.ui.v2
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -12,6 +13,7 @@ import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.RollDefinition
+import com.keyserdsoze.dicethrower.model.RollSubgroup
 import com.keyserdsoze.dicethrower.model.ThemeMode
 import com.keyserdsoze.dicethrower.ui.theme.DiceThrowerTheme
 import org.junit.Assert.assertEquals
@@ -125,6 +127,47 @@ class RollDialogV2Test {
         composeRule.runOnIdle {
             assertEquals("Attack", saved?.name)
             assertEquals("1d20+{Strength}", saved?.expression)
+        }
+    }
+
+    @Test
+    fun guidedBuilderPreservesValidAdvancedEditAndSupportsSubgroupReordering() {
+        val character = CharacterProfile(id = "character", name = "Test", level = 3)
+        val existing = RollDefinition(
+            id = "combo",
+            characterId = character.id,
+            name = "Combo",
+            expression = "(1d20)+(2d6)",
+            subgroups = listOf(
+                RollSubgroup("attack", "Attack", "1d20"),
+                RollSubgroup("damage", "Damage", "2d6"),
+            ),
+        )
+        var saved: RollDefinition? = null
+        composeRule.setContent {
+            DiceThrowerTheme(themeMode = ThemeMode.DARK) {
+                RollBuilderScreenV2(
+                    title = "Edit roll",
+                    character = character,
+                    modifiers = emptyList(),
+                    groups = emptyList(),
+                    existing = existing,
+                    onDismiss = {},
+                    onSave = { saved = it },
+                )
+            }
+        }
+
+        composeRule.onAllNodesWithContentDescription("Move down")[0].performClick()
+        composeRule.onNodeWithText("Advanced formula").performClick()
+        composeRule.onAllNodes(hasSetTextAction())[1].performTextReplacement("2*(1d20+1)")
+        composeRule.onNodeWithText("Guided builder").performClick()
+        composeRule.onNodeWithText("(2*(1d20+1))").assertIsDisplayed()
+        composeRule.onNodeWithText("Save").performClick()
+
+        composeRule.runOnIdle {
+            assertEquals("(2*(1d20+1))", saved?.expression)
+            assertEquals("2*(1d20+1)", saved?.subgroups?.single()?.expression)
         }
     }
 }
