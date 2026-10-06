@@ -162,6 +162,36 @@ class AppBackupCodecTest {
     }
 
     @Test
+    fun groupedRollsRoundTripThroughPortableBackup() {
+        val data = AppData(
+            characters = listOf(CharacterProfile(id = "hero", name = "Hero", level = 5)),
+            rolls = listOf(
+                RollDefinition(
+                    id = "combo",
+                    characterId = "hero",
+                    name = "Attack and damage",
+                    expression = "(1d20+{level})+(2d6*2)",
+                    subgroups = listOf(
+                        RollSubgroup("attack", "Attack", "1d20+{level}"),
+                        RollSubgroup("damage", "Damage", "2d6*2"),
+                    ),
+                ),
+            ),
+        )
+
+        val backup = AppBackupCodec.encode(
+            data = data,
+            settings = AppSettings(),
+            language = "en",
+            exportedAt = 123L,
+        )
+        val decoded = AppBackupCodec.decode(backup)
+
+        assertEquals(data, decoded.data)
+        assertEquals(data.rolls.single().subgroups, decoded.data.rolls.single().subgroups)
+    }
+
+    @Test
     fun portableImageRoundTripRestoresValidatedBytes() {
         val bytes = "portable portrait".toByteArray()
         val tableBytes = "vertical table photo".toByteArray()

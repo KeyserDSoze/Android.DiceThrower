@@ -4,6 +4,9 @@ import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.DiceTableTheme
+import com.keyserdsoze.dicethrower.model.RollDefinition
+import com.keyserdsoze.dicethrower.model.RollSubgroup
+import com.keyserdsoze.dicethrower.model.RollSubgroupOperator
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -67,6 +70,40 @@ class CharacterSyncMetadataTest {
             CharacterRevision.revision(initial, CHARACTER_ID),
             CharacterRevision.revision(changed, CHARACTER_ID),
         )
+    }
+
+    @Test
+    fun changingRollSubgroupsChangesCanonicalRevision() {
+        val grouped = sampleData().copy(
+            rolls = listOf(
+                RollDefinition(
+                    id = "combo",
+                    characterId = CHARACTER_ID,
+                    name = "Combo",
+                    expression = "(1d20+2)-(1d4)",
+                    subgroups = listOf(
+                        RollSubgroup("attack", "Attack", "1d20+2"),
+                        RollSubgroup("penalty", "Penalty", "1d4", RollSubgroupOperator.SUBTRACT),
+                    ),
+                ),
+            ),
+        )
+        val changed = grouped.copy(
+            rolls = grouped.rolls.map { roll ->
+                roll.copy(
+                    expression = "(1d20+2)-(2d4)",
+                    subgroups = roll.subgroups.map { subgroup ->
+                        if (subgroup.id == "penalty") subgroup.copy(expression = "2d4") else subgroup
+                    },
+                )
+            },
+        )
+
+        assertNotEquals(
+            CharacterRevision.revision(grouped, CHARACTER_ID),
+            CharacterRevision.revision(changed, CHARACTER_ID),
+        )
+        assertTrue(CharacterRevision.canonicalContent(grouped, CHARACTER_ID).contains("rollSubgroup"))
     }
 
     @Test

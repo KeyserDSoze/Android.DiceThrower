@@ -58,6 +58,12 @@ class DiceExpressionTest {
         assertEquals(-2, DiceExpression.parse("2*(1d6-1)").constantTotal())
     }
 
+    @Test
+    fun multiplicationHasHigherPrecedenceAndParenthesesCanOverrideIt() {
+        assertEquals(14, DiceExpression.parse("2+3*4").evaluate(Random(1)).total)
+        assertEquals(20, DiceExpression.parse("(2+3)*4").evaluate(Random(1)).total)
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun rejectsDiceToDiceMultiplicationToKeepStatisticsLinear() {
         DiceExpression.parse("1d6*1d8")

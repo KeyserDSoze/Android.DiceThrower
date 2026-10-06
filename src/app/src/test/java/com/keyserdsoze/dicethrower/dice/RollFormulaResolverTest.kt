@@ -179,6 +179,34 @@ class RollFormulaResolverTest {
     }
 
     @Test
+    fun subgroupResultsSupportLeadingNegativeGroupAndScalarMultiplication() {
+        val roll = RollDefinition(
+            id = "scaled-contest",
+            characterId = character.id,
+            name = "Scaled contest",
+            expression = "-((1d6+2)*2)+(1d4)",
+            subgroups = listOf(
+                RollSubgroup(
+                    "penalty",
+                    "Penalty",
+                    "(1d6+2)*2",
+                    RollSubgroupOperator.SUBTRACT,
+                ),
+                RollSubgroup("recovery", "Recovery", "1d4"),
+            ),
+        )
+        val resolved = RollFormulaResolver.resolve(character, modifiers, roll)
+        val outcome = DiceExpression.parse(resolved.expression).evaluate(kotlin.random.Random(7))
+
+        val grouped = resolved.subgroupResults(outcome)
+
+        assertEquals("-((1d6+2)*2)+(1d4)", resolved.expression)
+        assertEquals(outcome.total, grouped.sumOf { it.result.total })
+        assertTrue(grouped.first().result.total < 0)
+        assertTrue(grouped.last().result.total > 0)
+    }
+
+    @Test
     fun rejectsUnknownVariables() {
         assertFalse(
             RollFormulaResolver.validateTemplate(
