@@ -179,8 +179,8 @@ jobs:
           VERSION: ${{ needs.release.outputs.version }}
         run: |
           mkdir -p distribution/whatsnew
-          printf 'Dice Thrower %s: adds the character dashboard, physical 3D dice tables, collisions, numbered faces, animated totals, and per-character table themes.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
-          printf 'Dice Thrower %s: aggiunge dashboard personaggio, tavoli 3D fisici, collisioni, facce numerate, totale animato e temi tavolo per personaggio.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
+          printf 'Dice Thrower %s: fixes the startup crash when upgrading existing characters to the new dice-table data model, preserving saved data and sync history.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
+          printf 'Dice Thrower %s: corregge il crash all’avvio aggiornando personaggi esistenti al nuovo modello dei tavoli, preservando dati e cronologia di sync.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
 
       - name: Upload to Google Play Internal testing
         uses: r0adkll/upload-google-play@v1.1.5
