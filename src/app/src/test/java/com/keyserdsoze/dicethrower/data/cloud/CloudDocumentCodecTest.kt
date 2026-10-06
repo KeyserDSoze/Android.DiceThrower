@@ -15,7 +15,9 @@ class CloudDocumentCodecTest {
     @Test
     fun characterRoundTripContainsExactlyOnePortableCharacterGraph() {
         val imageBytes = "portable-image".toByteArray()
+        val tableBytes = "portable-table".toByteArray()
         val image = CharacterImageAssets.createRef(imageBytes, "image/png")
+        val tableImage = CharacterImageAssets.createRef(tableBytes, "image/jpeg")
         val data = SyncMetadataManager.ensureMetadata(
             AppData(
                 characters = listOf(
@@ -24,6 +26,7 @@ class CloudDocumentCodecTest {
                         name = "Alyndra",
                         imageUri = "content://source-device/image",
                         image = image,
+                        diceTableImage = tableImage,
                     ),
                 ),
                 modifiers = listOf(CharacterModifier("mod-a", "character-a", "Mind", 4)),
@@ -38,8 +41,9 @@ class CloudDocumentCodecTest {
         val decoded = CloudDocumentCodec.decodeCharacter(encoded)
 
         assertEquals("character-a", decoded.metadata.characterId)
-        assertEquals(listOf(image.assetId), decoded.metadata.assetIds)
+        assertEquals(listOf(image.assetId, tableImage.assetId), decoded.metadata.assetIds)
         assertEquals("Alyndra", decoded.data.characters.single().name)
+        assertEquals(tableImage, decoded.data.characters.single().diceTableImage)
         assertEquals(null, decoded.data.characters.single().imageUri)
         assertFalse(encoded.toString(Charsets.UTF_8).contains("content://"))
     }

@@ -44,7 +44,9 @@ object CharacterImageAssets {
             sha256(bytes) == ref.sha256
 
     fun referencedAssetIds(data: AppData): Set<String> =
-        data.characters.mapNotNull { it.image?.assetId }.toSet()
+        data.characters.flatMap { character ->
+            listOfNotNull(character.image?.assetId, character.diceTableImage?.assetId)
+        }.toSet()
 
     fun orphanAssetIds(availableAssetIds: Collection<String>, data: AppData): Set<String> =
         availableAssetIds.toSet() - referencedAssetIds(data)
@@ -53,7 +55,9 @@ object CharacterImageAssets {
         data: AppData,
         assets: List<PortableCharacterImageAsset>,
     ) {
-        val refs = data.characters.mapNotNull { it.image }
+        val refs = data.characters.flatMap { character ->
+            listOfNotNull(character.image, character.diceTableImage)
+        }.distinctBy { it.assetId }
         val assetsById = assets.associateBy { it.ref.assetId }
         require(assetsById.size == assets.size) { "Portable payload contains duplicate character image assets" }
         require(assetsById.keys == refs.mapTo(mutableSetOf()) { it.assetId }) {
@@ -174,7 +178,10 @@ class CharacterImageAssetStore(context: Context) {
     }
 
     fun exportReferenced(data: AppData): List<PortableCharacterImageAsset> {
-        return data.characters.mapNotNull { it.image }.distinctBy { it.assetId }.map { ref ->
+        return data.characters
+            .flatMap { character -> listOfNotNull(character.image, character.diceTableImage) }
+            .distinctBy { it.assetId }
+            .map { ref ->
             val bytes = files.readVerified(ref)
                 ?: throw IllegalArgumentException("Missing or corrupt character image asset ${ref.assetId}")
             PortableCharacterImageAsset(ref, bytes)
@@ -186,7 +193,10 @@ class CharacterImageAssetStore(context: Context) {
     }
 
     fun requireReferencedAssetsAvailable(data: AppData) {
-        data.characters.mapNotNull { it.image }.distinctBy { it.assetId }.forEach { ref ->
+        data.characters
+            .flatMap { character -> listOfNotNull(character.image, character.diceTableImage) }
+            .distinctBy { it.assetId }
+            .forEach { ref ->
             require(files.readVerified(ref) != null) { "Missing or corrupt character image asset ${ref.assetId}" }
         }
     }

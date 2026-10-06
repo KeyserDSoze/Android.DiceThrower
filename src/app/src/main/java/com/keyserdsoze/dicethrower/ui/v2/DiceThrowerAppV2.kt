@@ -1,5 +1,7 @@
 package com.keyserdsoze.dicethrower.ui.v2
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
@@ -16,8 +18,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -35,6 +39,8 @@ import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Tune
@@ -906,6 +912,15 @@ internal fun CharacterEditContentV2(
                         ),
                     )
                 },
+                onImageChanged = { tableImage ->
+                    onDataChanged(
+                        data.copy(
+                            characters = data.characters.map {
+                                if (it.id == character.id) it.copy(diceTableImage = tableImage) else it
+                            },
+                        ),
+                    )
+                },
             )
         }
 
@@ -1024,77 +1039,59 @@ internal fun CharacterEditContentV2(
                     onDataChanged(DashboardDataOperations.moveTopLevel(data, character.id, entry.key, 1))
                 },
             ) {
-                when (entry) {
+                val title = when (entry) {
+                    is DashboardEntry.GroupEntry -> entry.group.name
+                    is DashboardEntry.RollEntry -> entry.roll.name
+                }
+                val subtitle = when (entry) {
                     is DashboardEntry.GroupEntry -> {
-                        val group = entry.group
-                        val rollCount = rolls.count { it.groupId == group.id }
-                        Row(
-                            modifier = Modifier.fillMaxWidth().clickable { onOpenGroup(group.id) },
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(Icons.Rounded.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Spacer(Modifier.width(10.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text(group.name, fontWeight = FontWeight.Bold)
-                                Text(
-                                    "$rollCount ${stringResource(R.string.rolls).lowercase()}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null)
-                        }
+                        val rollCount = rolls.count { it.groupId == entry.group.id }
+                        "$rollCount ${stringResource(R.string.rolls).lowercase()}"
                     }
-
-                    is DashboardEntry.RollEntry -> {
-                        val roll = entry.roll
-                        RollEditorCardV2(
-                            character = character,
-                            modifiers = modifiers,
-                            groups = groups,
-                            diceStyles = diceStyles,
-                            roll = roll,
-                            onEnabledChanged = { enabled ->
-                                onDataChanged(
-                                    data.copy(
-                                        rolls = data.rolls.map { if (it.id == roll.id) it.copy(enabled = enabled) else it },
-                                    ),
-                                )
-                            },
-                            onGroupChanged = { groupId ->
-                                onDataChanged(
-                                    DashboardDataOperations.changeRollGroup(data, character.id, roll.id, groupId),
-                                )
-                            },
-                            onEdit = { editingRollId = roll.id },
-                            onAppearanceChanged = { appearance ->
-                                onDataChanged(
-                                    data.copy(
-                                        rolls = data.rolls.map {
-                                            if (it.id == roll.id) it.copy(diceAppearance = appearance) else it
-                                        },
-                                    ),
-                                )
-                            },
-                            onAddRule = { addRuleRollId = roll.id },
-                            onDeleteRule = { ruleId ->
-                                onDataChanged(
-                                    data.copy(
-                                        rolls = data.rolls.map {
-                                            if (it.id == roll.id) {
-                                                it.copy(levelRules = it.levelRules.filterNot { rule -> rule.id == ruleId })
-                                            } else {
-                                                it
-                                            }
-                                        },
-                                    ),
-                                )
-                            },
-                            onDelete = {
-                                onDataChanged(data.copy(rolls = data.rolls.filterNot { it.id == roll.id }))
-                            },
+                    is DashboardEntry.RollEntry -> stringResource(R.string.rolls)
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            when (entry) {
+                                is DashboardEntry.GroupEntry -> onOpenGroup(entry.group.id)
+                                is DashboardEntry.RollEntry -> editingRollId = entry.roll.id
+                            }
+                        },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = if (entry is DashboardEntry.GroupEntry) Icons.Rounded.AutoAwesome else Icons.Rounded.Casino,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(title, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            subtitle,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                    IconButton(
+                        enabled = index > 0,
+                        onClick = {
+                            onDataChanged(DashboardDataOperations.moveTopLevel(data, character.id, entry.key, -1))
+                        },
+                    ) {
+                        Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = stringResource(R.string.move_up))
+                    }
+                    IconButton(
+                        enabled = index < entries.lastIndex,
+                        onClick = {
+                            onDataChanged(DashboardDataOperations.moveTopLevel(data, character.id, entry.key, 1))
+                        },
+                    ) {
+                        Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = stringResource(R.string.move_down))
+                    }
+                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null)
                 }
             }
         }
@@ -1180,7 +1177,22 @@ internal fun CharacterEditContentV2(
 private fun DiceTablePickerV2(
     character: CharacterProfile,
     onThemeChanged: (DiceTableTheme) -> Unit,
+    onImageChanged: (CharacterImageRef?) -> Unit,
 ) {
+    val context = LocalContext.current
+    val imageAssetStore = remember(context) { CharacterImageAssetStore(context) }
+    var imageImportFailed by remember { mutableStateOf(false) }
+    val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            runCatching { imageAssetStore.importFromUri(uri) }
+                .onSuccess {
+                    imageImportFailed = false
+                    onImageChanged(it)
+                }
+                .onFailure { imageImportFailed = true }
+        }
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         SectionTitleV2(
             title = stringResource(R.string.dice_table),
@@ -1211,6 +1223,36 @@ private fun DiceTablePickerV2(
                     )
                 }
             }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            OutlinedButton(
+                onClick = { imageLauncher.launch(arrayOf("image/*")) },
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(
+                    if (character.diceTableImage == null) {
+                        stringResource(R.string.choose_image)
+                    } else {
+                        stringResource(R.string.image_selected)
+                    },
+                )
+            }
+            if (character.diceTableImage != null) {
+                IconButton(onClick = { onImageChanged(null) }) {
+                    Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.delete))
+                }
+            }
+        }
+        if (imageImportFailed) {
+            Text(
+                stringResource(R.string.image_import_failed),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
         }
     }
 }
@@ -1688,6 +1730,12 @@ private fun RollScreenV2(
     onLogged: (RollLog) -> Unit,
 ) {
     val context = LocalContext.current
+    val tableImageStore = remember(context) { CharacterImageAssetStore(context) }
+    val tableBitmap = remember(character.diceTableImage) {
+        character.diceTableImage
+            ?.let(tableImageStore::loadVerified)
+            ?.let(::decodeTableBitmap)
+    }
     val formula = remember(character.level, modifiers, roll) {
         RollFormulaResolver.resolve(character, modifiers, roll)
     }
@@ -1758,106 +1806,118 @@ private fun RollScreenV2(
     }
 
     ArcaneBackground {
-        Scaffold(
-            containerColor = Color.Transparent,
-            topBar = {
-                TopAppBar(
-                    modifier = Modifier.height(52.dp),
-                    colors = transparentTopBarColors(),
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                Icons.AutoMirrored.Rounded.ArrowBack,
-                                contentDescription = stringResource(R.string.back),
-                                modifier = Modifier.size(20.dp),
-                            )
-                        }
-                    },
-                    title = {
-                        Row(
-                            modifier = Modifier
-                                .clickable { showStats = true }
-                                .padding(horizontal = 4.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            Text(
-                                roll.name,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Icon(
-                                Icons.Rounded.BarChart,
-                                contentDescription = stringResource(R.string.statistics),
-                                modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    },
-                    actions = {
-                        if (hasRolled) {
-                            IconButton(
-                                onClick = ::throwDice,
-                                enabled = resultRevealed,
-                            ) {
-                                Icon(
-                                    Icons.Rounded.Casino,
-                                    contentDescription = stringResource(R.string.roll_again),
-                                    modifier = Modifier.size(22.dp),
-                                )
-                            }
-                        }
-                    },
-                )
-            },
-        ) { padding ->
-            Column(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 10.dp, vertical = 6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Dice3DScene(
-                        event = visualEvent,
-                        tableTheme = character.diceTableTheme,
-                        animateRoll = hasRolled && settings.animationsEnabled,
-                        onSettled = { eventId ->
-                            if (hasRolled && eventId == visualEvent.id) resultRevealed = true
-                        },
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    if (resultRevealed) {
-                        outcome?.let { value ->
-                            RollTotalReveal(
-                                total = value.total,
-                                aboveAverage = value.total > value.expectedTotal(),
-                            )
-                        }
+        Box(modifier = Modifier.fillMaxSize()) {
+            Dice3DScene(
+                event = visualEvent,
+                tableTheme = character.diceTableTheme,
+                tableImage = tableBitmap,
+                tableImageKey = character.diceTableImage?.assetId,
+                fullBleed = true,
+                animateRoll = hasRolled && settings.animationsEnabled,
+                onSettled = { eventId ->
+                    if (hasRolled && eventId == visualEvent.id) resultRevealed = true
+                },
+                modifier = Modifier.fillMaxSize(),
+            )
+
+            if (resultRevealed) {
+                outcome?.let { value ->
+                    Box(Modifier.align(Alignment.Center)) {
+                        RollTotalReveal(
+                            total = value.total,
+                            aboveAverage = value.total > value.expectedTotal(),
+                        )
                     }
                 }
+            }
 
-                if (!hasRolled) {
-                    Text(
-                        when {
-                            settings.shakeEnabled && settings.showRollButton -> stringResource(R.string.shake_to_throw)
-                            settings.shakeEnabled -> stringResource(R.string.shake_only)
-                            else -> stringResource(R.string.waiting_for_throw)
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .statusBarsPadding()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                shape = RoundedCornerShape(24.dp),
+                color = Color.Black.copy(alpha = 0.58f),
+                contentColor = Color.White,
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = stringResource(R.string.back),
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { showStats = true }
+                            .padding(horizontal = 8.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                    ) {
+                        Text(
+                            roll.name,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Black,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Spacer(Modifier.width(7.dp))
+                        Icon(
+                            Icons.Rounded.BarChart,
+                            contentDescription = stringResource(R.string.statistics),
+                            modifier = Modifier.size(19.dp),
+                            tint = Color.White.copy(alpha = 0.9f),
+                        )
+                    }
+                    IconButton(
+                        onClick = ::throwDice,
+                        enabled = !hasRolled || resultRevealed,
+                    ) {
+                        Icon(
+                            Icons.Rounded.Casino,
+                            contentDescription = stringResource(if (hasRolled) R.string.roll_again else R.string.throw_dice),
+                            modifier = Modifier.size(30.dp),
+                        )
+                    }
                 }
+            }
 
-                if (!hasRolled && (settings.showRollButton || !settings.shakeEnabled)) {
-                    Button(onClick = ::throwDice, modifier = Modifier.fillMaxWidth()) {
-                        Icon(Icons.Rounded.Casino, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.throw_dice))
+            if (!hasRolled) {
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.Black.copy(alpha = 0.58f),
+                    contentColor = Color.White,
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            when {
+                                settings.shakeEnabled && settings.showRollButton -> stringResource(R.string.shake_to_throw)
+                                settings.shakeEnabled -> stringResource(R.string.shake_only)
+                                else -> stringResource(R.string.waiting_for_throw)
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.85f),
+                        )
+                        if (settings.showRollButton || !settings.shakeEnabled) {
+                            Button(onClick = ::throwDice) {
+                                Icon(Icons.Rounded.Casino, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.throw_dice))
+                            }
+                        }
                     }
                 }
             }
@@ -1954,6 +2014,21 @@ private fun DiceExpression.previewResult(): DiceRollResult {
         total = components.sumOf { it.subtotal },
         components = components,
         constantTotal = 0,
+    )
+}
+
+private fun decodeTableBitmap(bytes: ByteArray): Bitmap? {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+
+    var sample = 1
+    while (bounds.outWidth / sample > 2048 || bounds.outHeight / sample > 2048) sample *= 2
+    return BitmapFactory.decodeByteArray(
+        bytes,
+        0,
+        bytes.size,
+        BitmapFactory.Options().apply { inSampleSize = sample },
     )
 }
 

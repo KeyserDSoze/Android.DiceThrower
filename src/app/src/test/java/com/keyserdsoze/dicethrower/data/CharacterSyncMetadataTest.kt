@@ -56,6 +56,20 @@ class CharacterSyncMetadataTest {
     }
 
     @Test
+    fun changingCharacterTableImageChangesRevision() {
+        val initial = sampleData()
+        val image = CharacterImageAssets.createRef("table".toByteArray(), "image/jpeg")
+        val changed = initial.copy(
+            characters = initial.characters.map { it.copy(diceTableImage = image) },
+        )
+
+        assertNotEquals(
+            CharacterRevision.revision(initial, CHARACTER_ID),
+            CharacterRevision.revision(changed, CHARACTER_ID),
+        )
+    }
+
+    @Test
     fun defaultArcaneTableKeepsVersionFiveCanonicalRevision() {
         val legacyCharacterOnly = AppData(
             characters = listOf(CharacterProfile(id = CHARACTER_ID, name = "Alyndra")),

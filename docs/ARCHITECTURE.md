@@ -12,7 +12,7 @@
 
 ## Domain model
 
-`CharacterProfile`: id, name, portable `CharacterImageRef` (plus legacy `imageUri` migration source), tag, level, order, defaultDiceStyleId.
+`CharacterProfile`: id, name, portable `CharacterImageRef` (plus legacy `imageUri` migration source), tag, level, order, defaultDiceStyleId, dice-table theme and optional portable dice-table image.
 
 `CharacterModifier`: id, characterId, name, integer value, order.
 
@@ -22,7 +22,7 @@
 
 `RollSubgroup`: stable id, optional name, parametric expression and additive/subtractive operator. Subgroups are builder/statistics metadata; the canonical `RollDefinition.expression` remains the portable mathematical representation and legacy rolls keep an empty subgroup list.
 
-`DiceStyle`: character-owned visual style with material, primary/secondary colors and stable ordering. Roll appearance policies reference style IDs and never participate in dice math. `CharacterProfile.diceTableTheme` selects the persisted per-character roll table.
+`DiceStyle`: character-owned visual style with material, primary/secondary colors and stable ordering. Roll appearance policies reference style IDs and never participate in dice math. `CharacterProfile.diceTableTheme` selects the persisted per-character roll table and `diceTableImage` can override the felt with a portable custom image.
 
 `RollLevelRule`: id, kind, trigger, expression.
 
@@ -116,7 +116,7 @@ Supported sides: 2, 3, 4, 6, 8, 10, 12, 20, 100.
 
 ## Persistence and migration
 
-The application stores one versioned JSON document in private SharedPreferences. Storage version 7 adds optional roll subgroups while preserving the canonical expression; version 6 added the per-character dice-table theme; version 5 added portable character-image references on top of version 4's per-character sync metadata. Version 3 introduced the character-owned dice-style model and roll appearance policies; version 2 added character level, modifiers and level rules.
+The application stores one versioned JSON document in private SharedPreferences. Storage version 8 adds an optional portable custom dice-table image; version 7 adds optional roll subgroups while preserving the canonical expression; version 6 added the per-character dice-table theme; version 5 added portable character-image references on top of version 4's per-character sync metadata. Version 3 introduced the character-owned dice-style model and roll appearance policies; version 2 added character level, modifiers and level rules.
 
 Version-1 data remains readable:
 
@@ -131,11 +131,11 @@ Version-1/2/3 data has no sync metadata. `LocalStore` migrates it lazily on firs
 
 Version-1 through version-4 characters may still contain a document `imageUri`. On load, the image layer attempts a lazy import while that URI remains readable. A successful import writes an app-owned asset and clears the URI; a failed import leaves the legacy character untouched so the UI can still attempt the old URI or fall back to initials.
 
-## Portable character images
+## Portable images
 
 New character images are copied immediately into private `filesDir/character-images`. `CharacterImageRef` stores a deterministic `img_<sha256>` asset ID, SHA-256 content identity, normalized image MIME type and byte size; imports are capped at 10 MiB. Content-derived IDs deduplicate identical bytes without relying on source-device URIs.
 
-Reads verify size and hash before returning bytes. Missing or corrupt files therefore produce the normal avatar fallback instead of invalidating the character. Unreferenced local files are retained for seven days before deletion, which makes cancelled edits/deletes recoverable from short-lived state while still bounding orphan storage. The same portable asset envelope is provider-neutral: the Drive `appDataFolder` repository uploads/downloads the exact validated bytes rather than any `content://` URI.
+Reads verify size and hash before returning bytes. Missing or corrupt files therefore produce the normal avatar/table fallback instead of invalidating the character. The same asset envelope backs both character portraits and custom dice-table images. Unreferenced local files are retained for seven days before deletion, which makes cancelled edits/deletes recoverable from short-lived state while still bounding orphan storage. The provider-neutral Drive `appDataFolder` repository uploads/downloads the exact validated bytes rather than any `content://` URI.
 
 Manual backup format v2 embeds only referenced assets as Base64 and validates every character reference against asset ID, size and SHA-256 during encode/decode. Both backup v2 and the provider-neutral sync serializer explicitly omit legacy document URIs. Format v1 remains accepted for backward compatibility. Restoring v2 writes verified assets before committing character data.
 
@@ -191,9 +191,9 @@ The accelerometer listener is active on a fresh roll screen until the first thro
 
 ## 3D renderer
 
-The OpenGL ES 2.0 renderer consumes an already-produced numerical result plus the fully resolved appearance for each visible die. Its lightweight rigid-body layer handles table boundaries, pairwise die collisions, damping and settling only after the logical result exists. Physics/animation never decides the numerical result: the dice engine decides first, then the UI resolves appearance, then the renderer visualizes both.
+The OpenGL ES 2.0 renderer consumes an already-produced numerical result plus the fully resolved appearance for each visible die. Its lightweight rigid-body layer handles table boundaries, pairwise die collisions, damping and settling only after the logical result exists. Physics/animation never decides the numerical result: the dice engine decides first, then the UI resolves appearance, then the renderer visualizes both. Custom table images are downsampled before upload to a GL texture and center-cropped to the portrait table aspect ratio so vertical photos are never stretched.
 
-Face numerals are generated as small triangle meshes anchored to each logical die face, so they share the die model transform and remain readable while the die rotates. The renderer records each numbered face normal and, after physics settles, aligns the face selected by the already-resolved logical value toward the camera. The viewport camera is fitted from the table bounds/aspect ratio, and the physics bounds match the visible felt so dice can reach a rail without being clipped outside the table. The table palette is selected from `CharacterProfile.diceTableTheme`; changing it participates in backup, character revision hashing and cloud sync. Once physics settles, Compose reveals only the total. A result strictly above the mathematical mean triggers the multicolour celebration; detailed component and subgroup values remain in the statistics bottom sheet.
+Face numerals are generated as small triangle meshes anchored to each logical die face, so they share the die model transform and remain readable while the die rotates. The renderer records each numbered face normal and, after physics settles, aligns the face selected by the already-resolved logical value toward the camera. The portrait viewport is deliberately tall and the camera is fitted from the table bounds/aspect ratio so the roll screen can be full-bleed while dice remain within the physical surface. The table palette is selected from `CharacterProfile.diceTableTheme`; an optional `diceTableImage` is rendered as a cropped texture above that fallback palette. Both participate in backup, character revision hashing and cloud sync. Roll navigation, statistics and reroll controls are Compose overlays rather than a separate header. Once physics settles, Compose reveals only the total. A result strictly above the mathematical mean triggers the multicolour celebration; detailed component and subgroup values remain in the statistics bottom sheet.
 
 Renderer material profiles map the domain-level `GLOSSY_RESIN`, `MATTE_RESIN`, `METAL` and `GEMSTONE` values to lightweight shader parameters for ambient/diffuse/specular response, rim accents and gemstone inner glow. Both primary and secondary style colors feed the shader. Renderer fallback is deterministic and matches `DiceAppearanceResolver` defaults if a visual slot is unexpectedly missing.
 

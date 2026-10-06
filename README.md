@@ -123,7 +123,7 @@ L'app supporta **Sistema / Chiaro / Scuro**. Anche il sito GitHub Pages usa tema
 
 ## Dadi 3D
 
-Il risultato numerico viene sempre deciso dal motore di dadi prima della grafica. Un renderer **OpenGL ES 2.0** mostra poi dadi numerati su un tavolo scelto per personaggio, con collisioni tra dadi/bordi, senza poter alterare il risultato. Il totale compare solo a simulazione conclusa; il dettaglio resta disponibile nelle statistiche.
+Il risultato numerico viene sempre deciso dal motore di dadi prima della grafica. Un renderer **OpenGL ES 2.0** mostra poi dadi numerati su un tavolo scelto per personaggio, con collisioni tra dadi/bordi, senza poter alterare il risultato. Oltre ai temi inclusi, il tavolo può usare una foto/immagine personale (anche verticale), portabile tramite backup e sync e ritagliata senza deformazioni. La schermata di tiro usa il tavolo a pieno schermo con navigazione, statistiche e reroll in sovraimpressione. Il totale compare solo a simulazione conclusa; il dettaglio resta disponibile nelle statistiche.
 
 Le forme visuali includono geometrie dedicate per d2, d3, d4, d6, d10, d12, d20 e d100. Il d10/d100 usa una forma trapezoedrica e il d12 viene costruito come vero dodecaedro, duale dell'icosaedro. L'overlay mostra anche i risultati individuali e il totale.
 

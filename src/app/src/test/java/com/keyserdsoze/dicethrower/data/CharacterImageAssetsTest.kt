@@ -72,6 +72,18 @@ class CharacterImageAssetsTest {
     }
 
     @Test
+    fun tableImageAssetIsAlsoKeptAlive() {
+        val bytes = "table photo".toByteArray()
+        val ref = CharacterImageAssets.createRef(bytes, "image/jpeg")
+        val data = AppData(
+            characters = listOf(CharacterProfile(id = "character", name = "Hero", diceTableImage = ref)),
+        )
+
+        assertTrue(CharacterImageAssets.orphanAssetIds(listOf(ref.assetId), data).isEmpty())
+        assertEquals(setOf(ref.assetId), CharacterImageAssets.referencedAssetIds(data))
+    }
+
+    @Test
     fun legacyMigrationClearsUriOnlyAfterSuccessfulImport() {
         val bytes = "portrait".toByteArray()
         val ref = CharacterImageAssets.createRef(bytes, "image/png")

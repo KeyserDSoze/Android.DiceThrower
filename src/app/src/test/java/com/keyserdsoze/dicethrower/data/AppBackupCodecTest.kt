@@ -124,6 +124,7 @@ class AppBackupCodecTest {
         assertEquals(1, decoded.characters.single().level)
         assertNull(decoded.characters.single().defaultDiceStyleId)
         assertEquals(DiceTableTheme.ARCANE, decoded.characters.single().diceTableTheme)
+        assertNull(decoded.characters.single().diceTableImage)
         assertTrue(decoded.modifiers.isEmpty())
         assertTrue(decoded.diceStyles.isEmpty())
         assertTrue(decoded.characterSyncMetadata.isEmpty())
@@ -163,11 +164,18 @@ class AppBackupCodecTest {
     @Test
     fun portableImageRoundTripRestoresValidatedBytes() {
         val bytes = "portable portrait".toByteArray()
+        val tableBytes = "vertical table photo".toByteArray()
         val ref = CharacterImageAssets.createRef(bytes, "image/png")
+        val tableRef = CharacterImageAssets.createRef(tableBytes, "image/jpeg")
         val data = SyncMetadataManager.ensureMetadata(
             AppData(
                 characters = listOf(
-                    CharacterProfile(id = "portable-character", name = "Portable", image = ref),
+                    CharacterProfile(
+                        id = "portable-character",
+                        name = "Portable",
+                        image = ref,
+                        diceTableImage = tableRef,
+                    ),
                 ),
             ),
             writerId = "writer",
@@ -178,14 +186,19 @@ class AppBackupCodecTest {
             settings = AppSettings(),
             language = "en",
             exportedAt = 200L,
-            imageAssets = listOf(PortableCharacterImageAsset(ref, bytes)),
+            imageAssets = listOf(
+                PortableCharacterImageAsset(ref, bytes),
+                PortableCharacterImageAsset(tableRef, tableBytes),
+            ),
         )
 
         val decoded = AppBackupCodec.decode(raw)
 
         assertEquals(data, decoded.data)
         assertEquals(ref, decoded.data.characters.single().image)
-        assertTrue(decoded.imageAssets.single().bytes.contentEquals(bytes))
+        assertEquals(tableRef, decoded.data.characters.single().diceTableImage)
+        assertTrue(decoded.imageAssets.first { it.ref == ref }.bytes.contentEquals(bytes))
+        assertTrue(decoded.imageAssets.first { it.ref == tableRef }.bytes.contentEquals(tableBytes))
     }
 
     @Test(expected = IllegalArgumentException::class)

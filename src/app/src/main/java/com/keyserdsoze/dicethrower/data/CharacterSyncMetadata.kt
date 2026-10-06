@@ -40,6 +40,12 @@ object CharacterRevision {
         if (character.diceTableTheme != DiceTableTheme.ARCANE) {
             canonical.field("diceTableTheme", character.diceTableTheme.name)
         }
+        character.diceTableImage?.let { image ->
+            canonical.field("diceTableImageAssetId", image.assetId)
+            canonical.field("diceTableImageSha256", image.sha256)
+            canonical.field("diceTableImageMimeType", image.mimeType)
+            canonical.field("diceTableImageByteSize", image.byteSize)
+        }
 
         data.modifiers.filter { it.characterId == characterId }.sortedBy { it.id }.forEach { modifier ->
             canonical.section("modifier")

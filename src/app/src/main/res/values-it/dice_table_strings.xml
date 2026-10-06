@@ -1,6 +1,6 @@
 <resources>
     <string name="dice_table">Tavolo dei dadi</string>
-    <string name="dice_table_help">Scegli il tavolo personale di questo personaggio per ogni tiro.</string>
+    <string name="dice_table_help">Scegli un tavolo incluso o una foto personale. Le immagini verticali vengono ritagliate senza deformarsi.</string>
     <string name="table_arcane">Arcano</string>
     <string name="table_oak">Quercia</string>
     <string name="table_emerald">Smeraldo</string>

@@ -79,6 +79,7 @@ data class CharacterProfile(
     val order: Int = 0,
     val defaultDiceStyleId: String? = null,
     val diceTableTheme: DiceTableTheme = DiceTableTheme.ARCANE,
+    val diceTableImage: CharacterImageRef? = null,
 )
 
 data class CharacterModifier(

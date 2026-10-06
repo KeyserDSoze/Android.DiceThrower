@@ -51,4 +51,22 @@ class DiceTablePhysicsTest {
             assertTrue(halfHorizontal > DiceTableViewport.HALF_WIDTH)
         }
     }
+
+    @Test
+    fun tablePhotoCoordinatesCenterCropWithoutStretching() {
+        val portrait = tableTextureCoordinatesFor(0.35f)
+        val landscape = tableTextureCoordinatesFor(1.5f)
+
+        // A tall portrait keeps the full width and trims equally from top/bottom.
+        assertEquals(0f, portrait[0], 0.0001f)
+        assertEquals(1f, portrait[2], 0.0001f)
+        assertTrue(portrait[1] < 1f)
+        assertTrue(portrait[5] > 0f)
+
+        // A wide image keeps the full height and trims equally from left/right.
+        assertTrue(landscape[0] > 0f)
+        assertTrue(landscape[2] < 1f)
+        assertEquals(1f, landscape[1], 0.0001f)
+        assertEquals(0f, landscape[5], 0.0001f)
+    }
 }

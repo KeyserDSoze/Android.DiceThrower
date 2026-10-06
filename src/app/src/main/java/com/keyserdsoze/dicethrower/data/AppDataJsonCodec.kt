@@ -25,7 +25,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 object AppDataJsonCodec {
-    const val DATA_VERSION = 7
+    const val DATA_VERSION = 8
 
     fun encodeData(data: AppData): JSONObject = encodeData(data, includeLegacyImageUris = true)
 
@@ -44,7 +44,8 @@ object AppDataJsonCodec {
                     .put("level", item.level)
                     .put("order", item.order)
                     .put("defaultDiceStyleId", item.defaultDiceStyleId ?: JSONObject.NULL)
-                    .put("diceTableTheme", item.diceTableTheme.name))
+                    .put("diceTableTheme", item.diceTableTheme.name)
+                    .put("diceTableImage", item.diceTableImage?.let(::encodeCharacterImage) ?: JSONObject.NULL))
             }
         })
         .put("modifiers", JSONArray().apply {
@@ -148,6 +149,7 @@ object AppDataJsonCodec {
                     item.optString("diceTableTheme"),
                     DiceTableTheme.ARCANE,
                 ),
+                diceTableImage = item.optJSONObject("diceTableImage")?.let(::decodeCharacterImage),
             )
         },
         modifiers = json.optJSONArray("modifiers").mapObjects { item ->

@@ -1,8 +1,10 @@
 package com.keyserdsoze.dicethrower.ui.dice3d
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
+import android.opengl.GLUtils
 import android.opengl.Matrix
 import android.os.SystemClock
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,28 +31,39 @@ fun Dice3DScene(
     event: DiceRollVisualEvent,
     modifier: Modifier = Modifier,
     tableTheme: DiceTableTheme = DiceTableTheme.ARCANE,
+    tableImage: Bitmap? = null,
+    tableImageKey: String? = null,
+    fullBleed: Boolean = false,
     animateRoll: Boolean = true,
     onSettled: (Long) -> Unit = {},
 ) {
+    val sceneModifier = if (fullBleed) modifier else modifier.clip(RoundedCornerShape(24.dp))
     AndroidView(
-        modifier = modifier.clip(RoundedCornerShape(24.dp)),
+        modifier = sceneModifier,
         factory = { context ->
             DiceGLView(context).also {
                 it.onSettled = onSettled
-                it.setScene(event, tableTheme, animateRoll)
+                it.setScene(event, tableTheme, tableImage, tableImageKey, animateRoll)
             }
         },
         update = { view ->
             view.onSettled = onSettled
-            view.setScene(event, tableTheme, animateRoll)
+            view.setScene(event, tableTheme, tableImage, tableImageKey, animateRoll)
         },
     )
 }
 
+private data class SceneKey(
+    val eventId: Long,
+    val tableTheme: DiceTableTheme,
+    val tableImageKey: String?,
+    val animateRoll: Boolean,
+)
+
 private class DiceGLView(context: Context) : GLSurfaceView(context) {
     var onSettled: (Long) -> Unit = {}
     private val diceRenderer = DiceSceneRenderer { eventId -> post { onSettled(eventId) } }
-    private var lastSceneKey: Triple<Long, DiceTableTheme, Boolean>? = null
+    private var lastSceneKey: SceneKey? = null
 
     init {
         setEGLContextClientVersion(2)
@@ -60,11 +73,17 @@ private class DiceGLView(context: Context) : GLSurfaceView(context) {
         renderMode = RENDERMODE_CONTINUOUSLY
     }
 
-    fun setScene(event: DiceRollVisualEvent, tableTheme: DiceTableTheme, animateRoll: Boolean) {
-        val key = Triple(event.id, tableTheme, animateRoll)
+    fun setScene(
+        event: DiceRollVisualEvent,
+        tableTheme: DiceTableTheme,
+        tableImage: Bitmap?,
+        tableImageKey: String?,
+        animateRoll: Boolean,
+    ) {
+        val key = SceneKey(event.id, tableTheme, tableImageKey, animateRoll)
         if (key == lastSceneKey) return
         lastSceneKey = key
-        queueEvent { diceRenderer.setEvent(event, tableTheme, animateRoll) }
+        queueEvent { diceRenderer.setEvent(event, tableTheme, tableImage, animateRoll) }
     }
 
     override fun onDetachedFromWindow() {
@@ -92,10 +111,10 @@ private data class GpuMesh(
 
 internal object DiceTableViewport {
     const val HALF_WIDTH = 2.65f
-    const val HALF_HEIGHT = 4.45f
+    const val HALF_HEIGHT = 6.0f
     private const val VERTICAL_FOV_DEGREES = 36f
     const val FOV_DEGREES = VERTICAL_FOV_DEGREES
-    private const val VIEWPORT_PADDING = 1.055f
+    private const val VIEWPORT_PADDING = 1.015f
 
     fun cameraDistanceFor(aspect: Float): Float {
         val safeAspect = aspect.coerceAtLeast(0.25f)
@@ -105,6 +124,33 @@ internal object DiceTableViewport {
         val horizontal = HALF_WIDTH * VIEWPORT_PADDING / (tangent * safeAspect)
         return max(vertical, horizontal)
     }
+}
+
+internal fun tableTextureCoordinatesFor(imageAspect: Float?): FloatArray {
+    var u0 = 0f
+    var u1 = 1f
+    var v0 = 0f
+    var v1 = 1f
+    if (imageAspect != null && imageAspect > 0f) {
+        val tableAspect = DiceTableViewport.HALF_WIDTH / DiceTableViewport.HALF_HEIGHT
+        if (imageAspect > tableAspect) {
+            val visibleWidth = (tableAspect / imageAspect).coerceIn(0f, 1f)
+            u0 = (1f - visibleWidth) / 2f
+            u1 = 1f - u0
+        } else if (imageAspect < tableAspect) {
+            val visibleHeight = (imageAspect / tableAspect).coerceIn(0f, 1f)
+            v0 = (1f - visibleHeight) / 2f
+            v1 = 1f - v0
+        }
+    }
+    return floatArrayOf(
+        u0, v1,
+        u1, v1,
+        u1, v0,
+        u0, v1,
+        u1, v0,
+        u0, v0,
+    )
 }
 
 private class DiceSceneRenderer(
@@ -119,6 +165,9 @@ private class DiceSceneRenderer(
     private var secondaryColorHandle = 0
     private var materialLightingHandle = 0
     private var materialAccentHandle = 0
+    private var textureCoordHandle = 0
+    private var useTextureHandle = 0
+    private var textureHandle = 0
 
     private val projection = FloatArray(16)
     private val view = FloatArray(16)
@@ -135,6 +184,9 @@ private class DiceSceneRenderer(
     private var lastFrameAt = SystemClock.elapsedRealtimeNanos()
     private var settledReported = false
     private var cameraDistance = 14f
+    private var tableImage: Bitmap? = null
+    private var tableTexture = 0
+    private var tableTextureDirty = false
 
     private val tablePositions = floatArrayOf(
         -DiceTableViewport.HALF_WIDTH, -DiceTableViewport.HALF_HEIGHT, TABLE_Z,
@@ -145,8 +197,14 @@ private class DiceSceneRenderer(
         -DiceTableViewport.HALF_WIDTH, DiceTableViewport.HALF_HEIGHT, TABLE_Z,
     ).toFloatBuffer()
     private val tableNormals = FloatArray(18) { index -> if (index % 3 == 2) 1f else 0f }.toFloatBuffer()
+    private var tableTextureCoordinates = tableTextureCoordinatesFor(null).toFloatBuffer()
 
-    fun setEvent(event: DiceRollVisualEvent, tableTheme: DiceTableTheme, animateRoll: Boolean) {
+    fun setEvent(
+        event: DiceRollVisualEvent,
+        tableTheme: DiceTableTheme,
+        tableImage: Bitmap?,
+        animateRoll: Boolean,
+    ) {
         val appearanceBySlot = event.appearances.associateBy { it.slotKey }
         dice = buildList {
             event.result.components.forEachIndexed { componentIndex, component ->
@@ -166,6 +224,10 @@ private class DiceSceneRenderer(
             }
         }
         this.tableTheme = tableTheme
+        if (this.tableImage !== tableImage) {
+            this.tableImage = tableImage
+            tableTextureDirty = true
+        }
         this.animateRoll = animateRoll
         currentEventId = event.id
         physics = if (animateRoll) DiceTablePhysics(dice.size, event.id) else null
@@ -188,6 +250,11 @@ private class DiceSceneRenderer(
         secondaryColorHandle = GLES20.glGetUniformLocation(program, "uSecondaryColor")
         materialLightingHandle = GLES20.glGetUniformLocation(program, "uMaterialLighting")
         materialAccentHandle = GLES20.glGetUniformLocation(program, "uMaterialAccent")
+        textureCoordHandle = GLES20.glGetAttribLocation(program, "aTexCoord")
+        useTextureHandle = GLES20.glGetUniformLocation(program, "uUseTexture")
+        textureHandle = GLES20.glGetUniformLocation(program, "uTexture")
+        tableTexture = 0
+        tableTextureDirty = tableImage != null
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -220,6 +287,7 @@ private class DiceSceneRenderer(
         GLES20.glUseProgram(program)
         GLES20.glEnableVertexAttribArray(positionHandle)
         GLES20.glEnableVertexAttribArray(normalHandle)
+        GLES20.glUniform1f(useTextureHandle, 0f)
 
         drawTable()
 
@@ -320,7 +388,61 @@ private class DiceSceneRenderer(
         GLES20.glUniform4f(secondaryColorHandle, palette[3], palette[4], palette[5], 1f)
         GLES20.glUniform4f(materialLightingHandle, 0.76f, 0.36f, 0.08f, 12f)
         GLES20.glUniform4f(materialAccentHandle, 0.12f, 0.24f, 0f, 0f)
+        val texture = ensureTableTexture()
+        if (texture != 0) {
+            tableTextureCoordinates.position(0)
+            GLES20.glEnableVertexAttribArray(textureCoordHandle)
+            GLES20.glVertexAttribPointer(
+                textureCoordHandle,
+                2,
+                GLES20.GL_FLOAT,
+                false,
+                0,
+                tableTextureCoordinates,
+            )
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture)
+            GLES20.glUniform1i(textureHandle, 0)
+            GLES20.glUniform1f(useTextureHandle, 1f)
+        } else {
+            GLES20.glUniform1f(useTextureHandle, 0f)
+        }
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 6)
+        if (texture != 0) {
+            GLES20.glUniform1f(useTextureHandle, 0f)
+            GLES20.glDisableVertexAttribArray(textureCoordHandle)
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0)
+        }
+    }
+
+    private fun ensureTableTexture(): Int {
+        if (!tableTextureDirty) return tableTexture
+        if (tableTexture != 0) {
+            GLES20.glDeleteTextures(1, intArrayOf(tableTexture), 0)
+            tableTexture = 0
+        }
+        val bitmap = tableImage
+        if (bitmap == null || bitmap.isRecycled) {
+            tableTextureDirty = false
+            tableTextureCoordinates = tableTextureCoordinatesFor(null).toFloatBuffer()
+            return 0
+        }
+
+        val ids = IntArray(1)
+        GLES20.glGenTextures(1, ids, 0)
+        tableTexture = ids[0]
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, tableTexture)
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
+        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0)
+        tableTextureCoordinates = tableTextureCoordinatesFor(
+            bitmap.width.toFloat() / bitmap.height.toFloat(),
+        ).toFloatBuffer()
+        tableTextureDirty = false
+        return tableTexture
     }
 
     private fun staticStates(count: Int, scale: Float): List<DiceTablePhysics.State> {
@@ -432,14 +554,17 @@ private class DiceSceneRenderer(
             uniform mat4 uModel;
             attribute vec3 aPosition;
             attribute vec3 aNormal;
+            attribute vec2 aTexCoord;
             varying vec3 vNormal;
             varying vec3 vPosition;
+            varying vec2 vTexCoord;
 
             void main() {
                 vec4 worldPosition = uModel * vec4(aPosition, 1.0);
                 gl_Position = uMvp * vec4(aPosition, 1.0);
                 vNormal = normalize((uModel * vec4(aNormal, 0.0)).xyz);
                 vPosition = worldPosition.xyz;
+                vTexCoord = aTexCoord;
             }
         """
 
@@ -449,10 +574,17 @@ private class DiceSceneRenderer(
             uniform vec4 uSecondaryColor;
             uniform vec4 uMaterialLighting;
             uniform vec4 uMaterialAccent;
+            uniform sampler2D uTexture;
+            uniform float uUseTexture;
             varying vec3 vNormal;
             varying vec3 vPosition;
+            varying vec2 vTexCoord;
 
             void main() {
+                if (uUseTexture > 0.5) {
+                    gl_FragColor = texture2D(uTexture, vTexCoord);
+                    return;
+                }
                 vec3 normal = normalize(vNormal);
                 vec3 lightDirection = normalize(vec3(0.35, 0.78, 0.72));
                 vec3 viewDirection = normalize(vec3(0.0, 0.0, 6.5) - vPosition);

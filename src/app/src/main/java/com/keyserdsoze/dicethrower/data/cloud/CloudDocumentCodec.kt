@@ -31,7 +31,7 @@ object CloudDocumentCodec {
                 updatedAt = sync.updatedAt,
                 revision = sync.revision,
                 writerId = sync.writerId,
-                assetIds = listOfNotNull(character.image?.assetId),
+                assetIds = listOfNotNull(character.image?.assetId, character.diceTableImage?.assetId).distinct(),
             ),
             data = slice,
         )
@@ -185,7 +185,9 @@ object CloudDocumentCodec {
         require(document.metadata.updatedAt == sync.updatedAt) { "Cloud updatedAt mismatch" }
         require(document.metadata.revision == sync.revision) { "Cloud revision mismatch" }
         require(document.metadata.writerId == sync.writerId) { "Cloud writer mismatch" }
-        require(document.metadata.assetIds == listOfNotNull(character.image?.assetId)) { "Cloud asset reference mismatch" }
+        require(
+            document.metadata.assetIds == listOfNotNull(character.image?.assetId, character.diceTableImage?.assetId).distinct(),
+        ) { "Cloud asset reference mismatch" }
     }
 
     private fun encodeMetadata(metadata: CloudCharacterMetadata): JSONObject {

@@ -395,7 +395,8 @@ class CloudSyncEngine(
         remoteAssetIds: MutableSet<String>,
     ) {
         val document = CloudDocumentCodec.buildCharacterDocument(snapshot.data, characterId)
-        document.data.characters.single().image?.let { ref ->
+        val character = document.data.characters.single()
+        listOfNotNull(character.image, character.diceTableImage).distinctBy { it.assetId }.forEach { ref ->
             if (ref.assetId !in remoteAssetIds) {
                 val localAsset = local.readImageAsset(ref)
                     ?: throw CloudProtocolException("Local image asset ${ref.assetId} is missing or corrupt")
@@ -417,7 +418,8 @@ class CloudSyncEngine(
         if (document.metadata != remoteMetadata) {
             throw CloudProtocolException("Remote character $characterId changed during sync")
         }
-        document.data.characters.single().image?.let { ref ->
+        val character = document.data.characters.single()
+        listOfNotNull(character.image, character.diceTableImage).distinctBy { it.assetId }.forEach { ref ->
             if (local.readImageAsset(ref) == null && ref.assetId !in downloadedAssets) {
                 val asset = remote.readAsset(ref.assetId)
                     ?: throw CloudProtocolException("Remote image asset ${ref.assetId} is missing")
@@ -607,8 +609,14 @@ class CloudSyncEngine(
     private fun changedAreas(localData: AppData, remoteData: AppData, characterId: String): List<ConflictArea> = buildList {
         val localCharacter = localData.characters.firstOrNull { it.id == characterId }
         val remoteCharacter = remoteData.characters.firstOrNull { it.id == characterId }
-        if (localCharacter?.copy(image = null, imageUri = null) != remoteCharacter?.copy(image = null, imageUri = null)) add(ConflictArea.PROFILE)
-        if (localCharacter?.image != remoteCharacter?.image) add(ConflictArea.IMAGE)
+        if (
+            localCharacter?.copy(image = null, imageUri = null, diceTableImage = null) !=
+            remoteCharacter?.copy(image = null, imageUri = null, diceTableImage = null)
+        ) add(ConflictArea.PROFILE)
+        if (
+            localCharacter?.image != remoteCharacter?.image ||
+            localCharacter?.diceTableImage != remoteCharacter?.diceTableImage
+        ) add(ConflictArea.IMAGE)
         if (localData.modifiers.filter { it.characterId == characterId } != remoteData.modifiers.filter { it.characterId == characterId }) add(ConflictArea.MODIFIERS)
         if (
             localData.groups.filter { it.characterId == characterId } != remoteData.groups.filter { it.characterId == characterId } ||

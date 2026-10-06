@@ -36,7 +36,7 @@ object AppDataValidator {
         data.characters.forEach { character ->
             if (character.name.isBlank()) errors += "Character ${character.id} has a blank name"
             if (character.level < 1) errors += "Character ${character.id} has an invalid level"
-            character.image?.let { image ->
+            listOfNotNull(character.image, character.diceTableImage).forEach { image ->
                 if (!imageAssetIdRegex.matches(image.assetId) || image.assetId != "img_${image.sha256}") {
                     errors += "Character ${character.id} has an invalid image asset ID"
                 }
@@ -49,9 +49,9 @@ object AppDataValidator {
                 if (image.byteSize !in 1L..CharacterImageAssets.MAX_IMAGE_BYTES.toLong()) {
                     errors += "Character ${character.id} has an invalid image size"
                 }
-                if (character.imageUri != null) {
-                    errors += "Character ${character.id} has both portable and legacy image references"
-                }
+            }
+            if (character.image != null && character.imageUri != null) {
+                errors += "Character ${character.id} has both portable and legacy image references"
             }
 
             val modifiers = data.modifiers.filter { it.characterId == character.id }
