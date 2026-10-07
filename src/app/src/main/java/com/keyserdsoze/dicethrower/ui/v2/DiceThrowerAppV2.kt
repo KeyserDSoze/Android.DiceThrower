@@ -6,11 +6,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -77,8 +80,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
@@ -949,7 +955,11 @@ internal fun CharacterEditContentV2(
                     onDataChanged(
                         data.copy(
                             characters = data.characters.map {
-                                if (it.id == character.id) it.copy(diceTableTheme = tableTheme) else it
+                                if (it.id == character.id) {
+                                    it.copy(diceTableTheme = tableTheme, diceTableImage = null)
+                                } else {
+                                    it
+                                }
                             },
                         ),
                     )
@@ -1224,6 +1234,11 @@ private fun DiceTablePickerV2(
     val context = LocalContext.current
     val imageAssetStore = remember(context) { CharacterImageAssetStore(context) }
     var imageImportFailed by remember { mutableStateOf(false) }
+    val customPreview = remember(character.diceTableImage) {
+        character.diceTableImage
+            ?.let(imageAssetStore::loadVerified)
+            ?.let(::decodeTableBitmap)
+    }
     val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             runCatching { imageAssetStore.importFromUri(uri) }
@@ -1235,60 +1250,109 @@ private fun DiceTablePickerV2(
         }
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SectionTitleV2(
             title = stringResource(R.string.dice_table),
             subtitle = stringResource(R.string.dice_table_help),
         )
+
         DiceTableTheme.values().toList().chunked(2).forEach { themes ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 themes.forEach { theme ->
-                    FilterChip(
-                        selected = character.diceTableTheme == theme,
-                        onClick = { onThemeChanged(theme) },
-                        label = {
-                            Text(
-                                stringResource(
-                                    when (theme) {
-                                        DiceTableTheme.ARCANE -> R.string.table_arcane
-                                        DiceTableTheme.OAK -> R.string.table_oak
-                                        DiceTableTheme.EMERALD -> R.string.table_emerald
-                                        DiceTableTheme.OBSIDIAN -> R.string.table_obsidian
-                                    },
-                                ),
+                    val selected = character.diceTableImage == null && character.diceTableTheme == theme
+                    val label = stringResource(theme.presetNameRes())
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { onThemeChanged(theme) },
+                        shape = RoundedCornerShape(18.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        border = BorderStroke(
+                            width = if (selected) 2.dp else 1.dp,
+                            color = if (selected) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.outlineVariant
+                            },
+                        ),
+                    ) {
+                        Column {
+                            Image(
+                                painter = painterResource(theme.presetDrawableRes()),
+                                contentDescription = label,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(1.35f),
                             )
-                        },
-                        modifier = Modifier.weight(1f),
-                    )
+                            Text(
+                                text = label,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (selected) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                            )
+                        }
+                    }
                 }
             }
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            OutlinedButton(
-                onClick = { imageLauncher.launch(arrayOf("image/*")) },
-                modifier = Modifier.weight(1f),
+
+        if (customPreview != null) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
             ) {
-                Text(
-                    if (character.diceTableImage == null) {
-                        stringResource(R.string.choose_image)
-                    } else {
-                        stringResource(R.string.image_selected)
-                    },
-                )
-            }
-            if (character.diceTableImage != null) {
-                IconButton(onClick = { onImageChanged(null) }) {
-                    Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.delete))
+                Column {
+                    Image(
+                        bitmap = customPreview.asImageBitmap(),
+                        contentDescription = stringResource(R.string.image_selected),
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(1.9f),
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            stringResource(R.string.image_selected),
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        IconButton(onClick = { onImageChanged(null) }) {
+                            Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.delete))
+                        }
+                    }
                 }
             }
         }
+
+        OutlinedButton(
+            onClick = { imageLauncher.launch(arrayOf("image/*")) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                if (character.diceTableImage == null) {
+                    stringResource(R.string.choose_image)
+                } else {
+                    stringResource(R.string.image_selected)
+                },
+            )
+        }
+
         if (imageImportFailed) {
             Text(
                 stringResource(R.string.image_import_failed),
@@ -1775,11 +1839,16 @@ private fun RollScreenV2(
 ) {
     val context = LocalContext.current
     val tableImageStore = remember(context) { CharacterImageAssetStore(context) }
-    val tableBitmap = remember(character.diceTableImage) {
+    val presetTableBitmap = remember(context, character.diceTableTheme) {
+        BitmapFactory.decodeResource(context.resources, character.diceTableTheme.presetDrawableRes())
+    }
+    val customTableBitmap = remember(character.diceTableImage) {
         character.diceTableImage
             ?.let(tableImageStore::loadVerified)
             ?.let(::decodeTableBitmap)
     }
+    val tableBitmap = customTableBitmap ?: presetTableBitmap
+    val tableImageKey = character.diceTableImage?.assetId ?: "preset:${character.diceTableTheme.name}"
     val formula = remember(character.level, modifiers, roll) {
         RollFormulaResolver.resolve(character, modifiers, roll)
     }
@@ -1860,7 +1929,7 @@ private fun RollScreenV2(
                 event = visualEvent,
                 tableTheme = character.diceTableTheme,
                 tableImage = tableBitmap,
-                tableImageKey = character.diceTableImage?.assetId,
+                tableImageKey = tableImageKey,
                 fullBleed = true,
                 animateRoll = hasRolled && settings.animationsEnabled,
                 onSettled = { eventId ->
