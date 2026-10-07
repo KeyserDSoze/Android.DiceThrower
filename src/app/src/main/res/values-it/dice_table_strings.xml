@@ -22,4 +22,12 @@
     <string name="table_frozen_realm">Regno ghiacciato</string>
     <string name="table_desert_ruins">Rovine del deserto</string>
     <string name="table_astral_void">Vuoto astrale</string>
+    <string name="roll_interactions">Interazioni di tiro</string>
+    <string name="roll_interactions_help">Scegli come avviare il primo tiro e i rilanci. L'icona del dado nel footer è sempre disponibile.</string>
+    <string name="first_roll_triggers">Primo tiro</string>
+    <string name="reroll_triggers">Rilancio</string>
+    <string name="tap_dice_table">Tocca dadi / tavolo</string>
+    <string name="swipe_up_to_roll">Swipe verso l'alto</string>
+    <string name="shake_phone">Muovi il telefono</string>
+    <string name="roll_icon_always_available">L'icona del dado nel footer è sempre disponibile.</string>
 </resources>
