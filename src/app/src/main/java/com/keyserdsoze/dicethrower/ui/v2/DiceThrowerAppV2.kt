@@ -2,6 +2,7 @@ package com.keyserdsoze.dicethrower.ui.v2
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
@@ -139,7 +140,19 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 
-private enum class RouteV2 { CHARACTERS, CHARACTER, GROUP, ROLL, SETTINGS, LOGS }
+internal enum class RouteV2 { CHARACTERS, CHARACTER, GROUP, ROLL, SETTINGS, LOGS }
+
+internal fun previousRouteFor(
+    route: RouteV2,
+    hasRollReturnGroup: Boolean = false,
+): RouteV2? = when (route) {
+    RouteV2.CHARACTERS -> null
+    RouteV2.CHARACTER -> RouteV2.CHARACTERS
+    RouteV2.GROUP -> RouteV2.CHARACTER
+    RouteV2.ROLL -> if (hasRollReturnGroup) RouteV2.GROUP else RouteV2.CHARACTER
+    RouteV2.SETTINGS -> RouteV2.CHARACTERS
+    RouteV2.LOGS -> RouteV2.CHARACTER
+}
 
 internal fun moveRollSubgroup(
     subgroups: List<RollSubgroup>,
@@ -242,6 +255,30 @@ fun DiceThrowerAppV2(
         onLocalDataChanged()
     }
 
+    fun navigateBack() {
+        val hasRollReturnGroup = rollReturnGroupId != null &&
+            selectedCharacterId != null &&
+            data.groups.any { group ->
+                group.id == rollReturnGroupId && group.characterId == selectedCharacterId
+            }
+        when (previousRouteFor(route, hasRollReturnGroup)) {
+            RouteV2.GROUP -> {
+                selectedGroupId = rollReturnGroupId
+                route = RouteV2.GROUP
+            }
+            RouteV2.CHARACTERS -> route = RouteV2.CHARACTERS
+            RouteV2.CHARACTER -> route = RouteV2.CHARACTER
+            RouteV2.SETTINGS -> route = RouteV2.SETTINGS
+            RouteV2.LOGS -> route = RouteV2.LOGS
+            RouteV2.ROLL -> route = RouteV2.ROLL
+            null -> Unit
+        }
+    }
+
+    BackHandler(enabled = route != RouteV2.CHARACTERS) {
+        navigateBack()
+    }
+
     LaunchedEffect(dataRefreshVersion) {
         if (dataRefreshVersion > 0) data = store.loadData()
     }
@@ -279,7 +316,7 @@ fun DiceThrowerAppV2(
                     character = character,
                     data = data,
                     editMode = editMode,
-                    onBack = { route = RouteV2.CHARACTERS },
+                    onBack = ::navigateBack,
                     onToggleMode = { editMode = !editMode },
                     onOpenLogs = { route = RouteV2.LOGS },
                     onOpenRoll = { rollId ->
@@ -309,7 +346,7 @@ fun DiceThrowerAppV2(
                     group = group,
                     data = data,
                     editMode = editMode,
-                    onBack = { route = RouteV2.CHARACTER },
+                    onBack = ::navigateBack,
                     onOpenRoll = { rollId ->
                         selectedRollId = rollId
                         rollReturnGroupId = group.id
@@ -336,17 +373,7 @@ fun DiceThrowerAppV2(
                     diceStyles = data.diceStyles,
                     roll = roll,
                     settings = settings,
-                    onBack = {
-                        route = if (
-                            rollReturnGroupId != null &&
-                            data.groups.any { it.id == rollReturnGroupId && it.characterId == character.id }
-                        ) {
-                            selectedGroupId = rollReturnGroupId
-                            RouteV2.GROUP
-                        } else {
-                            RouteV2.CHARACTER
-                        }
-                    },
+                    onBack = ::navigateBack,
                     onLogged = { log ->
                         val logs = (data.logs + log).let { all ->
                             if (settings.logRetention == 0) all
@@ -374,7 +401,7 @@ fun DiceThrowerAppV2(
             onDisconnectGoogle = onDisconnectGoogle,
             onDeleteCloudData = onDeleteCloudData,
             onLanguageChanged = onLanguageChanged,
-            onBack = { route = RouteV2.CHARACTERS },
+            onBack = ::navigateBack,
         )
 
         RouteV2.LOGS -> {
@@ -387,7 +414,7 @@ fun DiceThrowerAppV2(
                     logs = data.logs
                         .filter { it.characterId == character.id }
                         .sortedByDescending { it.timestamp },
-                    onBack = { route = RouteV2.CHARACTER },
+                    onBack = ::navigateBack,
                     onClear = {
                         persist(data.copy(logs = data.logs.filterNot { it.characterId == character.id }))
                     },
@@ -1265,6 +1292,7 @@ internal fun DiceTablePickerV2(
             DiceTableTheme.values().forEach { theme ->
                 val selected = character.diceTableImage == null && character.diceTableTheme == theme
                 val label = stringResource(theme.presetNameRes())
+                val previewBitmap = remember(context, theme) { theme.presetBitmap(context).asImageBitmap() }
                 Surface(
                     modifier = Modifier
                         .width(148.dp)
@@ -1282,7 +1310,7 @@ internal fun DiceTablePickerV2(
                 ) {
                     Column {
                         Image(
-                            painter = painterResource(theme.presetDrawableRes()),
+                            bitmap = previewBitmap,
                             contentDescription = label,
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
@@ -1842,7 +1870,7 @@ private fun RollScreenV2(
     val context = LocalContext.current
     val tableImageStore = remember(context) { CharacterImageAssetStore(context) }
     val presetTableBitmap = remember(context, character.diceTableTheme) {
-        BitmapFactory.decodeResource(context.resources, character.diceTableTheme.presetDrawableRes())
+        character.diceTableTheme.presetBitmap(context)
     }
     val customTableBitmap = remember(character.diceTableImage) {
         character.diceTableImage
@@ -1953,8 +1981,8 @@ private fun RollScreenV2(
 
             Surface(
                 modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .statusBarsPadding()
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 shape = RoundedCornerShape(24.dp),
                 color = Color.Black.copy(alpha = 0.58f),
@@ -2007,40 +2035,7 @@ private fun RollScreenV2(
                 }
             }
 
-            if (!hasRolled) {
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
-                        .padding(16.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color.Black.copy(alpha = 0.58f),
-                    contentColor = Color.White,
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Text(
-                            when {
-                                settings.shakeEnabled && settings.showRollButton -> stringResource(R.string.shake_to_throw)
-                                settings.shakeEnabled -> stringResource(R.string.shake_only)
-                                else -> stringResource(R.string.waiting_for_throw)
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.85f),
-                        )
-                        if (settings.showRollButton || !settings.shakeEnabled) {
-                            Button(onClick = ::throwDice) {
-                                Icon(Icons.Rounded.Casino, contentDescription = null)
-                                Spacer(Modifier.width(8.dp))
-                                Text(stringResource(R.string.throw_dice))
-                            }
-                        }
-                    }
-                }
-            }
+
         }
     }
 

@@ -3,4 +3,10 @@
     <string name="table_arcane">Магічний</string><string name="table_oak">Дуб</string><string name="table_emerald">Смарагд</string><string name="table_obsidian">Обсидіан</string>
     <string name="statistics">Статистика</string><string name="roll_again">Кинути знову</string>
     <string name="guided_builder">Покроковий редактор</string><string name="advanced_formula">Розширена формула</string><string name="roll_subgroups">Частини кидка</string><string name="roll_subgroups_help">Залиште кидок цілим або розділіть його на іменовані частини, наприклад атаку та шкоду.</string><string name="add_subgroup">Додати частину</string><string name="subgroup_name">Назва частини (необов’язково)</string><string name="constant_value">Константа</string><string name="multiplier">Множник</string><string name="clear_expression">Очистити формулу</string>
+    <string name="table_tavern_wood">Tavern Wood</string>
+    <string name="table_dungeon_stone">Dungeon Stone</string>
+    <string name="table_elven_grove">Elven Grove</string>
+    <string name="table_frozen_realm">Frozen Realm</string>
+    <string name="table_desert_ruins">Desert Ruins</string>
+    <string name="table_astral_void">Astral Void</string>
 </resources>

@@ -3,4 +3,10 @@
     <string name="table_arcane">മാന്ത്രികം</string><string name="table_oak">ഓക്ക്</string><string name="table_emerald">മരതകം</string><string name="table_obsidian">ഒബ്സിഡിയൻ</string>
     <string name="statistics">സ്ഥിതിവിവരക്കണക്കുകൾ</string><string name="roll_again">വീണ്ടും റോൾ ചെയ്യുക</string>
     <string name="guided_builder">മാർഗനിർദേശ ബിൽഡർ</string><string name="advanced_formula">വിപുലമായ സൂത്രം</string><string name="roll_subgroups">റോൾ ഭാഗങ്ങൾ</string><string name="roll_subgroups_help">മുഴുവൻ റോളും ഒരുമിച്ച് വയ്ക്കുക അല്ലെങ്കിൽ ആക്രമണം, നാശം പോലുള്ള പേരുള്ള ഭാഗങ്ങളായി വിഭജിക്കുക.</string><string name="add_subgroup">ഭാഗം ചേർക്കുക</string><string name="subgroup_name">ഭാഗത്തിന്റെ പേര് (ഐച്ഛികം)</string><string name="constant_value">സ്ഥിരാങ്കം</string><string name="multiplier">ഗുണകം</string><string name="clear_expression">സൂത്രം മായ്ക്കുക</string>
+    <string name="table_tavern_wood">Tavern Wood</string>
+    <string name="table_dungeon_stone">Dungeon Stone</string>
+    <string name="table_elven_grove">Elven Grove</string>
+    <string name="table_frozen_realm">Frozen Realm</string>
+    <string name="table_desert_ruins">Desert Ruins</string>
+    <string name="table_astral_void">Astral Void</string>
 </resources>

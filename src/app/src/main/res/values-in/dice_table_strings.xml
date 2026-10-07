@@ -3,4 +3,10 @@
     <string name="table_arcane">Arkane</string><string name="table_oak">Ek</string><string name="table_emerald">Zamrud</string><string name="table_obsidian">Obsidian</string>
     <string name="statistics">Statistik</string><string name="roll_again">Lempar lagi</string>
     <string name="guided_builder">Penyusun terpandu</string><string name="advanced_formula">Rumus lanjutan</string><string name="roll_subgroups">Bagian lemparan</string><string name="roll_subgroups_help">Pertahankan seluruh lemparan atau bagi menjadi bagian bernama seperti serangan dan kerusakan.</string><string name="add_subgroup">Tambah bagian</string><string name="subgroup_name">Nama bagian (opsional)</string><string name="constant_value">Konstanta</string><string name="multiplier">Pengali</string><string name="clear_expression">Hapus rumus</string>
+    <string name="table_tavern_wood">Tavern Wood</string>
+    <string name="table_dungeon_stone">Dungeon Stone</string>
+    <string name="table_elven_grove">Elven Grove</string>
+    <string name="table_frozen_realm">Frozen Realm</string>
+    <string name="table_desert_ruins">Desert Ruins</string>
+    <string name="table_astral_void">Astral Void</string>
 </resources>

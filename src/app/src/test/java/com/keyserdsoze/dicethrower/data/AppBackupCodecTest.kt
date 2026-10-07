@@ -58,6 +58,28 @@ class AppBackupCodecTest {
         assertTrue(raw.contains("\"characterSyncMetadata\""))
     }
 
+    @Test
+    fun premiumTableThemeRoundTripsThroughBackup() {
+        val data = sampleData().let { original ->
+            original.copy(
+                characters = original.characters.map {
+                    it.copy(diceTableTheme = DiceTableTheme.ASTRAL_VOID)
+                },
+            )
+        }
+
+        val decoded = AppBackupCodec.decode(
+            AppBackupCodec.encode(
+                data = data,
+                settings = AppSettings(),
+                language = "en",
+                exportedAt = 42L,
+            ),
+        )
+
+        assertEquals(DiceTableTheme.ASTRAL_VOID, decoded.data.characters.single().diceTableTheme)
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun rejectsUnknownBackupFormat() {
         AppBackupCodec.decode(

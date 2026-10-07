@@ -16,4 +16,10 @@
     <string name="constant_value">Constant</string>
     <string name="multiplier">Multiplier</string>
     <string name="clear_expression">Clear expression</string>
+    <string name="table_tavern_wood">Tavern Wood</string>
+    <string name="table_dungeon_stone">Dungeon Stone</string>
+    <string name="table_elven_grove">Elven Grove</string>
+    <string name="table_frozen_realm">Frozen Realm</string>
+    <string name="table_desert_ruins">Desert Ruins</string>
+    <string name="table_astral_void">Astral Void</string>
 </resources>

@@ -3,4 +3,10 @@
     <string name="table_arcane">Arkaniczny</string><string name="table_oak">Dąb</string><string name="table_emerald">Szmaragd</string><string name="table_obsidian">Obsydian</string>
     <string name="statistics">Statystyki</string><string name="roll_again">Rzuć ponownie</string>
     <string name="guided_builder">Kreator krok po kroku</string><string name="advanced_formula">Formuła zaawansowana</string><string name="roll_subgroups">Części rzutu</string><string name="roll_subgroups_help">Zachowaj cały rzut razem lub podziel go na nazwane części, np. atak i obrażenia.</string><string name="add_subgroup">Dodaj część</string><string name="subgroup_name">Nazwa części (opcjonalna)</string><string name="constant_value">Stała</string><string name="multiplier">Mnożnik</string><string name="clear_expression">Wyczyść formułę</string>
+    <string name="table_tavern_wood">Tavern Wood</string>
+    <string name="table_dungeon_stone">Dungeon Stone</string>
+    <string name="table_elven_grove">Elven Grove</string>
+    <string name="table_frozen_realm">Frozen Realm</string>
+    <string name="table_desert_ruins">Desert Ruins</string>
+    <string name="table_astral_void">Astral Void</string>
 </resources>

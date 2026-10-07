@@ -3,4 +3,10 @@
     <string name="table_arcane">מאגי</string><string name="table_oak">אלון</string><string name="table_emerald">אזמרגד</string><string name="table_obsidian">אובסידיאן</string>
     <string name="statistics">סטטיסטיקה</string><string name="roll_again">להטיל שוב</string>
     <string name="guided_builder">בונה מודרך</string><string name="advanced_formula">נוסחה מתקדמת</string><string name="roll_subgroups">חלקי ההטלה</string><string name="roll_subgroups_help">השאירו את כל ההטלה יחד או חלקו אותה לחלקים בעלי שם, כמו התקפה ונזק.</string><string name="add_subgroup">הוספת חלק</string><string name="subgroup_name">שם החלק (אופציונלי)</string><string name="constant_value">קבוע</string><string name="multiplier">מכפיל</string><string name="clear_expression">ניקוי הנוסחה</string>
+    <string name="table_tavern_wood">Tavern Wood</string>
+    <string name="table_dungeon_stone">Dungeon Stone</string>
+    <string name="table_elven_grove">Elven Grove</string>
+    <string name="table_frozen_realm">Frozen Realm</string>
+    <string name="table_desert_ruins">Desert Ruins</string>
+    <string name="table_astral_void">Astral Void</string>
 </resources>

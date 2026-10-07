@@ -20,7 +20,7 @@ Dadi supportati nella prima versione: **d2, d3, d4, d6, d8, d10, d12, d20, d100*
 6. Aspetto dei singoli tiri configurabile: predefinito, uniforme, per dado, casuale uniforme o casuale per dado, con pool opzionale.
 7. Builder guidato dei tiri con parti nominate (per esempio colpire/danni), dadi, costanti, variabili, moltiplicatori e modalità formula avanzata.
 8. Lancio con pulsante configurabile oppure scuotendo il telefono.
-9. Tavolo OpenGL ES full-screen con quattro preset grafici premium, preview visuale, foto personale opzionale, dadi numerati, collisioni fisiche e statistiche separate.
+9. Tavolo OpenGL ES full-screen con dieci preset grafici premium, preview visuale, foto personale opzionale, dadi numerati, collisioni fisiche e statistiche separate.
 10. Log locale con retention configurabile.
 11. Backup e restore locale validato tramite Android Storage Access Framework.
 
@@ -123,7 +123,7 @@ L'app supporta **Sistema / Chiaro / Scuro**. Anche il sito GitHub Pages usa tema
 
 ## Dadi 3D
 
-Il risultato numerico viene sempre deciso dal motore di dadi prima della grafica. Un renderer **OpenGL ES 2.0** mostra poi dadi numerati su un tavolo scelto per personaggio, con collisioni tra dadi/bordi, senza poter alterare il risultato. Oltre ai temi inclusi, il tavolo può usare una foto/immagine personale (anche verticale), portabile tramite backup e sync e ritagliata senza deformazioni. La schermata di tiro usa il tavolo a pieno schermo con navigazione, statistiche e reroll in sovraimpressione. Il totale compare solo a simulazione conclusa; il dettaglio resta disponibile nelle statistiche.
+Il risultato numerico viene sempre deciso dal motore di dadi prima della grafica. Un renderer **OpenGL ES 2.0** mostra poi dadi numerati su un tavolo scelto per personaggio, con collisioni tra dadi/bordi, senza poter alterare il risultato. Durante l'ultima fase di assestamento il renderer orienta progressivamente la faccia già scelta dal motore, così non avviene più uno snap visivo del numero al termine. I dieci preset inclusi hanno preview visuale; il tavolo può anche usare una foto/immagine personale (anche verticale), portabile tramite backup e sync e ritagliata senza deformazioni. La schermata di tiro usa il tavolo a pieno schermo con back, statistiche e reroll nel footer ergonomico; anche il tasto Back di Android segue la stessa gerarchia di navigazione dell'app. Il totale compare solo a simulazione conclusa; il dettaglio resta disponibile nelle statistiche.
 
 Le forme visuali includono geometrie dedicate per d2, d3, d4, d6, d10, d12, d20 e d100. Il d10/d100 usa una forma trapezoedrica e il d12 viene costruito come vero dodecaedro, duale dell'icosaedro. L'overlay mostra anche i risultati individuali e il totale.
 

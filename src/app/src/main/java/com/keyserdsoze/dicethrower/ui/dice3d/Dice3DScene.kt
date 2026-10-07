@@ -22,7 +22,9 @@ import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.acos
 import kotlin.math.ceil
+import kotlin.math.cos
 import kotlin.math.max
+import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.math.tan
 
@@ -144,6 +146,62 @@ internal object DiceTableViewport {
             halfHeight = halfHeight,
         )
     }
+}
+
+internal data class DiceAxisAngle(
+    val angleDegrees: Float,
+    val axis: Vec3,
+)
+
+internal fun rotateFaceNormal(
+    normal: Vec3,
+    angleXDegrees: Float,
+    angleYDegrees: Float,
+    angleZDegrees: Float,
+): Vec3 {
+    fun radians(value: Float) = Math.toRadians(value.toDouble())
+    var value = normal
+
+    run {
+        val a = radians(angleZDegrees)
+        val c = cos(a).toFloat()
+        val si = sin(a).toFloat()
+        value = Vec3(value.x * c - value.y * si, value.x * si + value.y * c, value.z)
+    }
+    run {
+        val a = radians(angleYDegrees)
+        val c = cos(a).toFloat()
+        val si = sin(a).toFloat()
+        value = Vec3(value.x * c + value.z * si, value.y, -value.x * si + value.z * c)
+    }
+    run {
+        val a = radians(angleXDegrees)
+        val c = cos(a).toFloat()
+        val si = sin(a).toFloat()
+        value = Vec3(value.x, value.y * c - value.z * si, value.y * si + value.z * c)
+    }
+    return value.normalized()
+}
+
+internal fun faceAlignmentCorrection(
+    currentNormal: Vec3,
+    progress: Float,
+): DiceAxisAngle {
+    val normalized = currentNormal.normalized()
+    val nz = normalized.z.coerceIn(-1f, 1f)
+    val axisLength = sqrt(normalized.x * normalized.x + normalized.y * normalized.y)
+    val fullAngle = Math.toDegrees(acos(nz).toDouble()).toFloat()
+    val easedProgress = progress.coerceIn(0f, 1f)
+    val axis = when {
+        axisLength > 0.0001f -> Vec3(
+            normalized.y / axisLength,
+            -normalized.x / axisLength,
+            0f,
+        )
+        nz < 0f -> Vec3(1f, 0f, 0f)
+        else -> Vec3(0f, 0f, 1f)
+    }
+    return DiceAxisAngle(fullAngle * easedProgress, axis)
 }
 
 internal fun tableTextureCoordinatesFor(
@@ -308,7 +366,7 @@ private class DiceSceneRenderer(
             else -> 0.44f
         }
         val states = physics?.states() ?: staticStates(count, dieScale)
-        val diceSettled = physics?.isSettled == true || !animateRoll
+        val settleProgress = if (animateRoll) physics?.settleProgress ?: 1f else 1f
 
         Matrix.setLookAtM(view, 0, 0f, -0.12f, cameraDistance, 0f, 0f, 0f, 0f, 1f, 0f)
         GLES20.glUseProgram(program)
@@ -324,15 +382,33 @@ private class DiceSceneRenderer(
             Matrix.setIdentityM(model, 0)
             Matrix.translateM(model, 0, state.x, state.y, 0f)
             val gpuMesh = gpuMesh(die.sides)
-            if (diceSettled) {
-                // The logical engine has already chosen [die.value]. Once motion settles we
-                // rotate that numbered face toward the camera instead of leaving a random pose.
+            if (animateRoll) {
+                val angleX = state.angleX + die.phase * 0.17f
+                val angleY = state.angleY + die.value * 3.7f
+                val angleZ = state.angleZ
+                resolvedFaceNormal(die, gpuMesh)?.let { localNormal ->
+                    val movingNormal = rotateFaceNormal(localNormal, angleX, angleY, angleZ)
+                    val correction = faceAlignmentCorrection(movingNormal, settleProgress)
+                    if (correction.angleDegrees > 0.0001f) {
+                        // Pre-multiply a progressively stronger world-space correction before
+                        // the physical rotations. The engine-selected value never changes; the
+                        // visible die naturally converges to that face while angular motion dies.
+                        Matrix.rotateM(
+                            model,
+                            0,
+                            correction.angleDegrees,
+                            correction.axis.x,
+                            correction.axis.y,
+                            correction.axis.z,
+                        )
+                    }
+                }
+                Matrix.rotateM(model, 0, angleX, 1f, 0f, 0f)
+                Matrix.rotateM(model, 0, angleY, 0f, 1f, 0f)
+                Matrix.rotateM(model, 0, angleZ, 0f, 0f, 1f)
+            } else {
                 Matrix.rotateM(model, 0, die.phase, 0f, 0f, 1f)
                 alignResolvedFace(model, die, gpuMesh)
-            } else {
-                Matrix.rotateM(model, 0, state.angleX + die.phase * 0.17f, 1f, 0f, 0f)
-                Matrix.rotateM(model, 0, state.angleY + die.value * 3.7f, 0f, 1f, 0f)
-                Matrix.rotateM(model, 0, state.angleZ, 0f, 0f, 1f)
             }
             Matrix.scaleM(model, 0, dieScale, dieScale, dieScale)
 
@@ -505,6 +581,12 @@ private class DiceSceneRenderer(
         DiceTableTheme.OAK -> floatArrayOf(0.25f, 0.105f, 0.035f, 0.64f, 0.34f, 0.10f)
         DiceTableTheme.EMERALD -> floatArrayOf(0.025f, 0.20f, 0.125f, 0.12f, 0.52f, 0.29f)
         DiceTableTheme.OBSIDIAN -> floatArrayOf(0.025f, 0.028f, 0.035f, 0.54f, 0.39f, 0.12f)
+        DiceTableTheme.TAVERN_WOOD -> floatArrayOf(0.22f, 0.10f, 0.035f, 0.58f, 0.29f, 0.08f)
+        DiceTableTheme.DUNGEON_STONE -> floatArrayOf(0.10f, 0.09f, 0.08f, 0.36f, 0.24f, 0.14f)
+        DiceTableTheme.ELVEN_GROVE -> floatArrayOf(0.025f, 0.18f, 0.09f, 0.16f, 0.46f, 0.19f)
+        DiceTableTheme.FROZEN_REALM -> floatArrayOf(0.08f, 0.20f, 0.28f, 0.32f, 0.70f, 0.86f)
+        DiceTableTheme.DESERT_RUINS -> floatArrayOf(0.30f, 0.17f, 0.07f, 0.72f, 0.49f, 0.23f)
+        DiceTableTheme.ASTRAL_VOID -> floatArrayOf(0.035f, 0.04f, 0.16f, 0.30f, 0.18f, 0.65f)
     }
 
     private fun gpuMesh(sides: Int): GpuMesh = gpuMeshes.getOrPut(sides) {
@@ -520,23 +602,36 @@ private class DiceSceneRenderer(
         )
     }
 
-    private fun alignResolvedFace(model: FloatArray, die: VisualDie, mesh: GpuMesh) {
+    private fun resolvedFaceNormal(die: VisualDie, mesh: GpuMesh): Vec3? {
         val numberedFaceCount = mesh.valueFaceNormals.size / 3
-        if (numberedFaceCount == 0) return
+        if (numberedFaceCount == 0) return null
         val faceIndex = if (die.sides == 100) {
+            // d100 uses the conventional percentile-d10 artwork (00..90), so the visual face
+            // represents the tens component while the logical result remains the exact 1..100.
             if (die.value == 100) 0 else (die.value / 10).coerceIn(0, numberedFaceCount - 1)
         } else {
             (die.value - 1).coerceIn(0, numberedFaceCount - 1)
         }
         val offset = faceIndex * 3
-        val nx = mesh.valueFaceNormals[offset]
-        val ny = mesh.valueFaceNormals[offset + 1]
-        val nz = mesh.valueFaceNormals[offset + 2].coerceIn(-1f, 1f)
-        val axisLength = sqrt(nx * nx + ny * ny)
-        val angle = Math.toDegrees(acos(nz).toDouble()).toFloat()
-        when {
-            axisLength > 0.0001f -> Matrix.rotateM(model, 0, angle, ny / axisLength, -nx / axisLength, 0f)
-            nz < 0f -> Matrix.rotateM(model, 0, 180f, 1f, 0f, 0f)
+        return Vec3(
+            mesh.valueFaceNormals[offset],
+            mesh.valueFaceNormals[offset + 1],
+            mesh.valueFaceNormals[offset + 2],
+        ).normalized()
+    }
+
+    private fun alignResolvedFace(model: FloatArray, die: VisualDie, mesh: GpuMesh) {
+        val normal = resolvedFaceNormal(die, mesh) ?: return
+        val correction = faceAlignmentCorrection(normal, 1f)
+        if (correction.angleDegrees > 0.0001f) {
+            Matrix.rotateM(
+                model,
+                0,
+                correction.angleDegrees,
+                correction.axis.x,
+                correction.axis.y,
+                correction.axis.z,
+            )
         }
     }
 

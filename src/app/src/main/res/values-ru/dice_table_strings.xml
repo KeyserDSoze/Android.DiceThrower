@@ -3,4 +3,10 @@
     <string name="table_arcane">Магический</string><string name="table_oak">Дуб</string><string name="table_emerald">Изумруд</string><string name="table_obsidian">Обсидиан</string>
     <string name="statistics">Статистика</string><string name="roll_again">Бросить снова</string>
     <string name="guided_builder">Пошаговый редактор</string><string name="advanced_formula">Расширенная формула</string><string name="roll_subgroups">Части броска</string><string name="roll_subgroups_help">Оставьте бросок целиком или разделите его на именованные части, например атаку и урон.</string><string name="add_subgroup">Добавить часть</string><string name="subgroup_name">Название части (необязательно)</string><string name="constant_value">Константа</string><string name="multiplier">Множитель</string><string name="clear_expression">Очистить формулу</string>
+    <string name="table_tavern_wood">Tavern Wood</string>
+    <string name="table_dungeon_stone">Dungeon Stone</string>
+    <string name="table_elven_grove">Elven Grove</string>
+    <string name="table_frozen_realm">Frozen Realm</string>
+    <string name="table_desert_ruins">Desert Ruins</string>
+    <string name="table_astral_void">Astral Void</string>
 </resources>

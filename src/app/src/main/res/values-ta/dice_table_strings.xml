@@ -3,4 +3,10 @@
     <string name="table_arcane">மந்திர</string><string name="table_oak">ஓக்</string><string name="table_emerald">மரகதம்</string><string name="table_obsidian">அப்சிடியன்</string>
     <string name="statistics">புள்ளிவிவரங்கள்</string><string name="roll_again">மீண்டும் உருட்டு</string>
     <string name="guided_builder">வழிகாட்டப்பட்ட உருவாக்கி</string><string name="advanced_formula">மேம்பட்ட சூத்திரம்</string><string name="roll_subgroups">உருட்டலின் பகுதிகள்</string><string name="roll_subgroups_help">முழு உருட்டலையும் ஒன்றாக வைத்திருங்கள் அல்லது தாக்குதல், சேதம் போன்ற பெயரிடப்பட்ட பகுதிகளாகப் பிரியுங்கள்.</string><string name="add_subgroup">பகுதியைச் சேர்</string><string name="subgroup_name">பகுதி பெயர் (விருப்பம்)</string><string name="constant_value">மாறிலி</string><string name="multiplier">பெருக்கி</string><string name="clear_expression">சூத்திரத்தை அழி</string>
+    <string name="table_tavern_wood">Tavern Wood</string>
+    <string name="table_dungeon_stone">Dungeon Stone</string>
+    <string name="table_elven_grove">Elven Grove</string>
+    <string name="table_frozen_realm">Frozen Realm</string>
+    <string name="table_desert_ruins">Desert Ruins</string>
+    <string name="table_astral_void">Astral Void</string>
 </resources>

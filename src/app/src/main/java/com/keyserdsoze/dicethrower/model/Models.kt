@@ -35,6 +35,12 @@ enum class DiceTableTheme {
     OAK,
     EMERALD,
     OBSIDIAN,
+    TAVERN_WOOD,
+    DUNGEON_STONE,
+    ELVEN_GROVE,
+    FROZEN_REALM,
+    DESERT_RUINS,
+    ASTRAL_VOID,
 }
 
 enum class DiceAppearanceMode {

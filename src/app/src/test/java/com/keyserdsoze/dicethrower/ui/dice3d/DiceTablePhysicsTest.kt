@@ -3,6 +3,8 @@ package com.keyserdsoze.dicethrower.ui.dice3d
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.math.sqrt
 
 class DiceTablePhysicsTest {
@@ -37,6 +39,40 @@ class DiceTablePhysicsTest {
                 val dy = second.y - first.y
                 assertTrue(sqrt(dx * dx + dy * dy) >= physics.radius * 1.95f)
             }
+        }
+    }
+
+    @Test
+    fun settleProgressIsSmoothMonotonicAndCompleteBeforeSettled() {
+        val physics = DiceTablePhysics(count = 4, seed = 19L)
+        var previous = 0f
+
+        repeat(220) {
+            physics.step(1f / 60f)
+            assertTrue(physics.settleProgress + 0.0001f >= previous)
+            previous = physics.settleProgress
+        }
+
+        assertEquals(1f, physics.settleProgress, 0.0001f)
+        assertTrue(physics.isSettled)
+    }
+
+    @Test
+    fun fullFaceCorrectionPointsResolvedFaceTowardCamera() {
+        listOf(6, 8, 12, 20).forEach { sides ->
+            val mesh = DiceMeshFactory.create(sides)
+            val normal = Vec3(
+                mesh.valueFaceNormals[0],
+                mesh.valueFaceNormals[1],
+                mesh.valueFaceNormals[2],
+            )
+            val moving = rotateFaceNormal(normal, 47f, -113f, 72f)
+            val correction = faceAlignmentCorrection(moving, 1f)
+            val corrected = rotateAroundAxis(moving, correction)
+
+            assertEquals(0f, corrected.x, 0.0015f)
+            assertEquals(0f, corrected.y, 0.0015f)
+            assertTrue(corrected.z > 0.999f)
         }
     }
 
@@ -79,6 +115,16 @@ class DiceTablePhysicsTest {
         assertEquals(1f, coordinates[1], 0.0001f)
         assertEquals(1f, coordinates[2], 0.0001f)
         assertEquals(0f, coordinates[5], 0.0001f)
+    }
+
+    private fun rotateAroundAxis(vector: Vec3, rotation: DiceAxisAngle): Vec3 {
+        val axis = rotation.axis.normalized()
+        val radians = Math.toRadians(rotation.angleDegrees.toDouble())
+        val c = cos(radians).toFloat()
+        val si = sin(radians).toFloat()
+        return vector * c +
+            axis.cross(vector) * si +
+            axis * (axis.dot(vector) * (1f - c))
     }
 
     @Test

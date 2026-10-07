@@ -74,8 +74,21 @@ internal class DiceTablePhysics(
     private var elapsed = 0f
     private var quietTime = 0f
 
+    val settleProgress: Float
+        get() {
+            if (bodies.isEmpty()) return 1f
+            val linear = ((elapsed - ALIGNMENT_START_SECONDS) / ALIGNMENT_DURATION_SECONDS)
+                .coerceIn(0f, 1f)
+            // Smoothstep avoids a visible acceleration change when the renderer begins guiding
+            // the already-resolved face toward its final orientation.
+            return linear * linear * (3f - 2f * linear)
+        }
+
     val isSettled: Boolean
-        get() = bodies.isEmpty() || (elapsed >= MIN_ROLL_SECONDS && quietTime >= REQUIRED_QUIET_SECONDS)
+        get() = bodies.isEmpty() ||
+            (elapsed >= MIN_ROLL_SECONDS &&
+                quietTime >= REQUIRED_QUIET_SECONDS &&
+                settleProgress >= 0.999f)
 
     fun states(): List<State> = bodies.map { body ->
         State(body.x, body.y, body.angleX, body.angleY, body.angleZ)
@@ -188,6 +201,8 @@ internal class DiceTablePhysics(
         const val MAX_STEP_SECONDS = 1f / 30f
         const val MIN_ROLL_SECONDS = 1.25f
         const val MAX_ROLL_SECONDS = 2.8f
+        const val ALIGNMENT_START_SECONDS = 1.15f
+        const val ALIGNMENT_DURATION_SECONDS = 0.85f
         const val REQUIRED_QUIET_SECONDS = 0.20f
         const val LINEAR_DRAG = 1.72f
         const val ANGULAR_DRAG = 2.35f

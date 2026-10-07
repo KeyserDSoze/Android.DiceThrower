@@ -4,4 +4,10 @@
     <string name="table_arcane">Arcana</string><string name="table_oak">Roble</string><string name="table_emerald">Esmeralda</string><string name="table_obsidian">Obsidiana</string>
     <string name="statistics">Estadísticas</string><string name="roll_again">Tirar de nuevo</string>
     <string name="guided_builder">Creación guiada</string><string name="advanced_formula">Fórmula avanzada</string><string name="roll_subgroups">Partes de la tirada</string><string name="roll_subgroups_help">Mantén toda la tirada junta o divídela en partes con nombre, como ataque y daño.</string><string name="add_subgroup">Añadir parte</string><string name="subgroup_name">Nombre de la parte (opcional)</string><string name="constant_value">Constante</string><string name="multiplier">Multiplicador</string><string name="clear_expression">Borrar expresión</string>
+    <string name="table_tavern_wood">Tavern Wood</string>
+    <string name="table_dungeon_stone">Dungeon Stone</string>
+    <string name="table_elven_grove">Elven Grove</string>
+    <string name="table_frozen_realm">Frozen Realm</string>
+    <string name="table_desert_ruins">Desert Ruins</string>
+    <string name="table_astral_void">Astral Void</string>
 </resources>

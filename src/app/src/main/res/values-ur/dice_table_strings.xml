@@ -3,4 +3,10 @@
     <string name="table_arcane">پراسرار</string><string name="table_oak">بلوط</string><string name="table_emerald">زمرد</string><string name="table_obsidian">آبسیڈین</string>
     <string name="statistics">اعداد و شمار</string><string name="roll_again">دوبارہ رول کریں</string>
     <string name="guided_builder">رہنمائی والا بلڈر</string><string name="advanced_formula">اعلیٰ فارمولا</string><string name="roll_subgroups">رول کے حصے</string><string name="roll_subgroups_help">پورا رول ساتھ رکھیں یا اسے حملہ اور نقصان جیسے نام والے حصوں میں تقسیم کریں۔</string><string name="add_subgroup">حصہ شامل کریں</string><string name="subgroup_name">حصے کا نام (اختیاری)</string><string name="constant_value">مستقل</string><string name="multiplier">ضارب</string><string name="clear_expression">فارمولا صاف کریں</string>
+    <string name="table_tavern_wood">Tavern Wood</string>
+    <string name="table_dungeon_stone">Dungeon Stone</string>
+    <string name="table_elven_grove">Elven Grove</string>
+    <string name="table_frozen_realm">Frozen Realm</string>
+    <string name="table_desert_ruins">Desert Ruins</string>
+    <string name="table_astral_void">Astral Void</string>
 </resources>

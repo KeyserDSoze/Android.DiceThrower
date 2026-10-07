@@ -3,4 +3,10 @@
     <string name="table_arcane">Mistik</string><string name="table_oak">Oak</string><string name="table_emerald">Zamrud</string><string name="table_obsidian">Obsidian</string>
     <string name="statistics">Statistik</string><string name="roll_again">Baling lagi</string>
     <string name="guided_builder">Pembina berpandu</string><string name="advanced_formula">Formula lanjutan</string><string name="roll_subgroups">Bahagian balingan</string><string name="roll_subgroups_help">Kekalkan seluruh balingan bersama atau bahagikan kepada bahagian bernama seperti serangan dan kerosakan.</string><string name="add_subgroup">Tambah bahagian</string><string name="subgroup_name">Nama bahagian (pilihan)</string><string name="constant_value">Pemalar</string><string name="multiplier">Pengganda</string><string name="clear_expression">Kosongkan formula</string>
+    <string name="table_tavern_wood">Tavern Wood</string>
+    <string name="table_dungeon_stone">Dungeon Stone</string>
+    <string name="table_elven_grove">Elven Grove</string>
+    <string name="table_frozen_realm">Frozen Realm</string>
+    <string name="table_desert_ruins">Desert Ruins</string>
+    <string name="table_astral_void">Astral Void</string>
 </resources>

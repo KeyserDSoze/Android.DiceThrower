@@ -16,4 +16,10 @@
     <string name="constant_value">Costante</string>
     <string name="multiplier">Moltiplicatore</string>
     <string name="clear_expression">Svuota formula</string>
+    <string name="table_tavern_wood">Legno da taverna</string>
+    <string name="table_dungeon_stone">Pietra del dungeon</string>
+    <string name="table_elven_grove">Boschetto elfico</string>
+    <string name="table_frozen_realm">Regno ghiacciato</string>
+    <string name="table_desert_ruins">Rovine del deserto</string>
+    <string name="table_astral_void">Vuoto astrale</string>
 </resources>

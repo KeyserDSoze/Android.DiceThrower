@@ -3,4 +3,10 @@
     <string name="table_arcane">奥术</string><string name="table_oak">橡木</string><string name="table_emerald">翡翠</string><string name="table_obsidian">黑曜石</string>
     <string name="statistics">统计</string><string name="roll_again">再次掷骰</string>
     <string name="guided_builder">引导式创建</string><string name="advanced_formula">高级公式</string><string name="roll_subgroups">投掷部分</string><string name="roll_subgroups_help">保留完整投掷，或将其拆分为攻击、伤害等命名部分。</string><string name="add_subgroup">添加部分</string><string name="subgroup_name">部分名称（可选）</string><string name="constant_value">常数</string><string name="multiplier">乘数</string><string name="clear_expression">清除公式</string>
+    <string name="table_tavern_wood">Tavern Wood</string>
+    <string name="table_dungeon_stone">Dungeon Stone</string>
+    <string name="table_elven_grove">Elven Grove</string>
+    <string name="table_frozen_realm">Frozen Realm</string>
+    <string name="table_desert_ruins">Desert Ruins</string>
+    <string name="table_astral_void">Astral Void</string>
 </resources>

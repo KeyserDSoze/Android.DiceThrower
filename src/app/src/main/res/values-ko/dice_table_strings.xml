@@ -3,4 +3,10 @@
     <string name="table_arcane">비전</string><string name="table_oak">참나무</string><string name="table_emerald">에메랄드</string><string name="table_obsidian">흑요석</string>
     <string name="statistics">통계</string><string name="roll_again">다시 굴리기</string>
     <string name="guided_builder">단계별 만들기</string><string name="advanced_formula">고급 수식</string><string name="roll_subgroups">굴림 구성</string><string name="roll_subgroups_help">전체 굴림을 유지하거나 공격과 피해 같은 이름 있는 부분으로 나눕니다.</string><string name="add_subgroup">부분 추가</string><string name="subgroup_name">부분 이름(선택)</string><string name="constant_value">상수</string><string name="multiplier">배수</string><string name="clear_expression">수식 지우기</string>
+    <string name="table_tavern_wood">Tavern Wood</string>
+    <string name="table_dungeon_stone">Dungeon Stone</string>
+    <string name="table_elven_grove">Elven Grove</string>
+    <string name="table_frozen_realm">Frozen Realm</string>
+    <string name="table_desert_ruins">Desert Ruins</string>
+    <string name="table_astral_void">Astral Void</string>
 </resources>

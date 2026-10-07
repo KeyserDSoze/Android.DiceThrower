@@ -3,4 +3,10 @@
     <string name="table_arcane">Gizemli</string><string name="table_oak">Meşe</string><string name="table_emerald">Zümrüt</string><string name="table_obsidian">Obsidyen</string>
     <string name="statistics">İstatistikler</string><string name="roll_again">Tekrar at</string>
     <string name="guided_builder">Yönlendirmeli oluşturucu</string><string name="advanced_formula">Gelişmiş formül</string><string name="roll_subgroups">Zar atışı bölümleri</string><string name="roll_subgroups_help">Atışı tek parça tutun veya saldırı ve hasar gibi adlandırılmış bölümlere ayırın.</string><string name="add_subgroup">Bölüm ekle</string><string name="subgroup_name">Bölüm adı (isteğe bağlı)</string><string name="constant_value">Sabit</string><string name="multiplier">Çarpan</string><string name="clear_expression">Formülü temizle</string>
+    <string name="table_tavern_wood">Tavern Wood</string>
+    <string name="table_dungeon_stone">Dungeon Stone</string>
+    <string name="table_elven_grove">Elven Grove</string>
+    <string name="table_frozen_realm">Frozen Realm</string>
+    <string name="table_desert_ruins">Desert Ruins</string>
+    <string name="table_astral_void">Astral Void</string>
 </resources>

@@ -3,4 +3,10 @@
     <string name="table_arcane">Sihiri</string><string name="table_oak">Oak</string><string name="table_emerald">Emerald</string><string name="table_obsidian">Obsidian</string>
     <string name="statistics">Ƙididdiga</string><string name="roll_again">Sake jefa</string>
     <string name="guided_builder">Ginin mai jagora</string><string name="advanced_formula">Dabara mai zurfi</string><string name="roll_subgroups">Sassan jifa</string><string name="roll_subgroups_help">Riƙe jifar gaba ɗaya tare ko raba ta zuwa sassa masu suna kamar hari da rauni.</string><string name="add_subgroup">Ƙara sashe</string><string name="subgroup_name">Sunan sashe (na zaɓi)</string><string name="constant_value">Dindindin</string><string name="multiplier">Mai ninkawa</string><string name="clear_expression">Share dabara</string>
+    <string name="table_tavern_wood">Tavern Wood</string>
+    <string name="table_dungeon_stone">Dungeon Stone</string>
+    <string name="table_elven_grove">Elven Grove</string>
+    <string name="table_frozen_realm">Frozen Realm</string>
+    <string name="table_desert_ruins">Desert Ruins</string>
+    <string name="table_astral_void">Astral Void</string>
 </resources>

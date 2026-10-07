@@ -3,4 +3,10 @@
     <string name="table_arcane">မှော်ဆန်</string><string name="table_oak">ဝက်သစ်ချ</string><string name="table_emerald">မြ</string><string name="table_obsidian">အော့ဘ်စီဒီယန်</string>
     <string name="statistics">စာရင်းအင်း</string><string name="roll_again">ထပ်လှိမ့်</string>
     <string name="guided_builder">လမ်းညွှန်ဖန်တီးမှု</string><string name="advanced_formula">အဆင့်မြင့် ဖော်မြူလာ</string><string name="roll_subgroups">အန်စာလှိမ့် အပိုင်းများ</string><string name="roll_subgroups_help">အန်စာလှိမ့်အားလုံးကို အတူထားပါ သို့မဟုတ် တိုက်ခိုက်မှုနှင့် ထိခိုက်မှုကဲ့သို့ အမည်ပေးထားသော အပိုင်းများခွဲပါ။</string><string name="add_subgroup">အပိုင်းထည့်ရန်</string><string name="subgroup_name">အပိုင်းအမည် (ရွေးချယ်နိုင်)</string><string name="constant_value">ကိန်းသေ</string><string name="multiplier">မြှောက်ကိန်း</string><string name="clear_expression">ဖော်မြူလာရှင်းရန်</string>
+    <string name="table_tavern_wood">Tavern Wood</string>
+    <string name="table_dungeon_stone">Dungeon Stone</string>
+    <string name="table_elven_grove">Elven Grove</string>
+    <string name="table_frozen_realm">Frozen Realm</string>
+    <string name="table_desert_ruins">Desert Ruins</string>
+    <string name="table_astral_void">Astral Void</string>
 </resources>

@@ -3,4 +3,10 @@
     <string name="table_arcane">ಮಾಂತ್ರಿಕ</string><string name="table_oak">ಓಕ್</string><string name="table_emerald">ಪಚ್ಚೆ</string><string name="table_obsidian">ಅಬ್ಸಿಡಿಯನ್</string>
     <string name="statistics">ಅಂಕಿಅಂಶಗಳು</string><string name="roll_again">ಮತ್ತೆ ರೋಲ್ ಮಾಡಿ</string>
     <string name="guided_builder">ಮಾರ್ಗದರ್ಶಿತ ಬಿಲ್ಡರ್</string><string name="advanced_formula">ಸುಧಾರಿತ ಸೂತ್ರ</string><string name="roll_subgroups">ರೋಲ್ ಭಾಗಗಳು</string><string name="roll_subgroups_help">ಸಂಪೂರ್ಣ ರೋಲ್ ಅನ್ನು ಒಟ್ಟಿಗೆ ಇರಿಸಿ ಅಥವಾ ದಾಳಿ ಮತ್ತು ಹಾನಿಯಂತಹ ಹೆಸರಿನ ಭಾಗಗಳಾಗಿ ವಿಭಜಿಸಿ.</string><string name="add_subgroup">ಭಾಗ ಸೇರಿಸಿ</string><string name="subgroup_name">ಭಾಗದ ಹೆಸರು (ಐಚ್ಛಿಕ)</string><string name="constant_value">ಸ್ಥಿರಾಂಕ</string><string name="multiplier">ಗುಣಕ</string><string name="clear_expression">ಸೂತ್ರ ತೆರವುಗೊಳಿಸಿ</string>
+    <string name="table_tavern_wood">Tavern Wood</string>
+    <string name="table_dungeon_stone">Dungeon Stone</string>
+    <string name="table_elven_grove">Elven Grove</string>
+    <string name="table_frozen_realm">Frozen Realm</string>
+    <string name="table_desert_ruins">Desert Ruins</string>
+    <string name="table_astral_void">Astral Void</string>
 </resources>

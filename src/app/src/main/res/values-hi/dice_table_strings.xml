@@ -3,4 +3,10 @@
     <string name="table_arcane">रहस्यमय</string><string name="table_oak">ओक</string><string name="table_emerald">पन्ना</string><string name="table_obsidian">ओब्सीडियन</string>
     <string name="statistics">आँकड़े</string><string name="roll_again">फिर से रोल करें</string>
     <string name="guided_builder">निर्देशित बिल्डर</string><string name="advanced_formula">उन्नत फ़ॉर्मूला</string><string name="roll_subgroups">रोल के भाग</string><string name="roll_subgroups_help">पूरे रोल को साथ रखें या उसे आक्रमण और क्षति जैसे नामित भागों में बाँटें।</string><string name="add_subgroup">भाग जोड़ें</string><string name="subgroup_name">भाग का नाम (वैकल्पिक)</string><string name="constant_value">स्थिरांक</string><string name="multiplier">गुणक</string><string name="clear_expression">फ़ॉर्मूला साफ़ करें</string>
+    <string name="table_tavern_wood">Tavern Wood</string>
+    <string name="table_dungeon_stone">Dungeon Stone</string>
+    <string name="table_elven_grove">Elven Grove</string>
+    <string name="table_frozen_realm">Frozen Realm</string>
+    <string name="table_desert_ruins">Desert Ruins</string>
+    <string name="table_astral_void">Astral Void</string>
 </resources>
