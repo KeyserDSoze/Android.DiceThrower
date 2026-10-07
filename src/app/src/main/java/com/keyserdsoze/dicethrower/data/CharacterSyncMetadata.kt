@@ -113,6 +113,15 @@ object CharacterRevision {
             canonical.field("total", log.total)
             canonical.field("detail", log.detail)
             canonical.field("timestamp", log.timestamp)
+            // Omit absent parts so revisions for legacy log records stay unchanged.
+            log.parts.forEachIndexed { index, part ->
+                canonical.section("rollLogPart")
+                canonical.field("index", index)
+                canonical.field("name", part.name)
+                canonical.field("expression", part.expression)
+                canonical.field("total", part.total)
+                canonical.field("detail", part.detail)
+            }
         }
 
         return canonical.toString()
