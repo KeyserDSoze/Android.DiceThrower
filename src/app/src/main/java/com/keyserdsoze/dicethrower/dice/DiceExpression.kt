@@ -222,7 +222,7 @@ class DiceExpression private constructor(
 
             private fun parseMultiply(): Node {
                 var result = parseUnary()
-                while (cursor < source.length && source[cursor] == '*') {
+                while (cursor < source.length && source[cursor] in charArrayOf('*', 'x', 'X', '×')) {
                     cursor++
                     result = Node.Multiply(result, parseUnary())
                 }

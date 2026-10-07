@@ -3386,7 +3386,7 @@ private fun GuidedExpressionEditorV2(
     var countText by remember { mutableStateOf("1") }
     var sides by remember { mutableStateOf(20) }
     var sidesMenu by remember { mutableStateOf(false) }
-    var subtractNext by remember { mutableStateOf(false) }
+    var nextOperator by remember { mutableStateOf("+") }
     var constantText by remember { mutableStateOf("1") }
     var multiplierText by remember { mutableStateOf("2") }
     val valid = RollFormulaResolver.validateTemplate(value, character.level, modifiers)
@@ -3394,10 +3394,9 @@ private fun GuidedExpressionEditorV2(
     fun appendTerm(term: String) {
         onValueChange(
             when {
-                value.isBlank() && subtractNext -> "-$term"
+                value.isBlank() && nextOperator == "-" -> "-$term"
                 value.isBlank() -> term
-                subtractNext -> "$value-$term"
-                else -> "$value+$term"
+                else -> "$value$nextOperator$term"
             },
         )
     }
@@ -3415,8 +3414,9 @@ private fun GuidedExpressionEditorV2(
     )
 
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-        FilterChip(selected = !subtractNext, onClick = { subtractNext = false }, label = { Text("+") })
-        FilterChip(selected = subtractNext, onClick = { subtractNext = true }, label = { Text("−") })
+        FilterChip(selected = nextOperator == "+", onClick = { nextOperator = "+" }, label = { Text("+") })
+        FilterChip(selected = nextOperator == "-", onClick = { nextOperator = "-" }, label = { Text("−") })
+        FilterChip(selected = nextOperator == "x", onClick = { nextOperator = "x" }, label = { Text("×") })
         OutlinedTextField(
             value = countText,
             onValueChange = { countText = it.filter(Char::isDigit).take(3) },
@@ -3485,11 +3485,11 @@ private fun GuidedExpressionEditorV2(
         )
         OutlinedButton(
             enabled = value.isNotBlank() && multiplierText.toIntOrNull() != null,
-            onClick = { onValueChange("($value)*${multiplierText.toInt()}") },
+            onClick = { onValueChange("($value)x${multiplierText.toInt()}") },
         ) { Text("×") }
         TextButton(
             enabled = value.isNotBlank(),
-            onClick = { onValueChange("($value)*{level}") },
+            onClick = { onValueChange("($value)x{level}") },
         ) { Text("× {level}") }
     }
 }
