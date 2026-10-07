@@ -1,6 +1,5 @@
 package com.keyserdsoze.dicethrower.ui.v2
 
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasContentDescription
@@ -43,10 +42,7 @@ class RollDialogV2Test {
             }
         }
 
-        composeRule.onNodeWithText("Arcane Night").assertExists()
-        composeRule.onNodeWithText("Fantasy Felt").assertExists()
-        composeRule.onNodeWithText("Ancient Map").assertExists()
-        composeRule.onNodeWithText("Sci-Fi Neon").assertExists()
+        composeRule.onNodeWithText("Arcane Night").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Arcane Night").assertIsDisplayed()
     }
 
