@@ -97,6 +97,29 @@ class RollDialogV2Test {
     }
 
     @Test
+    fun generatedFantasyTablesHaveNativeFullResolutionAndSmallPreviews() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val generated = listOf(
+            DiceTableTheme.TAVERN_WOOD,
+            DiceTableTheme.DUNGEON_STONE,
+            DiceTableTheme.ELVEN_GROVE,
+            DiceTableTheme.FROZEN_REALM,
+            DiceTableTheme.DESERT_RUINS,
+            DiceTableTheme.ASTRAL_VOID,
+        )
+        generated.forEach { theme ->
+            val preview = theme.presetBitmap(context, preview = true)
+            assertTrue("${theme.name} preview width", preview.width == 360)
+            assertTrue("${theme.name} preview height", preview.height == 640)
+            preview.recycle()
+            val full = theme.presetBitmap(context)
+            assertTrue("${theme.name} full width", full.width == 1080)
+            assertTrue("${theme.name} full height", full.height == 1920)
+            full.recycle()
+        }
+    }
+
+    @Test
     fun characterEditorAddRollOpensDialogWithoutCrashing() {
         val character = CharacterProfile(id = "character", name = "Test")
         composeRule.setContent {
