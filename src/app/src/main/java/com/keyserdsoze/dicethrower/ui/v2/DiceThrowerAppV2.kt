@@ -1631,7 +1631,8 @@ private fun RollEditorCardV2(
 ) {
     var groupMenu by remember(roll.id) { mutableStateOf(false) }
     val groupName = groups.firstOrNull { it.id == roll.groupId }?.name ?: stringResource(R.string.ungrouped)
-    val resolved = runCatching { RollFormulaResolver.resolve(character, modifiers, roll).expression }.getOrNull()
+    val resolvedFormula = runCatching { RollFormulaResolver.resolve(character, modifiers, roll) }.getOrNull()
+    val resolved = resolvedFormula?.expression
 
     PremiumCard(Modifier.fillMaxWidth()) {
         Column(
