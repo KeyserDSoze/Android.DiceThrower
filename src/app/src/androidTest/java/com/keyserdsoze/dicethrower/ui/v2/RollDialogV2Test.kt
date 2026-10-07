@@ -1,5 +1,6 @@
 package com.keyserdsoze.dicethrower.ui.v2
 
+import android.graphics.Color
 import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -15,14 +16,17 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
+import androidx.test.platform.app.InstrumentationRegistry
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterProfile
+import com.keyserdsoze.dicethrower.model.DiceTableTheme
 import com.keyserdsoze.dicethrower.model.RollDefinition
 import com.keyserdsoze.dicethrower.model.RollSubgroup
 import com.keyserdsoze.dicethrower.model.ThemeMode
 import com.keyserdsoze.dicethrower.ui.theme.DiceThrowerTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -57,6 +61,33 @@ class RollDialogV2Test {
             "Astral Void",
         ).forEach { label ->
             composeRule.onNodeWithContentDescription(label).assertExists()
+        }
+    }
+
+    @Test
+    fun premiumTableBitmapsContainVisibleArtwork() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+
+        DiceTableTheme.entries.forEach { theme ->
+            val bitmap = theme.presetBitmap(context)
+            val stepX = (bitmap.width / 12).coerceAtLeast(1)
+            val stepY = (bitmap.height / 20).coerceAtLeast(1)
+            var samples = 0
+            var visibleSamples = 0
+
+            for (y in 0 until bitmap.height step stepY) {
+                for (x in 0 until bitmap.width step stepX) {
+                    val pixel = bitmap.getPixel(x, y)
+                    val brightness = Color.red(pixel) + Color.green(pixel) + Color.blue(pixel)
+                    samples += 1
+                    if (brightness > 30) visibleSamples += 1
+                }
+            }
+
+            assertTrue(
+                "${theme.name} preview is effectively black",
+                visibleSamples >= (samples * 0.12f).toInt().coerceAtLeast(1),
+            )
         }
     }
 
