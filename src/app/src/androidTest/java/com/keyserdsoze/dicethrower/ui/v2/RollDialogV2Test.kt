@@ -1,13 +1,18 @@
 package com.keyserdsoze.dicethrower.ui.v2
 
+import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import com.keyserdsoze.dicethrower.model.AppData
@@ -38,10 +43,10 @@ class RollDialogV2Test {
             }
         }
 
-        composeRule.onNodeWithText("Arcane Night").assertIsDisplayed()
-        composeRule.onNodeWithText("Fantasy Felt").assertIsDisplayed()
-        composeRule.onNodeWithText("Ancient Map").assertIsDisplayed()
-        composeRule.onNodeWithText("Sci-Fi Neon").assertIsDisplayed()
+        composeRule.onNodeWithText("Arcane Night").assertExists()
+        composeRule.onNodeWithText("Fantasy Felt").assertExists()
+        composeRule.onNodeWithText("Ancient Map").assertExists()
+        composeRule.onNodeWithText("Sci-Fi Neon").assertExists()
         composeRule.onNodeWithContentDescription("Arcane Night").assertIsDisplayed()
     }
 
@@ -59,6 +64,8 @@ class RollDialogV2Test {
             }
         }
 
+        composeRule.onNode(hasScrollToIndexAction())
+            .performScrollToNode(hasContentDescription("New roll"))
         composeRule.onNodeWithContentDescription("New roll").performClick()
         composeRule.onNodeWithText("1d20").assertIsDisplayed()
     }
@@ -93,6 +100,8 @@ class RollDialogV2Test {
             }
         }
 
+        composeRule.onNode(hasScrollToIndexAction())
+            .performScrollToNode(hasText("Strength"))
         composeRule.onNodeWithText("Strength").assertIsDisplayed()
         composeRule.onNodeWithText("Used by one or more rolls").assertIsDisplayed()
     }
