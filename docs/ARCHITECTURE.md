@@ -28,7 +28,7 @@
 
 `RollLog`: id, characterId, rollDefinitionId, rollName, resolved expression, total, detail, timestamp.
 
-`AppSettings`: theme, shake, animations, roll-button visibility/position, log retention.
+`AppSettings`: theme, animations, first-roll and reroll gesture triggers (tap/swipe/shake), legacy roll-button fields kept for backward compatibility, log retention and conflict policy. Interaction gestures are device-local; the footer dice action is always available in the V2 table.
 
 ## Character variables
 
@@ -95,6 +95,8 @@ The stored roll remains parametric. For every throw:
 7. independently resolve a visual style for each stable die slot;
 8. publish the immutable result + resolved appearances to the visual layer;
 9. store the fully resolved expression in the roll log.
+
+Input gestures never participate in dice math: every enabled trigger calls the same debounced throw request, and the logical result is still generated before the renderer receives the immutable visual event.
 
 Level-up therefore affects every parameterized roll immediately without mutating the roll definitions.
 
