@@ -29,5 +29,5 @@
     <string name="tap_dice_table">Tocca dadi / tavolo</string>
     <string name="swipe_up_to_roll">Swipe verso l’alto</string>
     <string name="shake_phone">Muovi il telefono</string>
-    <string name="roll_icon_always_available">L'icona del dado nel footer è sempre disponibile.</string>
+    <string name="roll_icon_always_available">L’icona del dado nel footer è sempre disponibile.</string>
 </resources>
