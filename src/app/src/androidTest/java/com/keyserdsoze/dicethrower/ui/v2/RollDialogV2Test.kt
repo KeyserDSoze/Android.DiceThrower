@@ -1,7 +1,6 @@
 package com.keyserdsoze.dicethrower.ui.v2
 
 import android.graphics.Color
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasContentDescription
@@ -60,7 +59,10 @@ class RollDialogV2Test {
             "Desert Ruins",
             "Astral Void",
         ).forEach { label ->
-            composeRule.onNodeWithContentDescription(label).assertExists()
+            assertTrue(
+                "$label preview node is missing",
+                composeRule.onAllNodesWithContentDescription(label).fetchSemanticsNodes().isNotEmpty(),
+            )
         }
     }
 
