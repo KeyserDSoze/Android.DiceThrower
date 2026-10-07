@@ -206,8 +206,8 @@ jobs:
           VERSION: ${{ needs.release.outputs.version }}
         run: |
           mkdir -p distribution/whatsnew
-          printf 'Dice Thrower %s: introduces four premium dice-table presets with visual previews, a true edge-to-edge roll table, and improved custom table-photo preview while keeping backup and sync compatibility.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
-          printf 'Dice Thrower %s: introduce quattro tavoli premium con anteprima, una vista di lancio realmente edge-to-edge e una preview migliorata delle foto tavolo personalizzate, mantenendo compatibili backup e sync.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
+          printf 'Dice Thrower %s: expands to ten premium table presets, adds Android Back navigation through the app hierarchy, moves roll controls to an ergonomic footer, and makes dice settle progressively on the actual logical result face.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
+          printf 'Dice Thrower %s: porta i tavoli premium a dieci, integra il tasto Back Android nella navigazione, sposta i controlli del tiro nel footer e fa assestare progressivamente i dadi sulla faccia del risultato logico reale.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
 
       - name: Upload to Google Play Internal testing
         uses: r0adkll/upload-google-play@v1.1.5
