@@ -1256,50 +1256,52 @@ internal fun DiceTablePickerV2(
             subtitle = stringResource(R.string.dice_table_help),
         )
 
-        DiceTableTheme.values().toList().chunked(2).forEach { themes ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                themes.forEach { theme ->
-                    val selected = character.diceTableImage == null && character.diceTableTheme == theme
-                    val label = stringResource(theme.presetNameRes())
-                    Surface(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { onThemeChanged(theme) },
-                        shape = RoundedCornerShape(18.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                        border = BorderStroke(
-                            width = if (selected) 2.dp else 1.dp,
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            DiceTableTheme.values().forEach { theme ->
+                val selected = character.diceTableImage == null && character.diceTableTheme == theme
+                val label = stringResource(theme.presetNameRes())
+                Surface(
+                    modifier = Modifier
+                        .width(148.dp)
+                        .clickable { onThemeChanged(theme) },
+                    shape = RoundedCornerShape(18.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    border = BorderStroke(
+                        width = if (selected) 2.dp else 1.dp,
+                        color = if (selected) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.outlineVariant
+                        },
+                    ),
+                ) {
+                    Column {
+                        Image(
+                            painter = painterResource(theme.presetDrawableRes()),
+                            contentDescription = label,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(92.dp),
+                        )
+                        Text(
+                            text = label,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                             color = if (selected) {
                                 MaterialTheme.colorScheme.primary
                             } else {
-                                MaterialTheme.colorScheme.outlineVariant
+                                MaterialTheme.colorScheme.onSurfaceVariant
                             },
-                        ),
-                    ) {
-                        Column {
-                            Image(
-                                painter = painterResource(theme.presetDrawableRes()),
-                                contentDescription = label,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .aspectRatio(1.35f),
-                            )
-                            Text(
-                                text = label,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (selected) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                            )
-                        }
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
                 }
             }
