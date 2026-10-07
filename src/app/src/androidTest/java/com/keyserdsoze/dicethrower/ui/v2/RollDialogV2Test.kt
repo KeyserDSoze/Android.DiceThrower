@@ -26,6 +26,26 @@ class RollDialogV2Test {
     val composeRule = createComposeRule()
 
     @Test
+    fun diceTablePickerShowsPremiumPresetPreviews() {
+        val character = CharacterProfile(id = "character", name = "Test")
+        composeRule.setContent {
+            DiceThrowerTheme(themeMode = ThemeMode.DARK) {
+                DiceTablePickerV2(
+                    character = character,
+                    onThemeChanged = {},
+                    onImageChanged = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Arcane Night").assertIsDisplayed()
+        composeRule.onNodeWithText("Fantasy Felt").assertIsDisplayed()
+        composeRule.onNodeWithText("Ancient Map").assertIsDisplayed()
+        composeRule.onNodeWithText("Sci-Fi Neon").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Arcane Night").assertIsDisplayed()
+    }
+
+    @Test
     fun characterEditorAddRollOpensDialogWithoutCrashing() {
         val character = CharacterProfile(id = "character", name = "Test")
         composeRule.setContent {
