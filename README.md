@@ -20,7 +20,7 @@ Dadi supportati nella prima versione: **d2, d3, d4, d6, d8, d10, d12, d20, d100*
 6. Aspetto dei singoli tiri configurabile: predefinito, uniforme, per dado, casuale uniforme o casuale per dado, con pool opzionale.
 7. Builder guidato dei tiri con parti nominate (per esempio colpire/danni), dadi, costanti, variabili, moltiplicatori e modalità formula avanzata.
 8. Lancio con pulsante configurabile oppure scuotendo il telefono.
-9. Tavolo OpenGL ES personalizzabile per personaggio con dadi numerati, collisioni fisiche, reveal animato del totale e statistiche separate.
+9. Tavolo OpenGL ES full-screen con quattro preset grafici premium, preview visuale, foto personale opzionale, dadi numerati, collisioni fisiche e statistiche separate.
 10. Log locale con retention configurabile.
 11. Backup e restore locale validato tramite Android Storage Access Framework.
 
