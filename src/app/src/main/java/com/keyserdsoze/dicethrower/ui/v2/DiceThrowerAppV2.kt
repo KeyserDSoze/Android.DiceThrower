@@ -78,6 +78,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.setValue
@@ -250,12 +252,13 @@ fun DiceThrowerAppV2(
     }
 
     var data by remember { mutableStateOf(store.loadData()) }
-    var route by remember { mutableStateOf(RouteV2.CHARACTERS) }
-    var selectedCharacterId by remember { mutableStateOf<String?>(null) }
-    var selectedGroupId by remember { mutableStateOf<String?>(null) }
-    var selectedRollId by remember { mutableStateOf<String?>(null) }
-    var rollReturnGroupId by remember { mutableStateOf<String?>(null) }
-    var editMode by remember { mutableStateOf(false) }
+    var route by rememberSaveable { mutableStateOf(RouteV2.CHARACTERS) }
+    var selectedCharacterId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedGroupId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedRollId by rememberSaveable { mutableStateOf<String?>(null) }
+    var rollReturnGroupId by rememberSaveable { mutableStateOf<String?>(null) }
+    var editMode by rememberSaveable { mutableStateOf(false) }
+    val stateHolder = rememberSaveableStateHolder()
 
     fun persist(updated: AppData) {
         data = store.saveData(updated)
@@ -298,6 +301,16 @@ fun DiceThrowerAppV2(
         )
     }
 
+    // Keep each destination's LazyColumn position and saveable UI state when it leaves composition.
+    val pageKey = when (route) {
+        RouteV2.CHARACTERS -> "characters"
+        RouteV2.CHARACTER -> "character:${selectedCharacterId}:${editMode}"
+        RouteV2.GROUP -> "group:${selectedCharacterId}:${selectedGroupId}:${editMode}"
+        RouteV2.ROLL -> "roll:${selectedRollId}"
+        RouteV2.SETTINGS -> "settings"
+        RouteV2.LOGS -> "logs:${selectedCharacterId}"
+    }
+    stateHolder.SaveableStateProvider(pageKey) {
     when (route) {
         RouteV2.CHARACTERS -> CharactersScreenV2(
             data = data,
@@ -428,6 +441,7 @@ fun DiceThrowerAppV2(
                 )
             }
         }
+    }
     }
 }
 
@@ -631,12 +645,13 @@ private fun CharacterScreenV2(
     onOpenRoll: (String) -> Unit,
     onOpenGroup: (String) -> Unit,
     onDataChanged: (AppData) -> Unit,
-) {
+ ) {
+    var childEditorVisible by remember(character.id) { mutableStateOf(false) }
     ArcaneBackground {
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                TopAppBar(
+                if (!childEditorVisible) TopAppBar(
                     colors = transparentTopBarColors(),
                     navigationIcon = {
                         IconButton(onClick = onBack) {
@@ -691,6 +706,7 @@ private fun CharacterScreenV2(
                     data = data,
                     onOpenGroup = onOpenGroup,
                     onDataChanged = onDataChanged,
+                    onEditorVisibilityChanged = { childEditorVisible = it },
                     modifier = Modifier.padding(padding),
                 )
             } else {
@@ -846,6 +862,7 @@ internal fun CharacterEditContentV2(
     data: AppData,
     onOpenGroup: (String) -> Unit,
     onDataChanged: (AppData) -> Unit,
+    onEditorVisibilityChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var showAddModifier by remember { mutableStateOf(false) }
@@ -867,6 +884,13 @@ internal fun CharacterEditContentV2(
     val entries = dashboardEntries(groups, rolls.filter { it.groupId == null })
 
     val builderRoll = editingRollId?.let { id -> rolls.firstOrNull { it.id == id } }
+    LaunchedEffect(showAddRoll, builderRoll) {
+        onEditorVisibilityChanged(showAddRoll || builderRoll != null)
+    }
+    BackHandler(enabled = showAddRoll || builderRoll != null) {
+        showAddRoll = false
+        editingRollId = null
+    }
     if (showAddRoll || builderRoll != null) {
         RollBuilderScreenV2(
             title = stringResource(if (builderRoll == null) R.string.new_roll else R.string.edit_roll),
@@ -1415,11 +1439,12 @@ private fun GroupScreenV2(
     onDeleteGroup: () -> Unit,
     onDataChanged: (AppData) -> Unit,
 ) {
+    var childEditorVisible by remember(group.id) { mutableStateOf(false) }
     ArcaneBackground {
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                TopAppBar(
+                if (!childEditorVisible) TopAppBar(
                     colors = transparentTopBarColors(),
                     navigationIcon = {
                         IconButton(onClick = onBack) {
@@ -1452,6 +1477,7 @@ private fun GroupScreenV2(
                     group = group,
                     data = data,
                     onDataChanged = onDataChanged,
+                    onEditorVisibilityChanged = { childEditorVisible = it },
                     modifier = Modifier.padding(padding),
                 )
             } else {
@@ -1510,8 +1536,10 @@ private fun GroupEditContentV2(
     group: RollGroup,
     data: AppData,
     onDataChanged: (AppData) -> Unit,
+    onEditorVisibilityChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    var expandedRollId by rememberSaveable(group.id) { mutableStateOf<String?>(null) }
     var showAddRoll by remember { mutableStateOf(false) }
     var editingRollId by remember { mutableStateOf<String?>(null) }
     var addRuleRollId by remember { mutableStateOf<String?>(null) }
@@ -1523,6 +1551,13 @@ private fun GroupEditContentV2(
     val diceStyles = data.diceStyles.filter { it.characterId == character.id }.sortedBy { it.order }
 
     val builderRoll = editingRollId?.let { id -> allCharacterRolls.firstOrNull { it.id == id } }
+    LaunchedEffect(showAddRoll, builderRoll) {
+        onEditorVisibilityChanged(showAddRoll || builderRoll != null)
+    }
+    BackHandler(enabled = showAddRoll || builderRoll != null) {
+        showAddRoll = false
+        editingRollId = null
+    }
     if (showAddRoll || builderRoll != null) {
         RollBuilderScreenV2(
             title = stringResource(if (builderRoll == null) R.string.new_roll else R.string.edit_roll),
@@ -1595,6 +1630,7 @@ private fun GroupEditContentV2(
         }
 
         itemsIndexed(groupRolls, key = { _, roll -> roll.id }) { index, roll ->
+            var moveMenu by remember(roll.id) { mutableStateOf(false) }
             DragReorderCard(
                 key = "group-roll-${roll.id}",
                 canMoveUp = index > 0,
@@ -1626,6 +1662,53 @@ private fun GroupEditContentV2(
                     )
                 },
             ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Text(
+                            roll.name,
+                            modifier = Modifier.weight(1f).clickable {
+                                expandedRollId = if (expandedRollId == roll.id) null else roll.id
+                            },
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Box {
+                            OutlinedButton(onClick = { moveMenu = true }) {
+                                Text(stringResource(R.string.group), maxLines = 1)
+                            }
+                            DropdownMenu(expanded = moveMenu, onDismissRequest = { moveMenu = false }) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.ungrouped)) },
+                                    onClick = {
+                                        moveMenu = false
+                                        onDataChanged(DashboardDataOperations.changeRollGroup(data, character.id, roll.id, null))
+                                    },
+                                )
+                                groups.filterNot { it.id == group.id }.forEach { target ->
+                                    DropdownMenuItem(
+                                        text = { Text(target.name) },
+                                        onClick = {
+                                            moveMenu = false
+                                            onDataChanged(DashboardDataOperations.changeRollGroup(data, character.id, roll.id, target.id))
+                                        },
+                                    )
+                                }
+                            }
+                        }
+                        IconButton(onClick = {
+                            expandedRollId = if (expandedRollId == roll.id) null else roll.id
+                        }) {
+                            Icon(
+                                if (expandedRollId == roll.id) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.Edit,
+                                contentDescription = stringResource(R.string.edit),
+                            )
+                        }
+                    }
+                    if (expandedRollId == roll.id) {
                 RollEditorCardV2(
                     character = character,
                     modifiers = modifiers,
@@ -1672,6 +1755,8 @@ private fun GroupEditContentV2(
                         onDataChanged(data.copy(rolls = data.rolls.filterNot { it.id == roll.id }))
                     },
                 )
+                    }
+                }
             }
         }
     }
