@@ -34,6 +34,11 @@ class AppBackupCodecTest {
         val settings = AppSettings(
             themeMode = ThemeMode.DARK,
             shakeEnabled = false,
+            firstRollTapEnabled = false,
+            firstRollSwipeEnabled = true,
+            rerollTapEnabled = true,
+            rerollSwipeEnabled = true,
+            rerollShakeEnabled = true,
             animationsEnabled = true,
             showRollButton = true,
             rollButtonPosition = RollButtonPosition.TOP_CENTER,
@@ -56,6 +61,22 @@ class AppBackupCodecTest {
         assertTrue(raw.contains("\"imageMode\": \"portable-assets\""))
         assertTrue(raw.contains("\"diceStyles\""))
         assertTrue(raw.contains("\"characterSyncMetadata\""))
+    }
+
+    @Test
+    fun legacySettingsGetSafeRollGestureDefaults() {
+        val decoded = AppDataJsonCodec.decodeSettings(
+            JSONObject()
+                .put("shakeEnabled", false)
+                .put("animationsEnabled", true),
+        )
+
+        assertEquals(false, decoded.shakeEnabled)
+        assertEquals(true, decoded.firstRollTapEnabled)
+        assertEquals(true, decoded.firstRollSwipeEnabled)
+        assertEquals(false, decoded.rerollTapEnabled)
+        assertEquals(false, decoded.rerollSwipeEnabled)
+        assertEquals(false, decoded.rerollShakeEnabled)
     }
 
     @Test
