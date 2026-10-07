@@ -22,8 +22,8 @@ import kotlin.random.Random
 internal object FantasyTableArtwork {
     const val FULL_WIDTH = 1080
     const val FULL_HEIGHT = 1920
-    const val PREVIEW_WIDTH = 360
-    const val PREVIEW_HEIGHT = 640
+    const val PREVIEW_WIDTH = 540
+    const val PREVIEW_HEIGHT = 960
 
     fun supports(theme: DiceTableTheme) = when (theme) {
         DiceTableTheme.TAVERN_WOOD, DiceTableTheme.DUNGEON_STONE,

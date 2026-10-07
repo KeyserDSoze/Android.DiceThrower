@@ -109,8 +109,8 @@ class RollDialogV2Test {
         )
         generated.forEach { theme ->
             val preview = theme.presetBitmap(context, preview = true)
-            assertTrue("${theme.name} preview width", preview.width == 360)
-            assertTrue("${theme.name} preview height", preview.height == 640)
+            assertTrue("${theme.name} preview width", preview.width == 540)
+            assertTrue("${theme.name} preview height", preview.height == 960)
             preview.recycle()
             val full = theme.presetBitmap(context)
             assertTrue("${theme.name} full width", full.width == 1080)
