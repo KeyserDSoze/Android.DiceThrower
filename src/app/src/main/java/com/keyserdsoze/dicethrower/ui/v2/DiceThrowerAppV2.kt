@@ -11,6 +11,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -83,6 +85,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -1283,54 +1286,57 @@ internal fun DiceTablePickerV2(
             subtitle = stringResource(R.string.dice_table_help),
         )
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            DiceTableTheme.values().forEach { theme ->
-                val selected = character.diceTableImage == null && character.diceTableTheme == theme
-                val label = stringResource(theme.presetNameRes())
-                val previewBitmap = remember(context, theme) { theme.presetBitmap(context).asImageBitmap() }
-                Surface(
-                    modifier = Modifier
-                        .width(148.dp)
-                        .clickable { onThemeChanged(theme) },
-                    shape = RoundedCornerShape(18.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    border = BorderStroke(
-                        width = if (selected) 2.dp else 1.dp,
-                        color = if (selected) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.outlineVariant
-                        },
-                    ),
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            DiceTableTheme.entries.chunked(2).forEach { rowThemes ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Column {
-                        Image(
-                            bitmap = previewBitmap,
-                            contentDescription = label,
-                            contentScale = ContentScale.Crop,
+                    rowThemes.forEach { theme ->
+                        val selected = character.diceTableImage == null && character.diceTableTheme == theme
+                        val label = stringResource(theme.presetNameRes())
+                        val previewBitmap = remember(context, theme) { theme.presetBitmap(context).asImageBitmap() }
+                        Surface(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(92.dp),
-                        )
-                        Text(
-                            text = label,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (selected) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                                .weight(1f)
+                                .clickable { onThemeChanged(theme) },
+                            shape = RoundedCornerShape(18.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            border = BorderStroke(
+                                width = if (selected) 2.dp else 1.dp,
+                                color = if (selected) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.outlineVariant
+                                },
+                            ),
+                        ) {
+                            Column {
+                                Image(
+                                    bitmap = previewBitmap,
+                                    contentDescription = label,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(118.dp),
+                                )
+                                Text(
+                                    text = label,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (selected) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
                     }
+                    if (rowThemes.size == 1) Spacer(Modifier.weight(1f))
                 }
             }
         }
@@ -1945,10 +1951,20 @@ private fun RollScreenV2(
         )
     }
 
-    // Shake starts the first throw only. Every reroll is deliberately button-only.
-    DisposableEffect(settings.shakeEnabled, hasRolled, roll.id, formula.expression) {
-        val detector = if (settings.shakeEnabled && !hasRolled) {
-            ShakeDetector(context, ::throwDice).also { it.start() }
+    var lastThrowRequestAtNanos by remember(roll.id) { mutableStateOf(0L) }
+
+    fun requestThrow() {
+        if (hasRolled && !resultRevealed) return
+        val now = System.nanoTime()
+        if (now - lastThrowRequestAtNanos < 450_000_000L) return
+        lastThrowRequestAtNanos = now
+        throwDice()
+    }
+
+    val shakeTriggerEnabled = if (hasRolled) settings.rerollShakeEnabled else settings.shakeEnabled
+    DisposableEffect(shakeTriggerEnabled, hasRolled, resultRevealed, roll.id, formula.expression) {
+        val detector = if (shakeTriggerEnabled && (!hasRolled || resultRevealed)) {
+            ShakeDetector(context, ::requestThrow).also { it.start() }
         } else null
         onDispose { detector?.stop() }
     }
@@ -1966,6 +1982,38 @@ private fun RollScreenV2(
                     if (hasRolled && eventId == visualEvent.id) resultRevealed = true
                 },
                 modifier = Modifier.fillMaxSize(),
+            )
+
+            val tapTriggerEnabled = if (hasRolled) settings.rerollTapEnabled else settings.firstRollTapEnabled
+            val swipeTriggerEnabled = if (hasRolled) settings.rerollSwipeEnabled else settings.firstRollSwipeEnabled
+            val gestureTriggerReady = !hasRolled || resultRevealed
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 88.dp)
+                    .pointerInput(tapTriggerEnabled, gestureTriggerReady, roll.id) {
+                        if (tapTriggerEnabled) {
+                            detectTapGestures {
+                                if (gestureTriggerReady) requestThrow()
+                            }
+                        }
+                    }
+                    .pointerInput(swipeTriggerEnabled, gestureTriggerReady, roll.id) {
+                        if (swipeTriggerEnabled) {
+                            var verticalDistance = 0f
+                            detectVerticalDragGestures(
+                                onDragStart = { verticalDistance = 0f },
+                                onVerticalDrag = { _, dragAmount -> verticalDistance += dragAmount },
+                                onDragCancel = { verticalDistance = 0f },
+                                onDragEnd = {
+                                    if (gestureTriggerReady && verticalDistance <= -80.dp.toPx()) {
+                                        requestThrow()
+                                    }
+                                    verticalDistance = 0f
+                                },
+                            )
+                        }
+                    },
             )
 
             if (resultRevealed) {
@@ -2023,7 +2071,7 @@ private fun RollScreenV2(
                         )
                     }
                     IconButton(
-                        onClick = ::throwDice,
+                        onClick = ::requestThrow,
                         enabled = !hasRolled || resultRevealed,
                     ) {
                         Icon(
@@ -2541,26 +2589,69 @@ private fun SettingsScreenV2(
                     }
                 }
 
-                item { ToggleSettingCard(stringResource(R.string.shake_enabled), settings.shakeEnabled) { onSettingsChanged(settings.copy(shakeEnabled = it)) } }
-                item { ToggleSettingCard(stringResource(R.string.animations_enabled), settings.animationsEnabled) { onSettingsChanged(settings.copy(animationsEnabled = it)) } }
-                item { ToggleSettingCard(stringResource(R.string.show_roll_button), settings.showRollButton) { onSettingsChanged(settings.copy(showRollButton = it)) } }
+                item {
+                    PremiumCard(Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Text(stringResource(R.string.roll_interactions), fontWeight = FontWeight.Bold)
+                            Text(
+                                stringResource(R.string.roll_interactions_help),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                stringResource(R.string.first_roll_triggers),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            RollTriggerToggle(
+                                label = stringResource(R.string.tap_dice_table),
+                                checked = settings.firstRollTapEnabled,
+                                onChecked = { onSettingsChanged(settings.copy(firstRollTapEnabled = it)) },
+                            )
+                            RollTriggerToggle(
+                                label = stringResource(R.string.swipe_up_to_roll),
+                                checked = settings.firstRollSwipeEnabled,
+                                onChecked = { onSettingsChanged(settings.copy(firstRollSwipeEnabled = it)) },
+                            )
+                            RollTriggerToggle(
+                                label = stringResource(R.string.shake_phone),
+                                checked = settings.shakeEnabled,
+                                onChecked = { onSettingsChanged(settings.copy(shakeEnabled = it)) },
+                            )
 
-                if (settings.showRollButton) {
-                    item {
-                        PremiumCard(Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(stringResource(R.string.button_position), fontWeight = FontWeight.Bold)
-                                RollButtonPosition.entries.forEach { position ->
-                                    FilterChip(
-                                        selected = settings.rollButtonPosition == position,
-                                        onClick = { onSettingsChanged(settings.copy(rollButtonPosition = position)) },
-                                        label = { Text(positionLabel(position)) },
-                                    )
-                                }
-                            }
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                stringResource(R.string.reroll_triggers),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            RollTriggerToggle(
+                                label = stringResource(R.string.tap_dice_table),
+                                checked = settings.rerollTapEnabled,
+                                onChecked = { onSettingsChanged(settings.copy(rerollTapEnabled = it)) },
+                            )
+                            RollTriggerToggle(
+                                label = stringResource(R.string.swipe_up_to_roll),
+                                checked = settings.rerollSwipeEnabled,
+                                onChecked = { onSettingsChanged(settings.copy(rerollSwipeEnabled = it)) },
+                            )
+                            RollTriggerToggle(
+                                label = stringResource(R.string.shake_phone),
+                                checked = settings.rerollShakeEnabled,
+                                onChecked = { onSettingsChanged(settings.copy(rerollShakeEnabled = it)) },
+                            )
+                            Text(
+                                stringResource(R.string.roll_icon_always_available),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                         }
                     }
                 }
+                item { ToggleSettingCard(stringResource(R.string.animations_enabled), settings.animationsEnabled) { onSettingsChanged(settings.copy(animationsEnabled = it)) } }
 
                 item {
                     PremiumCard(Modifier.fillMaxWidth()) {
@@ -2709,6 +2800,25 @@ private fun accountFailureText(failure: GoogleConnectionFailure): String = strin
         GoogleConnectionFailure.DISCONNECT -> R.string.google_disconnect_failed
     },
 )
+
+@Composable
+private fun RollTriggerToggle(
+    label: String,
+    checked: Boolean,
+    onChecked: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            label,
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Switch(checked = checked, onCheckedChange = onChecked)
+    }
+}
 
 @Composable
 private fun ToggleSettingCard(
