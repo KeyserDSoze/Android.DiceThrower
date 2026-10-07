@@ -1292,6 +1292,7 @@ internal fun DiceTablePickerV2(
     val context = LocalContext.current
     val imageAssetStore = remember(context) { CharacterImageAssetStore(context) }
     var imageImportFailed by remember { mutableStateOf(false) }
+    var expanded by rememberSaveable(character.id) { mutableStateOf(false) }
     val customPreview = remember(character.diceTableImage) {
         character.diceTableImage
             ?.let(imageAssetStore::loadVerified)
@@ -1309,11 +1310,34 @@ internal fun DiceTablePickerV2(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionTitleV2(
-            title = stringResource(R.string.dice_table),
-            subtitle = stringResource(R.string.dice_table_help),
-        )
-
+        Surface(
+            shape = RoundedCornerShape(18.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded },
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.dice_table), fontWeight = FontWeight.Bold)
+                    Text(
+                        if (character.diceTableImage != null) stringResource(R.string.image_selected)
+                        else stringResource(character.diceTableTheme.presetNameRes()),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Icon(
+                    if (expanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown,
+                    contentDescription = stringResource(R.string.dice_table),
+                )
+            }
+        }
+        if (expanded) {
+        Text(stringResource(R.string.dice_table_help), style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             DiceTableTheme.entries.chunked(2).forEach { rowThemes ->
                 Row(
@@ -1423,6 +1447,7 @@ internal fun DiceTablePickerV2(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
             )
+        }
         }
     }
 }
