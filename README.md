@@ -19,12 +19,12 @@ Dadi supportati nella prima versione: **d2, d3, d4, d6, d8, d10, d12, d20, d100*
 5. Libreria di stili dei dadi per personaggio con materiali, due colori, stile predefinito e anteprima 3D live.
 6. Aspetto dei singoli tiri configurabile: predefinito, uniforme, per dado, casuale uniforme o casuale per dado, con pool opzionale.
 7. Builder guidato dei tiri con parti nominate (per esempio colpire/danni), dadi, costanti, variabili, moltiplicatori e modalità formula avanzata.
-8. Lancio con pulsante configurabile oppure scuotendo il telefono.
+8. Lancio con icona sempre disponibile e gesture configurabili separatamente per primo tiro e rilancio: tap sul tavolo/dadi, swipe verso l’alto e movimento del telefono.
 9. Tavolo OpenGL ES full-screen con dieci preset grafici premium, preview visuale, foto personale opzionale, dadi numerati, collisioni fisiche e statistiche separate.
 10. Log locale con retention configurabile.
 11. Backup e restore locale validato tramite Android Storage Access Framework.
 
-Il pulsante di lancio può essere nascosto oppure posizionato in alto/basso a sinistra, centro o destra.
+Nel tavolo V2 l’icona del dado resta sempre disponibile nel footer. Le gesture aggiuntive sono opzionali e vengono configurate in modo indipendente per il primo tiro e per i rilanci; le preferenze di interazione restano locali al dispositivo.
 
 ## Livelli, modificatori e tiri parametrici
 
