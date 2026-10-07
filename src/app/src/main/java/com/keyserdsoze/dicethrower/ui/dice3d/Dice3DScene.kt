@@ -109,12 +109,21 @@ private data class GpuMesh(
     val valueFaceNormals: FloatArray,
 )
 
+internal data class DiceTableVisualBounds(
+    val halfWidth: Float,
+    val halfHeight: Float,
+)
+
 internal object DiceTableViewport {
+    // These are physical collision bounds. The rendered background deliberately extends beyond
+    // them so a full-screen texture never changes where dice are allowed to move.
     const val HALF_WIDTH = 2.65f
     const val HALF_HEIGHT = 6.0f
+    const val TABLE_Z = -0.72f
     private const val VERTICAL_FOV_DEGREES = 36f
     const val FOV_DEGREES = VERTICAL_FOV_DEGREES
     private const val VIEWPORT_PADDING = 1.015f
+    private const val BACKGROUND_OVERSCAN = 1.035f
 
     fun cameraDistanceFor(aspect: Float): Float {
         val safeAspect = aspect.coerceAtLeast(0.25f)
@@ -124,21 +133,35 @@ internal object DiceTableViewport {
         val horizontal = HALF_WIDTH * VIEWPORT_PADDING / (tangent * safeAspect)
         return max(vertical, horizontal)
     }
+
+    fun visualBoundsFor(aspect: Float, cameraDistance: Float): DiceTableVisualBounds {
+        val safeAspect = aspect.coerceAtLeast(0.25f)
+        val halfFovRadians = Math.toRadians(VERTICAL_FOV_DEGREES.toDouble() / 2.0)
+        val planeDistance = (cameraDistance - TABLE_Z).coerceAtLeast(0.1f)
+        val halfHeight = planeDistance * tan(halfFovRadians).toFloat() * BACKGROUND_OVERSCAN
+        return DiceTableVisualBounds(
+            halfWidth = halfHeight * safeAspect,
+            halfHeight = halfHeight,
+        )
+    }
 }
 
-internal fun tableTextureCoordinatesFor(imageAspect: Float?): FloatArray {
+internal fun tableTextureCoordinatesFor(
+    imageAspect: Float?,
+    targetAspect: Float = DiceTableViewport.HALF_WIDTH / DiceTableViewport.HALF_HEIGHT,
+): FloatArray {
     var u0 = 0f
     var u1 = 1f
     var v0 = 0f
     var v1 = 1f
     if (imageAspect != null && imageAspect > 0f) {
-        val tableAspect = DiceTableViewport.HALF_WIDTH / DiceTableViewport.HALF_HEIGHT
-        if (imageAspect > tableAspect) {
-            val visibleWidth = (tableAspect / imageAspect).coerceIn(0f, 1f)
+        val safeTargetAspect = targetAspect.coerceAtLeast(0.01f)
+        if (imageAspect > safeTargetAspect) {
+            val visibleWidth = (safeTargetAspect / imageAspect).coerceIn(0f, 1f)
             u0 = (1f - visibleWidth) / 2f
             u1 = 1f - u0
-        } else if (imageAspect < tableAspect) {
-            val visibleHeight = (imageAspect / tableAspect).coerceIn(0f, 1f)
+        } else if (imageAspect < safeTargetAspect) {
+            val visibleHeight = (imageAspect / safeTargetAspect).coerceIn(0f, 1f)
             v0 = (1f - visibleHeight) / 2f
             v1 = 1f - v0
         }
@@ -188,16 +211,13 @@ private class DiceSceneRenderer(
     private var tableTexture = 0
     private var tableTextureDirty = false
 
-    private val tablePositions = floatArrayOf(
-        -DiceTableViewport.HALF_WIDTH, -DiceTableViewport.HALF_HEIGHT, TABLE_Z,
-        DiceTableViewport.HALF_WIDTH, -DiceTableViewport.HALF_HEIGHT, TABLE_Z,
-        DiceTableViewport.HALF_WIDTH, DiceTableViewport.HALF_HEIGHT, TABLE_Z,
-        -DiceTableViewport.HALF_WIDTH, -DiceTableViewport.HALF_HEIGHT, TABLE_Z,
-        DiceTableViewport.HALF_WIDTH, DiceTableViewport.HALF_HEIGHT, TABLE_Z,
-        -DiceTableViewport.HALF_WIDTH, DiceTableViewport.HALF_HEIGHT, TABLE_Z,
-    ).toFloatBuffer()
+    private var viewportAspect = DiceTableViewport.HALF_WIDTH / DiceTableViewport.HALF_HEIGHT
+    private var tablePositions = tablePositionsFor(
+        DiceTableViewport.HALF_WIDTH,
+        DiceTableViewport.HALF_HEIGHT,
+    )
     private val tableNormals = FloatArray(18) { index -> if (index % 3 == 2) 1f else 0f }.toFloatBuffer()
-    private var tableTextureCoordinates = tableTextureCoordinatesFor(null).toFloatBuffer()
+    private var tableTextureCoordinates = tableTextureCoordinatesFor(null, viewportAspect).toFloatBuffer()
 
     fun setEvent(
         event: DiceRollVisualEvent,
@@ -260,8 +280,15 @@ private class DiceSceneRenderer(
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
         val aspect = if (height == 0) 1f else width.toFloat() / height.toFloat()
-        cameraDistance = DiceTableViewport.cameraDistanceFor(aspect)
-        Matrix.perspectiveM(projection, 0, DiceTableViewport.FOV_DEGREES, aspect, 0.1f, 60f)
+        viewportAspect = aspect.coerceAtLeast(0.25f)
+        cameraDistance = DiceTableViewport.cameraDistanceFor(viewportAspect)
+        val visualBounds = DiceTableViewport.visualBoundsFor(viewportAspect, cameraDistance)
+        tablePositions = tablePositionsFor(visualBounds.halfWidth, visualBounds.halfHeight)
+        tableTextureCoordinates = tableTextureCoordinatesFor(
+            tableImage?.takeUnless(Bitmap::isRecycled)?.let { it.width.toFloat() / it.height.toFloat() },
+            viewportAspect,
+        ).toFloatBuffer()
+        Matrix.perspectiveM(projection, 0, DiceTableViewport.FOV_DEGREES, viewportAspect, 0.1f, 60f)
     }
 
     override fun onDrawFrame(gl: GL10?) {
@@ -424,7 +451,7 @@ private class DiceSceneRenderer(
         val bitmap = tableImage
         if (bitmap == null || bitmap.isRecycled) {
             tableTextureDirty = false
-            tableTextureCoordinates = tableTextureCoordinatesFor(null).toFloatBuffer()
+            tableTextureCoordinates = tableTextureCoordinatesFor(null, viewportAspect).toFloatBuffer()
             return 0
         }
 
@@ -439,11 +466,21 @@ private class DiceSceneRenderer(
         GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0)
         tableTextureCoordinates = tableTextureCoordinatesFor(
-            bitmap.width.toFloat() / bitmap.height.toFloat(),
+            imageAspect = bitmap.width.toFloat() / bitmap.height.toFloat(),
+            targetAspect = viewportAspect,
         ).toFloatBuffer()
         tableTextureDirty = false
         return tableTexture
     }
+
+    private fun tablePositionsFor(halfWidth: Float, halfHeight: Float): FloatBuffer = floatArrayOf(
+        -halfWidth, -halfHeight, DiceTableViewport.TABLE_Z,
+        halfWidth, -halfHeight, DiceTableViewport.TABLE_Z,
+        halfWidth, halfHeight, DiceTableViewport.TABLE_Z,
+        -halfWidth, -halfHeight, DiceTableViewport.TABLE_Z,
+        halfWidth, halfHeight, DiceTableViewport.TABLE_Z,
+        -halfWidth, halfHeight, DiceTableViewport.TABLE_Z,
+    ).toFloatBuffer()
 
     private fun staticStates(count: Int, scale: Float): List<DiceTablePhysics.State> {
         if (count == 0) return emptyList()
@@ -547,7 +584,6 @@ private class DiceSceneRenderer(
 
     companion object {
         private const val MAX_VISIBLE_DICE = 12
-        private const val TABLE_Z = -0.72f
 
         private const val VERTEX_SHADER = """
             uniform mat4 uMvp;
