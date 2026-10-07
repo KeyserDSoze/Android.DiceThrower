@@ -17,6 +17,7 @@ import com.keyserdsoze.dicethrower.model.RollDiceAppearance
 import com.keyserdsoze.dicethrower.model.RollGroup
 import com.keyserdsoze.dicethrower.model.RollLevelRule
 import com.keyserdsoze.dicethrower.model.RollLog
+import com.keyserdsoze.dicethrower.model.RollLogPart
 import com.keyserdsoze.dicethrower.model.RollSubgroup
 import com.keyserdsoze.dicethrower.model.RollSubgroupOperator
 import com.keyserdsoze.dicethrower.model.ThemeMode
@@ -28,6 +29,26 @@ import org.junit.Test
 import java.util.Base64
 
 class AppBackupCodecTest {
+    @Test
+    fun multipartResultsRoundTripAndOlderLogsRemainReadable() {
+        val log = RollLog(
+            id = "log-1", characterId = "hero", rollDefinitionId = "roll-1",
+            rollName = "Attack and damage", expression = "(1d20+4)+(1d6)",
+            total = 29, detail = "legacy", timestamp = 1234L,
+            parts = listOf(
+                RollLogPart("Hit", "1d20+4", 24, "1d20[20] +4"),
+                RollLogPart("Damage", "1d6", 5, "1d6[5]"),
+            ),
+        )
+        val data = AppData(characters = listOf(CharacterProfile(id = "hero", name = "Hero")), logs = listOf(log))
+        val decoded = AppBackupCodec.decode(AppBackupCodec.encode(data, AppSettings(), "en"))
+        assertEquals(log.parts, decoded.data.logs.single().parts)
+
+        val legacyJson = AppDataJsonCodec.encodeData(data)
+        legacyJson.getJSONArray("logs").getJSONObject(0).remove("parts")
+        assertTrue(AppDataJsonCodec.decodeData(legacyJson).logs.single().parts.isEmpty())
+    }
+
     @Test
     fun backupRoundTripPreservesDataSettingsAndLanguage() {
         val data = sampleData()

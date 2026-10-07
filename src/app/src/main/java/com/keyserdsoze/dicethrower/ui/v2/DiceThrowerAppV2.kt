@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -78,6 +79,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -114,6 +116,7 @@ import com.keyserdsoze.dicethrower.dice.DiceExpression
 import com.keyserdsoze.dicethrower.dice.DiceRollResult
 import com.keyserdsoze.dicethrower.dice.DiceRollVisualEvent
 import com.keyserdsoze.dicethrower.dice.RollFormulaResolver
+import com.keyserdsoze.dicethrower.dice.ResolvedRollSubgroupResult
 import com.keyserdsoze.dicethrower.dice.subgroupIdByComponentIndex
 import com.keyserdsoze.dicethrower.dice.subgroupResults
 import com.keyserdsoze.dicethrower.model.AppData
@@ -131,6 +134,7 @@ import com.keyserdsoze.dicethrower.model.RollDefinition
 import com.keyserdsoze.dicethrower.model.RollGroup
 import com.keyserdsoze.dicethrower.model.RollLevelRule
 import com.keyserdsoze.dicethrower.model.RollLog
+import com.keyserdsoze.dicethrower.model.RollLogPart
 import com.keyserdsoze.dicethrower.model.RollSubgroup
 import com.keyserdsoze.dicethrower.model.RollSubgroupOperator
 import com.keyserdsoze.dicethrower.model.ThemeMode
@@ -1947,6 +1951,14 @@ private fun RollScreenV2(
                 total = result.total,
                 detail = result.detail(),
                 timestamp = System.currentTimeMillis(),
+                parts = formula.subgroupResults(result).takeIf { it.size > 1 }?.mapIndexed { index, part ->
+                    RollLogPart(
+                        name = part.subgroup.name.ifBlank { "${roll.name} ${index + 1}" },
+                        expression = part.subgroup.expression,
+                        total = part.result.total,
+                        detail = part.result.detail(),
+                    )
+                }.orEmpty(),
             ),
         )
     }
@@ -2019,10 +2031,15 @@ private fun RollScreenV2(
             if (resultRevealed) {
                 outcome?.let { value ->
                     Box(Modifier.align(Alignment.Center)) {
-                        RollTotalReveal(
-                            total = value.total,
-                            aboveAverage = value.total > value.expectedTotal(),
-                        )
+                        val parts = formula.subgroupResults(value)
+                        if (parts.size > 1) {
+                            RollPartsReveal(parts)
+                        } else {
+                            RollTotalReveal(
+                                total = value.total,
+                                aboveAverage = value.total > value.expectedTotal(),
+                            )
+                        }
                     }
                 }
             }
@@ -2158,7 +2175,11 @@ private fun RollScreenV2(
                         }
                     }
                 }
-                ResultContentV2(outcome)
+                // Individual parts already show their own roll breakdown above.
+                // A global total would misleadingly add unrelated checks and damage.
+                if (formula.subgroups.size <= 1 || outcome == null) {
+                    ResultContentV2(outcome)
+                }
             }
         }
     }
@@ -2193,6 +2214,44 @@ private fun decodeTableBitmap(bytes: ByteArray): Bitmap? {
         bytes.size,
         BitmapFactory.Options().apply { inSampleSize = sample },
     )
+}
+
+@Composable
+private fun RollPartsReveal(parts: List<ResolvedRollSubgroupResult>) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth(0.88f)
+            .heightIn(max = 460.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        parts.forEachIndexed { index, part ->
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = RoundedCornerShape(22.dp),
+                shadowElevation = 12.dp,
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(
+                        part.subgroup.name.ifBlank { "${index + 1}" },
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        part.result.total.toString(),
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -2882,10 +2941,25 @@ private fun LogsScreenV2(
                                     Icon(Icons.Rounded.Casino, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                     Spacer(Modifier.width(10.dp))
                                     Text(log.rollName, modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                                    Text(log.total.toString(), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+                                    if (log.parts.isEmpty()) {
+                                        Text(log.total.toString(), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+                                    }
                                 }
                                 Text(log.expression, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                if (log.detail.isNotBlank()) {
+                                if (log.parts.isNotEmpty()) {
+                                    log.parts.forEach { part ->
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Column(Modifier.weight(1f)) {
+                                                Text(part.name, fontWeight = FontWeight.Bold)
+                                                Text(part.detail, style = MaterialTheme.typography.bodySmall)
+                                            }
+                                            Text(part.total.toString(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                } else if (log.detail.isNotBlank()) {
                                     Text(log.detail, style = MaterialTheme.typography.bodySmall)
                                 }
                                 Text(

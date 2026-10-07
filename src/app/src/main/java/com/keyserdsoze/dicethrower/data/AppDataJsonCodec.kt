@@ -18,6 +18,7 @@ import com.keyserdsoze.dicethrower.model.RollDiceAppearance
 import com.keyserdsoze.dicethrower.model.RollGroup
 import com.keyserdsoze.dicethrower.model.RollLevelRule
 import com.keyserdsoze.dicethrower.model.RollLog
+import com.keyserdsoze.dicethrower.model.RollLogPart
 import com.keyserdsoze.dicethrower.model.RollSubgroup
 import com.keyserdsoze.dicethrower.model.RollSubgroupOperator
 import com.keyserdsoze.dicethrower.model.ThemeMode
@@ -25,7 +26,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 object AppDataJsonCodec {
-    const val DATA_VERSION = 9
+    const val DATA_VERSION = 10
 
     fun encodeData(data: AppData): JSONObject = encodeData(data, includeLegacyImageUris = true)
 
@@ -108,7 +109,16 @@ object AppDataJsonCodec {
                     .put("expression", item.expression)
                     .put("total", item.total)
                     .put("detail", item.detail)
-                    .put("timestamp", item.timestamp))
+                    .put("timestamp", item.timestamp)
+                    .put("parts", JSONArray().apply {
+                        item.parts.forEach { part ->
+                            put(JSONObject()
+                                .put("name", part.name)
+                                .put("expression", part.expression)
+                                .put("total", part.total)
+                                .put("detail", part.detail))
+                        }
+                    }))
             }
         })
         .put("diceStyles", JSONArray().apply {
@@ -214,6 +224,14 @@ object AppDataJsonCodec {
                 total = item.getInt("total"),
                 detail = item.optString("detail"),
                 timestamp = item.getLong("timestamp"),
+                parts = item.optJSONArray("parts").mapObjects { part ->
+                    RollLogPart(
+                        name = part.optString("name"),
+                        expression = part.optString("expression"),
+                        total = part.getInt("total"),
+                        detail = part.optString("detail"),
+                    )
+                },
             )
         },
         diceStyles = json.optJSONArray("diceStyles").mapObjects { item ->
