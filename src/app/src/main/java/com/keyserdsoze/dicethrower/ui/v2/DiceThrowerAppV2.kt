@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
@@ -872,6 +873,8 @@ internal fun CharacterEditContentV2(
     var editingRollId by remember { mutableStateOf<String?>(null) }
     var addRuleRollId by remember { mutableStateOf<String?>(null) }
     var levelText by remember(character.id) { mutableStateOf(character.level.toString()) }
+    // Keep the edit list's position while the nested roll builder replaces its content.
+    val editListState = rememberLazyListState()
 
     LaunchedEffect(character.level) {
         if (levelText.toIntOrNull() != character.level) levelText = character.level.toString()
@@ -930,6 +933,7 @@ internal fun CharacterEditContentV2(
     }
 
     LazyColumn(
+        state = editListState,
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 40.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -1565,6 +1569,7 @@ private fun GroupEditContentV2(
     modifier: Modifier = Modifier,
 ) {
     var expandedRollId by rememberSaveable(group.id) { mutableStateOf<String?>(null) }
+    val editListState = rememberLazyListState()
     var showAddRoll by remember { mutableStateOf(false) }
     var editingRollId by remember { mutableStateOf<String?>(null) }
     var addRuleRollId by remember { mutableStateOf<String?>(null) }
@@ -1623,6 +1628,7 @@ private fun GroupEditContentV2(
     }
 
     LazyColumn(
+        state = editListState,
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 40.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -2217,7 +2223,8 @@ private fun RollScreenV2(
     if (showStats) {
         ModalBottomSheet(onDismissRequest = { showStats = false }) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp).padding(bottom = 28.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp).padding(bottom = 28.dp)
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
