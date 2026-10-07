@@ -9,4 +9,12 @@
     <string name="table_frozen_realm">Frozen Realm</string>
     <string name="table_desert_ruins">Desert Ruins</string>
     <string name="table_astral_void">Astral Void</string>
+    <string name="roll_interactions">Roll interactions</string>
+    <string name="roll_interactions_help">Choose how the first roll and rerolls can be triggered. The footer dice icon is always available.</string>
+    <string name="first_roll_triggers">First roll</string>
+    <string name="reroll_triggers">Reroll</string>
+    <string name="tap_dice_table">Tap dice / table</string>
+    <string name="swipe_up_to_roll">Swipe up</string>
+    <string name="shake_phone">Shake phone</string>
+    <string name="roll_icon_always_available">The dice icon in the footer is always available.</string>
 </resources>
