@@ -1,10 +1,10 @@
 <resources>
     <string name="dice_table">Dice table</string>
-    <string name="dice_table_help">Choose a built-in table or a custom photo. Portrait images are cropped to fill without distortion.</string>
-    <string name="table_arcane">Arcane</string>
-    <string name="table_oak">Oak</string>
-    <string name="table_emerald">Emerald</string>
-    <string name="table_obsidian">Obsidian</string>
+    <string name="dice_table_help">Choose a premium table or upload your own photo. Tap a preview to use it; images fill the screen without distortion.</string>
+    <string name="table_arcane">Arcane Night</string>
+    <string name="table_oak">Fantasy Felt</string>
+    <string name="table_emerald">Ancient Map</string>
+    <string name="table_obsidian">Sci-Fi Neon</string>
     <string name="statistics">Statistics</string>
     <string name="roll_again">Roll again</string>
     <string name="guided_builder">Guided builder</string>
