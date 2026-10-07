@@ -1226,7 +1226,7 @@ internal fun CharacterEditContentV2(
 }
 
 @Composable
-private fun DiceTablePickerV2(
+internal fun DiceTablePickerV2(
     character: CharacterProfile,
     onThemeChanged: (DiceTableTheme) -> Unit,
     onImageChanged: (CharacterImageRef?) -> Unit,
