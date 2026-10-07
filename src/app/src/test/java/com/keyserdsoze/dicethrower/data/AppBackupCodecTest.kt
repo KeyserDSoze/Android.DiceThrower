@@ -60,13 +60,15 @@ class AppBackupCodecTest {
 
     @Test
     fun premiumTableThemeRoundTripsThroughBackup() {
-        val data = sampleData().let { original ->
-            original.copy(
-                characters = original.characters.map {
-                    it.copy(diceTableTheme = DiceTableTheme.ASTRAL_VOID)
-                },
-            )
-        }
+        val data = AppData(
+            characters = listOf(
+                CharacterProfile(
+                    id = "premium-table-hero",
+                    name = "Hero",
+                    diceTableTheme = DiceTableTheme.ASTRAL_VOID,
+                ),
+            ),
+        )
 
         val decoded = AppBackupCodec.decode(
             AppBackupCodec.encode(
