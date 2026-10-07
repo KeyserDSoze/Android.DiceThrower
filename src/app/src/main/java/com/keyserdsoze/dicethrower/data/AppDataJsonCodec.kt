@@ -241,6 +241,11 @@ object AppDataJsonCodec {
     fun encodeSettings(settings: AppSettings): JSONObject = JSONObject()
         .put("themeMode", settings.themeMode.name)
         .put("shakeEnabled", settings.shakeEnabled)
+        .put("firstRollTapEnabled", settings.firstRollTapEnabled)
+        .put("firstRollSwipeEnabled", settings.firstRollSwipeEnabled)
+        .put("rerollTapEnabled", settings.rerollTapEnabled)
+        .put("rerollSwipeEnabled", settings.rerollSwipeEnabled)
+        .put("rerollShakeEnabled", settings.rerollShakeEnabled)
         .put("animationsEnabled", settings.animationsEnabled)
         .put("showRollButton", settings.showRollButton)
         .put("rollButtonPosition", settings.rollButtonPosition.name)
@@ -250,6 +255,11 @@ object AppDataJsonCodec {
     fun decodeSettings(json: JSONObject): AppSettings = AppSettings(
         themeMode = enumValueOrDefault(json.optString("themeMode"), ThemeMode.SYSTEM),
         shakeEnabled = json.optBoolean("shakeEnabled", true),
+        firstRollTapEnabled = json.optBoolean("firstRollTapEnabled", true),
+        firstRollSwipeEnabled = json.optBoolean("firstRollSwipeEnabled", true),
+        rerollTapEnabled = json.optBoolean("rerollTapEnabled", false),
+        rerollSwipeEnabled = json.optBoolean("rerollSwipeEnabled", false),
+        rerollShakeEnabled = json.optBoolean("rerollShakeEnabled", false),
         animationsEnabled = json.optBoolean("animationsEnabled", true),
         showRollButton = json.optBoolean("showRollButton", true),
         rollButtonPosition = enumValueOrDefault(
