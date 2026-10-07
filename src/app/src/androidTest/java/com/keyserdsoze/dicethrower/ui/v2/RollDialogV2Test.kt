@@ -1,6 +1,7 @@
 package com.keyserdsoze.dicethrower.ui.v2
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -74,6 +75,45 @@ class RollDialogV2Test {
 
         composeRule.onNodeWithText("Strength").assertIsDisplayed()
         composeRule.onNodeWithText("Used by one or more rolls").assertIsDisplayed()
+    }
+
+    @Test
+    fun characterLevelSupportsManualEditAndRejectsZero() {
+        val character = CharacterProfile(id = "character", name = "Test", level = 2)
+        var latestData = AppData(characters = listOf(character))
+        composeRule.setContent {
+            DiceThrowerTheme(themeMode = ThemeMode.DARK) {
+                CharacterEditContentV2(
+                    character = character,
+                    data = latestData,
+                    onOpenGroup = {},
+                    onDataChanged = { latestData = it },
+                )
+            }
+        }
+
+        composeRule.onAllNodes(hasSetTextAction())[0].performTextReplacement("5")
+        composeRule.runOnIdle { assertEquals(5, latestData.characters.single().level) }
+
+        composeRule.onAllNodes(hasSetTextAction())[0].performTextReplacement("0")
+        composeRule.runOnIdle { assertEquals(5, latestData.characters.single().level) }
+    }
+
+    @Test
+    fun characterLevelDownIsDisabledAtOne() {
+        val character = CharacterProfile(id = "character", name = "Test", level = 1)
+        composeRule.setContent {
+            DiceThrowerTheme(themeMode = ThemeMode.DARK) {
+                CharacterEditContentV2(
+                    character = character,
+                    data = AppData(characters = listOf(character)),
+                    onOpenGroup = {},
+                    onDataChanged = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("−").assertIsNotEnabled()
     }
 
     @Test
