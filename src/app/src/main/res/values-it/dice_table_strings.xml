@@ -1,10 +1,10 @@
 <resources>
     <string name="dice_table">Tavolo dei dadi</string>
-    <string name="dice_table_help">Scegli un tavolo incluso o una foto personale. Le immagini verticali vengono ritagliate senza deformarsi.</string>
-    <string name="table_arcane">Arcano</string>
-    <string name="table_oak">Quercia</string>
-    <string name="table_emerald">Smeraldo</string>
-    <string name="table_obsidian">Ossidiana</string>
+    <string name="dice_table_help">Scegli un tavolo premium o carica una foto personale. Tocca una preview per usarla; le immagini riempiono lo schermo senza deformarsi.</string>
+    <string name="table_arcane">Notte arcana</string>
+    <string name="table_oak">Feltro fantasy</string>
+    <string name="table_emerald">Mappa antica</string>
+    <string name="table_obsidian">Sci-Fi neon</string>
     <string name="statistics">Statistiche</string>
     <string name="roll_again">Tira di nuovo</string>
     <string name="guided_builder">Creazione guidata</string>
