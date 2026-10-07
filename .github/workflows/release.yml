@@ -206,8 +206,8 @@ jobs:
           VERSION: ${{ needs.release.outputs.version }}
         run: |
           mkdir -p distribution/whatsnew
-          printf 'Dice Thrower %s: adds configurable first-roll and reroll gestures for tap, swipe and phone motion, keeps the footer dice icon always available, and fixes all ten premium table previews with standalone artwork.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
-          printf 'Dice Thrower %s: aggiunge gesture configurabili per primo tiro e rilancio tramite tap, swipe e movimento del telefono, mantiene sempre disponibile il dado nel footer e corregge le anteprime dei dieci tavoli premium con asset standalone.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
+          printf 'Dice Thrower %s: shows independent totals for roll parts, adds x multiplication to formulas and guided builder, restores navigation and scroll positions, simplifies grouped rolls, and upgrades six fantasy tables to native high-resolution artwork.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
+          printf 'Dice Thrower %s: mostra i totali separati delle parti del tiro, aggiunge la moltiplicazione x alle formule, migliora navigazione e ripristino dello scroll, semplifica i gruppi e rinnova sei tavoli fantasy in alta risoluzione.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
 
       - name: Upload to Google Play Internal testing
         uses: r0adkll/upload-google-play@v1.1.5
