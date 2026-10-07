@@ -53,9 +53,39 @@ class DiceTablePhysicsTest {
     }
 
     @Test
+    fun visualBackgroundAlwaysCoversViewportWithoutChangingPhysicalBounds() {
+        listOf(0.42f, 0.50f, 0.5625f, 0.60f, 1f, 1.8f).forEach { aspect ->
+            val distance = DiceTableViewport.cameraDistanceFor(aspect)
+            val bounds = DiceTableViewport.visualBoundsFor(aspect, distance)
+            val planeDistance = distance - DiceTableViewport.TABLE_Z
+            val projectedHalfHeight = planeDistance * kotlin.math.tan(Math.toRadians(18.0)).toFloat()
+            val projectedHalfWidth = projectedHalfHeight * aspect
+
+            assertTrue(bounds.halfHeight > projectedHalfHeight)
+            assertTrue(bounds.halfWidth > projectedHalfWidth)
+            assertTrue(DiceTableViewport.HALF_WIDTH <= bounds.halfWidth)
+            assertTrue(DiceTableViewport.HALF_HEIGHT <= bounds.halfHeight)
+        }
+    }
+
+    @Test
+    fun matchingPortraitPresetUsesWholeTextureForPhoneViewport() {
+        val coordinates = tableTextureCoordinatesFor(
+            imageAspect = 9f / 16f,
+            targetAspect = 9f / 16f,
+        )
+
+        assertEquals(0f, coordinates[0], 0.0001f)
+        assertEquals(1f, coordinates[1], 0.0001f)
+        assertEquals(1f, coordinates[2], 0.0001f)
+        assertEquals(0f, coordinates[5], 0.0001f)
+    }
+
+    @Test
     fun tablePhotoCoordinatesCenterCropWithoutStretching() {
-        val portrait = tableTextureCoordinatesFor(0.35f)
-        val landscape = tableTextureCoordinatesFor(1.5f)
+        val targetAspect = 9f / 16f
+        val portrait = tableTextureCoordinatesFor(0.35f, targetAspect)
+        val landscape = tableTextureCoordinatesFor(1.5f, targetAspect)
 
         // A tall portrait keeps the full width and trims equally from top/bottom.
         assertEquals(0f, portrait[0], 0.0001f)
