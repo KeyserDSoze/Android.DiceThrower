@@ -40,6 +40,16 @@ class RollFormulaResolverTest {
     }
 
     @Test
+    fun explicitAndLegacyAdjacentMultiplicationDoNotConcatenateDigits() {
+        listOf("2x{level}", "2×{level}", "2*{level}", "2{level}").forEach { formula ->
+            val resolved = RollFormulaResolver.resolveTemplate(formula, character.level, modifiers)
+            assertEquals(8, DiceExpression.parse(resolved).evaluate(kotlin.random.Random(1)).total)
+        }
+        assertEquals("2x4", RollFormulaResolver.resolveTemplate("2{level}", character.level, modifiers))
+        assertEquals("2x4", RollFormulaResolver.resolveTemplate("2x{level}", character.level, modifiers))
+    }
+
+    @Test
     fun levelCanDriveDiceCount() {
         val resolved = RollFormulaResolver.resolveTemplate(
             expression = "{level}d6",

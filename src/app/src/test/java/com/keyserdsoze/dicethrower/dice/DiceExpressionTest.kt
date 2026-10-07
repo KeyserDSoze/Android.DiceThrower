@@ -64,6 +64,15 @@ class DiceExpressionTest {
         assertEquals(20, DiceExpression.parse("(2+3)*4").evaluate(Random(1)).total)
     }
 
+    @Test
+    fun acceptsReadableMultiplicationSymbolsWithSamePrecedence() {
+        listOf("2x3+4", "2×3+4", "2*3+4", "2X3+4").forEach { expression ->
+            assertEquals(10, DiceExpression.parse(expression).evaluate(Random(1)).total)
+        }
+        assertEquals(14, DiceExpression.parse("2+3x4").evaluate(Random(1)).total)
+        assertEquals(20, DiceExpression.parse("(2+3)x4").evaluate(Random(1)).total)
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun rejectsDiceToDiceMultiplicationToKeepStatisticsLinear() {
         DiceExpression.parse("1d6*1d8")

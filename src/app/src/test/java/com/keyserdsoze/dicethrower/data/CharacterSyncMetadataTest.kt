@@ -6,6 +6,8 @@ import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 import com.keyserdsoze.dicethrower.model.DiceTableTheme
 import com.keyserdsoze.dicethrower.model.RollDefinition
+import com.keyserdsoze.dicethrower.model.RollLog
+import com.keyserdsoze.dicethrower.model.RollLogPart
 import com.keyserdsoze.dicethrower.model.RollDiceAppearance
 import com.keyserdsoze.dicethrower.model.RollSubgroup
 import com.keyserdsoze.dicethrower.model.RollSubgroupOperator
@@ -15,6 +17,25 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CharacterSyncMetadataTest {
+    @Test
+    fun multipartLogPartsParticipateInRevisionWithoutChangingLegacyLogs() {
+        val log = RollLog(
+            id = "sample-log", characterId = CHARACTER_ID, rollDefinitionId = "roll",
+            rollName = "Test", expression = "(1d6)+(1d20)",
+            total = 24, detail = "legacy", timestamp = 11L,
+        )
+        val legacy = AppData(
+            characters = listOf(CharacterProfile(id = CHARACTER_ID, name = "Test")),
+            logs = listOf(log),
+        )
+        val multi = legacy.copy(logs = listOf(log.copy(parts = listOf(
+            RollLogPart("Damage", "1d6", 4, "1d6[4]"),
+            RollLogPart("Hit", "1d20", 20, "1d20[20]"),
+        ))))
+        assertNotEquals(CharacterRevision.revision(legacy, CHARACTER_ID), CharacterRevision.revision(multi, CHARACTER_ID))
+        assertTrue(CharacterRevision.canonicalContent(multi, CHARACTER_ID).contains("rollLogPart"))
+    }
+
     @Test
     fun canonicalRevisionIsStableAcrossCollectionOrdering() {
         val first = sampleData()

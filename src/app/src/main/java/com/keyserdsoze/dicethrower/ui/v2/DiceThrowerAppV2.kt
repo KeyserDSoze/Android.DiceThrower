@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -32,6 +33,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
@@ -77,7 +79,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -114,6 +119,7 @@ import com.keyserdsoze.dicethrower.dice.DiceExpression
 import com.keyserdsoze.dicethrower.dice.DiceRollResult
 import com.keyserdsoze.dicethrower.dice.DiceRollVisualEvent
 import com.keyserdsoze.dicethrower.dice.RollFormulaResolver
+import com.keyserdsoze.dicethrower.dice.ResolvedRollSubgroupResult
 import com.keyserdsoze.dicethrower.dice.subgroupIdByComponentIndex
 import com.keyserdsoze.dicethrower.dice.subgroupResults
 import com.keyserdsoze.dicethrower.model.AppData
@@ -131,6 +137,7 @@ import com.keyserdsoze.dicethrower.model.RollDefinition
 import com.keyserdsoze.dicethrower.model.RollGroup
 import com.keyserdsoze.dicethrower.model.RollLevelRule
 import com.keyserdsoze.dicethrower.model.RollLog
+import com.keyserdsoze.dicethrower.model.RollLogPart
 import com.keyserdsoze.dicethrower.model.RollSubgroup
 import com.keyserdsoze.dicethrower.model.RollSubgroupOperator
 import com.keyserdsoze.dicethrower.model.ThemeMode
@@ -246,12 +253,13 @@ fun DiceThrowerAppV2(
     }
 
     var data by remember { mutableStateOf(store.loadData()) }
-    var route by remember { mutableStateOf(RouteV2.CHARACTERS) }
-    var selectedCharacterId by remember { mutableStateOf<String?>(null) }
-    var selectedGroupId by remember { mutableStateOf<String?>(null) }
-    var selectedRollId by remember { mutableStateOf<String?>(null) }
-    var rollReturnGroupId by remember { mutableStateOf<String?>(null) }
-    var editMode by remember { mutableStateOf(false) }
+    var route by rememberSaveable { mutableStateOf(RouteV2.CHARACTERS) }
+    var selectedCharacterId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedGroupId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedRollId by rememberSaveable { mutableStateOf<String?>(null) }
+    var rollReturnGroupId by rememberSaveable { mutableStateOf<String?>(null) }
+    var editMode by rememberSaveable { mutableStateOf(false) }
+    val stateHolder = rememberSaveableStateHolder()
 
     fun persist(updated: AppData) {
         data = store.saveData(updated)
@@ -294,6 +302,16 @@ fun DiceThrowerAppV2(
         )
     }
 
+    // Keep each destination's LazyColumn position and saveable UI state when it leaves composition.
+    val pageKey = when (route) {
+        RouteV2.CHARACTERS -> "characters"
+        RouteV2.CHARACTER -> "character:${selectedCharacterId}:${editMode}"
+        RouteV2.GROUP -> "group:${selectedCharacterId}:${selectedGroupId}:${editMode}"
+        RouteV2.ROLL -> "roll:${selectedRollId}"
+        RouteV2.SETTINGS -> "settings"
+        RouteV2.LOGS -> "logs:${selectedCharacterId}"
+    }
+    stateHolder.SaveableStateProvider(pageKey) {
     when (route) {
         RouteV2.CHARACTERS -> CharactersScreenV2(
             data = data,
@@ -424,6 +442,7 @@ fun DiceThrowerAppV2(
                 )
             }
         }
+    }
     }
 }
 
@@ -627,12 +646,13 @@ private fun CharacterScreenV2(
     onOpenRoll: (String) -> Unit,
     onOpenGroup: (String) -> Unit,
     onDataChanged: (AppData) -> Unit,
-) {
+ ) {
+    var childEditorVisible by remember(character.id) { mutableStateOf(false) }
     ArcaneBackground {
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                TopAppBar(
+                if (!childEditorVisible) TopAppBar(
                     colors = transparentTopBarColors(),
                     navigationIcon = {
                         IconButton(onClick = onBack) {
@@ -687,6 +707,7 @@ private fun CharacterScreenV2(
                     data = data,
                     onOpenGroup = onOpenGroup,
                     onDataChanged = onDataChanged,
+                    onEditorVisibilityChanged = { childEditorVisible = it },
                     modifier = Modifier.padding(padding),
                 )
             } else {
@@ -842,6 +863,7 @@ internal fun CharacterEditContentV2(
     data: AppData,
     onOpenGroup: (String) -> Unit,
     onDataChanged: (AppData) -> Unit,
+    onEditorVisibilityChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var showAddModifier by remember { mutableStateOf(false) }
@@ -851,6 +873,8 @@ internal fun CharacterEditContentV2(
     var editingRollId by remember { mutableStateOf<String?>(null) }
     var addRuleRollId by remember { mutableStateOf<String?>(null) }
     var levelText by remember(character.id) { mutableStateOf(character.level.toString()) }
+    // Keep the edit list's position while the nested roll builder replaces its content.
+    val editListState = rememberLazyListState()
 
     LaunchedEffect(character.level) {
         if (levelText.toIntOrNull() != character.level) levelText = character.level.toString()
@@ -863,6 +887,13 @@ internal fun CharacterEditContentV2(
     val entries = dashboardEntries(groups, rolls.filter { it.groupId == null })
 
     val builderRoll = editingRollId?.let { id -> rolls.firstOrNull { it.id == id } }
+    LaunchedEffect(showAddRoll, builderRoll) {
+        onEditorVisibilityChanged(showAddRoll || builderRoll != null)
+    }
+    BackHandler(enabled = showAddRoll || builderRoll != null) {
+        showAddRoll = false
+        editingRollId = null
+    }
     if (showAddRoll || builderRoll != null) {
         RollBuilderScreenV2(
             title = stringResource(if (builderRoll == null) R.string.new_roll else R.string.edit_roll),
@@ -902,6 +933,7 @@ internal fun CharacterEditContentV2(
     }
 
     LazyColumn(
+        state = editListState,
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 40.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -1264,6 +1296,7 @@ internal fun DiceTablePickerV2(
     val context = LocalContext.current
     val imageAssetStore = remember(context) { CharacterImageAssetStore(context) }
     var imageImportFailed by remember { mutableStateOf(false) }
+    var expanded by rememberSaveable(character.id) { mutableStateOf(false) }
     val customPreview = remember(character.diceTableImage) {
         character.diceTableImage
             ?.let(imageAssetStore::loadVerified)
@@ -1281,11 +1314,34 @@ internal fun DiceTablePickerV2(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionTitleV2(
-            title = stringResource(R.string.dice_table),
-            subtitle = stringResource(R.string.dice_table_help),
-        )
-
+        Surface(
+            shape = RoundedCornerShape(18.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded },
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.dice_table), fontWeight = FontWeight.Bold)
+                    Text(
+                        if (character.diceTableImage != null) stringResource(R.string.image_selected)
+                        else stringResource(character.diceTableTheme.presetNameRes()),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Icon(
+                    if (expanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown,
+                    contentDescription = stringResource(R.string.dice_table),
+                )
+            }
+        }
+        if (expanded) {
+        Text(stringResource(R.string.dice_table_help), style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             DiceTableTheme.entries.chunked(2).forEach { rowThemes ->
                 Row(
@@ -1396,6 +1452,7 @@ internal fun DiceTablePickerV2(
                 color = MaterialTheme.colorScheme.error,
             )
         }
+        }
     }
 }
 
@@ -1411,11 +1468,12 @@ private fun GroupScreenV2(
     onDeleteGroup: () -> Unit,
     onDataChanged: (AppData) -> Unit,
 ) {
+    var childEditorVisible by remember(group.id) { mutableStateOf(false) }
     ArcaneBackground {
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                TopAppBar(
+                if (!childEditorVisible) TopAppBar(
                     colors = transparentTopBarColors(),
                     navigationIcon = {
                         IconButton(onClick = onBack) {
@@ -1448,6 +1506,7 @@ private fun GroupScreenV2(
                     group = group,
                     data = data,
                     onDataChanged = onDataChanged,
+                    onEditorVisibilityChanged = { childEditorVisible = it },
                     modifier = Modifier.padding(padding),
                 )
             } else {
@@ -1506,8 +1565,11 @@ private fun GroupEditContentV2(
     group: RollGroup,
     data: AppData,
     onDataChanged: (AppData) -> Unit,
+    onEditorVisibilityChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    var expandedRollId by rememberSaveable(group.id) { mutableStateOf<String?>(null) }
+    val editListState = rememberLazyListState()
     var showAddRoll by remember { mutableStateOf(false) }
     var editingRollId by remember { mutableStateOf<String?>(null) }
     var addRuleRollId by remember { mutableStateOf<String?>(null) }
@@ -1519,6 +1581,13 @@ private fun GroupEditContentV2(
     val diceStyles = data.diceStyles.filter { it.characterId == character.id }.sortedBy { it.order }
 
     val builderRoll = editingRollId?.let { id -> allCharacterRolls.firstOrNull { it.id == id } }
+    LaunchedEffect(showAddRoll, builderRoll) {
+        onEditorVisibilityChanged(showAddRoll || builderRoll != null)
+    }
+    BackHandler(enabled = showAddRoll || builderRoll != null) {
+        showAddRoll = false
+        editingRollId = null
+    }
     if (showAddRoll || builderRoll != null) {
         RollBuilderScreenV2(
             title = stringResource(if (builderRoll == null) R.string.new_roll else R.string.edit_roll),
@@ -1559,6 +1628,7 @@ private fun GroupEditContentV2(
     }
 
     LazyColumn(
+        state = editListState,
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 40.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -1591,6 +1661,7 @@ private fun GroupEditContentV2(
         }
 
         itemsIndexed(groupRolls, key = { _, roll -> roll.id }) { index, roll ->
+            var moveMenu by remember(roll.id) { mutableStateOf(false) }
             DragReorderCard(
                 key = "group-roll-${roll.id}",
                 canMoveUp = index > 0,
@@ -1622,6 +1693,53 @@ private fun GroupEditContentV2(
                     )
                 },
             ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Text(
+                            roll.name,
+                            modifier = Modifier.weight(1f).clickable {
+                                expandedRollId = if (expandedRollId == roll.id) null else roll.id
+                            },
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Box {
+                            OutlinedButton(onClick = { moveMenu = true }) {
+                                Text(stringResource(R.string.group), maxLines = 1)
+                            }
+                            DropdownMenu(expanded = moveMenu, onDismissRequest = { moveMenu = false }) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.ungrouped)) },
+                                    onClick = {
+                                        moveMenu = false
+                                        onDataChanged(DashboardDataOperations.changeRollGroup(data, character.id, roll.id, null))
+                                    },
+                                )
+                                groups.filterNot { it.id == group.id }.forEach { target ->
+                                    DropdownMenuItem(
+                                        text = { Text(target.name) },
+                                        onClick = {
+                                            moveMenu = false
+                                            onDataChanged(DashboardDataOperations.changeRollGroup(data, character.id, roll.id, target.id))
+                                        },
+                                    )
+                                }
+                            }
+                        }
+                        IconButton(onClick = {
+                            expandedRollId = if (expandedRollId == roll.id) null else roll.id
+                        }) {
+                            Icon(
+                                if (expandedRollId == roll.id) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.Edit,
+                                contentDescription = stringResource(R.string.edit),
+                            )
+                        }
+                    }
+                    if (expandedRollId == roll.id) {
                 RollEditorCardV2(
                     character = character,
                     modifiers = modifiers,
@@ -1668,6 +1786,8 @@ private fun GroupEditContentV2(
                         onDataChanged(data.copy(rolls = data.rolls.filterNot { it.id == roll.id }))
                     },
                 )
+                    }
+                }
             }
         }
     }
@@ -1947,6 +2067,14 @@ private fun RollScreenV2(
                 total = result.total,
                 detail = result.detail(),
                 timestamp = System.currentTimeMillis(),
+                parts = formula.subgroupResults(result).takeIf { it.size > 1 }?.mapIndexed { index, part ->
+                    RollLogPart(
+                        name = part.subgroup.name.ifBlank { "${roll.name} ${index + 1}" },
+                        expression = part.subgroup.expression,
+                        total = part.result.total,
+                        detail = part.result.detail(),
+                    )
+                }.orEmpty(),
             ),
         )
     }
@@ -2019,10 +2147,15 @@ private fun RollScreenV2(
             if (resultRevealed) {
                 outcome?.let { value ->
                     Box(Modifier.align(Alignment.Center)) {
-                        RollTotalReveal(
-                            total = value.total,
-                            aboveAverage = value.total > value.expectedTotal(),
-                        )
+                        val parts = formula.subgroupResults(value)
+                        if (parts.size > 1) {
+                            RollPartsReveal(parts)
+                        } else {
+                            RollTotalReveal(
+                                total = value.total,
+                                aboveAverage = value.total > value.expectedTotal(),
+                            )
+                        }
                     }
                 }
             }
@@ -2090,7 +2223,8 @@ private fun RollScreenV2(
     if (showStats) {
         ModalBottomSheet(onDismissRequest = { showStats = false }) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp).padding(bottom = 28.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp).padding(bottom = 28.dp)
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
@@ -2158,7 +2292,11 @@ private fun RollScreenV2(
                         }
                     }
                 }
-                ResultContentV2(outcome)
+                // Individual parts already show their own roll breakdown above.
+                // A global total would misleadingly add unrelated checks and damage.
+                if (formula.subgroups.size <= 1 || outcome == null) {
+                    ResultContentV2(outcome)
+                }
             }
         }
     }
@@ -2193,6 +2331,44 @@ private fun decodeTableBitmap(bytes: ByteArray): Bitmap? {
         bytes.size,
         BitmapFactory.Options().apply { inSampleSize = sample },
     )
+}
+
+@Composable
+private fun RollPartsReveal(parts: List<ResolvedRollSubgroupResult>) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth(0.88f)
+            .heightIn(max = 460.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        parts.forEachIndexed { index, part ->
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = RoundedCornerShape(22.dp),
+                shadowElevation = 12.dp,
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(
+                        part.subgroup.name.ifBlank { "${index + 1}" },
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        part.result.total.toString(),
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -2882,10 +3058,25 @@ private fun LogsScreenV2(
                                     Icon(Icons.Rounded.Casino, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                     Spacer(Modifier.width(10.dp))
                                     Text(log.rollName, modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                                    Text(log.total.toString(), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+                                    if (log.parts.isEmpty()) {
+                                        Text(log.total.toString(), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
+                                    }
                                 }
                                 Text(log.expression, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                if (log.detail.isNotBlank()) {
+                                if (log.parts.isNotEmpty()) {
+                                    log.parts.forEach { part ->
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            Column(Modifier.weight(1f)) {
+                                                Text(part.name, fontWeight = FontWeight.Bold)
+                                                Text(part.detail, style = MaterialTheme.typography.bodySmall)
+                                            }
+                                            Text(part.total.toString(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                } else if (log.detail.isNotBlank()) {
                                     Text(log.detail, style = MaterialTheme.typography.bodySmall)
                                 }
                                 Text(
@@ -3386,7 +3577,7 @@ private fun GuidedExpressionEditorV2(
     var countText by remember { mutableStateOf("1") }
     var sides by remember { mutableStateOf(20) }
     var sidesMenu by remember { mutableStateOf(false) }
-    var subtractNext by remember { mutableStateOf(false) }
+    var nextOperator by remember { mutableStateOf("+") }
     var constantText by remember { mutableStateOf("1") }
     var multiplierText by remember { mutableStateOf("2") }
     val valid = RollFormulaResolver.validateTemplate(value, character.level, modifiers)
@@ -3394,10 +3585,9 @@ private fun GuidedExpressionEditorV2(
     fun appendTerm(term: String) {
         onValueChange(
             when {
-                value.isBlank() && subtractNext -> "-$term"
+                value.isBlank() && nextOperator == "-" -> "-$term"
                 value.isBlank() -> term
-                subtractNext -> "$value-$term"
-                else -> "$value+$term"
+                else -> "$value$nextOperator$term"
             },
         )
     }
@@ -3415,8 +3605,9 @@ private fun GuidedExpressionEditorV2(
     )
 
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-        FilterChip(selected = !subtractNext, onClick = { subtractNext = false }, label = { Text("+") })
-        FilterChip(selected = subtractNext, onClick = { subtractNext = true }, label = { Text("−") })
+        FilterChip(selected = nextOperator == "+", onClick = { nextOperator = "+" }, label = { Text("+") })
+        FilterChip(selected = nextOperator == "-", onClick = { nextOperator = "-" }, label = { Text("−") })
+        FilterChip(selected = nextOperator == "x", onClick = { nextOperator = "x" }, label = { Text("×") })
         OutlinedTextField(
             value = countText,
             onValueChange = { countText = it.filter(Char::isDigit).take(3) },
@@ -3485,11 +3676,11 @@ private fun GuidedExpressionEditorV2(
         )
         OutlinedButton(
             enabled = value.isNotBlank() && multiplierText.toIntOrNull() != null,
-            onClick = { onValueChange("($value)*${multiplierText.toInt()}") },
+            onClick = { onValueChange("($value)x${multiplierText.toInt()}") },
         ) { Text("×") }
         TextButton(
             enabled = value.isNotBlank(),
-            onClick = { onValueChange("($value)*{level}") },
+            onClick = { onValueChange("($value)x{level}") },
         ) { Text("× {level}") }
     }
 }

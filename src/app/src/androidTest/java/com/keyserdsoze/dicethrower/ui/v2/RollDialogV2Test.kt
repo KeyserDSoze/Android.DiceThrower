@@ -47,6 +47,9 @@ class RollDialogV2Test {
         }
 
         composeRule.onNodeWithText("Arcane Night").assertIsDisplayed()
+        // Presets are hidden until the compact, selected-table accordion is opened.
+        assertTrue(composeRule.onAllNodesWithContentDescription("Tavern Wood").fetchSemanticsNodes().isEmpty())
+        composeRule.onNodeWithText("Dice table").performClick()
         listOf(
             "Arcane Night",
             "Fantasy Felt",

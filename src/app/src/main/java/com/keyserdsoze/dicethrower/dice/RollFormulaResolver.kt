@@ -178,7 +178,11 @@ object RollFormulaResolver {
         raw: String,
         variables: Map<String, Int>,
     ): String {
-        var resolved = variableRegex.replace(raw) { match ->
+        // A number immediately before a variable is multiplication, not digit concatenation:
+        // legacy "2{level}" must resolve as "2x4", never as "24".
+        // "{level}d6" intentionally remains a dynamic dice count.
+        val withExplicitMultiplication = Regex("""(?<=[0-9)}])(?=\{)""").replace(raw, "x")
+        var resolved = variableRegex.replace(withExplicitMultiplication) { match ->
             val requested = normalizeName(match.groupValues[1])
             variables[requested]?.toString()
                 ?: throw IllegalArgumentException("Unknown variable: ${match.groupValues[1]}")

@@ -131,6 +131,13 @@ data class RollDefinition(
     val diceAppearance: RollDiceAppearance = RollDiceAppearance(),
 )
 
+data class RollLogPart(
+    val name: String,
+    val expression: String,
+    val total: Int,
+    val detail: String,
+)
+
 data class RollLog(
     val id: String,
     val characterId: String,
@@ -140,6 +147,9 @@ data class RollLog(
     val total: Int,
     val detail: String,
     val timestamp: Long,
+    // The legacy aggregate is retained for compatibility with older backups and clients.
+    // Multiple named parts are presented independently to the user.
+    val parts: List<RollLogPart> = emptyList(),
 )
 
 data class AppSettings(
