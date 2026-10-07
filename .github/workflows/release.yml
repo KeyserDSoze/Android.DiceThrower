@@ -101,6 +101,33 @@ jobs:
           fi
           gradle --no-daemon -PrequireStableSigning=true :app:testDebugUnitTest :app:assembleRelease :app:bundleRelease
 
+      - name: Verify production Google configuration
+        working-directory: src
+        shell: bash
+        env:
+          DICETHROWER_GOOGLE_WEB_CLIENT_ID: ${{ secrets.DICETHROWER_GOOGLE_WEB_CLIENT_ID }}
+          DICETHROWER_GOOGLE_ANDROID_CLIENT_ID: ${{ secrets.DICETHROWER_GOOGLE_ANDROID_CLIENT_ID }}
+        run: |
+          APK="app/build/outputs/apk/release/app-release.apk"
+          RESOURCES="$RUNNER_TEMP/dicethrower-release-resources.txt"
+
+          "$ANDROID_HOME/build-tools/37.0.0/aapt2" dump resources "$APK" > "$RESOURCES"
+
+          if ! grep -Fq "$DICETHROWER_GOOGLE_WEB_CLIENT_ID" "$RESOURCES"; then
+            echo "Release APK does not contain the configured Google Web Client ID" >&2
+            exit 1
+          fi
+
+          if grep -Fq "$DICETHROWER_GOOGLE_ANDROID_CLIENT_ID" "$RESOURCES"; then
+            echo "Android OAuth Client ID must not be embedded in the APK" >&2
+            exit 1
+          fi
+
+          if grep -R -I -n -E 'client[_-]?secret' app/src/main >/dev/null; then
+            echo "A client secret reference was found in Android runtime sources" >&2
+            exit 1
+          fi
+
       - name: Verify release signatures
         shell: bash
         run: |
