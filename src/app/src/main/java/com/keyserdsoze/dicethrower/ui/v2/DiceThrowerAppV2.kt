@@ -1351,7 +1351,7 @@ internal fun DiceTablePickerV2(
                     rowThemes.forEach { theme ->
                         val selected = character.diceTableImage == null && character.diceTableTheme == theme
                         val label = stringResource(theme.presetNameRes())
-                        val previewBitmap = remember(context, theme) { theme.presetBitmap(context).asImageBitmap() }
+                        val previewBitmap = remember(context, theme) { theme.presetBitmap(context, preview = true).asImageBitmap() }
                         Surface(
                             modifier = Modifier
                                 .weight(1f)

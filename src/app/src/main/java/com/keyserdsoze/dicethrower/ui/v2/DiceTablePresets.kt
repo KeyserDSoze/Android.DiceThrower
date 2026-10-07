@@ -14,12 +14,9 @@ internal fun DiceTableTheme.presetDrawableRes(): Int = when (this) {
     DiceTableTheme.OAK -> R.drawable.table_fantasy_felt
     DiceTableTheme.EMERALD -> R.drawable.table_ancient_map
     DiceTableTheme.OBSIDIAN -> R.drawable.table_scifi_neon
-    DiceTableTheme.TAVERN_WOOD -> R.drawable.table_tavern_wood
-    DiceTableTheme.DUNGEON_STONE -> R.drawable.table_dungeon_stone
-    DiceTableTheme.ELVEN_GROVE -> R.drawable.table_elven_grove
-    DiceTableTheme.FROZEN_REALM -> R.drawable.table_frozen_realm
-    DiceTableTheme.DESERT_RUINS -> R.drawable.table_desert_ruins
-    DiceTableTheme.ASTRAL_VOID -> R.drawable.table_astral_void
+    // Six newer themes now use full-resolution procedural textures rather than 135x240 images.
+    DiceTableTheme.TAVERN_WOOD, DiceTableTheme.DUNGEON_STONE, DiceTableTheme.ELVEN_GROVE,
+    DiceTableTheme.FROZEN_REALM, DiceTableTheme.DESERT_RUINS, DiceTableTheme.ASTRAL_VOID -> 0
 }
 
 @StringRes
@@ -36,6 +33,10 @@ internal fun DiceTableTheme.presetNameRes(): Int = when (this) {
     DiceTableTheme.ASTRAL_VOID -> R.string.table_astral_void
 }
 
-internal fun DiceTableTheme.presetBitmap(context: Context): Bitmap =
-    BitmapFactory.decodeResource(context.resources, presetDrawableRes())
+internal fun DiceTableTheme.presetBitmap(context: Context, preview: Boolean = false): Bitmap {
+    if (FantasyTableArtwork.supports(this)) return FantasyTableArtwork.render(this, preview)
+    val resource = presetDrawableRes()
+    val options = if (preview) BitmapFactory.Options().apply { inSampleSize = 4 } else null
+    return BitmapFactory.decodeResource(context.resources, resource, options)
         ?: error("Unable to decode dice-table preset $name")
+}
