@@ -40,6 +40,17 @@ class RollFormulaResolverTest {
     }
 
     @Test
+    fun levelCanDriveDiceCount() {
+        val resolved = RollFormulaResolver.resolveTemplate(
+            expression = "{level}d6",
+            level = character.level,
+            modifiers = modifiers,
+        )
+
+        assertEquals("4d6", resolved)
+    }
+
+    @Test
     fun resolvesModifierNamesCaseInsensitively() {
         val resolved = RollFormulaResolver.resolveTemplate(
             expression = "1d6+{intelligenza}",
