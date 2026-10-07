@@ -206,8 +206,8 @@ jobs:
           VERSION: ${{ needs.release.outputs.version }}
         run: |
           mkdir -p distribution/whatsnew
-          printf 'Dice Thrower %s: expands to ten premium table presets, adds Android Back navigation through the app hierarchy, moves roll controls to an ergonomic footer, and makes dice settle progressively on the actual logical result face.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
-          printf 'Dice Thrower %s: porta i tavoli premium a dieci, integra il tasto Back Android nella navigazione, sposta i controlli del tiro nel footer e fa assestare progressivamente i dadi sulla faccia del risultato logico reale.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
+          printf 'Dice Thrower %s: adds configurable first-roll and reroll gestures for tap, swipe and phone motion, keeps the footer dice icon always available, and fixes all ten premium table previews with standalone artwork.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
+          printf 'Dice Thrower %s: aggiunge gesture configurabili per primo tiro e rilancio tramite tap, swipe e movimento del telefono, mantiene sempre disponibile il dado nel footer e corregge le anteprime dei dieci tavoli premium con asset standalone.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
 
       - name: Upload to Google Play Internal testing
         uses: r0adkll/upload-google-play@v1.1.5
