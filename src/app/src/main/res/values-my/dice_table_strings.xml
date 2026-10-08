@@ -17,4 +17,9 @@
     <string name="swipe_up_to_roll">Swipe up</string>
     <string name="shake_phone">Shake phone</string>
     <string name="roll_icon_always_available">The dice icon in the footer is always available.</string>
+    <string name="composer_terms">ဖော်မြူလာ တည်ဆောက်သူ</string>
+    <string name="composer_group">ရွေးထားသည်များကို အုပ်စုဖွဲ့ရန်</string>
+    <string name="composer_ungroup">အုပ်စုခွဲရန်</string>
+    <string name="composer_select_help">အနီးကပ်ရှိသော အပိုင်းနှစ်ခု သို့မဟုတ် ထို့ထက်ပို၍ ရွေးပြီး အုပ်စုဖွဲ့ပါ။</string>
+    <string name="composer_choose_variable">ကိန်းရှင်</string>
 </resources>
