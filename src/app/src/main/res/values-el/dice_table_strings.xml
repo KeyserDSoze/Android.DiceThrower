@@ -17,4 +17,9 @@
     <string name="swipe_up_to_roll">Swipe up</string>
     <string name="shake_phone">Shake phone</string>
     <string name="roll_icon_always_available">The dice icon in the footer is always available.</string>
+    <string name="composer_terms">Σύνθεση τύπου</string>
+    <string name="composer_group">Ομαδοποίηση επιλεγμένων</string>
+    <string name="composer_ungroup">Κατάργηση ομάδας</string>
+    <string name="composer_select_help">Επιλέξτε δύο ή περισσότερους γειτονικούς όρους για ομαδοποίηση.</string>
+    <string name="composer_choose_variable">Μεταβλητή</string>
 </resources>
