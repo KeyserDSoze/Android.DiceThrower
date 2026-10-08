@@ -17,4 +17,9 @@
     <string name="swipe_up_to_roll">Swipe up</string>
     <string name="shake_phone">Shake phone</string>
     <string name="roll_icon_always_available">The dice icon in the footer is always available.</string>
+    <string name="composer_terms">Mai ƙirƙirar dabara</string>
+    <string name="composer_group">Haɗa zaɓaɓɓu</string>
+    <string name="composer_ungroup">Warware rukuni</string>
+    <string name="composer_select_help">Zaɓi abubuwa biyu ko fiye da suke kusa don haɗa su.</string>
+    <string name="composer_choose_variable">Mai canzawa</string>
 </resources>
