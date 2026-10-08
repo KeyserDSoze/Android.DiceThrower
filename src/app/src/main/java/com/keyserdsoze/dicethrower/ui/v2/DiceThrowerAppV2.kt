@@ -3552,6 +3552,8 @@ private fun GuidedExpressionEditorV2(
     onValueChange: (String) -> Unit,
 ) {
     var countText by remember { mutableStateOf("1") }
+    var countMenu by remember { mutableStateOf(false) }
+    var constantMode by remember { mutableStateOf(false) }
     var sides by remember { mutableStateOf(20) }
     var sidesMenu by remember { mutableStateOf(false) }
     var nextOperator by remember { mutableStateOf("+") }
@@ -3585,21 +3587,34 @@ private fun GuidedExpressionEditorV2(
         FilterChip(selected = nextOperator == "+", onClick = { nextOperator = "+" }, label = { Text("+") })
         FilterChip(selected = nextOperator == "-", onClick = { nextOperator = "-" }, label = { Text("−") })
         FilterChip(selected = nextOperator == "x", onClick = { nextOperator = "x" }, label = { Text("×") })
-        OutlinedTextField(
-            value = countText,
-            onValueChange = { countText = it.filter(Char::isDigit).take(3) },
-            label = { Text("#") },
-            singleLine = true,
-            modifier = Modifier.width(68.dp),
-        )
         Box {
-            OutlinedButton(onClick = { sidesMenu = true }) { Text("d$sides") }
+            OutlinedButton(onClick = { countMenu = true }) { Text(countText) }
+            DropdownMenu(expanded = countMenu, onDismissRequest = { countMenu = false }) {
+                (listOf("1", "2", "3", "4", "5", "10", "{level}") +
+                    modifiers.map { "{${it.name}}" }).distinct().forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option) },
+                        onClick = { countText = option; countMenu = false },
+                    )
+                }
+            }
+        }
+        Box {
+            OutlinedButton(onClick = { sidesMenu = true }) {
+                Text(if (constantMode) stringResource(R.string.constant_value) else "d$sides")
+            }
+            DropdownMenu(expanded = sidesMenu, onDismissRequest = { sidesMenu = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.constant_value)) },
+                    onClick = { constantMode = true; sidesMenu = false },
+                }
             DropdownMenu(expanded = sidesMenu, onDismissRequest = { sidesMenu = false }) {
                 DiceExpression.supportedSides.sorted().forEach { option ->
                     DropdownMenuItem(
                         text = { Text("d$option") },
                         onClick = {
                             sides = option
+                            constantMode = false
                             sidesMenu = false
                         },
                     )
@@ -3607,9 +3622,9 @@ private fun GuidedExpressionEditorV2(
             }
         }
         Button(
-            enabled = (countText.toIntOrNull() ?: 0) in 1..100,
-            onClick = { appendTerm("${countText.toInt()}d$sides") },
-        ) { Text(stringResource(R.string.add)) }
+            enabled = countText.startsWith("{") || (countText.toIntOrNull() ?: 0) in 1..100,
+            onClick = { appendTerm(if (constantMode) countText else "${countText}d$sides") },
+        ) { Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.add)) }
     }
 
     Row(
