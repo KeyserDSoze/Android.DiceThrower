@@ -17,4 +17,9 @@
     <string name="swipe_up_to_roll">Swipe up</string>
     <string name="shake_phone">Shake phone</string>
     <string name="roll_icon_always_available">The dice icon in the footer is always available.</string>
+    <string name="composer_terms">സൂത്ര നിർമാതാവ്</string>
+    <string name="composer_group">തിരഞ്ഞെടുത്തവ ഗ്രൂപ്പാക്കുക</string>
+    <string name="composer_ungroup">ഗ്രൂപ്പ് നീക്കംചെയ്യുക</string>
+    <string name="composer_select_help">ഗ്രൂപ്പാക്കാൻ അടുത്തുള്ള രണ്ടോ അതിലധികമോ പദങ്ങൾ തിരഞ്ഞെടുക്കുക.</string>
+    <string name="composer_choose_variable">ചര</string>
 </resources>

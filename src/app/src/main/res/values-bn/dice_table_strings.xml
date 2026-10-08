@@ -17,4 +17,9 @@
     <string name="swipe_up_to_roll">Swipe up</string>
     <string name="shake_phone">Shake phone</string>
     <string name="roll_icon_always_available">The dice icon in the footer is always available.</string>
+    <string name="composer_terms">সূত্র নির্মাতা</string>
+    <string name="composer_group">নির্বাচিত পদগুলি গুচ্ছবদ্ধ করুন</string>
+    <string name="composer_ungroup">গুচ্ছ ভাঙুন</string>
+    <string name="composer_select_help">গুচ্ছবদ্ধ করতে পাশাপাশি দুটি বা তার বেশি পদ বাছুন।</string>
+    <string name="composer_choose_variable">চলক</string>
 </resources>

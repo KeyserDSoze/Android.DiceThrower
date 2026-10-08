@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -192,6 +193,35 @@ internal fun guidedSubgroupsFromAdvancedExpression(
         RollFormulaResolver.canonicalExpression(current)
     }.getOrNull()
     if (candidate == currentCanonical) return current
+
+    // An explicit canonical sum of parenthesized Roll Parts still represents
+    // distinct results. Preserve their names and stable IDs when editing text.
+    val topLevel = FormulaComposer.parse(candidate, level, modifiers)
+    val separateParts = topLevel?.takeIf { terms ->
+        terms.size >= 2 && terms.all { term ->
+            val body = when {
+                term.isGroup && term.multiplier == null -> FormulaComposer.serialize(term.grouped)
+                !term.isGroup && term.expression.startsWith("(") && term.expression.endsWith(")") ->
+                    term.expression.drop(1).dropLast(1)
+                else -> null
+            }
+            body != null && RollFormulaResolver.validateTemplate(body, level, modifiers)
+        }
+    }
+    if (separateParts != null) {
+        return separateParts.mapIndexed { index, term ->
+            val partExpression = if (term.isGroup) FormulaComposer.serialize(term.grouped)
+                else term.expression.drop(1).dropLast(1)
+            val prior = current.firstOrNull { it.expression.trim() == partExpression }
+                ?: current.getOrNull(index)
+            RollSubgroup(
+                id = prior?.id ?: idFactory(),
+                name = prior?.name.orEmpty(),
+                expression = partExpression,
+                operator = if (term.sign == '-') RollSubgroupOperator.SUBTRACT else RollSubgroupOperator.ADD,
+            )
+        }
+    }
 
     val previousSingle = current.singleOrNull()
     return listOf(
@@ -3268,7 +3298,6 @@ internal fun RollBuilderScreenV2(
     var name by remember(existing?.id) { mutableStateOf(existing?.name ?: "") }
     var groupId by remember(existing?.id, initialGroupId) { mutableStateOf(existing?.groupId ?: initialGroupId) }
     var groupMenu by remember(existing?.id) { mutableStateOf(false) }
-    var advancedMode by remember(existing?.id) { mutableStateOf(false) }
     var subgroups by remember(existing?.id) {
         mutableStateOf(
             existing?.subgroups?.takeIf { it.isNotEmpty() } ?: listOf(
@@ -3282,22 +3311,26 @@ internal fun RollBuilderScreenV2(
     val guidedExpression = remember(subgroups) {
         runCatching { RollFormulaResolver.canonicalExpression(subgroups) }.getOrDefault("")
     }
-    var advancedExpression by remember(existing?.id) {
+    var formulaText by remember(existing?.id) {
         mutableStateOf(TextFieldValue(existing?.expression ?: guidedExpression.ifBlank { "1d20" }))
     }
-    LaunchedEffect(guidedExpression, advancedMode) {
-        if (!advancedMode && guidedExpression.isNotBlank()) {
-            advancedExpression = TextFieldValue(guidedExpression)
-        }
-    }
-
     val groupsValid = subgroups.isNotEmpty() && subgroups.all { subgroup ->
         subgroup.expression.isNotBlank() &&
             RollFormulaResolver.validateTemplate(subgroup.expression, character.level, modifiers)
     }
-    val expressionToSave = if (advancedMode) advancedExpression.text.trim() else guidedExpression
+    val expressionToSave = formulaText.text.trim()
     val expressionValid = RollFormulaResolver.validateTemplate(expressionToSave, character.level, modifiers)
-    val valid = name.isNotBlank() && expressionValid && (advancedMode || groupsValid)
+    // The canonical subgroup rendering wraps every part in parentheses. A valid
+    // single-part text edit is equivalent to its canonical wrapped expression.
+    val synced = expressionToSave == guidedExpression ||
+        (subgroups.size == 1 && expressionToSave == subgroups.single().expression.trim())
+    val valid = name.isNotBlank() && expressionValid && groupsValid && synced
+    fun updateSubgroups(updated: List<RollSubgroup>) {
+        subgroups = updated
+        formulaText = TextFieldValue(
+            runCatching { RollFormulaResolver.canonicalExpression(updated) }.getOrDefault("")
+        )
+    }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -3352,54 +3385,34 @@ internal fun RollBuilderScreenV2(
                             }
                         }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(
-                            selected = !advancedMode,
-                            onClick = {
-                                guidedSubgroupsFromAdvancedExpression(
-                                    expression = advancedExpression.text,
-                                    current = subgroups,
-                                    level = character.level,
-                                    modifiers = modifiers,
-                                )?.let { imported ->
-                                    subgroups = imported
-                                    advancedMode = false
-                                }
-                            },
-                            label = { Text(stringResource(R.string.guided_builder)) },
-                        )
-                        FilterChip(
-                            selected = advancedMode,
-                            onClick = {
-                                if (!advancedMode) {
-                                    advancedExpression = TextFieldValue(guidedExpression)
-                                }
-                                advancedMode = true
-                            },
-                            label = { Text(stringResource(R.string.advanced_formula)) },
-                        )
-                    }
+
                 }
             }
         }
 
-        if (advancedMode) {
-            item {
-                PremiumCard(Modifier.fillMaxWidth()) {
-                    ParameterizedExpressionField(
-                        value = advancedExpression,
-                        onValueChange = { advancedExpression = it },
-                        label = stringResource(R.string.expression),
-                        modifiers = modifiers,
-                        isValid = expressionValid,
-                        helper = stringResource(R.string.expression_hint),
-                        errorText = stringResource(R.string.invalid_expression),
-                        modifier = Modifier.padding(16.dp),
-                    )
-                }
+        item {
+            PremiumCard(Modifier.fillMaxWidth()) {
+                ParameterizedExpressionField(
+                    value = formulaText,
+                    onValueChange = { updated ->
+                        formulaText = updated
+                        guidedSubgroupsFromAdvancedExpression(
+                            expression = updated.text,
+                            current = subgroups,
+                            level = character.level,
+                            modifiers = modifiers,
+                        )?.let { imported -> subgroups = imported }
+                    },
+                    label = stringResource(R.string.expression),
+                    modifiers = modifiers,
+                    isValid = expressionValid,
+                    helper = stringResource(R.string.expression_hint),
+                    errorText = stringResource(R.string.invalid_expression),
+                    modifier = Modifier.padding(16.dp),
+                )
             }
-        } else {
-            item {
+        }
+        item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -3411,15 +3424,13 @@ internal fun RollBuilderScreenV2(
                     )
                     TextButton(
                         onClick = {
-                            subgroups = subgroups + RollSubgroup(
+                            updateSubgroups(subgroups + RollSubgroup(
                                 id = UUID.randomUUID().toString(),
                                 expression = "1d6",
-                            )
+                            ))
                         },
                     ) {
-                        Icon(Icons.Rounded.Add, contentDescription = null)
-                        Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.add_subgroup))
+                        Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.add_subgroup))
                     }
                 }
             }
@@ -3435,9 +3446,9 @@ internal fun RollBuilderScreenV2(
                                 FilterChip(
                                     selected = subgroup.operator == RollSubgroupOperator.ADD,
                                     onClick = {
-                                        subgroups = subgroups.map {
+                                        updateSubgroups(subgroups.map {
                                             if (it.id == subgroup.id) it.copy(operator = RollSubgroupOperator.ADD) else it
-                                        }
+                                        })
                                     },
                                     label = { Text("+") },
                                 )
@@ -3445,9 +3456,9 @@ internal fun RollBuilderScreenV2(
                                 FilterChip(
                                     selected = subgroup.operator == RollSubgroupOperator.SUBTRACT,
                                     onClick = {
-                                        subgroups = subgroups.map {
+                                        updateSubgroups(subgroups.map {
                                             if (it.id == subgroup.id) it.copy(operator = RollSubgroupOperator.SUBTRACT) else it
-                                        }
+                                        })
                                     },
                                     label = { Text("−") },
                                 )
@@ -3456,16 +3467,16 @@ internal fun RollBuilderScreenV2(
                             OutlinedTextField(
                                 value = subgroup.name,
                                 onValueChange = { updatedName ->
-                                    subgroups = subgroups.map {
+                                    updateSubgroups(subgroups.map {
                                         if (it.id == subgroup.id) it.copy(name = updatedName) else it
-                                    }
+                                    })
                                 },
                                 label = { Text(stringResource(R.string.subgroup_name)) },
                                 singleLine = true,
                                 modifier = Modifier.weight(1f),
                             )
                             if (subgroups.size > 1) {
-                                IconButton(onClick = { subgroups = subgroups.filterNot { it.id == subgroup.id } }) {
+                                IconButton(onClick = { updateSubgroups(subgroups.filterNot { it.id == subgroup.id }) }) {
                                     Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.delete))
                                 }
                             }
@@ -3478,7 +3489,7 @@ internal fun RollBuilderScreenV2(
                             ) {
                                 IconButton(
                                     enabled = index > 0,
-                                    onClick = { subgroups = moveRollSubgroup(subgroups, index, -1) },
+                                    onClick = { updateSubgroups(moveRollSubgroup(subgroups, index, -1)) },
                                 ) {
                                     Icon(
                                         Icons.Rounded.KeyboardArrowUp,
@@ -3487,7 +3498,7 @@ internal fun RollBuilderScreenV2(
                                 }
                                 IconButton(
                                     enabled = index < subgroups.lastIndex,
-                                    onClick = { subgroups = moveRollSubgroup(subgroups, index, 1) },
+                                    onClick = { updateSubgroups(moveRollSubgroup(subgroups, index, 1)) },
                                 ) {
                                     Icon(
                                         Icons.Rounded.KeyboardArrowDown,
@@ -3501,9 +3512,9 @@ internal fun RollBuilderScreenV2(
                             character = character,
                             modifiers = modifiers,
                             onValueChange = { updatedExpression ->
-                                subgroups = subgroups.map {
+                                updateSubgroups(subgroups.map {
                                     if (it.id == subgroup.id) it.copy(expression = updatedExpression) else it
-                                }
+                                })
                             },
                         )
                     }
@@ -3521,7 +3532,6 @@ internal fun RollBuilderScreenV2(
                     }
                 }
             }
-        }
 
         item {
             Row(
@@ -3535,7 +3545,6 @@ internal fun RollBuilderScreenV2(
                     enabled = valid,
                     modifier = Modifier.weight(1f),
                     onClick = {
-                        val preserveSubgroups = !advancedMode || expressionToSave == guidedExpression
                         val saved = (existing ?: RollDefinition(
                             id = "",
                             characterId = character.id,
@@ -3545,7 +3554,7 @@ internal fun RollBuilderScreenV2(
                             name = name.trim(),
                             expression = expressionToSave,
                             groupId = groupId,
-                            subgroups = if (preserveSubgroups) subgroups else emptyList(),
+                            subgroups = subgroups,
                         )
                         val slots = runCatching {
                             val resolved = RollFormulaResolver.resolve(character, modifiers, saved).expression
@@ -3575,21 +3584,35 @@ private fun GuidedExpressionEditorV2(
     onValueChange: (String) -> Unit,
 ) {
     var countText by remember { mutableStateOf("1") }
+    var countMenu by remember { mutableStateOf(false) }
+    var constantMode by remember { mutableStateOf(false) }
     var sides by remember { mutableStateOf(20) }
     var sidesMenu by remember { mutableStateOf(false) }
+    var operatorMenu by remember { mutableStateOf(false) }
     var nextOperator by remember { mutableStateOf("+") }
-    var constantText by remember { mutableStateOf("1") }
-    var multiplierText by remember { mutableStateOf("2") }
     val valid = RollFormulaResolver.validateTemplate(value, character.level, modifiers)
+    val composer = remember(value, character.level, modifiers) {
+        FormulaComposer.parse(value, character.level, modifiers)
+    }
+    var selected by remember(value) { mutableStateOf(emptySet<Int>()) }
+
+    fun commit(terms: List<ComposerTerm>) {
+        val candidate = FormulaComposer.serialize(terms)
+        if (candidate.isBlank() || RollFormulaResolver.validateTemplate(candidate, character.level, modifiers)) {
+            onValueChange(candidate)
+        }
+    }
 
     fun appendTerm(term: String) {
-        onValueChange(
-            when {
-                value.isBlank() && nextOperator == "-" -> "-$term"
-                value.isBlank() -> term
-                else -> "$value$nextOperator$term"
-            },
-        )
+        val expression = when {
+            value.isBlank() && nextOperator == "-" -> "-" + term
+            value.isBlank() -> term
+            nextOperator == "x" -> "(" + value + ")x" + term
+            else -> value + nextOperator + term
+        }
+        if (RollFormulaResolver.validateTemplate(expression, character.level, modifiers)) {
+            onValueChange(expression)
+        }
     }
 
     OutlinedTextField(
@@ -3604,84 +3627,208 @@ private fun GuidedExpressionEditorV2(
         modifier = Modifier.fillMaxWidth(),
     )
 
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-        FilterChip(selected = nextOperator == "+", onClick = { nextOperator = "+" }, label = { Text("+") })
-        FilterChip(selected = nextOperator == "-", onClick = { nextOperator = "-" }, label = { Text("−") })
-        FilterChip(selected = nextOperator == "x", onClick = { nextOperator = "x" }, label = { Text("×") })
-        OutlinedTextField(
-            value = countText,
-            onValueChange = { countText = it.filter(Char::isDigit).take(3) },
-            label = { Text("#") },
-            singleLine = true,
-            modifier = Modifier.width(68.dp),
-        )
+    if (composer != null && composer.isNotEmpty()) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                stringResource(R.string.composer_terms),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            composer.forEachIndexed { index, term ->
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                ) {
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            if (term.isGroup) {
+                                Text(if (term.sign == '-') "−" else "+", fontWeight = FontWeight.Bold)
+                                Row(
+                                    modifier = Modifier.weight(1f),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Box(
+                                        Modifier.width(3.dp)
+                                            .height((term.grouped.size * 27).dp)
+                                            .background(MaterialTheme.colorScheme.primary),
+                                    )
+                                    Column(Modifier.padding(start = 8.dp)) {
+                                        term.grouped.forEachIndexed { childIndex, child ->
+                                            Text(
+                                                (if (child.sign == '-') "− " else if (childIndex > 0) "+ " else "") +
+                                                    child.expression,
+                                                style = MaterialTheme.typography.bodySmall,
+                                            )
+                                        }
+                                    }
+                                }
+                            } else {
+                                FilterChip(
+                                    selected = index in selected,
+                                    onClick = {
+                                        selected = if (index in selected) selected - index else selected + index
+                                    },
+                                    label = {
+                                        Text(
+                                            (if (term.sign == '-') "− " else if (index > 0) "+ " else "") +
+                                                term.expression,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
+                            IconButton(
+                                enabled = index > 0,
+                                onClick = { commit(FormulaComposer.move(composer, index, -1)) },
+                            ) {
+                                Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = stringResource(R.string.move_up))
+                            }
+                            IconButton(
+                                enabled = index < composer.lastIndex,
+                                onClick = { commit(FormulaComposer.move(composer, index, 1)) },
+                            ) {
+                                Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = stringResource(R.string.move_down))
+                            }
+                            IconButton(onClick = { commit(FormulaComposer.remove(composer, index)) }) {
+                                Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.delete))
+                            }
+                        }
+                        if (term.isGroup) {
+                            var factor by remember(value, index) {
+                                mutableStateOf(term.multiplier ?: "1")
+                            }
+                            var factorMenu by remember { mutableStateOf(false) }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                OutlinedTextField(
+                                    value = factor,
+                                    onValueChange = { factor = it.take(32) },
+                                    singleLine = true,
+                                    label = { Text(stringResource(R.string.multiplier)) },
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Box {
+                                    IconButton(onClick = { factorMenu = true }) {
+                                        Icon(
+                                            Icons.Rounded.KeyboardArrowDown,
+                                            contentDescription = stringResource(R.string.composer_choose_variable),
+                                        )
+                                    }
+                                    DropdownMenu(expanded = factorMenu, onDismissRequest = { factorMenu = false }) {
+                                        (listOf("{level}") + modifiers.map { "{" + it.name + "}" })
+                                            .distinct().forEach { variable ->
+                                                DropdownMenuItem(
+                                                    text = { Text(variable) },
+                                                    onClick = { factor = variable; factorMenu = false },
+                                                )
+                                            }
+                                    }
+                                }
+                                TextButton(
+                                    onClick = { commit(FormulaComposer.multiplyGroup(composer, index, factor.trim())) },
+                                    enabled = factor.isNotBlank() &&
+                                        RollFormulaResolver.validateTemplate(
+                                            "1x" + factor.trim(), character.level, modifiers
+                                        ),
+                                ) { Text("×") }
+                                TextButton(onClick = { commit(FormulaComposer.ungroup(composer, index)) }) {
+                                    Text(stringResource(R.string.composer_ungroup))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Text(
+                stringResource(R.string.composer_select_help),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedButton(
+                onClick = { commit(FormulaComposer.group(composer, selected)) },
+                enabled = FormulaComposer.canGroup(composer, selected),
+            ) { Text(stringResource(R.string.composer_group)) }
+        }
+    }
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+    ) {
         Box {
-            OutlinedButton(onClick = { sidesMenu = true }) { Text("d$sides") }
-            DropdownMenu(expanded = sidesMenu, onDismissRequest = { sidesMenu = false }) {
-                DiceExpression.supportedSides.sorted().forEach { option ->
+            OutlinedButton(onClick = { operatorMenu = true }) {
+                Text(if (nextOperator == "x") "×" else if (nextOperator == "-") "−" else "+")
+                Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null)
+            }
+            DropdownMenu(expanded = operatorMenu, onDismissRequest = { operatorMenu = false }) {
+                listOf("+" to "+", "-" to "−", "x" to "×").forEach { (operator, label) ->
                     DropdownMenuItem(
-                        text = { Text("d$option") },
-                        onClick = {
-                            sides = option
-                            sidesMenu = false
-                        },
+                        text = { Text(label) },
+                        onClick = { nextOperator = operator; operatorMenu = false },
                     )
                 }
             }
         }
-        Button(
-            enabled = (countText.toIntOrNull() ?: 0) in 1..100,
-            onClick = { appendTerm("${countText.toInt()}d$sides") },
-        ) { Text(stringResource(R.string.add)) }
-    }
-
-    Row(
-        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        TextButton(onClick = { appendTerm("{level}d$sides") }) { Text("{level}d$sides") }
-        TextButton(onClick = { appendTerm("{level}") }) { Text("{level}") }
-        modifiers.forEach { modifier ->
-            TextButton(onClick = { appendTerm("{${modifier.name}}") }) { Text("{${modifier.name}}") }
+        OutlinedTextField(
+            value = countText,
+            onValueChange = { countText = it.take(35) },
+            singleLine = true,
+            label = { Text("#") },
+            modifier = Modifier.width(88.dp),
+        )
+        Box {
+            IconButton(onClick = { countMenu = true }) {
+                Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = stringResource(R.string.composer_choose_variable))
+            }
+            DropdownMenu(expanded = countMenu, onDismissRequest = { countMenu = false }) {
+                (listOf("1", "2", "3", "4", "5", "10", "{level}") +
+                    modifiers.map { "{" + it.name + "}" }).distinct().forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option) },
+                        onClick = { countText = option; countMenu = false },
+                    )
+                }
+            }
+        }
+        Box {
+            OutlinedButton(onClick = { sidesMenu = true }) {
+                Text(if (constantMode) stringResource(R.string.constant_value) else "d" + sides)
+            }
+            DropdownMenu(expanded = sidesMenu, onDismissRequest = { sidesMenu = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.constant_value)) },
+                    onClick = { constantMode = true; sidesMenu = false },
+                )
+                DiceExpression.supportedSides.sorted().forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text("d" + option) },
+                        onClick = { sides = option; constantMode = false; sidesMenu = false },
+                    )
+                }
+            }
+        }
+        val item = if (constantMode) countText else countText + "d" + sides
+        IconButton(
+            enabled = RollFormulaResolver.validateTemplate(item, character.level, modifiers),
+            onClick = { appendTerm(item) },
+        ) {
+            Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.add))
         }
     }
-
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        OutlinedTextField(
-            value = constantText,
-            onValueChange = { constantText = it.filter { char -> char.isDigit() }.take(5) },
-            label = { Text(stringResource(R.string.constant_value)) },
-            singleLine = true,
-            modifier = Modifier.width(108.dp),
-        )
-        OutlinedButton(
-            enabled = constantText.toIntOrNull() != null,
-            onClick = { appendTerm(constantText) },
-        ) { Text(stringResource(R.string.add)) }
-        IconButton(onClick = { onValueChange("") }) {
-            Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.clear_expression))
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        TextButton(onClick = { onValueChange("") }) {
+            Text(stringResource(R.string.clear_expression))
         }
-    }
-
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        OutlinedTextField(
-            value = multiplierText,
-            onValueChange = { raw ->
-                multiplierText = raw.filterIndexed { index, char -> char.isDigit() || (index == 0 && char == '-') }.take(5)
-            },
-            label = { Text(stringResource(R.string.multiplier)) },
-            singleLine = true,
-            modifier = Modifier.width(112.dp),
-        )
-        OutlinedButton(
-            enabled = value.isNotBlank() && multiplierText.toIntOrNull() != null,
-            onClick = { onValueChange("($value)x${multiplierText.toInt()}") },
-        ) { Text("×") }
-        TextButton(
-            enabled = value.isNotBlank(),
-            onClick = { onValueChange("($value)x{level}") },
-        ) { Text("× {level}") }
     }
 }
 

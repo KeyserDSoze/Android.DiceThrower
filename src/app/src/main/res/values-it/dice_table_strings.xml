@@ -30,4 +30,9 @@
     <string name="swipe_up_to_roll">Swipe verso l’alto</string>
     <string name="shake_phone">Muovi il telefono</string>
     <string name="roll_icon_always_available">L’icona del dado nel footer è sempre disponibile.</string>
+    <string name="composer_terms">Composizione formula</string>
+    <string name="composer_group">Raggruppa selezionati</string>
+    <string name="composer_ungroup">Separa gruppo</string>
+    <string name="composer_select_help">Seleziona almeno due termini vicini per raggrupparli.</string>
+    <string name="composer_choose_variable">Variabile</string>
 </resources>

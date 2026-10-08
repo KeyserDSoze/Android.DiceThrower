@@ -17,4 +17,9 @@
     <string name="swipe_up_to_roll">Swipe up</string>
     <string name="shake_phone">Shake phone</string>
     <string name="roll_icon_always_available">The dice icon in the footer is always available.</string>
+    <string name="composer_terms">सूत्र संयोजक</string>
+    <string name="composer_group">चयनित पदों का समूह बनाएँ</string>
+    <string name="composer_ungroup">समूह हटाएँ</string>
+    <string name="composer_select_help">समूह बनाने के लिए पास-पास के दो या अधिक पद चुनें।</string>
+    <string name="composer_choose_variable">चर</string>
 </resources>

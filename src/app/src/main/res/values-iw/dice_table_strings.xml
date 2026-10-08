@@ -17,4 +17,9 @@
     <string name="swipe_up_to_roll">Swipe up</string>
     <string name="shake_phone">Shake phone</string>
     <string name="roll_icon_always_available">The dice icon in the footer is always available.</string>
+    <string name="composer_terms">עורך נוסחאות</string>
+    <string name="composer_group">קיבוץ הנבחרים</string>
+    <string name="composer_ungroup">ביטול קיבוץ</string>
+    <string name="composer_select_help">יש לבחור לפחות שני איברים סמוכים כדי לקבץ אותם.</string>
+    <string name="composer_choose_variable">משתנה</string>
 </resources>

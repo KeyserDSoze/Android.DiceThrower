@@ -17,4 +17,9 @@
     <string name="swipe_up_to_roll">Swipe up</string>
     <string name="shake_phone">Shake phone</string>
     <string name="roll_icon_always_available">The dice icon in the footer is always available.</string>
+    <string name="composer_terms">محرر الصيغ</string>
+    <string name="composer_group">تجميع المحدد</string>
+    <string name="composer_ungroup">فك التجميع</string>
+    <string name="composer_select_help">حدد حدّين متجاورين أو أكثر لتجميعهما.</string>
+    <string name="composer_choose_variable">متغير</string>
 </resources>

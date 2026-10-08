@@ -17,4 +17,9 @@
     <string name="swipe_up_to_roll">Swipe up</string>
     <string name="shake_phone">Shake phone</string>
     <string name="roll_icon_always_available">The dice icon in the footer is always available.</string>
+    <string name="composer_terms">சூத்திர அமைப்பான்</string>
+    <string name="composer_group">தேர்ந்தவற்றைக் குழுவாக்கு</string>
+    <string name="composer_ungroup">குழுவை பிரி</string>
+    <string name="composer_select_help">குழுவாக்க அருகிலுள்ள இரண்டு அல்லது அதற்கு மேற்பட்ட உறுப்புகளைத் தேர்வுசெய்யவும்.</string>
+    <string name="composer_choose_variable">மாறி</string>
 </resources>

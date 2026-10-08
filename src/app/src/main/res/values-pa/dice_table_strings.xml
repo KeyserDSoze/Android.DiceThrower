@@ -17,4 +17,9 @@
     <string name="swipe_up_to_roll">Swipe up</string>
     <string name="shake_phone">Shake phone</string>
     <string name="roll_icon_always_available">The dice icon in the footer is always available.</string>
+    <string name="composer_terms">ਫਾਰਮੂਲਾ ਬਣਾਉਣ ਵਾਲਾ</string>
+    <string name="composer_group">ਚੁਣੇ ਹੋਏ ਸਮੂਹਬੱਧ ਕਰੋ</string>
+    <string name="composer_ungroup">ਸਮੂਹ ਖੋਲ੍ਹੋ</string>
+    <string name="composer_select_help">ਸਮੂਹ ਬਣਾਉਣ ਲਈ ਨਾਲ ਲੱਗਦੇ ਦੋ ਜਾਂ ਵੱਧ ਪਦ ਚੁਣੋ।</string>
+    <string name="composer_choose_variable">ਵੇਰੀਏਬਲ</string>
 </resources>

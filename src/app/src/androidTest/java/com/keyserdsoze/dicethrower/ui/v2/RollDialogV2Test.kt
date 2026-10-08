@@ -136,7 +136,8 @@ class RollDialogV2Test {
         composeRule.onNode(hasScrollToIndexAction())
             .performScrollToNode(hasContentDescription("New roll"))
         composeRule.onNodeWithContentDescription("New roll").performClick()
-        composeRule.onNodeWithText("1d20").assertIsDisplayed()
+        // The unified editor may render the same formula in text and visual composer.
+        assertTrue(composeRule.onAllNodes(hasText("1d20")).fetchSemanticsNodes().isNotEmpty())
     }
 
     @Test
@@ -269,7 +270,7 @@ class RollDialogV2Test {
     }
 
     @Test
-    fun guidedBuilderPreservesValidAdvancedEditAndSupportsSubgroupReordering() {
+    fun unifiedFormulaEditorImportsValidTextAndSupportsSubgroupReordering() {
         val character = CharacterProfile(id = "character", name = "Test", level = 3)
         val existing = RollDefinition(
             id = "combo",
@@ -281,6 +282,7 @@ class RollDialogV2Test {
                 RollSubgroup("damage", "Damage", "2d6"),
             ),
         )
+        var saved: RollDefinition? = null
         composeRule.setContent {
             DiceThrowerTheme(themeMode = ThemeMode.DARK) {
                 RollBuilderScreenV2(
@@ -290,15 +292,19 @@ class RollDialogV2Test {
                     groups = emptyList(),
                     existing = existing,
                     onDismiss = {},
-                    onSave = {},
+                    onSave = { saved = it },
                 )
             }
         }
 
         composeRule.onAllNodesWithContentDescription("Move down")[0].performClick()
-        composeRule.onNodeWithText("Advanced formula").performClick()
+        // No mode switch: text and guided parts share the same editor.
         composeRule.onAllNodes(hasSetTextAction())[1].performTextReplacement("2*(1d20+1)")
-        composeRule.onNodeWithText("Guided builder").performClick()
-        composeRule.onNodeWithText("(2*(1d20+1))").assertIsDisplayed()
+        composeRule.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Save"))
+        composeRule.onNodeWithText("Save").performClick()
+        composeRule.runOnIdle {
+            assertEquals("2*(1d20+1)", saved?.expression)
+            assertEquals("2*(1d20+1)", saved?.subgroups?.singleOrNull()?.expression)
+        }
     }
 }

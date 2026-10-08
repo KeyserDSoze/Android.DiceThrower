@@ -17,4 +17,9 @@
     <string name="swipe_up_to_roll">Swipe up</string>
     <string name="shake_phone">Shake phone</string>
     <string name="roll_icon_always_available">The dice icon in the footer is always available.</string>
+    <string name="composer_terms">सूत्र रचनाकार</string>
+    <string name="composer_group">निवडलेले गटबद्ध करा</string>
+    <string name="composer_ungroup">गट वेगळा करा</string>
+    <string name="composer_select_help">गट करण्यासाठी शेजारील दोन किंवा अधिक पदे निवडा.</string>
+    <string name="composer_choose_variable">चल</string>
 </resources>

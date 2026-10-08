@@ -17,4 +17,9 @@
     <string name="swipe_up_to_roll">Swipe up</string>
     <string name="shake_phone">Shake phone</string>
     <string name="roll_icon_always_available">The dice icon in the footer is always available.</string>
+    <string name="composer_terms">Редактор формул</string>
+    <string name="composer_group">Сгруппировать выбранное</string>
+    <string name="composer_ungroup">Разгруппировать</string>
+    <string name="composer_select_help">Выберите два или более соседних элемента для группировки.</string>
+    <string name="composer_choose_variable">Переменная</string>
 </resources>

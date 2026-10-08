@@ -17,4 +17,9 @@
     <string name="swipe_up_to_roll">Swipe up</string>
     <string name="shake_phone">Shake phone</string>
     <string name="roll_icon_always_available">The dice icon in the footer is always available.</string>
+    <string name="composer_terms">Редактор формул</string>
+    <string name="composer_group">Згрупувати вибране</string>
+    <string name="composer_ungroup">Розгрупувати</string>
+    <string name="composer_select_help">Виберіть два або більше сусідніх елементів, щоб згрупувати їх.</string>
+    <string name="composer_choose_variable">Змінна</string>
 </resources>

@@ -17,4 +17,9 @@
     <string name="swipe_up_to_roll">Swipe up</string>
     <string name="shake_phone">Shake phone</string>
     <string name="roll_icon_always_available">The dice icon in the footer is always available.</string>
+    <string name="composer_terms">Kompozytor formuł</string>
+    <string name="composer_group">Grupuj zaznaczone</string>
+    <string name="composer_ungroup">Rozgrupuj</string>
+    <string name="composer_select_help">Wybierz co najmniej dwa sąsiednie składniki, aby je zgrupować.</string>
+    <string name="composer_choose_variable">Zmienna</string>
 </resources>
