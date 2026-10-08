@@ -192,6 +192,22 @@ internal object FantasyTableArtwork {
             val light = palette[2]
             val ornament = palette[3]
 
+            // Match the first four presets: a quieter, recessed play surface
+            // surrounded by an unmistakable physical rim. Each tone remains
+            // specific to the table's material, and the original texture stays
+            // visible beneath this translucent finish.
+            val playSurface = when (theme) {
+                DiceTableTheme.TAVERN_WOOD -> rgb(0x301B11)
+                DiceTableTheme.DUNGEON_STONE -> rgb(0x242A29)
+                DiceTableTheme.ELVEN_GROVE -> rgb(0x153924)
+                DiceTableTheme.FROZEN_REALM -> rgb(0x103957)
+                DiceTableTheme.DESERT_RUINS -> rgb(0xE4CB9A)
+                DiceTableTheme.ASTRAL_VOID -> rgb(0x101134)
+                else -> dark
+            }
+            fill(playSurface, if (theme == DiceTableTheme.DESERT_RUINS) 58 else 90)
+            canvas.drawRoundRect(130f, 186f, 950f, 1734f, 26f, 26f, brush)
+
             fun outline(insetX: Float, insetY: Float, width: Float, color: Int, alpha: Int) {
                 stroke(color, width, alpha)
                 canvas.drawRoundRect(
