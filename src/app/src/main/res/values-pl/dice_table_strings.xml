@@ -22,4 +22,5 @@
     <string name="composer_ungroup">Rozgrupuj</string>
     <string name="composer_select_help">Wybierz co najmniej dwa sąsiednie składniki, aby je zgrupować.</string>
     <string name="composer_choose_variable">Zmienna</string>
+    <string name="double_tap_statistics">Stuknij dwukrotnie, aby pokazać lub ukryć statystyki</string>
 </resources>
