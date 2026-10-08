@@ -4,6 +4,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -71,8 +72,8 @@ class GroupEditContentV2Test {
             }
         }
 
-        composeRule.onNodeWithContentDescription("Move up").assertIsNotEnabled()
-        composeRule.onNodeWithContentDescription("Move down").performClick()
+        composeRule.onAllNodesWithContentDescription("Move up")[0].assertIsNotEnabled()
+        composeRule.onAllNodesWithContentDescription("Move down")[0].performClick()
         composeRule.runOnIdle {
             assertEquals(
                 listOf("ice", "fire"),
@@ -95,11 +96,11 @@ class GroupEditContentV2Test {
                 )
             }
         }
-        composeRule.onNodeWithContentDescription("Group").performClick()
+        composeRule.onAllNodesWithContentDescription("Group")[0].performClick()
         composeRule.onNodeWithText("Defense").performClick()
         composeRule.runOnIdle {
             assertEquals("defense", data.value.rolls.single { it.id == "fire" }.groupId)
-            assertEquals(0, data.value.rolls.single { it.id == "ice" }.order)
+            assertEquals("group", data.value.rolls.single { it.id == "ice" }.groupId)
         }
     }
 }
