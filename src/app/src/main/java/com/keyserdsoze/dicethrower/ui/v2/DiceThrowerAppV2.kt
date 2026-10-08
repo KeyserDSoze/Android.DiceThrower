@@ -194,6 +194,31 @@ internal fun guidedSubgroupsFromAdvancedExpression(
     }.getOrNull()
     if (candidate == currentCanonical) return current
 
+    // An explicit canonical sum of parenthesized Roll Parts still represents
+    // distinct results. Preserve their names and stable IDs when editing text.
+    val topLevel = FormulaComposer.parse(candidate, level, modifiers)
+    val separateParts = topLevel?.takeIf { terms ->
+        terms.size >= 2 && terms.all { term ->
+            !term.isGroup && term.expression.startsWith("(") && term.expression.endsWith(")") &&
+                RollFormulaResolver.validateTemplate(
+                    term.expression.drop(1).dropLast(1), level, modifiers
+                )
+        }
+    }
+    if (separateParts != null) {
+        return separateParts.mapIndexed { index, term ->
+            val partExpression = term.expression.drop(1).dropLast(1)
+            val prior = current.firstOrNull { it.expression.trim() == partExpression }
+                ?: current.getOrNull(index)
+            RollSubgroup(
+                id = prior?.id ?: idFactory(),
+                name = prior?.name.orEmpty(),
+                expression = partExpression,
+                operator = if (term.sign == '-') RollSubgroupOperator.SUBTRACT else RollSubgroupOperator.ADD,
+            )
+        }
+    }
+
     val previousSingle = current.singleOrNull()
     return listOf(
         RollSubgroup(
@@ -3401,8 +3426,7 @@ internal fun RollBuilderScreenV2(
                             ))
                         },
                     ) {
-                        Icon(Icons.Rounded.Add, contentDescription = null)
-
+                        Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.add_subgroup))
                     }
                 }
             }
