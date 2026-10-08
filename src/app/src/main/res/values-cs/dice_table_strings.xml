@@ -22,4 +22,5 @@
     <string name="composer_ungroup">Zrušit seskupení</string>
     <string name="composer_select_help">Vyberte alespoň dva sousední členy pro seskupení.</string>
     <string name="composer_choose_variable">Proměnná</string>
+    <string name="double_tap_statistics">Dvojitým klepnutím zobrazit či skrýt statistiky</string>
 </resources>
