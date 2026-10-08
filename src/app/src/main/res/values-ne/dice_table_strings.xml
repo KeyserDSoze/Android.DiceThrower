@@ -22,4 +22,5 @@
     <string name="composer_ungroup">समूह छुट्याउनुहोस्</string>
     <string name="composer_select_help">समूह बनाउन छेउछाउका दुई वा बढी पद छान्नुहोस्।</string>
     <string name="composer_choose_variable">चल</string>
+    <string name="double_tap_statistics">तथ्याङ्क देखाउन वा लुकाउन दुई पटक ट्याप गर्नुहोस्</string>
 </resources>
