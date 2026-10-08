@@ -42,7 +42,10 @@ internal object FormulaComposer {
     }
 
     fun canGroup(terms: List<ComposerTerm>, selected: Set<Int>): Boolean {
-        if (selected.size < 2 || selected.any { it !in terms.indices || terms[it].isGroup }) return false
+        if (selected.size < 2 || selected.any {
+                it !in terms.indices || terms[it].isGroup ||
+                    terms[it].expression.contains('(') || terms[it].expression.contains(')')
+            }) return false
         val ordered = selected.sorted()
         return ordered.last() - ordered.first() + 1 == ordered.size
     }
@@ -96,13 +99,11 @@ internal object FormulaComposer {
     private fun parseTerms(raw: String, allowGroups: Boolean): List<ComposerTerm>? {
         val fragments = splitTopLevel(raw) ?: return null
         return fragments.map { (sign, body) ->
-            if (!allowGroups || !body.contains('(')) {
-                if (body.contains('(') || body.contains(')')) return null
-                ComposerTerm(sign, body)
-            } else {
-                val group = parseGroup(body) ?: return null
-                ComposerTerm(sign, "", grouped = group.first, multiplier = group.second)
-            }
+            // An unsupported but valid atomic expression is still movable and
+            // removable; never discard its original formula or invent a group.
+            val group = if (allowGroups && body.contains('(')) parseGroup(body) else null
+            if (group == null) ComposerTerm(sign, body)
+            else ComposerTerm(sign, "", grouped = group.first, multiplier = group.second)
         }
     }
 
