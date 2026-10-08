@@ -161,6 +161,8 @@ data class AppSettings(
     val rerollTapEnabled: Boolean = false,
     val rerollSwipeEnabled: Boolean = false,
     val rerollShakeEnabled: Boolean = false,
+    // Local gesture preference; defaults on when reading pre-feature settings/backups.
+    val doubleTapStatsEnabled: Boolean = true,
     val animationsEnabled: Boolean = true,
     val showRollButton: Boolean = true,
     val rollButtonPosition: RollButtonPosition = RollButtonPosition.BOTTOM_RIGHT,
