@@ -22,4 +22,5 @@
     <string name="composer_ungroup">그룹 해제</string>
     <string name="composer_select_help">인접한 항목을 두 개 이상 선택하여 그룹화하세요.</string>
     <string name="composer_choose_variable">변수</string>
+    <string name="double_tap_statistics">두 번 탭하여 통계 표시 또는 숨기기</string>
 </resources>
