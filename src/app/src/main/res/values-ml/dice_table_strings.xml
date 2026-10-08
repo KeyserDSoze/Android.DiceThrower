@@ -22,4 +22,5 @@
     <string name="composer_ungroup">ഗ്രൂപ്പ് നീക്കംചെയ്യുക</string>
     <string name="composer_select_help">ഗ്രൂപ്പാക്കാൻ അടുത്തുള്ള രണ്ടോ അതിലധികമോ പദങ്ങൾ തിരഞ്ഞെടുക്കുക.</string>
     <string name="composer_choose_variable">ചര</string>
+    <string name="double_tap_statistics">സ്ഥിതിവിവരക്കണക്കുകൾ കാണിക്കാനോ മറയ്ക്കാനോ രണ്ടുതവണ ടാപ്പ് ചെയ്യുക</string>
 </resources>
