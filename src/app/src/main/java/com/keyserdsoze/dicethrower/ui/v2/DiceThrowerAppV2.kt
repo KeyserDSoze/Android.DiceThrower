@@ -3607,8 +3607,7 @@ private fun GuidedExpressionEditorV2(
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.constant_value)) },
                     onClick = { constantMode = true; sidesMenu = false },
-                }
-            DropdownMenu(expanded = sidesMenu, onDismissRequest = { sidesMenu = false }) {
+                )
                 DiceExpression.supportedSides.sorted().forEach { option ->
                     DropdownMenuItem(
                         text = { Text("d$option") },
