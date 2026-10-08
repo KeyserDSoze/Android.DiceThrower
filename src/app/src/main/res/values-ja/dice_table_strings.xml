@@ -17,4 +17,9 @@
     <string name="swipe_up_to_roll">Swipe up</string>
     <string name="shake_phone">Shake phone</string>
     <string name="roll_icon_always_available">The dice icon in the footer is always available.</string>
+    <string name="composer_terms">数式コンポーザー</string>
+    <string name="composer_group">選択項目をグループ化</string>
+    <string name="composer_ungroup">グループ解除</string>
+    <string name="composer_select_help">隣接する項を2つ以上選択してグループ化します。</string>
+    <string name="composer_choose_variable">変数</string>
 </resources>
