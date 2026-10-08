@@ -22,4 +22,5 @@
     <string name="composer_ungroup">Nyahkumpul</string>
     <string name="composer_select_help">Pilih dua atau lebih sebutan bersebelahan untuk dikumpulkan.</string>
     <string name="composer_choose_variable">Pemboleh ubah</string>
+    <string name="double_tap_statistics">Ketik dua kali untuk memaparkan atau menyembunyikan statistik</string>
 </resources>
