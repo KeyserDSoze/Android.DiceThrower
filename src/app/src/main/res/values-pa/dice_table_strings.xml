@@ -22,4 +22,5 @@
     <string name="composer_ungroup">ਸਮੂਹ ਖੋਲ੍ਹੋ</string>
     <string name="composer_select_help">ਸਮੂਹ ਬਣਾਉਣ ਲਈ ਨਾਲ ਲੱਗਦੇ ਦੋ ਜਾਂ ਵੱਧ ਪਦ ਚੁਣੋ।</string>
     <string name="composer_choose_variable">ਵੇਰੀਏਬਲ</string>
+    <string name="double_tap_statistics">ਅੰਕੜੇ ਦਿਖਾਉਣ ਜਾਂ ਲੁਕਾਉਣ ਲਈ ਦੋ ਵਾਰ ਟੈਪ ਕਰੋ</string>
 </resources>
