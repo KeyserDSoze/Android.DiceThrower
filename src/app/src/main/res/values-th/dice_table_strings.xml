@@ -17,4 +17,9 @@
     <string name="swipe_up_to_roll">Swipe up</string>
     <string name="shake_phone">Shake phone</string>
     <string name="roll_icon_always_available">The dice icon in the footer is always available.</string>
+    <string name="composer_terms">ตัวสร้างสูตร</string>
+    <string name="composer_group">จัดกลุ่มที่เลือก</string>
+    <string name="composer_ungroup">ยกเลิกการจัดกลุ่ม</string>
+    <string name="composer_select_help">เลือกพจน์ที่อยู่ติดกันอย่างน้อยสองพจน์เพื่อจัดกลุ่ม</string>
+    <string name="composer_choose_variable">ตัวแปร</string>
 </resources>
