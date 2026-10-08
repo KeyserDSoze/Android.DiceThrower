@@ -3482,7 +3482,7 @@ internal fun RollBuilderScreenV2(
                             onValueChange = { updatedExpression ->
                                 updateSubgroups(subgroups.map {
                                     if (it.id == subgroup.id) it.copy(expression = updatedExpression) else it
-                                }
+                                })
                             },
                         )
                     }
