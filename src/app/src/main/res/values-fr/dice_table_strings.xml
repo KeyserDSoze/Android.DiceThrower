@@ -22,4 +22,5 @@
     <string name="composer_ungroup">Dissocier</string>
     <string name="composer_select_help">Sélectionnez au moins deux termes voisins pour les regrouper.</string>
     <string name="composer_choose_variable">Variable</string>
+    <string name="double_tap_statistics">Appuyer deux fois pour afficher ou masquer les statistiques</string>
 </resources>
