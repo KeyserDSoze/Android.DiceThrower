@@ -50,6 +50,8 @@ internal object FantasyTableArtwork {
                 else -> Unit
             }
             finish()
+            // Paint the physical tabletop rim last: the vignette must not swallow it.
+            tabletopFrame(theme)
         }
         return bitmap
     }
@@ -155,6 +157,139 @@ internal object FantasyTableArtwork {
                 }
             }
         }
+        /**
+         * A readable, inset tabletop silhouette shared by the premium collection.
+         *
+         * Each scene keeps its own surface, materials and storytelling; only the
+         * geometry of the raised playable rim is consistent with the original tables.
+         * This is intentionally drawn AFTER the vignette so the frame survives the
+         * preview crop and remains visible around the dice on dark displays.
+         */
+        fun tabletopFrame(theme: DiceTableTheme) {
+            val palette = when (theme) {
+                DiceTableTheme.TAVERN_WOOD -> intArrayOf(
+                    rgb(0x402211), rgb(0x966039), rgb(0xE5BA75), rgb(0xD5A25C),
+                )
+                DiceTableTheme.DUNGEON_STONE -> intArrayOf(
+                    rgb(0x262B2B), rgb(0x69746E), rgb(0xBAC4A7), rgb(0xB29B6B),
+                )
+                DiceTableTheme.ELVEN_GROVE -> intArrayOf(
+                    rgb(0x193629), rgb(0x56865C), rgb(0xC0D99C), rgb(0xD5BE78),
+                )
+                DiceTableTheme.FROZEN_REALM -> intArrayOf(
+                    rgb(0x10334E), rgb(0x469CBF), rgb(0xC6F4FF), rgb(0xA5EAFF),
+                )
+                DiceTableTheme.DESERT_RUINS -> intArrayOf(
+                    rgb(0x50301D), rgb(0xAB8150), rgb(0xF3D69B), rgb(0x9B6336),
+                )
+                DiceTableTheme.ASTRAL_VOID -> intArrayOf(
+                    rgb(0x1E1A43), rgb(0x6655AB), rgb(0xD6C4FF), rgb(0x92CBFF),
+                )
+                else -> return
+            }
+            val dark = palette[0]
+            val middle = palette[1]
+            val light = palette[2]
+            val ornament = palette[3]
+
+            // Match the first four presets: a quieter, recessed play surface
+            // surrounded by an unmistakable physical rim. Each tone remains
+            // specific to the table's material, and the original texture stays
+            // visible beneath this translucent finish.
+            val playSurface = when (theme) {
+                DiceTableTheme.TAVERN_WOOD -> rgb(0x301B11)
+                DiceTableTheme.DUNGEON_STONE -> rgb(0x242A29)
+                DiceTableTheme.ELVEN_GROVE -> rgb(0x153924)
+                DiceTableTheme.FROZEN_REALM -> rgb(0x103957)
+                DiceTableTheme.DESERT_RUINS -> rgb(0xE4CB9A)
+                DiceTableTheme.ASTRAL_VOID -> rgb(0x101134)
+                else -> dark
+            }
+            fill(playSurface, if (theme == DiceTableTheme.DESERT_RUINS) 58 else 90)
+            canvas.drawRoundRect(130f, 186f, 950f, 1734f, 26f, 26f, brush)
+
+            fun outline(insetX: Float, insetY: Float, width: Float, color: Int, alpha: Int) {
+                stroke(color, width, alpha)
+                canvas.drawRoundRect(
+                    insetX, insetY, FULL_WIDTH - insetX, FULL_HEIGHT - insetY,
+                    28f, 28f, brush,
+                )
+            }
+            // Four concentric bevels make this a *raised frame*, not wallpaper.
+            outline(86f, 148f, 68f, Color.BLACK, 125) // cast shadow
+            outline(88f, 146f, 47f, dark, 248)        // deep outer rail
+            outline(91f, 149f, 26f, middle, 240)      // material face
+            outline(111f, 168f, 7f, light, 235)       // lit inner edge
+            outline(123f, 180f, 3f, dark, 180)        // transition to felt/stone/ice
+            // Corners always show the table bounds even in small previews.
+            for (x in listOf(90f, 990f)) {
+                for (y in listOf(148f, 1772f)) {
+                    circle(x, y, 24f, dark, 255)
+                    ring(x, y, 18f, light, 5f, 200)
+                    circle(x, y, 7f, ornament, 240)
+                    circle(x - 2f, y - 2f, 2.3f, Color.WHITE, 185)
+                }
+            }
+            // Decoration stays ON the rim; the center remains free for 3D dice.
+            for (i in 0..10) {
+                val y = 275f + i * 137f
+                when (theme) {
+                    DiceTableTheme.TAVERN_WOOD -> {
+                        // Grain, iron joints and polished brass studs.
+                        line(83f, y - 35f, 83f, y + 39f, light, 2.8f, 120)
+                        line(997f, y - 35f, 997f, y + 39f, light, 2.8f, 120)
+                        circle(91f, y, 6.5f, ornament, 245)
+                        circle(989f, y, 6.5f, ornament, 245)
+                        line(71f, y + 45f, 111f, y + 45f, dark, 6f, 170)
+                        line(969f, y + 45f, 1009f, y + 45f, dark, 6f, 170)
+                    }
+                    DiceTableTheme.DUNGEON_STONE -> {
+                        // Rough block joints and chiselled rune notches.
+                        line(68f, y + 39f, 109f, y + 39f, dark, 9f, 185)
+                        line(971f, y + 39f, 1012f, y + 39f, dark, 9f, 185)
+                        line(85f, y - 15f, 97f, y, ornament, 4f, 200)
+                        line(995f, y - 15f, 983f, y, ornament, 4f, 200)
+                    }
+                    DiceTableTheme.ELVEN_GROVE -> {
+                        // Climbing vines and leaf clusters, not generic metal studs.
+                        curve(86f, y - 59f, 121f, y - 6f, 87f, y + 52f, light, 3.5f, 205)
+                        curve(994f, y - 59f, 959f, y - 6f, 993f, y + 52f, light, 3.5f, 205)
+                        ellipse(100f, y - 16f, 12f, 6f, ornament, 190)
+                        ellipse(980f, y + 16f, 12f, 6f, ornament, 190)
+                    }
+                    DiceTableTheme.FROZEN_REALM -> {
+                        // Faceted ice facets alternating with frosted crystal glints.
+                        polygon(listOf(74f to y - 39f, 110f to y, 74f to y + 32f), light, 140)
+                        polygon(listOf(1006f to y - 39f, 970f to y, 1006f to y + 32f), light, 140)
+                        line(80f, y - 40f, 100f, y + 22f, Color.WHITE, 2f, 145)
+                        line(1000f, y - 40f, 980f, y + 22f, Color.WHITE, 2f, 145)
+                    }
+                    DiceTableTheme.DESERT_RUINS -> {
+                        // Weathered sandstone courses and carved temple marks.
+                        line(67f, y + 48f, 113f, y + 48f, dark, 7f, 170)
+                        line(967f, y + 48f, 1013f, y + 48f, dark, 7f, 170)
+                        polygon(listOf(89f to y - 23f, 77f to y + 12f, 101f to y + 12f), ornament, 190)
+                        polygon(listOf(991f to y - 23f, 979f to y + 12f, 1003f to y + 12f), ornament, 190)
+                    }
+                    DiceTableTheme.ASTRAL_VOID -> {
+                        // Luminous nodes and a delicate constellation circuit.
+                        circle(91f, y, 7f, ornament, 240)
+                        circle(989f, y, 7f, ornament, 240)
+                        line(91f, y - 55f, 91f, y - 11f, light, 2.5f, 175)
+                        line(989f, y - 55f, 989f, y - 11f, light, 2.5f, 175)
+                        ring(91f, y, 15f, light, 1.8f, 165)
+                        ring(989f, y, 15f, light, 1.8f, 165)
+                    }
+                    else -> Unit
+                }
+            }
+            // Top/bottom rails bookend the surface without a distracting center emblem.
+            for (y in listOf(147f, 1773f)) {
+                line(175f, y, 905f, y, light, 2f, 105)
+                line(375f, y, 705f, y, ornament, 4f, 130)
+            }
+        }
+
         private fun warmLamp(cx: Float, cy: Float) {
             fill(Color.WHITE)
             brush.shader = RadialGradient(cx,cy,245f,intArrayOf(rgb(0x88FFAF45),rgb(0x22EE7520),Color.TRANSPARENT),floatArrayOf(0f,.4f,1f),Shader.TileMode.CLAMP)
