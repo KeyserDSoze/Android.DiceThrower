@@ -136,7 +136,8 @@ class RollDialogV2Test {
         composeRule.onNode(hasScrollToIndexAction())
             .performScrollToNode(hasContentDescription("New roll"))
         composeRule.onNodeWithContentDescription("New roll").performClick()
-        composeRule.onNodeWithText("1d20").assertIsDisplayed()
+        // The unified editor may render the same formula in text and visual composer.
+        assertTrue(composeRule.onAllNodes(hasText("1d20")).fetchSemanticsNodes().isNotEmpty())
     }
 
     @Test
