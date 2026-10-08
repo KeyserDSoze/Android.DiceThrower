@@ -22,4 +22,5 @@
     <string name="composer_ungroup">Csoport felbontása</string>
     <string name="composer_select_help">Válassz legalább két szomszédos tagot a csoportosításhoz.</string>
     <string name="composer_choose_variable">Változó</string>
+    <string name="double_tap_statistics">Dupla koppintás a statisztikák megjelenítéséhez vagy elrejtéséhez</string>
 </resources>

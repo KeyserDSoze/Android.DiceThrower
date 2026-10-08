@@ -22,4 +22,5 @@
     <string name="composer_ungroup">取消组合</string>
     <string name="composer_select_help">选择两个或更多相邻项进行组合。</string>
     <string name="composer_choose_variable">变量</string>
+    <string name="double_tap_statistics">双击显示或隐藏统计信息</string>
 </resources>

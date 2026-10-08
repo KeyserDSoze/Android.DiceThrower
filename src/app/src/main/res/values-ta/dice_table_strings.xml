@@ -22,4 +22,5 @@
     <string name="composer_ungroup">குழுவை பிரி</string>
     <string name="composer_select_help">குழுவாக்க அருகிலுள்ள இரண்டு அல்லது அதற்கு மேற்பட்ட உறுப்புகளைத் தேர்வுசெய்யவும்.</string>
     <string name="composer_choose_variable">மாறி</string>
+    <string name="double_tap_statistics">புள்ளிவிவரங்களைக் காட்ட அல்லது மறைக்க இருமுறை தட்டவும்</string>
 </resources>

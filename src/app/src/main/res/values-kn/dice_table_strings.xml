@@ -22,4 +22,5 @@
     <string name="composer_ungroup">ಗುಂಪು ಬಿಡಿಸಿ</string>
     <string name="composer_select_help">ಗುಂಪು ಮಾಡಲು ಪಕ್ಕಪಕ್ಕದ ಎರಡು ಅಥವಾ ಹೆಚ್ಚು ಪದಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ.</string>
     <string name="composer_choose_variable">ಚರ</string>
+    <string name="double_tap_statistics">ಅಂಕಿಅಂಶಗಳನ್ನು ತೋರಿಸಲು ಅಥವಾ ಮರೆಮಾಡಲು ಎರಡು ಬಾರಿ ಟ್ಯಾಪ್ ಮಾಡಿ</string>
 </resources>

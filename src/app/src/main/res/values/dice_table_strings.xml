@@ -35,4 +35,5 @@
     <string name="composer_ungroup">Ungroup</string>
     <string name="composer_select_help">Select two or more neighboring terms to group them.</string>
     <string name="composer_choose_variable">Variable</string>
+    <string name="double_tap_statistics">Double tap to show or hide statistics</string>
 </resources>

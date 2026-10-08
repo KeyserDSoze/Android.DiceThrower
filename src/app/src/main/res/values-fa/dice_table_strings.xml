@@ -22,4 +22,5 @@
     <string name="composer_ungroup">لغو گروه‌بندی</string>
     <string name="composer_select_help">برای گروه‌بندی دو یا چند عبارت مجاور را انتخاب کنید.</string>
     <string name="composer_choose_variable">متغیر</string>
+    <string name="double_tap_statistics">دو ضربه برای نمایش یا پنهان کردن آمار</string>
 </resources>

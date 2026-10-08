@@ -22,4 +22,5 @@
     <string name="composer_ungroup">فك التجميع</string>
     <string name="composer_select_help">حدد حدّين متجاورين أو أكثر لتجميعهما.</string>
     <string name="composer_choose_variable">متغير</string>
+    <string name="double_tap_statistics">النقر المزدوج لإظهار الإحصاءات أو إخفائها</string>
 </resources>

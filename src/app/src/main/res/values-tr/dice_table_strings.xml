@@ -22,4 +22,5 @@
     <string name="composer_ungroup">Grubu çöz</string>
     <string name="composer_select_help">Gruplamak için yan yana en az iki terim seçin.</string>
     <string name="composer_choose_variable">Değişken</string>
+    <string name="double_tap_statistics">İstatistikleri göstermek veya gizlemek için çift dokun</string>
 </resources>

@@ -22,4 +22,5 @@
     <string name="composer_ungroup">Gruppierung aufheben</string>
     <string name="composer_select_help">Wähle mindestens zwei benachbarte Terme zum Gruppieren aus.</string>
     <string name="composer_choose_variable">Variable</string>
+    <string name="double_tap_statistics">Statistiken per Doppeltipp ein- oder ausblenden</string>
 </resources>

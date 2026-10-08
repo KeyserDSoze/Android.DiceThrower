@@ -22,4 +22,5 @@
     <string name="composer_ungroup">Pisahkan grup</string>
     <string name="composer_select_help">Pilih dua atau lebih suku yang berdekatan untuk dikelompokkan.</string>
     <string name="composer_choose_variable">Variabel</string>
+    <string name="double_tap_statistics">Ketuk dua kali untuk menampilkan atau menyembunyikan statistik</string>
 </resources>

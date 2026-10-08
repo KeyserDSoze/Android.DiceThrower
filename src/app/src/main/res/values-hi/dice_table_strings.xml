@@ -22,4 +22,5 @@
     <string name="composer_ungroup">समूह हटाएँ</string>
     <string name="composer_select_help">समूह बनाने के लिए पास-पास के दो या अधिक पद चुनें।</string>
     <string name="composer_choose_variable">चर</string>
+    <string name="double_tap_statistics">आँकड़े दिखाने या छिपाने के लिए दो बार टैप करें</string>
 </resources>

@@ -22,4 +22,5 @@
     <string name="composer_ungroup">Bỏ nhóm</string>
     <string name="composer_select_help">Chọn ít nhất hai hạng tử liền kề để nhóm.</string>
     <string name="composer_choose_variable">Biến</string>
+    <string name="double_tap_statistics">Nhấn đúp để hiện hoặc ẩn thống kê</string>
 </resources>

@@ -35,4 +35,5 @@
     <string name="composer_ungroup">Separa gruppo</string>
     <string name="composer_select_help">Seleziona almeno due termini vicini per raggrupparli.</string>
     <string name="composer_choose_variable">Variabile</string>
+    <string name="double_tap_statistics">Doppio tocco per mostrare o nascondere le statistiche</string>
 </resources>

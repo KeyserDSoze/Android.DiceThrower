@@ -22,4 +22,5 @@
     <string name="composer_ungroup">Разгруппировать</string>
     <string name="composer_select_help">Выберите два или более соседних элемента для группировки.</string>
     <string name="composer_choose_variable">Переменная</string>
+    <string name="double_tap_statistics">Двойное нажатие для показа или скрытия статистики</string>
 </resources>

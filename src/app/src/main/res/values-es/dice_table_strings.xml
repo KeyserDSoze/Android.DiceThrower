@@ -23,4 +23,5 @@
     <string name="composer_ungroup">Desagrupar</string>
     <string name="composer_select_help">Selecciona dos o más términos contiguos para agruparlos.</string>
     <string name="composer_choose_variable">Variable</string>
+    <string name="double_tap_statistics">Doble toque para mostrar u ocultar estadísticas</string>
 </resources>

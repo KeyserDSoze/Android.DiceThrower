@@ -264,6 +264,7 @@ object AppDataJsonCodec {
         .put("rerollTapEnabled", settings.rerollTapEnabled)
         .put("rerollSwipeEnabled", settings.rerollSwipeEnabled)
         .put("rerollShakeEnabled", settings.rerollShakeEnabled)
+        .put("doubleTapStatsEnabled", settings.doubleTapStatsEnabled)
         .put("animationsEnabled", settings.animationsEnabled)
         .put("showRollButton", settings.showRollButton)
         .put("rollButtonPosition", settings.rollButtonPosition.name)
@@ -278,6 +279,7 @@ object AppDataJsonCodec {
         rerollTapEnabled = json.optBoolean("rerollTapEnabled", false),
         rerollSwipeEnabled = json.optBoolean("rerollSwipeEnabled", false),
         rerollShakeEnabled = json.optBoolean("rerollShakeEnabled", false),
+        doubleTapStatsEnabled = json.optBoolean("doubleTapStatsEnabled", true),
         animationsEnabled = json.optBoolean("animationsEnabled", true),
         showRollButton = json.optBoolean("showRollButton", true),
         rollButtonPosition = enumValueOrDefault(

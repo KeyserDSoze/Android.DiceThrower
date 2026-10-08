@@ -22,4 +22,5 @@
     <string name="composer_ungroup">ביטול קיבוץ</string>
     <string name="composer_select_help">יש לבחור לפחות שני איברים סמוכים כדי לקבץ אותם.</string>
     <string name="composer_choose_variable">משתנה</string>
+    <string name="double_tap_statistics">הקשה כפולה להצגה או להסתרה של נתונים סטטיסטיים</string>
 </resources>

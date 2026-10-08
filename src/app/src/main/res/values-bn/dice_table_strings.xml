@@ -22,4 +22,5 @@
     <string name="composer_ungroup">গুচ্ছ ভাঙুন</string>
     <string name="composer_select_help">গুচ্ছবদ্ধ করতে পাশাপাশি দুটি বা তার বেশি পদ বাছুন।</string>
     <string name="composer_choose_variable">চলক</string>
+    <string name="double_tap_statistics">পরিসংখ্যান দেখাতে বা লুকাতে দুবার ট্যাপ করুন</string>
 </resources>

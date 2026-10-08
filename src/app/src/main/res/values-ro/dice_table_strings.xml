@@ -22,4 +22,5 @@
     <string name="composer_ungroup">Degrupează</string>
     <string name="composer_select_help">Selectează cel puțin doi termeni alăturați pentru grupare.</string>
     <string name="composer_choose_variable">Variabilă</string>
+    <string name="double_tap_statistics">Atinge de două ori pentru a afișa sau ascunde statisticile</string>
 </resources>

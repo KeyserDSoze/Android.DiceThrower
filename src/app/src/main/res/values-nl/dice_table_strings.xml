@@ -22,4 +22,5 @@
     <string name="composer_ungroup">Groepering opheffen</string>
     <string name="composer_select_help">Selecteer twee of meer aangrenzende termen om ze te groeperen.</string>
     <string name="composer_choose_variable">Variabele</string>
+    <string name="double_tap_statistics">Dubbeltik om statistieken te tonen of te verbergen</string>
 </resources>
