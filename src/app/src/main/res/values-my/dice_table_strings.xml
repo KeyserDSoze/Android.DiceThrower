@@ -22,4 +22,5 @@
     <string name="composer_ungroup">အုပ်စုခွဲရန်</string>
     <string name="composer_select_help">အနီးကပ်ရှိသော အပိုင်းနှစ်ခု သို့မဟုတ် ထို့ထက်ပို၍ ရွေးပြီး အုပ်စုဖွဲ့ပါ။</string>
     <string name="composer_choose_variable">ကိန်းရှင်</string>
+    <string name="double_tap_statistics">စာရင်းအင်းကို ပြသရန် သို့မဟုတ် ဖျောက်ရန် နှစ်ချက်နှိပ်ပါ</string>
 </resources>
