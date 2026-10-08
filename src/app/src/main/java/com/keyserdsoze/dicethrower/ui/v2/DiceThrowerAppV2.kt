@@ -199,15 +199,19 @@ internal fun guidedSubgroupsFromAdvancedExpression(
     val topLevel = FormulaComposer.parse(candidate, level, modifiers)
     val separateParts = topLevel?.takeIf { terms ->
         terms.size >= 2 && terms.all { term ->
-            !term.isGroup && term.expression.startsWith("(") && term.expression.endsWith(")") &&
-                RollFormulaResolver.validateTemplate(
-                    term.expression.drop(1).dropLast(1), level, modifiers
-                )
+            val body = when {
+                term.isGroup && term.multiplier == null -> FormulaComposer.serialize(term.grouped)
+                !term.isGroup && term.expression.startsWith("(") && term.expression.endsWith(")") ->
+                    term.expression.drop(1).dropLast(1)
+                else -> null
+            }
+            body != null && RollFormulaResolver.validateTemplate(body, level, modifiers)
         }
     }
     if (separateParts != null) {
         return separateParts.mapIndexed { index, term ->
-            val partExpression = term.expression.drop(1).dropLast(1)
+            val partExpression = if (term.isGroup) FormulaComposer.serialize(term.grouped)
+                else term.expression.drop(1).dropLast(1)
             val prior = current.firstOrNull { it.expression.trim() == partExpression }
                 ?: current.getOrNull(index)
             RollSubgroup(
