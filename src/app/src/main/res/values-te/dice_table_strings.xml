@@ -22,4 +22,5 @@
     <string name="composer_ungroup">సమూహాన్ని విడదీయి</string>
     <string name="composer_select_help">సమూహపరచడానికి పక్కపక్కన ఉన్న కనీసం రెండు పదాలను ఎంచుకోండి.</string>
     <string name="composer_choose_variable">చరరాశి</string>
+    <string name="double_tap_statistics">గణాంకాలను చూపడానికి లేదా దాచడానికి రెండుసార్లు నొక్కండి</string>
 </resources>
