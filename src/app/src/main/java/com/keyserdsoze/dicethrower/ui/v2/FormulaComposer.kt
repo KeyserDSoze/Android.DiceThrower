@@ -152,7 +152,7 @@ internal object FormulaComposer {
             if (depth < 0 || braces < 0) return null
             if (depth == 0 && braces == 0 && char in "+-" &&
                 (index == 0 || (index > start && input.substring(start, index)
-                    .trimEnd().lastOrNull() !in listOf('x', 'X', '×', '*')))
+                    .trimEnd().lastOrNull()?.let { it != 'x' && it != 'X' && it != '×' && it != '*' } != false))
             ) {
                 if (index > start) {
                     val previous = input.substring(start, index).trim()
