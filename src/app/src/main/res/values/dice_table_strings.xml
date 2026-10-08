@@ -30,4 +30,13 @@
     <string name="swipe_up_to_roll">Swipe up</string>
     <string name="shake_phone">Shake phone</string>
     <string name="roll_icon_always_available">The dice icon in the footer is always available.</string>
+    <string name="composer_terms">Formula composer</string>
+    <string name="composer_group">Group selected</string>
+    <string name="composer_ungroup">Ungroup</string>
+    <string name="composer_select_help">Select two or more neighboring terms to group them.</string>
+    <string name="composer_choose_variable">Variable</string>
+    <string name="composer_apply_multiplier">Apply multiplier</string>
+    <string name="composer_term">Formula term</string>
+    <string name="composer_group_label">Grouped terms</string>
+    <string name="composer_group_hint">Groups cannot contain other groups.</string>
 </resources>
