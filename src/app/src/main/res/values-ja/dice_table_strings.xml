@@ -22,4 +22,5 @@
     <string name="composer_ungroup">グループ解除</string>
     <string name="composer_select_help">隣接する項を2つ以上選択してグループ化します。</string>
     <string name="composer_choose_variable">変数</string>
+    <string name="double_tap_statistics">ダブルタップで統計情報の表示を切り替える</string>
 </resources>
