@@ -3398,8 +3398,7 @@ internal fun RollBuilderScreenV2(
                         },
                     ) {
                         Icon(Icons.Rounded.Add, contentDescription = null)
-                        Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.add_subgroup))
+
                     }
                 }
             }
@@ -3417,8 +3416,8 @@ internal fun RollBuilderScreenV2(
                                     onClick = {
                                         updateSubgroups(subgroups.map {
                                             if (it.id == subgroup.id) it.copy(operator = RollSubgroupOperator.ADD) else it
-                                        }
-                                    }),
+                                        })
+                                    },
                                     label = { Text("+") },
                                 )
                                 Spacer(Modifier.width(6.dp))
@@ -3427,8 +3426,8 @@ internal fun RollBuilderScreenV2(
                                     onClick = {
                                         updateSubgroups(subgroups.map {
                                             if (it.id == subgroup.id) it.copy(operator = RollSubgroupOperator.SUBTRACT) else it
-                                        }
-                                    }),
+                                        })
+                                    },
                                     label = { Text("−") },
                                 )
                                 Spacer(Modifier.width(8.dp))
@@ -3501,7 +3500,6 @@ internal fun RollBuilderScreenV2(
                     }
                 }
             }
-        }
 
         item {
             Row(
