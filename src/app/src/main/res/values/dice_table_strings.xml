@@ -35,8 +35,4 @@
     <string name="composer_ungroup">Ungroup</string>
     <string name="composer_select_help">Select two or more neighboring terms to group them.</string>
     <string name="composer_choose_variable">Variable</string>
-    <string name="composer_apply_multiplier">Apply multiplier</string>
-    <string name="composer_term">Formula term</string>
-    <string name="composer_group_label">Grouped terms</string>
-    <string name="composer_group_hint">Groups cannot contain other groups.</string>
 </resources>
