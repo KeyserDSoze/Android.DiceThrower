@@ -17,4 +17,9 @@
     <string name="swipe_up_to_roll">Swipe up</string>
     <string name="shake_phone">Shake phone</string>
     <string name="roll_icon_always_available">The dice icon in the footer is always available.</string>
+    <string name="composer_terms">Penyusun rumus</string>
+    <string name="composer_group">Kelompokkan pilihan</string>
+    <string name="composer_ungroup">Pisahkan grup</string>
+    <string name="composer_select_help">Pilih dua atau lebih suku yang berdekatan untuk dikelompokkan.</string>
+    <string name="composer_choose_variable">Variabel</string>
 </resources>
