@@ -17,4 +17,9 @@
     <string name="swipe_up_to_roll">Swipe up</string>
     <string name="shake_phone">Shake phone</string>
     <string name="roll_icon_always_available">The dice icon in the footer is always available.</string>
+    <string name="composer_terms">公式编辑器</string>
+    <string name="composer_group">组合所选项</string>
+    <string name="composer_ungroup">取消组合</string>
+    <string name="composer_select_help">选择两个或更多相邻项进行组合。</string>
+    <string name="composer_choose_variable">变量</string>
 </resources>
