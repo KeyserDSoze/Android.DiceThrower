@@ -22,4 +22,5 @@
     <string name="composer_ungroup">Dela upp grupp</string>
     <string name="composer_select_help">Markera två eller fler intilliggande termer för att gruppera dem.</string>
     <string name="composer_choose_variable">Variabel</string>
+    <string name="double_tap_statistics">Dubbeltryck för att visa eller dölja statistik</string>
 </resources>
