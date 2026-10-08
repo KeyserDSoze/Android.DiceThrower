@@ -80,6 +80,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.foundation.rememberScrollState
@@ -2026,6 +2027,73 @@ private fun RollEditorCardV2(
     }
 }
 
+/**
+ * Tap-to-throw and double-tap-to-show-stats share one recognizer, so a fast
+ * double tap cannot accidentally trigger a reroll before opening statistics.
+ * Single-tap rerolls are delayed by the platform double-tap timeout only when
+ * the statistics shortcut is enabled and a completed roll is available.
+ */
+@Composable
+internal fun RollTableGestureLayerV2(
+    tapToRollEnabled: Boolean,
+    swipeToRollEnabled: Boolean,
+    canRoll: Boolean,
+    statsDoubleTapEnabled: Boolean,
+    canToggleStats: Boolean,
+    onRollRequest: () -> Unit,
+    onStatsToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val latestRollRequest by rememberUpdatedState(onRollRequest)
+    val latestStatsToggle by rememberUpdatedState(onStatsToggle)
+    Box(
+        modifier = modifier
+            .testTag("roll-table-gesture-layer")
+            .pointerInput(tapToRollEnabled, canRoll, statsDoubleTapEnabled, canToggleStats) {
+                if ((tapToRollEnabled && canRoll) || (statsDoubleTapEnabled && canToggleStats)) {
+                    detectTapGestures(
+                        onTap = if (tapToRollEnabled && canRoll) {
+                            { latestRollRequest() }
+                        } else null,
+                        onDoubleTap = if (statsDoubleTapEnabled && canToggleStats) {
+                            { latestStatsToggle() }
+                        } else null,
+                    )
+                }
+            }
+            .pointerInput(swipeToRollEnabled, canRoll) {
+                if (swipeToRollEnabled) {
+                    var verticalDistance = 0f
+                    detectVerticalDragGestures(
+                        onDragStart = { verticalDistance = 0f },
+                        onVerticalDrag = { _, dragAmount -> verticalDistance += dragAmount },
+                        onDragCancel = { verticalDistance = 0f },
+                        onDragEnd = {
+                            if (canRoll && verticalDistance <= -80.dp.toPx()) {
+                                latestRollRequest()
+                            }
+                            verticalDistance = 0f
+                        },
+                    )
+                }
+            },
+    )
+}
+
+/** Allows a second double tap *on the modal statistics sheet* to close it. */
+@Composable
+internal fun Modifier.dismissStatsOnDoubleTap(
+    enabled: Boolean,
+    onDismiss: () -> Unit,
+): Modifier {
+    val latestDismiss by rememberUpdatedState(onDismiss)
+    return if (enabled) {
+        pointerInput(enabled) {
+            detectTapGestures(onDoubleTap = { latestDismiss() })
+        }
+    } else this
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RollScreenV2(
@@ -2159,33 +2227,15 @@ private fun RollScreenV2(
             val tapTriggerEnabled = if (hasRolled) settings.rerollTapEnabled else settings.firstRollTapEnabled
             val swipeTriggerEnabled = if (hasRolled) settings.rerollSwipeEnabled else settings.firstRollSwipeEnabled
             val gestureTriggerReady = !hasRolled || resultRevealed
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = 88.dp)
-                    .pointerInput(tapTriggerEnabled, gestureTriggerReady, roll.id) {
-                        if (tapTriggerEnabled) {
-                            detectTapGestures {
-                                if (gestureTriggerReady) requestThrow()
-                            }
-                        }
-                    }
-                    .pointerInput(swipeTriggerEnabled, gestureTriggerReady, roll.id) {
-                        if (swipeTriggerEnabled) {
-                            var verticalDistance = 0f
-                            detectVerticalDragGestures(
-                                onDragStart = { verticalDistance = 0f },
-                                onVerticalDrag = { _, dragAmount -> verticalDistance += dragAmount },
-                                onDragCancel = { verticalDistance = 0f },
-                                onDragEnd = {
-                                    if (gestureTriggerReady && verticalDistance <= -80.dp.toPx()) {
-                                        requestThrow()
-                                    }
-                                    verticalDistance = 0f
-                                },
-                            )
-                        }
-                    },
+            RollTableGestureLayerV2(
+                tapToRollEnabled = tapTriggerEnabled,
+                swipeToRollEnabled = swipeTriggerEnabled,
+                canRoll = gestureTriggerReady,
+                statsDoubleTapEnabled = settings.doubleTapStatsEnabled,
+                canToggleStats = hasRolled && resultRevealed,
+                onRollRequest = ::requestThrow,
+                onStatsToggle = { showStats = !showStats },
+                modifier = Modifier.fillMaxSize().padding(bottom = 88.dp),
             )
 
             if (resultRevealed) {
@@ -2269,8 +2319,11 @@ private fun RollScreenV2(
     if (showStats) {
         ModalBottomSheet(onDismissRequest = { showStats = false }) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp).padding(bottom = 28.dp)
-                    .verticalScroll(rememberScrollState()),
+                modifier = Modifier.fillMaxWidth()
+                    .dismissStatsOnDoubleTap(settings.doubleTapStatsEnabled) { showStats = false }
+                    .padding(horizontal = 18.dp).padding(bottom = 28.dp)
+                    .verticalScroll(rememberScrollState())
+                    .testTag("roll-stats-sheet-content"),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
@@ -2868,6 +2921,12 @@ private fun SettingsScreenV2(
                                 stringResource(R.string.roll_icon_always_available),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            RollTriggerToggle(
+                                label = stringResource(R.string.double_tap_statistics),
+                                checked = settings.doubleTapStatsEnabled,
+                                onChecked = { onSettingsChanged(settings.copy(doubleTapStatsEnabled = it)) },
                             )
                         }
                     }
