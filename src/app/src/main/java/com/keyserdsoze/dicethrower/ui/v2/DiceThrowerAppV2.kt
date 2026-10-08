@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -3559,19 +3560,31 @@ private fun GuidedExpressionEditorV2(
     var constantMode by remember { mutableStateOf(false) }
     var sides by remember { mutableStateOf(20) }
     var sidesMenu by remember { mutableStateOf(false) }
+    var operatorMenu by remember { mutableStateOf(false) }
     var nextOperator by remember { mutableStateOf("+") }
-    var constantText by remember { mutableStateOf("1") }
-    var multiplierText by remember { mutableStateOf("2") }
     val valid = RollFormulaResolver.validateTemplate(value, character.level, modifiers)
+    val composer = remember(value, character.level, modifiers) {
+        FormulaComposer.parse(value, character.level, modifiers)
+    }
+    var selected by remember(value) { mutableStateOf(emptySet<Int>()) }
+
+    fun commit(terms: List<ComposerTerm>) {
+        val candidate = FormulaComposer.serialize(terms)
+        if (candidate.isBlank() || RollFormulaResolver.validateTemplate(candidate, character.level, modifiers)) {
+            onValueChange(candidate)
+        }
+    }
 
     fun appendTerm(term: String) {
-        onValueChange(
-            when {
-                value.isBlank() && nextOperator == "-" -> "-$term"
-                value.isBlank() -> term
-                else -> "$value$nextOperator$term"
-            },
-        )
+        val expression = when {
+            value.isBlank() && nextOperator == "-" -> "-" + term
+            value.isBlank() -> term
+            nextOperator == "x" -> "(" + value + ")x" + term
+            else -> value + nextOperator + term
+        }
+        if (RollFormulaResolver.validateTemplate(expression, character.level, modifiers)) {
+            onValueChange(expression)
+        }
     }
 
     OutlinedTextField(
@@ -3586,15 +3599,172 @@ private fun GuidedExpressionEditorV2(
         modifier = Modifier.fillMaxWidth(),
     )
 
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-        FilterChip(selected = nextOperator == "+", onClick = { nextOperator = "+" }, label = { Text("+") })
-        FilterChip(selected = nextOperator == "-", onClick = { nextOperator = "-" }, label = { Text("−") })
-        FilterChip(selected = nextOperator == "x", onClick = { nextOperator = "x" }, label = { Text("×") })
+    if (composer != null && composer.isNotEmpty()) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                stringResource(R.string.composer_terms),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            composer.forEachIndexed { index, term ->
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                ) {
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            if (term.isGroup) {
+                                Text(if (term.sign == '-') "−" else "+", fontWeight = FontWeight.Bold)
+                                Row(
+                                    modifier = Modifier.weight(1f),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Box(
+                                        Modifier.width(3.dp)
+                                            .height((term.grouped.size * 27).dp)
+                                            .background(MaterialTheme.colorScheme.primary),
+                                    )
+                                    Column(Modifier.padding(start = 8.dp)) {
+                                        term.grouped.forEachIndexed { childIndex, child ->
+                                            Text(
+                                                (if (child.sign == '-') "− " else if (childIndex > 0) "+ " else "") +
+                                                    child.expression,
+                                                style = MaterialTheme.typography.bodySmall,
+                                            )
+                                        }
+                                    }
+                                }
+                            } else {
+                                FilterChip(
+                                    selected = index in selected,
+                                    onClick = {
+                                        selected = if (index in selected) selected - index else selected + index
+                                    },
+                                    label = {
+                                        Text(
+                                            (if (term.sign == '-') "− " else if (index > 0) "+ " else "") +
+                                                term.expression,
+                                            maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
+                            IconButton(
+                                enabled = index > 0,
+                                onClick = { commit(FormulaComposer.move(composer, index, -1)) },
+                            ) {
+                                Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = stringResource(R.string.move_up))
+                            }
+                            IconButton(
+                                enabled = index < composer.lastIndex,
+                                onClick = { commit(FormulaComposer.move(composer, index, 1)) },
+                            ) {
+                                Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = stringResource(R.string.move_down))
+                            }
+                            IconButton(onClick = { commit(FormulaComposer.remove(composer, index)) }) {
+                                Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.delete))
+                            }
+                        }
+                        if (term.isGroup) {
+                            var factor by remember(value, index) {
+                                mutableStateOf(term.multiplier ?: "1")
+                            }
+                            var factorMenu by remember { mutableStateOf(false) }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                OutlinedTextField(
+                                    value = factor,
+                                    onValueChange = { factor = it.take(32) },
+                                    singleLine = true,
+                                    label = { Text(stringResource(R.string.multiplier)) },
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Box {
+                                    IconButton(onClick = { factorMenu = true }) {
+                                        Icon(
+                                            Icons.Rounded.KeyboardArrowDown,
+                                            contentDescription = stringResource(R.string.composer_choose_variable),
+                                        )
+                                    }
+                                    DropdownMenu(expanded = factorMenu, onDismissRequest = { factorMenu = false }) {
+                                        (listOf("{level}") + modifiers.map { "{" + it.name + "}" })
+                                            .distinct().forEach { variable ->
+                                                DropdownMenuItem(
+                                                    text = { Text(variable) },
+                                                    onClick = { factor = variable; factorMenu = false },
+                                                )
+                                            }
+                                    }
+                                }
+                                TextButton(
+                                    onClick = { commit(FormulaComposer.multiplyGroup(composer, index, factor.trim())) },
+                                    enabled = factor.isNotBlank() &&
+                                        RollFormulaResolver.validateTemplate(
+                                            "1x" + factor.trim(), character.level, modifiers
+                                        ),
+                                ) { Text("×") }
+                                TextButton(onClick = { commit(FormulaComposer.ungroup(composer, index)) }) {
+                                    Text(stringResource(R.string.composer_ungroup))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Text(
+                stringResource(R.string.composer_select_help),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedButton(
+                onClick = { commit(FormulaComposer.group(composer, selected)) },
+                enabled = FormulaComposer.canGroup(composer, selected),
+            ) { Text(stringResource(R.string.composer_group)) }
+        }
+    }
+
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+    ) {
         Box {
-            OutlinedButton(onClick = { countMenu = true }) { Text(countText) }
+            OutlinedButton(onClick = { operatorMenu = true }) {
+                Text(if (nextOperator == "x") "×" else if (nextOperator == "-") "−" else "+")
+                Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null)
+            }
+            DropdownMenu(expanded = operatorMenu, onDismissRequest = { operatorMenu = false }) {
+                listOf("+" to "+", "-" to "−", "x" to "×").forEach { (operator, label) ->
+                    DropdownMenuItem(
+                        text = { Text(label) },
+                        onClick = { nextOperator = operator; operatorMenu = false },
+                    )
+                }
+            }
+        }
+        OutlinedTextField(
+            value = countText,
+            onValueChange = { countText = it.take(35) },
+            singleLine = true,
+            label = { Text("#") },
+            modifier = Modifier.width(88.dp),
+        )
+        Box {
+            IconButton(onClick = { countMenu = true }) {
+                Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = stringResource(R.string.composer_choose_variable))
+            }
             DropdownMenu(expanded = countMenu, onDismissRequest = { countMenu = false }) {
                 (listOf("1", "2", "3", "4", "5", "10", "{level}") +
-                    modifiers.map { "{${it.name}}" }).distinct().forEach { option ->
+                    modifiers.map { "{" + it.name + "}" }).distinct().forEach { option ->
                     DropdownMenuItem(
                         text = { Text(option) },
                         onClick = { countText = option; countMenu = false },
@@ -3604,7 +3774,7 @@ private fun GuidedExpressionEditorV2(
         }
         Box {
             OutlinedButton(onClick = { sidesMenu = true }) {
-                Text(if (constantMode) stringResource(R.string.constant_value) else "d$sides")
+                Text(if (constantMode) stringResource(R.string.constant_value) else "d" + sides)
             }
             DropdownMenu(expanded = sidesMenu, onDismissRequest = { sidesMenu = false }) {
                 DropdownMenuItem(
@@ -3613,69 +3783,24 @@ private fun GuidedExpressionEditorV2(
                 )
                 DiceExpression.supportedSides.sorted().forEach { option ->
                     DropdownMenuItem(
-                        text = { Text("d$option") },
-                        onClick = {
-                            sides = option
-                            constantMode = false
-                            sidesMenu = false
-                        },
+                        text = { Text("d" + option) },
+                        onClick = { sides = option; constantMode = false; sidesMenu = false },
                     )
                 }
             }
         }
-        Button(
-            enabled = countText.startsWith("{") || (countText.toIntOrNull() ?: 0) in 1..100,
-            onClick = { appendTerm(if (constantMode) countText else "${countText}d$sides") },
-        ) { Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.add)) }
-    }
-
-    Row(
-        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        TextButton(onClick = { appendTerm("{level}d$sides") }) { Text("{level}d$sides") }
-        TextButton(onClick = { appendTerm("{level}") }) { Text("{level}") }
-        modifiers.forEach { modifier ->
-            TextButton(onClick = { appendTerm("{${modifier.name}}") }) { Text("{${modifier.name}}") }
+        val item = if (constantMode) countText else countText + "d" + sides
+        IconButton(
+            enabled = RollFormulaResolver.validateTemplate(item, character.level, modifiers),
+            onClick = { appendTerm(item) },
+        ) {
+            Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.add))
         }
     }
-
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        OutlinedTextField(
-            value = constantText,
-            onValueChange = { constantText = it.filter { char -> char.isDigit() }.take(5) },
-            label = { Text(stringResource(R.string.constant_value)) },
-            singleLine = true,
-            modifier = Modifier.width(108.dp),
-        )
-        OutlinedButton(
-            enabled = constantText.toIntOrNull() != null,
-            onClick = { appendTerm(constantText) },
-        ) { Text(stringResource(R.string.add)) }
-        IconButton(onClick = { onValueChange("") }) {
-            Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.clear_expression))
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        TextButton(onClick = { onValueChange("") }) {
+            Text(stringResource(R.string.clear_expression))
         }
-    }
-
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        OutlinedTextField(
-            value = multiplierText,
-            onValueChange = { raw ->
-                multiplierText = raw.filterIndexed { index, char -> char.isDigit() || (index == 0 && char == '-') }.take(5)
-            },
-            label = { Text(stringResource(R.string.multiplier)) },
-            singleLine = true,
-            modifier = Modifier.width(112.dp),
-        )
-        OutlinedButton(
-            enabled = value.isNotBlank() && multiplierText.toIntOrNull() != null,
-            onClick = { onValueChange("($value)x${multiplierText.toInt()}") },
-        ) { Text("×") }
-        TextButton(
-            enabled = value.isNotBlank(),
-            onClick = { onValueChange("($value)x{level}") },
-        ) { Text("× {level}") }
     }
 }
 
