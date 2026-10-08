@@ -22,4 +22,5 @@
     <string name="composer_ungroup">गट वेगळा करा</string>
     <string name="composer_select_help">गट करण्यासाठी शेजारील दोन किंवा अधिक पदे निवडा.</string>
     <string name="composer_choose_variable">चल</string>
+    <string name="double_tap_statistics">आकडेवारी दाखवण्यासाठी किंवा लपवण्यासाठी दोनदा टॅप करा</string>
 </resources>
