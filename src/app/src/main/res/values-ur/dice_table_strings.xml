@@ -22,4 +22,5 @@
     <string name="composer_ungroup">گروپ ختم کریں</string>
     <string name="composer_select_help">گروپ بنانے کے لیے دو یا زیادہ ملحقہ اجزاء منتخب کریں۔</string>
     <string name="composer_choose_variable">متغیر</string>
+    <string name="double_tap_statistics">اعداد و شمار دکھانے یا چھپانے کے لیے دو بار ٹیپ کریں</string>
 </resources>
