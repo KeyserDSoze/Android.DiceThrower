@@ -107,9 +107,9 @@ internal object FormulaComposer {
     }
 
     private fun parseGroup(body: String): Pair<List<ComposerTerm>, String?>? {
-        val suffix = Regex("""^\\((.+)\\)[xX×*](\\{[^{}]+\\}|[0-9]+)$""").matchEntire(body)
-        val prefix = Regex("""^(\\{[^{}]+\\}|[0-9]+)[xX×*]\\((.+)\\)$""").matchEntire(body)
-        val simple = Regex("""^\\((.+)\\)$""").matchEntire(body)
+        val suffix = Regex("""^\((.+)\)[xX×*](\{[^{}]+\}|[0-9]+)$""").matchEntire(body)
+        val prefix = Regex("""^(\{[^{}]+\}|[0-9]+)[xX×*]\((.+)\)$""").matchEntire(body)
+        val simple = Regex("""^\((.+)\)$""").matchEntire(body)
         val inner: String
         val factor: String?
         when {
