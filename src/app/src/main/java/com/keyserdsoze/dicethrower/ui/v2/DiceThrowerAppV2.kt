@@ -3268,7 +3268,6 @@ internal fun RollBuilderScreenV2(
     var name by remember(existing?.id) { mutableStateOf(existing?.name ?: "") }
     var groupId by remember(existing?.id, initialGroupId) { mutableStateOf(existing?.groupId ?: initialGroupId) }
     var groupMenu by remember(existing?.id) { mutableStateOf(false) }
-    var advancedMode by remember(existing?.id) { mutableStateOf(false) }
     var subgroups by remember(existing?.id) {
         mutableStateOf(
             existing?.subgroups?.takeIf { it.isNotEmpty() } ?: listOf(
@@ -3282,22 +3281,23 @@ internal fun RollBuilderScreenV2(
     val guidedExpression = remember(subgroups) {
         runCatching { RollFormulaResolver.canonicalExpression(subgroups) }.getOrDefault("")
     }
-    var advancedExpression by remember(existing?.id) {
+    var formulaText by remember(existing?.id) {
         mutableStateOf(TextFieldValue(existing?.expression ?: guidedExpression.ifBlank { "1d20" }))
     }
-    LaunchedEffect(guidedExpression, advancedMode) {
-        if (!advancedMode && guidedExpression.isNotBlank()) {
-            advancedExpression = TextFieldValue(guidedExpression)
-        }
-    }
-
     val groupsValid = subgroups.isNotEmpty() && subgroups.all { subgroup ->
         subgroup.expression.isNotBlank() &&
             RollFormulaResolver.validateTemplate(subgroup.expression, character.level, modifiers)
     }
-    val expressionToSave = if (advancedMode) advancedExpression.text.trim() else guidedExpression
+    val expressionToSave = formulaText.text.trim()
     val expressionValid = RollFormulaResolver.validateTemplate(expressionToSave, character.level, modifiers)
-    val valid = name.isNotBlank() && expressionValid && (advancedMode || groupsValid)
+    val valid = name.isNotBlank() && expressionValid && groupsValid &&
+        expressionToSave == guidedExpression
+    fun updateSubgroups(updated: List<RollSubgroup>) {
+        subgroups = updated
+        formulaText = TextFieldValue(
+            runCatching { RollFormulaResolver.canonicalExpression(updated) }.getOrDefault("")
+        )
+    }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -3352,54 +3352,34 @@ internal fun RollBuilderScreenV2(
                             }
                         }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(
-                            selected = !advancedMode,
-                            onClick = {
-                                guidedSubgroupsFromAdvancedExpression(
-                                    expression = advancedExpression.text,
-                                    current = subgroups,
-                                    level = character.level,
-                                    modifiers = modifiers,
-                                )?.let { imported ->
-                                    subgroups = imported
-                                    advancedMode = false
-                                }
-                            },
-                            label = { Text(stringResource(R.string.guided_builder)) },
-                        )
-                        FilterChip(
-                            selected = advancedMode,
-                            onClick = {
-                                if (!advancedMode) {
-                                    advancedExpression = TextFieldValue(guidedExpression)
-                                }
-                                advancedMode = true
-                            },
-                            label = { Text(stringResource(R.string.advanced_formula)) },
-                        )
-                    }
+
                 }
             }
         }
 
-        if (advancedMode) {
-            item {
-                PremiumCard(Modifier.fillMaxWidth()) {
-                    ParameterizedExpressionField(
-                        value = advancedExpression,
-                        onValueChange = { advancedExpression = it },
-                        label = stringResource(R.string.expression),
-                        modifiers = modifiers,
-                        isValid = expressionValid,
-                        helper = stringResource(R.string.expression_hint),
-                        errorText = stringResource(R.string.invalid_expression),
-                        modifier = Modifier.padding(16.dp),
-                    )
-                }
+        item {
+            PremiumCard(Modifier.fillMaxWidth()) {
+                ParameterizedExpressionField(
+                    value = formulaText,
+                    onValueChange = { updated ->
+                        formulaText = updated
+                        guidedSubgroupsFromAdvancedExpression(
+                            expression = updated.text,
+                            current = subgroups,
+                            level = character.level,
+                            modifiers = modifiers,
+                        )?.let { imported -> subgroups = imported }
+                    },
+                    label = stringResource(R.string.expression),
+                    modifiers = modifiers,
+                    isValid = expressionValid,
+                    helper = stringResource(R.string.expression_hint),
+                    errorText = stringResource(R.string.invalid_expression),
+                    modifier = Modifier.padding(16.dp),
+                )
             }
-        } else {
-            item {
+        }
+        item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -3411,10 +3391,10 @@ internal fun RollBuilderScreenV2(
                     )
                     TextButton(
                         onClick = {
-                            subgroups = subgroups + RollSubgroup(
+                            updateSubgroups(subgroups + RollSubgroup(
                                 id = UUID.randomUUID().toString(),
                                 expression = "1d6",
-                            )
+                            ))
                         },
                     ) {
                         Icon(Icons.Rounded.Add, contentDescription = null)
@@ -3435,20 +3415,20 @@ internal fun RollBuilderScreenV2(
                                 FilterChip(
                                     selected = subgroup.operator == RollSubgroupOperator.ADD,
                                     onClick = {
-                                        subgroups = subgroups.map {
+                                        updateSubgroups(subgroups.map {
                                             if (it.id == subgroup.id) it.copy(operator = RollSubgroupOperator.ADD) else it
                                         }
-                                    },
+                                    }),
                                     label = { Text("+") },
                                 )
                                 Spacer(Modifier.width(6.dp))
                                 FilterChip(
                                     selected = subgroup.operator == RollSubgroupOperator.SUBTRACT,
                                     onClick = {
-                                        subgroups = subgroups.map {
+                                        updateSubgroups(subgroups.map {
                                             if (it.id == subgroup.id) it.copy(operator = RollSubgroupOperator.SUBTRACT) else it
                                         }
-                                    },
+                                    }),
                                     label = { Text("−") },
                                 )
                                 Spacer(Modifier.width(8.dp))
@@ -3456,16 +3436,16 @@ internal fun RollBuilderScreenV2(
                             OutlinedTextField(
                                 value = subgroup.name,
                                 onValueChange = { updatedName ->
-                                    subgroups = subgroups.map {
+                                    updateSubgroups(subgroups.map {
                                         if (it.id == subgroup.id) it.copy(name = updatedName) else it
-                                    }
+                                    })
                                 },
                                 label = { Text(stringResource(R.string.subgroup_name)) },
                                 singleLine = true,
                                 modifier = Modifier.weight(1f),
                             )
                             if (subgroups.size > 1) {
-                                IconButton(onClick = { subgroups = subgroups.filterNot { it.id == subgroup.id } }) {
+                                IconButton(onClick = { updateSubgroups(subgroups.filterNot { it.id == subgroup.id }) }) {
                                     Icon(Icons.Rounded.Delete, contentDescription = stringResource(R.string.delete))
                                 }
                             }
@@ -3478,7 +3458,7 @@ internal fun RollBuilderScreenV2(
                             ) {
                                 IconButton(
                                     enabled = index > 0,
-                                    onClick = { subgroups = moveRollSubgroup(subgroups, index, -1) },
+                                    onClick = { updateSubgroups(moveRollSubgroup(subgroups, index, -1)) },
                                 ) {
                                     Icon(
                                         Icons.Rounded.KeyboardArrowUp,
@@ -3487,7 +3467,7 @@ internal fun RollBuilderScreenV2(
                                 }
                                 IconButton(
                                     enabled = index < subgroups.lastIndex,
-                                    onClick = { subgroups = moveRollSubgroup(subgroups, index, 1) },
+                                    onClick = { updateSubgroups(moveRollSubgroup(subgroups, index, 1)) },
                                 ) {
                                     Icon(
                                         Icons.Rounded.KeyboardArrowDown,
@@ -3501,7 +3481,7 @@ internal fun RollBuilderScreenV2(
                             character = character,
                             modifiers = modifiers,
                             onValueChange = { updatedExpression ->
-                                subgroups = subgroups.map {
+                                updateSubgroups(subgroups.map {
                                     if (it.id == subgroup.id) it.copy(expression = updatedExpression) else it
                                 }
                             },
@@ -3535,7 +3515,6 @@ internal fun RollBuilderScreenV2(
                     enabled = valid,
                     modifier = Modifier.weight(1f),
                     onClick = {
-                        val preserveSubgroups = !advancedMode || expressionToSave == guidedExpression
                         val saved = (existing ?: RollDefinition(
                             id = "",
                             characterId = character.id,
@@ -3545,7 +3524,7 @@ internal fun RollBuilderScreenV2(
                             name = name.trim(),
                             expression = expressionToSave,
                             groupId = groupId,
-                            subgroups = if (preserveSubgroups) subgroups else emptyList(),
+                            subgroups = subgroups,
                         )
                         val slots = runCatching {
                             val resolved = RollFormulaResolver.resolve(character, modifiers, saved).expression
