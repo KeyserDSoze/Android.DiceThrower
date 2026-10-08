@@ -3290,8 +3290,11 @@ internal fun RollBuilderScreenV2(
     }
     val expressionToSave = formulaText.text.trim()
     val expressionValid = RollFormulaResolver.validateTemplate(expressionToSave, character.level, modifiers)
-    val valid = name.isNotBlank() && expressionValid && groupsValid &&
-        expressionToSave == guidedExpression
+    // The canonical subgroup rendering wraps every part in parentheses. A valid
+    // single-part text edit is equivalent to its canonical wrapped expression.
+    val synced = expressionToSave == guidedExpression ||
+        (subgroups.size == 1 && expressionToSave == subgroups.single().expression.trim())
+    val valid = name.isNotBlank() && expressionValid && groupsValid && synced
     fun updateSubgroups(updated: List<RollSubgroup>) {
         subgroups = updated
         formulaText = TextFieldValue(
