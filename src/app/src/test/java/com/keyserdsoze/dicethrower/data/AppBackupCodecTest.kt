@@ -60,6 +60,7 @@ class AppBackupCodecTest {
             rerollTapEnabled = true,
             rerollSwipeEnabled = true,
             rerollShakeEnabled = true,
+            doubleTapStatsEnabled = false,
             animationsEnabled = true,
             showRollButton = true,
             rollButtonPosition = RollButtonPosition.TOP_CENTER,
@@ -98,6 +99,25 @@ class AppBackupCodecTest {
         assertEquals(false, decoded.rerollTapEnabled)
         assertEquals(false, decoded.rerollSwipeEnabled)
         assertEquals(false, decoded.rerollShakeEnabled)
+        assertEquals(true, decoded.doubleTapStatsEnabled)
+    }
+
+    @Test
+    fun doubleTapPreferenceDefaultsOnForLegacyBackupAndPersistsWhenDisabled() {
+        val legacySettings = AppDataJsonCodec.encodeSettings(AppSettings())
+            .apply { remove("doubleTapStatsEnabled") }
+        assertTrue(AppDataJsonCodec.decodeSettings(legacySettings).doubleTapStatsEnabled)
+
+        val disabled = AppSettings(doubleTapStatsEnabled = false)
+        val restored = AppBackupCodec.decode(
+            AppBackupCodec.encode(AppData(), disabled, "en", exportedAt = 7L),
+        )
+        assertEquals(false, restored.settings.doubleTapStatsEnabled)
+
+        val enabled = AppDataJsonCodec.decodeSettings(
+            AppDataJsonCodec.encodeSettings(AppSettings()),
+        )
+        assertEquals(true, enabled.doubleTapStatsEnabled)
     }
 
     @Test
