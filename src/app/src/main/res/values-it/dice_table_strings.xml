@@ -35,8 +35,4 @@
     <string name="composer_ungroup">Separa gruppo</string>
     <string name="composer_select_help">Seleziona almeno due termini vicini per raggrupparli.</string>
     <string name="composer_choose_variable">Variabile</string>
-    <string name="composer_apply_multiplier">Applica moltiplicatore</string>
-    <string name="composer_term">Termine della formula</string>
-    <string name="composer_group_label">Termini raggruppati</string>
-    <string name="composer_group_hint">Non è possibile annidare i gruppi.</string>
 </resources>
