@@ -9,7 +9,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -17,6 +16,7 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -87,7 +87,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -96,6 +95,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
@@ -147,8 +147,6 @@ import com.keyserdsoze.dicethrower.ui.dice3d.Dice3DScene
 import java.text.DateFormat
 import java.util.Date
 import java.util.UUID
-import kotlin.math.cos
-import kotlin.math.sin
 import kotlin.random.Random
 
 internal enum class RouteV2 { CHARACTERS, CHARACTER, GROUP, ROLL, SETTINGS, LOGS }
@@ -2144,7 +2142,7 @@ private fun RollScreenV2(
     }
 
     ArcaneBackground {
-        Box(modifier = Modifier.fillMaxSize()) {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             Dice3DScene(
                 event = visualEvent,
                 tableTheme = character.diceTableTheme,
@@ -2192,17 +2190,19 @@ private fun RollScreenV2(
 
             if (resultRevealed) {
                 outcome?.let { value ->
-                    Box(Modifier.align(Alignment.Center)) {
-                        val parts = formula.subgroupResults(value)
-                        if (parts.size > 1) {
-                            RollPartsReveal(parts)
-                        } else {
-                            RollTotalReveal(
-                                total = value.total,
-                                aboveAverage = value.total > value.expectedTotal(),
-                            )
-                        }
-                    }
+                    // Keep the center of the table free for the 3D dice. The result stack
+                    // grows upwards from the footer, with a viewport bound on small screens.
+                    RollResultsOverlayV2(
+                        parts = formula.subgroupResults(value),
+                        total = value.total,
+                        aboveAverage = value.total > value.expectedTotal(),
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .navigationBarsPadding()
+                            .padding(start = 16.dp, end = 16.dp, bottom = 82.dp)
+                            .fillMaxWidth()
+                            .heightIn(max = (maxHeight * 0.40f).coerceIn(112.dp, 300.dp)),
+                    )
                 }
             }
 
@@ -2380,36 +2380,64 @@ private fun decodeTableBitmap(bytes: ByteArray): Bitmap? {
 }
 
 @Composable
+internal fun RollResultsOverlayV2(
+    parts: List<ResolvedRollSubgroupResult>,
+    total: Int,
+    aboveAverage: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier.testTag("roll-results-overlay"),
+        contentAlignment = Alignment.BottomCenter,
+    ) {
+        if (parts.size > 1) {
+            RollPartsReveal(parts)
+        } else {
+            RollTotalReveal(total = total, aboveAverage = aboveAverage)
+        }
+    }
+}
+
+@Composable
 private fun RollPartsReveal(parts: List<ResolvedRollSubgroupResult>) {
+    val scrollState = rememberScrollState()
+    LaunchedEffect(parts) { scrollState.scrollTo(0) }
+
     Column(
         modifier = Modifier
-            .fillMaxWidth(0.88f)
-            .heightIn(max = 460.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+            .fillMaxWidth()
+            .testTag("roll-parts-list")
+            .verticalScroll(scrollState),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         parts.forEachIndexed { index, part ->
             Surface(
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(22.dp),
-                shadowElevation = 12.dp,
+                modifier = Modifier.fillMaxWidth().testTag("roll-part-${index}"),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 6.dp,
+                tonalElevation = 3.dp,
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 9.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Text(
                         part.subgroup.name.ifBlank { "${index + 1}" },
                         modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Text(
                         part.result.total.toString(),
-                        style = MaterialTheme.typography.headlineLarge,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Black,
                         color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        softWrap = false,
                     )
                 }
             }
@@ -2419,60 +2447,31 @@ private fun RollPartsReveal(parts: List<ResolvedRollSubgroupResult>) {
 
 @Composable
 private fun RollTotalReveal(total: Int, aboveAverage: Boolean) {
-    val scale = remember(total) { Animatable(0.62f) }
-    LaunchedEffect(total) { scale.animateTo(1f, animationSpec = tween(durationMillis = 520)) }
-    Box(contentAlignment = Alignment.Center) {
-        if (aboveAverage) CelebrationBurst()
-        Surface(
-            shape = RoundedCornerShape(28.dp),
-            color = if (aboveAverage) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-            shadowElevation = 14.dp,
-            modifier = Modifier.graphicsLayer {
+    val scale = remember(total) { Animatable(0.72f) }
+    LaunchedEffect(total) { scale.animateTo(1f, animationSpec = tween(durationMillis = 420)) }
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = if (aboveAverage) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+        shadowElevation = 8.dp,
+        modifier = Modifier
+            .testTag("roll-single-result")
+            .graphicsLayer {
                 scaleX = scale.value
                 scaleY = scale.value
                 alpha = scale.value
             },
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 26.dp, vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 32.dp, vertical = 18.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(stringResource(R.string.total), style = MaterialTheme.typography.labelLarge)
-                Text(
-                    total.toString(),
-                    style = MaterialTheme.typography.displayLarge,
-                    fontWeight = FontWeight.Black,
-                    color = if (aboveAverage) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun CelebrationBurst() {
-    val progress = remember { Animatable(0f) }
-    LaunchedEffect(Unit) { progress.animateTo(1f, animationSpec = tween(1250)) }
-    val colors = listOf(Color(0xFFFFC857), Color(0xFF43D9AD), Color(0xFF7C6CFF), Color(0xFFFF5D8F))
-    Canvas(Modifier.size(300.dp)) {
-        val center = Offset(size.width / 2f, size.height / 2f)
-        repeat(24) { index ->
-            val angle = index * (Math.PI * 2.0 / 24.0)
-            val startRadius = 48f + progress.value * 34f
-            val endRadius = 62f + progress.value * 92f
-            val start = Offset(
-                center.x + cos(angle).toFloat() * startRadius,
-                center.y + sin(angle).toFloat() * startRadius,
-            )
-            val end = Offset(
-                center.x + cos(angle).toFloat() * endRadius,
-                center.y + sin(angle).toFloat() * endRadius,
-            )
-            drawLine(
-                color = colors[index % colors.size].copy(alpha = 1f - progress.value * 0.78f),
-                start = start,
-                end = end,
-                strokeWidth = 7f,
+            Text(stringResource(R.string.total), style = MaterialTheme.typography.labelMedium)
+            Text(
+                total.toString(),
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Black,
+                color = if (aboveAverage) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
             )
         }
     }
