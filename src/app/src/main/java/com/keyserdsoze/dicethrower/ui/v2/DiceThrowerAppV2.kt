@@ -1590,7 +1590,7 @@ private fun GroupLaunchContentV2(
 }
 
 @Composable
-private fun GroupEditContentV2(
+internal fun GroupEditContentV2(
     character: CharacterProfile,
     group: RollGroup,
     data: AppData,
@@ -1598,7 +1598,7 @@ private fun GroupEditContentV2(
     onEditorVisibilityChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    var expandedRollId by rememberSaveable(group.id) { mutableStateOf<String?>(null) }
+    var detailedRollId by rememberSaveable(group.id) { mutableStateOf<String?>(null) }
     val editListState = rememberLazyListState()
     var showAddRoll by remember { mutableStateOf(false) }
     var editingRollId by remember { mutableStateOf<String?>(null) }
@@ -1611,12 +1611,16 @@ private fun GroupEditContentV2(
     val diceStyles = data.diceStyles.filter { it.characterId == character.id }.sortedBy { it.order }
 
     val builderRoll = editingRollId?.let { id -> allCharacterRolls.firstOrNull { it.id == id } }
-    LaunchedEffect(showAddRoll, builderRoll) {
-        onEditorVisibilityChanged(showAddRoll || builderRoll != null)
+    val detailedRoll = detailedRollId?.let { id -> groupRolls.firstOrNull { it.id == id } }
+    LaunchedEffect(showAddRoll, builderRoll, detailedRoll) {
+        onEditorVisibilityChanged(showAddRoll || builderRoll != null || detailedRoll != null)
     }
-    BackHandler(enabled = showAddRoll || builderRoll != null) {
-        showAddRoll = false
-        editingRollId = null
+    BackHandler(enabled = showAddRoll || builderRoll != null || detailedRoll != null) {
+        when {
+            builderRoll != null -> editingRollId = null
+            showAddRoll -> showAddRoll = false
+            detailedRoll != null -> detailedRollId = null
+        }
     }
     if (showAddRoll || builderRoll != null) {
         RollBuilderScreenV2(
@@ -1657,96 +1661,147 @@ private fun GroupEditContentV2(
         return
     }
 
-    LazyColumn(
-        state = editListState,
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 40.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                SectionTitleV2(
-                    title = stringResource(R.string.rolls),
-                    subtitle = stringResource(R.string.group_contents_help),
-                    modifier = Modifier.weight(1f),
-                )
-                Button(onClick = { showAddRoll = true }) {
-                    Icon(Icons.Rounded.Add, contentDescription = null)
-                    Spacer(Modifier.width(6.dp))
-                    Text(stringResource(R.string.new_roll))
-                }
-            }
-        }
 
-        if (groupRolls.isEmpty()) {
+    if (detailedRoll != null) {
+        LazyColumn(
+            modifier = modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 40.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             item {
-                PremiumCard(Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { detailedRollId = null }) {
+                        Icon(
+                            Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = stringResource(R.string.back),
+                        )
+                    }
                     Text(
-                        stringResource(R.string.empty_group),
-                        modifier = Modifier.padding(20.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        detailedRoll.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
+            item {
+                RollEditorCardV2(
+                    character = character,
+                    modifiers = modifiers,
+                    groups = groups,
+                    diceStyles = diceStyles,
+                    roll = detailedRoll,
+                    onEnabledChanged = { enabled ->
+                        onDataChanged(data.copy(rolls = data.rolls.map { roll ->
+                            if (roll.id == detailedRoll.id) roll.copy(enabled = enabled) else roll
+                        }))
+                    },
+                    onGroupChanged = { targetGroupId ->
+                        detailedRollId = null
+                        onDataChanged(DashboardDataOperations.changeRollGroup(
+                            data, character.id, detailedRoll.id, targetGroupId
+                        ))
+                    },
+                    onEdit = { editingRollId = detailedRoll.id },
+                    onAppearanceChanged = { appearance ->
+                        onDataChanged(data.copy(rolls = data.rolls.map { roll ->
+                            if (roll.id == detailedRoll.id) roll.copy(diceAppearance = appearance) else roll
+                        }))
+                    },
+                    onAddRule = { addRuleRollId = detailedRoll.id },
+                    onDeleteRule = { ruleId ->
+                        onDataChanged(data.copy(rolls = data.rolls.map { roll ->
+                            if (roll.id == detailedRoll.id) {
+                                roll.copy(levelRules = roll.levelRules.filterNot { rule -> rule.id == ruleId })
+                            } else roll
+                        }))
+                    },
+                    onDelete = {
+                        detailedRollId = null
+                        onDataChanged(data.copy(rolls = data.rolls.filterNot { it.id == detailedRoll.id }))
+                    },
+                )
+            }
         }
+    } else {
+        LazyColumn(
+            state = editListState,
+            modifier = modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 40.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    SectionTitleV2(
+                        title = stringResource(R.string.rolls),
+                        subtitle = stringResource(R.string.drag_to_reorder),
+                        modifier = Modifier.weight(1f),
+                    )
+                    Button(onClick = { showAddRoll = true }) {
+                        Icon(Icons.Rounded.Add, contentDescription = null)
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.new_roll))
+                    }
+                }
+            }
 
-        itemsIndexed(groupRolls, key = { _, roll -> roll.id }) { index, roll ->
-            var moveMenu by remember(roll.id) { mutableStateOf(false) }
-            DragReorderCard(
-                key = "group-roll-${roll.id}",
-                canMoveUp = index > 0,
-                canMoveDown = index < groupRolls.lastIndex,
-                onMoveUp = {
-                    onDataChanged(
-                        data.copy(
-                            rolls = DashboardDataOperations.moveRollInsideGroup(
-                                data.rolls,
-                                character.id,
-                                group.id,
-                                roll.id,
-                                -1,
-                            ),
-                        ),
-                    )
-                },
-                onMoveDown = {
-                    onDataChanged(
-                        data.copy(
-                            rolls = DashboardDataOperations.moveRollInsideGroup(
-                                data.rolls,
-                                character.id,
-                                group.id,
-                                roll.id,
-                                1,
-                            ),
-                        ),
-                    )
-                },
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (groupRolls.isEmpty()) {
+                item {
+                    PremiumCard(Modifier.fillMaxWidth()) {
+                        Text(
+                            stringResource(R.string.empty_group),
+                            modifier = Modifier.padding(20.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            itemsIndexed(groupRolls, key = { _, roll -> roll.id }) { index, roll ->
+                var moveMenu by remember(roll.id) { mutableStateOf(false) }
+                val moveUp: () -> Unit = {
+                    onDataChanged(data.copy(rolls = DashboardDataOperations.moveRollInsideGroup(
+                        data.rolls, character.id, group.id, roll.id, -1
+                    )))
+                }
+                val moveDown: () -> Unit = {
+                    onDataChanged(data.copy(rolls = DashboardDataOperations.moveRollInsideGroup(
+                        data.rolls, character.id, group.id, roll.id, 1
+                    )))
+                }
+                DragReorderCard(
+                    key = "group-roll-" + roll.id,
+                    canMoveUp = index > 0,
+                    canMoveDown = index < groupRolls.lastIndex,
+                    onMoveUp = moveUp,
+                    onMoveDown = moveDown,
+                ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(3.dp),
                     ) {
                         Text(
                             roll.name,
-                            modifier = Modifier.weight(1f).clickable {
-                                expandedRollId = if (expandedRollId == roll.id) null else roll.id
-                            },
+                            modifier = Modifier.weight(1f).clickable { detailedRollId = roll.id },
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                         Box {
-                            OutlinedButton(onClick = { moveMenu = true }) {
-                                Text(stringResource(R.string.group), maxLines = 1)
+                            IconButton(onClick = { moveMenu = true }) {
+                                Icon(Icons.Rounded.Tune, contentDescription = stringResource(R.string.group))
                             }
                             DropdownMenu(expanded = moveMenu, onDismissRequest = { moveMenu = false }) {
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.ungrouped)) },
                                     onClick = {
                                         moveMenu = false
-                                        onDataChanged(DashboardDataOperations.changeRollGroup(data, character.id, roll.id, null))
+                                        onDataChanged(DashboardDataOperations.changeRollGroup(
+                                            data, character.id, roll.id, null
+                                        ))
                                     },
                                 )
                                 groups.filterNot { it.id == group.id }.forEach { target ->
@@ -1754,68 +1809,29 @@ private fun GroupEditContentV2(
                                         text = { Text(target.name) },
                                         onClick = {
                                             moveMenu = false
-                                            onDataChanged(DashboardDataOperations.changeRollGroup(data, character.id, roll.id, target.id))
+                                            onDataChanged(DashboardDataOperations.changeRollGroup(
+                                                data, character.id, roll.id, target.id
+                                            ))
                                         },
                                     )
                                 }
                             }
                         }
-                        IconButton(onClick = {
-                            expandedRollId = if (expandedRollId == roll.id) null else roll.id
-                        }) {
+                        IconButton(enabled = index > 0, onClick = moveUp) {
                             Icon(
-                                if (expandedRollId == roll.id) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.Edit,
-                                contentDescription = stringResource(R.string.edit),
+                                Icons.Rounded.KeyboardArrowUp,
+                                contentDescription = stringResource(R.string.move_up),
                             )
                         }
-                    }
-                    if (expandedRollId == roll.id) {
-                RollEditorCardV2(
-                    character = character,
-                    modifiers = modifiers,
-                    groups = groups,
-                    diceStyles = diceStyles,
-                    roll = roll,
-                    onEnabledChanged = { enabled ->
-                        onDataChanged(
-                            data.copy(
-                                rolls = data.rolls.map { if (it.id == roll.id) it.copy(enabled = enabled) else it },
-                            ),
-                        )
-                    },
-                    onGroupChanged = { groupId ->
-                        onDataChanged(
-                            DashboardDataOperations.changeRollGroup(data, character.id, roll.id, groupId),
-                        )
-                    },
-                    onEdit = { editingRollId = roll.id },
-                    onAppearanceChanged = { appearance ->
-                        onDataChanged(
-                            data.copy(
-                                rolls = data.rolls.map {
-                                    if (it.id == roll.id) it.copy(diceAppearance = appearance) else it
-                                },
-                            ),
-                        )
-                    },
-                    onAddRule = { addRuleRollId = roll.id },
-                    onDeleteRule = { ruleId ->
-                        onDataChanged(
-                            data.copy(
-                                rolls = data.rolls.map {
-                                    if (it.id == roll.id) {
-                                        it.copy(levelRules = it.levelRules.filterNot { rule -> rule.id == ruleId })
-                                    } else {
-                                        it
-                                    }
-                                },
-                            ),
-                        )
-                    },
-                    onDelete = {
-                        onDataChanged(data.copy(rolls = data.rolls.filterNot { it.id == roll.id }))
-                    },
-                )
+                        IconButton(enabled = index < groupRolls.lastIndex, onClick = moveDown) {
+                            Icon(
+                                Icons.Rounded.KeyboardArrowDown,
+                                contentDescription = stringResource(R.string.move_down),
+                            )
+                        }
+                        IconButton(onClick = { detailedRollId = roll.id }) {
+                            Icon(Icons.Rounded.Edit, contentDescription = stringResource(R.string.edit))
+                        }
                     }
                 }
             }
