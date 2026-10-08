@@ -22,4 +22,5 @@
     <string name="composer_ungroup">ยกเลิกการจัดกลุ่ม</string>
     <string name="composer_select_help">เลือกพจน์ที่อยู่ติดกันอย่างน้อยสองพจน์เพื่อจัดกลุ่ม</string>
     <string name="composer_choose_variable">ตัวแปร</string>
+    <string name="double_tap_statistics">แตะสองครั้งเพื่อแสดงหรือซ่อนสถิติ</string>
 </resources>
