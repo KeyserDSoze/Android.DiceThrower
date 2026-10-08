@@ -17,4 +17,9 @@
     <string name="swipe_up_to_roll">Swipe up</string>
     <string name="shake_phone">Shake phone</string>
     <string name="roll_icon_always_available">The dice icon in the footer is always available.</string>
+    <string name="composer_terms">Kiundaji fomula</string>
+    <string name="composer_group">Panga vilivyochaguliwa</string>
+    <string name="composer_ungroup">Tenganisha kundi</string>
+    <string name="composer_select_help">Chagua vipengele viwili au zaidi vilivyo karibu ili kuviweka pamoja.</string>
+    <string name="composer_choose_variable">Kigeu</string>
 </resources>
