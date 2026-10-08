@@ -76,4 +76,44 @@ class RollBuilderStateTest {
 
         assertNull(imported)
     }
+    @Test
+    fun textEditOfMultiPartFormulaKeepsSeparateTotalsAndNames() {
+        val original = listOf(
+            RollSubgroup("attack", "Attack", "1d20"),
+            RollSubgroup("damage", "Damage", "2d6"),
+        )
+
+        val imported = requireNotNull(guidedSubgroupsFromAdvancedExpression(
+            expression = "(1d20+3)+(2d6)",
+            current = original,
+            level = 4,
+            modifiers = emptyList(),
+        ))
+
+        assertEquals(2, imported.size)
+        assertEquals("attack", imported[0].id)
+        assertEquals("Attack", imported[0].name)
+        assertEquals("1d20+3", imported[0].expression)
+        assertEquals("damage", imported[1].id)
+        assertEquals("Damage", imported[1].name)
+        assertEquals("2d6", imported[1].expression)
+    }
+
+    @Test
+    fun reorganizedCanonicalPartsRetainIdsByExpression() {
+        val original = listOf(
+            RollSubgroup("attack", "Attack", "1d20"),
+            RollSubgroup("damage", "Damage", "2d6"),
+        )
+        val imported = requireNotNull(guidedSubgroupsFromAdvancedExpression(
+            expression = "(2d6)-(1d20)",
+            current = original,
+            level = 1,
+            modifiers = emptyList(),
+        ))
+
+        assertEquals(listOf("damage", "attack"), imported.map { it.id })
+        assertEquals(RollSubgroupOperator.SUBTRACT, imported[1].operator)
+    }
+
 }
