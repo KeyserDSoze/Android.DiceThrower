@@ -18,12 +18,6 @@ LOCALES = [
     "uk", "iw", "el", "ro", "cs", "hu", "sv", "ha",
 ]
 
-# Effects UI is still under active development (#108). The product-level 40-locale
-# release gate (#111) requires this temporary allowlist to be REMOVED after
-# translations are completed. EN and IT remain strictly complete, and provided
-# translations in every other locale still undergo format and token validation.
-STAGED_LOCALE_KEY_PREFIXES = ("effects_",)
-
 FORMAT_ARGS = re.compile(r"%\d+\$[sd]")
 TECHNICAL = re.compile(
     r"#2563EB|appDataFolder|Dice Thrower|Google Drive|Google|Drive|MiB|"
@@ -55,14 +49,26 @@ def main() -> int:
             continue
         values = read_directory(directory)
         keys = set(values)
-        staged = {key for key in source_keys if key.startswith(STAGED_LOCALE_KEY_PREFIXES)}
-        required = source_keys if locale in ("en", "it") else source_keys - staged
-        missing = required - keys
+        missing = source_keys - keys
         extra = keys - source_keys
         if missing:
             failures.append(f"{locale}: missing keys: {', '.join(sorted(missing))}")
         if extra:
             failures.append(f"{locale}: unexpected keys: {', '.join(sorted(extra))}")
+        # The Effects composer teaches users executable formulas. Keep the
+        # function spelling and canonical Part reference syntax intact in every
+        # translation, rather than only checking formatting placeholders.
+        required_formula_tokens = ("f(x)", "c(x)", "r(x)", "{parts:")
+        formula_help = values.get("effects_formula_help", "")
+        if any(token not in formula_help for token in required_formula_tokens):
+            failures.append(f"{locale}/effects_formula_help: required formula token missing")
+        for key in ("effects_help", "effects_and_condition", "effects_or_group_number"):
+            translated = values.get(key, "")
+            if "AND" not in translated and key != "effects_or_group_number":
+                failures.append(f"{locale}/{key}: AND operator missing")
+            if key == "effects_or_group_number" and "OR" not in translated:
+                failures.append(f"{locale}/{key}: OR operator missing")
+
         for key in sorted(source_keys & keys):
             if not values[key]:
                 failures.append(f"{locale}/{key}: blank translation")
@@ -92,7 +98,7 @@ def main() -> int:
         for failure in failures:
             print(f"- {failure}", file=sys.stderr)
         return 1
-    print(f"Localization validation passed: {len(LOCALES)} locales; Effects UI staged EN/IT only (#111 release gate)")
+    print(f"Localization validation passed: {len(LOCALES)} locales × {len(source)} strings")
     return 0
 
 
