@@ -25,7 +25,7 @@ data class EffectExecutionStep(
 
 data class EffectExecutionResult(
     val original: EffectRollSnapshot,
-    val final: EffectNumericSnapshot,
+    val finalSnapshot: EffectNumericSnapshot,
     val steps: List<EffectExecutionStep>,
     val generatedDice: List<EffectGeneratedDice>,
     val stoppedByEffectId: String? = null,
@@ -99,8 +99,9 @@ object EffectSequenceExecutor {
                     }
                     when (action.kind) {
                         EffectActionType.REROLL, EffectActionType.ROLL_AFTER -> {
+                            val previousSnapshot = numeric
                             val result = applyDiceAction(
-                                effect.id, action, numeric, resolvedPartExpressions, random,
+                                effect.id, action, previousSnapshot, resolvedPartExpressions, random,
                             )
                             numeric = result.first
                             results += result.second
@@ -109,13 +110,13 @@ object EffectSequenceExecutor {
                                 if (generated.sumOf { it.result.components.sumOf { component -> component.rolls.size } } +
                                     additionalDice > MAX_GENERATED_DICE) {
                                     // Reject this action rather than retaining an unbounded sample.
-                                    numeric = result.second.snapshot
+                                    numeric = previousSnapshot
                                     results.removeAt(results.lastIndex)
                                     results += result.second.copy(
                                         applied = false,
                                         after = null,
                                         error = "Effect generated dice limit exceeded",
-                                        snapshot = result.second.snapshot,
+                                        snapshot = previousSnapshot,
                                     )
                                     limited = true
                                 } else {
@@ -161,13 +162,13 @@ object EffectSequenceExecutor {
             when (condition.scope) {
                 EffectValueScope.TOTAL -> total
                 EffectValueScope.DICE_ONLY -> {
-                    val diceOriginal = original.roll.components.sumOf { it.subtotal }
+                    val diceOriginal = initialTotal.components.sumOf { it.subtotal }
                     val initialDice = original.partsById.values.sumOf { part -> part.components.sumOf { it.subtotal } }
                     val currentDice = current.parts.values.sumOf { it.dice }
                     Math.addExact(diceOriginal, Math.subtractExact(currentDice, initialDice))
                 }
                 EffectValueScope.MODIFIERS_ONLY -> {
-                    val originalModifiers = original.roll.constantTotal
+                    val originalModifiers = initialTotal.constantTotal
                     val previous = original.partsById.values.sumOf { it.constantTotal }
                     val changed = current.parts.values.sumOf { it.modifiers }
                     Math.addExact(originalModifiers, Math.subtractExact(changed, previous))
