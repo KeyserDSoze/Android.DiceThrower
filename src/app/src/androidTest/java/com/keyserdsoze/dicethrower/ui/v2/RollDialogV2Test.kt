@@ -1,6 +1,7 @@
 package com.keyserdsoze.dicethrower.ui.v2
 
 import android.graphics.Color
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasContentDescription
