@@ -154,3 +154,8 @@ GitHub Pages è distribuito automaticamente dalla workflow dedicata:
 ## Licenza
 
 MIT.
+
+
+### Double-roll controls (development branch / #107)
+
+New Rolls enable optional double rolls with only the first Part selected initially. In the Roll editor each additional Part can be included or excluded. On the dice table use **left swipe for WORST**, **right swipe for BEST**, and **up swipe for NORMAL**; the directional shortcuts can be switched off in Settings. The bottom controls keep NORMAL at the far right, with colored BEST and WORST dice beside it. BEST/WORST compare the summed *complete* values of the participating Parts across the two candidate groups, while other Parts roll once; the result view keeps each Part separate and the statistics show both combinations, with the alternative dimmed.
