@@ -2199,7 +2199,6 @@ private fun RollScreenV2(
         RollFormulaResolver.resolve(character, modifiers, roll)
     }
     val parsedExpression = remember(formula.expression) { DiceExpression.parse(formula.expression) }
-    val appearanceRandom = remember(roll.id) { Random(System.nanoTime()) }
     val previewResult = remember(formula.expression) { parsedExpression.previewResult() }
     val subgroupIdByComponentIndex = remember(formula.subgroups) {
         formula.subgroupIdByComponentIndex()
@@ -2408,6 +2407,26 @@ private fun RollScreenV2(
                 },
                 modifier = Modifier.fillMaxSize(),
             )
+
+            // Keep the center clear: a compact accessible cue appears near
+            // the top while additional pre-resolved dice enter the 3D scene.
+            if (hasRolled && !showStats) {
+                val currentEffectId = visualStages.getOrNull(visualStageIndex)?.effectId
+                val activeEffectId = currentEffectId ?: if (resultRevealed) {
+                    effectsExecution?.steps?.firstOrNull { it.activation.activated }?.effectId
+                } else null
+                val activeEffect = roll.effects.firstOrNull { it.id == activeEffectId }
+                if (activeEffect != null) {
+                    EffectsVisualCueV2(
+                        effectName = activeEffect.name,
+                        type = activeEffect.type,
+                        rollAfter = currentEffectId != null && !resultRevealed,
+                        animate = settings.animationsEnabled && !resultRevealed,
+                        modifier = Modifier.align(Alignment.TopCenter)
+                            .statusBarsPadding().padding(top = 22.dp),
+                    )
+                }
+            }
 
             val tapTriggerEnabled = if (hasRolled) settings.rerollTapEnabled else settings.firstRollTapEnabled
             val swipeTriggerEnabled = if (hasRolled) settings.rerollSwipeEnabled else settings.firstRollSwipeEnabled
