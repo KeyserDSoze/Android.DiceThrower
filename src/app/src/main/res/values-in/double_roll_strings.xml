@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">Aktifkan lemparan ganda</string>
+    <string name="double_roll_part">Sertakan bagian ini dalam lemparan ganda</string>
+    <string name="directional_double_roll_swipes">Geser (kiri: terburuk, kanan: terbaik, atas: normal)</string>
+    <string name="double_roll_best">Lempar ganda: terbaik</string>
+    <string name="double_roll_worst">Lempar ganda: terburuk</string>
+    <string name="double_roll_selected">Dipilih</string>
+    <string name="double_roll_alternative">Hasil lain</string>
+</resources>
