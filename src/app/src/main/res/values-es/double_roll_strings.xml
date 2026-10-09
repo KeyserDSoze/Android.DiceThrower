@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">Activar tiradas dobles en esta tirada</string>
+    <string name="double_roll_part">Incluir esta parte en tiradas dobles</string>
+    <string name="directional_double_roll_swipes">Deslizar (izquierda: peor, derecha: mejor, arriba: normal)</string>
+    <string name="double_roll_best">Tirada doble: mejor</string>
+    <string name="double_roll_worst">Tirada doble: peor</string>
+    <string name="double_roll_selected">Seleccionado</string>
+    <string name="double_roll_alternative">Otro resultado</string>
+</resources>
