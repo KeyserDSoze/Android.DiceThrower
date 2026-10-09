@@ -301,9 +301,9 @@ class RollDialogV2Test {
         }
 
         composeRule.onAllNodesWithContentDescription("Move down")[0].performClick()
-        // Roll name [0], first Part name [1], first Part expression [2].
+        // Target the first visible Part composer after reordering; input indices change as the editor evolves.
         composeRule.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("composer-expression"))
-        composeRule.onNodeWithTag("composer-expression").performTextReplacement("2*(1d20+1)")
+        composeRule.onAllNodes(hasTestTag("composer-expression"))[0].performTextReplacement("2*(1d20+1)")
         composeRule.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Save"))
         composeRule.onNodeWithText("Save").performClick()
         composeRule.runOnIdle {
