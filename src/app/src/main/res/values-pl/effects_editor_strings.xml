@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">Dodaj warunkowe premie lub kary. Warunki w grupie łączy AND, a grupy łączy OR.</string>
+    <string name="effects_formula_help">Formuły: f(x)=floor, c(x)=ceil, r(x)=round (połówki zaokrąglane od zera). Użyj {parts:Name}, aby odczytać sumę części. Wybierz tylko kości, tylko modyfikatory lub sumę dla każdego warunku i akcji.</string>
+    <string name="effects_or_group_number">OR Grupa %1$d</string>
+    <string name="effects_and_condition">AND Warunek %1$d</string>
+    <string name="effects_add_and">+ AND Warunek</string>
+    <string name="effects_add_or">+ OR Grupa</string>
+    <string name="effects_actions">Akcje (w kolejności)</string>
+    <string name="effects_add_action">+ Dodaj Akcja</string>
+    <string name="effects_add_bonus">+ Dodaj Premia</string>
+    <string name="effects_add_malus">+ Dodaj Kara</string>
+    <string name="effects_heading">Efekty</string>
+    <string name="effects_bonus">Premia</string>
+    <string name="effects_malus">Kara</string>
+    <string name="effects_name">Nazwa efektu</string>
+    <string name="effects_enabled">Efekt włączony</string>
+    <string name="effects_stop_following">Po aktywacji pomiń wszystkie kolejne efekty</string>
+    <string name="effects_or_groups">Warunki aktywacji</string>
+    <string name="effects_action">Akcja</string>
+    <string name="effects_scope">Zakres wartości</string>
+    <string name="effects_source">Źródło</string>
+    <string name="effects_target">Część</string>
+    <string name="effects_missing_part">Brak części</string>
+    <string name="effects_comparison">Porównanie</string>
+    <string name="effects_threshold">Formuła progu</string>
+    <string name="effects_scope_dice">Tylko kości</string>
+    <string name="effects_scope_modifiers">Tylko modyfikatory</string>
+    <string name="effects_scope_total">Suma</string>
+    <string name="effects_source_part">Wynik części</string>
+    <string name="effects_source_roll">Wynik rzutu</string>
+    <string name="effects_source_variable">Zmienna</string>
+    <string name="effects_action_add">Dodaj</string>
+    <string name="effects_action_subtract">Odejmij</string>
+    <string name="effects_action_multiply">Pomnóż</string>
+    <string name="effects_action_replace">Zastąp</string>
+    <string name="effects_action_reroll">Przerzuć</string>
+    <string name="effects_action_roll_after">Kolejny rzut</string>
+    <string name="effects_dice_expression">Wyrażenie kości (puste: powtórz część)</string>
+    <string name="effects_formula">Formuła</string>
+    <string name="effects_invalid">Sprawdź efekty: wymagane są nazwy, części docelowe i poprawne formuły.</string>
+    <string name="effects_trace_triggered">Uruchomiony</string>
+    <string name="effects_trace_skipped">Nieuruchomiony</string>
+</resources>

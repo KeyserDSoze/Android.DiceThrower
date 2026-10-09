@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">Додайте умовні бонуси або штрафи. Умови в групі поєднані через AND, а групи — через OR.</string>
+    <string name="effects_formula_help">Формули: f(x)=floor, c(x)=ceil, r(x)=round (половини округлюються від нуля). Використовуйте {parts:Name} для підсумку частини. Виберіть лише кубики, лише модифікатори або підсумок для кожної умови й дії.</string>
+    <string name="effects_or_group_number">OR Група %1$d</string>
+    <string name="effects_and_condition">AND Умова %1$d</string>
+    <string name="effects_add_and">+ AND Умова</string>
+    <string name="effects_add_or">+ OR Група</string>
+    <string name="effects_actions">Дії (за порядком)</string>
+    <string name="effects_add_action">+ Додати Дія</string>
+    <string name="effects_add_bonus">+ Додати Бонус</string>
+    <string name="effects_add_malus">+ Додати Штраф</string>
+    <string name="effects_heading">Ефекти</string>
+    <string name="effects_bonus">Бонус</string>
+    <string name="effects_malus">Штраф</string>
+    <string name="effects_name">Назва ефекту</string>
+    <string name="effects_enabled">Ефект увімкнено</string>
+    <string name="effects_stop_following">Після спрацювання пропустити всі наступні ефекти</string>
+    <string name="effects_or_groups">Умови активації</string>
+    <string name="effects_action">Дія</string>
+    <string name="effects_scope">Область значення</string>
+    <string name="effects_source">Джерело</string>
+    <string name="effects_target">Частина</string>
+    <string name="effects_missing_part">Частину не знайдено</string>
+    <string name="effects_comparison">Порівняння</string>
+    <string name="effects_threshold">Формула порога</string>
+    <string name="effects_scope_dice">Лише кубики</string>
+    <string name="effects_scope_modifiers">Лише модифікатори</string>
+    <string name="effects_scope_total">Разом</string>
+    <string name="effects_source_part">Результат частини</string>
+    <string name="effects_source_roll">Результат кидка</string>
+    <string name="effects_source_variable">Змінна</string>
+    <string name="effects_action_add">Додати</string>
+    <string name="effects_action_subtract">Відняти</string>
+    <string name="effects_action_multiply">Помножити</string>
+    <string name="effects_action_replace">Замінити</string>
+    <string name="effects_action_reroll">Перекинути</string>
+    <string name="effects_action_roll_after">Додатковий кидок</string>
+    <string name="effects_dice_expression">Вираз кубиків (пусто: повторити частину)</string>
+    <string name="effects_formula">Формула</string>
+    <string name="effects_invalid">Перевірте ефекти: потрібні назви, цільові частини й коректні формули.</string>
+    <string name="effects_trace_triggered">Спрацював</string>
+    <string name="effects_trace_skipped">Не спрацював</string>
+</resources>
