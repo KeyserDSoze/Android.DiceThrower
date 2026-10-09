@@ -13,6 +13,19 @@ import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.AppSettings
 import com.keyserdsoze.dicethrower.model.CharacterImageRef
 import com.keyserdsoze.dicethrower.model.CharacterProfile
+import com.keyserdsoze.dicethrower.data.AppDataValidator
+import com.keyserdsoze.dicethrower.model.EffectAction
+import com.keyserdsoze.dicethrower.model.EffectActionType
+import com.keyserdsoze.dicethrower.model.EffectActivationGroup
+import com.keyserdsoze.dicethrower.model.EffectCondition
+import com.keyserdsoze.dicethrower.model.EffectType
+import com.keyserdsoze.dicethrower.model.EffectValueScope
+import com.keyserdsoze.dicethrower.model.RollDefinition
+import com.keyserdsoze.dicethrower.model.RollEffect
+import com.keyserdsoze.dicethrower.model.RollLog
+import com.keyserdsoze.dicethrower.model.RollLogEffectStep
+import com.keyserdsoze.dicethrower.model.RollLogPart
+import com.keyserdsoze.dicethrower.model.RollSubgroup
 import com.keyserdsoze.dicethrower.model.ConflictPolicy
 import com.keyserdsoze.dicethrower.model.RollButtonPosition
 import kotlinx.coroutines.runBlocking
@@ -244,6 +257,89 @@ class CloudSyncEngineTest {
 
         assertEquals(SyncStatusKind.ERROR, result.status.kind)
         assertEquals(SyncErrorKind.UNKNOWN, result.status.error)
+    }
+
+    @Test
+    fun effectsAndEvaluatedRollHistorySurviveMultiDeviceSync() = runBlocking {
+        val remote = FakeRemote()
+        val original = effectsData("device-a")
+        val deviceA = FakeLocal("device-a", original)
+        val deviceB = FakeLocal("device-b", AppData())
+        val engineA = engine(deviceA, remote, 100L)
+        val engineB = engine(deviceB, remote, 200L)
+
+        assertTrue(AppDataValidator.validate(original).isEmpty())
+        assertEquals(SyncStatusKind.SYNCED, engineA.sync().status.kind)
+        assertEquals(SyncStatusKind.SYNCED, engineB.sync().status.kind)
+        val source = deviceA.data
+        assertEquals(source.rolls.single().effects, deviceB.data.rolls.single().effects)
+        assertEquals(source.logs.single().effectSteps, deviceB.data.logs.single().effectSteps)
+        assertEquals(source.logs.single().parts, deviceB.data.logs.single().parts)
+        assertTrue(AppDataValidator.validate(deviceB.data).isEmpty())
+        assertEquals(1, remote.putCharacterCalls)
+        engineB.sync()
+        assertEquals(1, remote.putCharacterCalls)
+    }
+
+    @Test
+    fun competingEffectsEditsAreDetectedAsRealCharacterConflicts() = runBlocking {
+        val remote = FakeRemote()
+        val deviceA = FakeLocal("device-a", effectsData("device-a"))
+        val deviceB = FakeLocal("device-b", AppData())
+        val engineA = engine(deviceA, remote, 100L)
+        val engineB = engine(deviceB, remote, 200L)
+        engineA.sync()
+        engineB.sync()
+
+        fun updateEffect(device: FakeLocal, name: String, writer: String, now: Long) {
+            val original = device.data
+            val changed = original.copy(rolls = original.rolls.map { roll ->
+                roll.copy(effects = roll.effects.map { effect -> effect.copy(name = name) })
+            })
+            device.data = SyncMetadataManager.reconcileLocalEdit(original, changed, writer, now)
+        }
+
+        updateEffect(deviceA, "Remote bonus", "device-a", 300L)
+        updateEffect(deviceB, "Offline bonus", "device-b", 310L)
+        assertEquals(SyncStatusKind.SYNCED, engineA.sync().status.kind)
+        val result = engineB.sync()
+        assertEquals(SyncStatusKind.CONFLICT, result.status.kind)
+        assertEquals(SyncConflictKind.CHARACTER_DIVERGED, result.status.conflicts.single().kind)
+        assertEquals("Offline bonus", deviceB.data.rolls.single().effects.single().name)
+        assertEquals("Remote bonus", remote.characters.getValue(CHARACTER_ID).data.rolls.single().effects.single().name)
+    }
+
+    private fun effectsData(writer: String): AppData {
+        val part = RollSubgroup("damage", "Damage", "1d6+2")
+        val rule = RollEffect(
+            id = "bonus-rule", name = "Critical bonus", type = EffectType.BONUS,
+            activationGroups = listOf(EffectActivationGroup("activation", listOf(
+                EffectCondition("threshold", partId = part.id, threshold = "6"),
+            ))),
+            actions = listOf(EffectAction("double", EffectActionType.MULTIPLY,
+                targetPartId = part.id, scope = EffectValueScope.DICE_ONLY,
+                expression = "2")),
+        )
+        val roll = RollDefinition(
+            id = "roll", characterId = CHARACTER_ID, name = "Damage",
+            expression = "(1d6+2)", subgroups = listOf(part), effects = listOf(rule),
+        )
+        val log = RollLog(
+            id = "history", characterId = CHARACTER_ID, rollDefinitionId = roll.id,
+            rollName = roll.name, expression = roll.expression,
+            total = 14, detail = "1d6[6] +2", timestamp = 111L,
+            parts = listOf(RollLogPart("Damage", "1d6+2", 14,
+                "1d6[6] +2", originalTotal = 8)),
+            effectSteps = listOf(RollLogEffectStep(
+                effectId = rule.id, name = rule.name, type = EffectType.BONUS,
+                activated = true,
+            )),
+        )
+        return SyncMetadataManager.ensureMetadata(
+            AppData(characters = listOf(CharacterProfile(CHARACTER_ID, "Hero")),
+                rolls = listOf(roll), logs = listOf(log)),
+            writer, 10L,
+        )
     }
 
     private fun engine(local: FakeLocal, remote: FakeRemote, now: Long): CloudSyncEngine =

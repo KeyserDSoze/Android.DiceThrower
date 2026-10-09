@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">条件付きのボーナスやペナルティを追加します。グループ内の条件は AND、グループ間は OR で結合します。</string>
+    <string name="effects_formula_help">式：f(x)=floor、c(x)=ceil、r(x)=round（0.5 はゼロから遠い方向に丸める）。パート合計には {parts:Name} を使用します。各条件とアクションでダイスのみ、修正値のみ、合計を選べます。</string>
+    <string name="effects_or_group_number">OR グループ %1$d</string>
+    <string name="effects_and_condition">AND 条件 %1$d</string>
+    <string name="effects_add_and">+ AND 条件</string>
+    <string name="effects_add_or">+ OR グループ</string>
+    <string name="effects_actions">アクション (順番どおり)</string>
+    <string name="effects_add_action">+ 追加 アクション</string>
+    <string name="effects_add_bonus">+ 追加 ボーナス</string>
+    <string name="effects_add_malus">+ 追加 ペナルティ</string>
+    <string name="effects_heading">効果</string>
+    <string name="effects_bonus">ボーナス</string>
+    <string name="effects_malus">ペナルティ</string>
+    <string name="effects_name">効果名</string>
+    <string name="effects_enabled">効果を有効化</string>
+    <string name="effects_stop_following">発動したら以降の効果をすべてスキップ</string>
+    <string name="effects_or_groups">発動条件</string>
+    <string name="effects_action">アクション</string>
+    <string name="effects_scope">値の対象</string>
+    <string name="effects_source">参照元</string>
+    <string name="effects_target">パート</string>
+    <string name="effects_missing_part">パートがありません</string>
+    <string name="effects_comparison">比較</string>
+    <string name="effects_threshold">しきい値の式</string>
+    <string name="effects_scope_dice">ダイスのみ</string>
+    <string name="effects_scope_modifiers">修正値のみ</string>
+    <string name="effects_scope_total">合計</string>
+    <string name="effects_source_part">パートの結果</string>
+    <string name="effects_source_roll">ロールの結果</string>
+    <string name="effects_source_variable">変数</string>
+    <string name="effects_action_add">加算</string>
+    <string name="effects_action_subtract">減算</string>
+    <string name="effects_action_multiply">乗算</string>
+    <string name="effects_action_replace">置換</string>
+    <string name="effects_action_reroll">振り直し</string>
+    <string name="effects_action_roll_after">追加ロール</string>
+    <string name="effects_dice_expression">ダイス式（空欄：パートを再実行）</string>
+    <string name="effects_formula">式</string>
+    <string name="effects_invalid">効果を確認してください。名前、対象パート、正しい式が必要です。</string>
+    <string name="effects_trace_triggered">発動</string>
+    <string name="effects_trace_skipped">未発動</string>
+</resources>

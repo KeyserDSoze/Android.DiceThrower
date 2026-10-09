@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">શરતી બોનસ અથવા દંડના નિયમો ઉમેરો. જૂથની શરતો AND વડે અને જૂથો OR વડે જોડાય છે.</string>
+    <string name="effects_formula_help">સૂત્રો: f(x)=floor, c(x)=ceil, r(x)=round (અડધા મૂલ્યો શૂન્યથી દૂર પૂર્ણાંક થાય છે). ભાગના કુલ માટે {parts:Name} વાપરો. દરેક શરત અને ક્રિયા માટે માત્ર પાસા, માત્ર સુધારકો અથવા કુલ પસંદ કરો.</string>
+    <string name="effects_or_group_number">OR જૂથ %1$d</string>
+    <string name="effects_and_condition">AND શરત %1$d</string>
+    <string name="effects_add_and">+ AND શરત</string>
+    <string name="effects_add_or">+ OR જૂથ</string>
+    <string name="effects_actions">ક્રિયાઓ (ક્રમમાં)</string>
+    <string name="effects_add_action">+ ઉમેરો ક્રિયા</string>
+    <string name="effects_add_bonus">+ ઉમેરો બોનસ</string>
+    <string name="effects_add_malus">+ ઉમેરો દંડ</string>
+    <string name="effects_heading">અસરો</string>
+    <string name="effects_bonus">બોનસ</string>
+    <string name="effects_malus">દંડ</string>
+    <string name="effects_name">અસરનું નામ</string>
+    <string name="effects_enabled">અસર ચાલુ છે</string>
+    <string name="effects_stop_following">સક્રિય થાય ત્યારે પછીની બધી અસરો છોડો</string>
+    <string name="effects_or_groups">સક્રિય થવાની શરતો</string>
+    <string name="effects_action">ક્રિયા</string>
+    <string name="effects_scope">મૂલ્યનો વ્યાપ</string>
+    <string name="effects_source">સ્ત્રોત</string>
+    <string name="effects_target">ભાગ</string>
+    <string name="effects_missing_part">ભાગ મળ્યો નથી</string>
+    <string name="effects_comparison">સરખામણી</string>
+    <string name="effects_threshold">મર્યાદાનું સૂત્ર</string>
+    <string name="effects_scope_dice">માત્ર પાસા</string>
+    <string name="effects_scope_modifiers">માત્ર સુધારકો</string>
+    <string name="effects_scope_total">કુલ</string>
+    <string name="effects_source_part">ભાગનું પરિણામ</string>
+    <string name="effects_source_roll">ફેંકવાનું પરિણામ</string>
+    <string name="effects_source_variable">ચલ</string>
+    <string name="effects_action_add">ઉમેરો</string>
+    <string name="effects_action_subtract">બાદ કરો</string>
+    <string name="effects_action_multiply">ગુણાકાર કરો</string>
+    <string name="effects_action_replace">બદલો</string>
+    <string name="effects_action_reroll">ફરી ફેંકો</string>
+    <string name="effects_action_roll_after">વધારાનો ફેંક</string>
+    <string name="effects_dice_expression">પાસાનું સમીકરણ (ખાલી: ભાગ ફરી કરો)</string>
+    <string name="effects_formula">સૂત્ર</string>
+    <string name="effects_invalid">અસરો તપાસો: નામ, લક્ષ્ય ભાગ અને માન્ય સૂત્રો જરૂરી છે.</string>
+    <string name="effects_trace_triggered">સક્રિય થયું</string>
+    <string name="effects_trace_skipped">સક્રિય થયું નથી</string>
+</resources>

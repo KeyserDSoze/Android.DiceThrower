@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">Adaugă reguli condiționale de bonus sau penalizare. Condițiile dintr-un grup folosesc AND, iar grupurile folosesc OR.</string>
+    <string name="effects_formula_help">Formule: f(x)=floor, c(x)=ceil, r(x)=round (jumătățile se rotunjesc departe de zero). Folosește {parts:Name} pentru totalul părții. Alege doar zaruri, doar modificatori sau total pentru fiecare condiție și acțiune.</string>
+    <string name="effects_or_group_number">OR Grup %1$d</string>
+    <string name="effects_and_condition">AND Condiție %1$d</string>
+    <string name="effects_add_and">+ AND Condiție</string>
+    <string name="effects_add_or">+ OR Grup</string>
+    <string name="effects_actions">Acțiuni (în ordine)</string>
+    <string name="effects_add_action">+ Adaugă Acțiune</string>
+    <string name="effects_add_bonus">+ Adaugă Bonus</string>
+    <string name="effects_add_malus">+ Adaugă Penalizare</string>
+    <string name="effects_heading">Efecte</string>
+    <string name="effects_bonus">Bonus</string>
+    <string name="effects_malus">Penalizare</string>
+    <string name="effects_name">Numele efectului</string>
+    <string name="effects_enabled">Efect activ</string>
+    <string name="effects_stop_following">La activare, ignoră toate efectele următoare</string>
+    <string name="effects_or_groups">Condiții de activare</string>
+    <string name="effects_action">Acțiune</string>
+    <string name="effects_scope">Domeniul valorii</string>
+    <string name="effects_source">Sursă</string>
+    <string name="effects_target">Parte</string>
+    <string name="effects_missing_part">Parte lipsă</string>
+    <string name="effects_comparison">Comparație</string>
+    <string name="effects_threshold">Formula pragului</string>
+    <string name="effects_scope_dice">Doar zaruri</string>
+    <string name="effects_scope_modifiers">Doar modificatori</string>
+    <string name="effects_scope_total">Total</string>
+    <string name="effects_source_part">Rezultatul părții</string>
+    <string name="effects_source_roll">Rezultatul aruncării</string>
+    <string name="effects_source_variable">Variabilă</string>
+    <string name="effects_action_add">Adună</string>
+    <string name="effects_action_subtract">Scade</string>
+    <string name="effects_action_multiply">Înmulțește</string>
+    <string name="effects_action_replace">Înlocuiește</string>
+    <string name="effects_action_reroll">Aruncă din nou</string>
+    <string name="effects_action_roll_after">Aruncare suplimentară</string>
+    <string name="effects_dice_expression">Expresie de zaruri (gol: repetă partea)</string>
+    <string name="effects_formula">Formulă</string>
+    <string name="effects_invalid">Verifică efectele: sunt necesare nume, părți țintă și formule valide.</string>
+    <string name="effects_trace_triggered">Activat</string>
+    <string name="effects_trace_skipped">Neactivat</string>
+</resources>

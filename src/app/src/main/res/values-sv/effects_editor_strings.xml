@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">Lägg till villkorade bonusar eller minus. Villkor i en grupp kombineras med AND, grupper med OR.</string>
+    <string name="effects_formula_help">Formler: f(x)=floor, c(x)=ceil, r(x)=round (halvtal avrundas bort från noll). Använd {parts:Name} för delsummor. Välj endast tärningar, endast modifierare eller totalt för varje villkor och åtgärd.</string>
+    <string name="effects_or_group_number">OR Grupp %1$d</string>
+    <string name="effects_and_condition">AND Villkor %1$d</string>
+    <string name="effects_add_and">+ AND Villkor</string>
+    <string name="effects_add_or">+ OR Grupp</string>
+    <string name="effects_actions">Åtgärder (i ordning)</string>
+    <string name="effects_add_action">+ Lägg till Åtgärd</string>
+    <string name="effects_add_bonus">+ Lägg till Bonus</string>
+    <string name="effects_add_malus">+ Lägg till Minus</string>
+    <string name="effects_heading">Effekter</string>
+    <string name="effects_bonus">Bonus</string>
+    <string name="effects_malus">Minus</string>
+    <string name="effects_name">Effektnamn</string>
+    <string name="effects_enabled">Effekt aktiverad</string>
+    <string name="effects_stop_following">Hoppa över alla följande effekter när den utlöses</string>
+    <string name="effects_or_groups">Aktiveringsvillkor</string>
+    <string name="effects_action">Åtgärd</string>
+    <string name="effects_scope">Värdeomfattning</string>
+    <string name="effects_source">Källa</string>
+    <string name="effects_target">Del</string>
+    <string name="effects_missing_part">Del saknas</string>
+    <string name="effects_comparison">Jämförelse</string>
+    <string name="effects_threshold">Tröskelformel</string>
+    <string name="effects_scope_dice">Endast tärningar</string>
+    <string name="effects_scope_modifiers">Endast modifierare</string>
+    <string name="effects_scope_total">Totalt</string>
+    <string name="effects_source_part">Delresultat</string>
+    <string name="effects_source_roll">Kastresultat</string>
+    <string name="effects_source_variable">Variabel</string>
+    <string name="effects_action_add">Addera</string>
+    <string name="effects_action_subtract">Subtrahera</string>
+    <string name="effects_action_multiply">Multiplicera</string>
+    <string name="effects_action_replace">Ersätt</string>
+    <string name="effects_action_reroll">Slå om</string>
+    <string name="effects_action_roll_after">Extra kast</string>
+    <string name="effects_dice_expression">Tärningsuttryck (tomt: upprepa del)</string>
+    <string name="effects_formula">Formel</string>
+    <string name="effects_invalid">Kontrollera effekterna: namn, måldelar och giltiga formler krävs.</string>
+    <string name="effects_trace_triggered">Utlöst</string>
+    <string name="effects_trace_skipped">Inte utlöst</string>
+</resources>

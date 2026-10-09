@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">Ajoutez des règles conditionnelles de bonus ou de malus. Les conditions d’un groupe sont liées par AND et les groupes par OR.</string>
+    <string name="effects_formula_help">Formules : f(x)=floor, c(x)=ceil, r(x)=round (les demis sont arrondis loin de zéro). Utilisez {parts:Name} pour le total des parties. Choisissez les dés, les modificateurs ou le total pour chaque condition et action.</string>
+    <string name="effects_or_group_number">OR Groupe %1$d</string>
+    <string name="effects_and_condition">AND Condition %1$d</string>
+    <string name="effects_add_and">+ AND Condition</string>
+    <string name="effects_add_or">+ OR Groupe</string>
+    <string name="effects_actions">Actions (dans l’ordre)</string>
+    <string name="effects_add_action">+ Ajouter Action</string>
+    <string name="effects_add_bonus">+ Ajouter Bonus</string>
+    <string name="effects_add_malus">+ Ajouter Malus</string>
+    <string name="effects_heading">Effets</string>
+    <string name="effects_bonus">Bonus</string>
+    <string name="effects_malus">Malus</string>
+    <string name="effects_name">Nom de l’effet</string>
+    <string name="effects_enabled">Effet activé</string>
+    <string name="effects_stop_following">Lors du déclenchement, ignorer tous les effets suivants</string>
+    <string name="effects_or_groups">Conditions d’activation</string>
+    <string name="effects_action">Action</string>
+    <string name="effects_scope">Portée de la valeur</string>
+    <string name="effects_source">Source</string>
+    <string name="effects_target">Partie</string>
+    <string name="effects_missing_part">Partie manquante</string>
+    <string name="effects_comparison">Comparaison</string>
+    <string name="effects_threshold">Formule du seuil</string>
+    <string name="effects_scope_dice">Dés uniquement</string>
+    <string name="effects_scope_modifiers">Modificateurs uniquement</string>
+    <string name="effects_scope_total">Total</string>
+    <string name="effects_source_part">Résultat de la partie</string>
+    <string name="effects_source_roll">Résultat du lancer</string>
+    <string name="effects_source_variable">Variable</string>
+    <string name="effects_action_add">Ajouter</string>
+    <string name="effects_action_subtract">Soustraire</string>
+    <string name="effects_action_multiply">Multiplier</string>
+    <string name="effects_action_replace">Remplacer</string>
+    <string name="effects_action_reroll">Relancer</string>
+    <string name="effects_action_roll_after">Lancer ensuite</string>
+    <string name="effects_dice_expression">Expression de dés (vide : répéter la partie)</string>
+    <string name="effects_formula">Formule</string>
+    <string name="effects_invalid">Vérifiez les effets : noms, parties cibles et formules valides sont obligatoires.</string>
+    <string name="effects_trace_triggered">Déclenché</string>
+    <string name="effects_trace_skipped">Non déclenché</string>
+</resources>

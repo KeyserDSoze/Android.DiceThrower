@@ -113,9 +113,9 @@ export default function App() {
             </section>
 
             <section className="metric-strip">
-              <div><strong>8</strong><span>dice types</span></div>
+              <div><strong>9</strong><span>dice types</span></div>
               <div><strong>∞</strong><span>custom rolls</span></div>
-              <div><strong>40</strong><span>languages planned</span></div>
+              <div><strong>40</strong><span>Android languages</span></div>
               <div><strong>0</strong><span>accounts required</span></div>
             </section>
 

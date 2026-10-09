@@ -19,10 +19,10 @@ The app always stores its primary working copy on the user's device. In standalo
 - optional character images selected through Android's Storage Access Framework and copied into private app storage;
 - free-form character tags;
 - locally defined character modifiers;
-- dice-roll names, parameterized expressions and level-scaling rules;
+- dice-roll names, parameterized expressions, level-scaling rules, and optional user-defined Bonus/Malus Effects (activation thresholds, actions and target Part references);
 - dashboard grouping and ordering;
 - app settings;
-- dice-roll history.
+- dice-roll history, including optional per-roll effect evaluation traces (original/final Part totals, conditions and generated dice details).
 - synchronization revision metadata and a random, non-personal local installation writer ID.
 - when Google is connected: stable Google account ID, email, optional display name and local connection/reconciliation flags in Android no-backup storage; no password or OAuth/ID token is persisted.
 

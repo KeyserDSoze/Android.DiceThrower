@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">مشروط بونس یا جرمانے کے اصول شامل کریں۔ ایک گروپ کی شرائط AND اور گروپ OR کے ذریعے ملتے ہیں۔</string>
+    <string name="effects_formula_help">فارمولے: f(x)=floor، c(x)=ceil، r(x)=round (آدھی قدر صفر سے دور گول ہوتی ہے)۔ حصے کے کل کے لیے {parts:Name} استعمال کریں۔ ہر شرط اور اقدام کے لیے صرف پاسے، صرف ترمیم کنندگان یا کل منتخب کریں۔</string>
+    <string name="effects_or_group_number">OR گروپ %1$d</string>
+    <string name="effects_and_condition">AND شرط %1$d</string>
+    <string name="effects_add_and">+ AND شرط</string>
+    <string name="effects_add_or">+ OR گروپ</string>
+    <string name="effects_actions">اقدامات (ترتیب سے)</string>
+    <string name="effects_add_action">+ شامل کریں اقدام</string>
+    <string name="effects_add_bonus">+ شامل کریں بونس</string>
+    <string name="effects_add_malus">+ شامل کریں جرمانہ</string>
+    <string name="effects_heading">اثرات</string>
+    <string name="effects_bonus">بونس</string>
+    <string name="effects_malus">جرمانہ</string>
+    <string name="effects_name">اثر کا نام</string>
+    <string name="effects_enabled">اثر فعال</string>
+    <string name="effects_stop_following">فعال ہونے پر بعد کے تمام اثرات چھوڑ دیں</string>
+    <string name="effects_or_groups">فعال ہونے کی شرائط</string>
+    <string name="effects_action">اقدام</string>
+    <string name="effects_scope">قدر کا دائرہ</string>
+    <string name="effects_source">ماخذ</string>
+    <string name="effects_target">حصہ</string>
+    <string name="effects_missing_part">حصہ موجود نہیں</string>
+    <string name="effects_comparison">موازنہ</string>
+    <string name="effects_threshold">حد کا فارمولا</string>
+    <string name="effects_scope_dice">صرف پاسے</string>
+    <string name="effects_scope_modifiers">صرف ترمیم کنندگان</string>
+    <string name="effects_scope_total">کل</string>
+    <string name="effects_source_part">حصے کا نتیجہ</string>
+    <string name="effects_source_roll">پھینکنے کا نتیجہ</string>
+    <string name="effects_source_variable">متغیر</string>
+    <string name="effects_action_add">جمع</string>
+    <string name="effects_action_subtract">تفریق</string>
+    <string name="effects_action_multiply">ضرب</string>
+    <string name="effects_action_replace">تبدیل</string>
+    <string name="effects_action_reroll">دوبارہ پھینکیں</string>
+    <string name="effects_action_roll_after">اضافی پھینک</string>
+    <string name="effects_dice_expression">پاسوں کی عبارت (خالی: حصہ دہرائیں)</string>
+    <string name="effects_formula">فارمولا</string>
+    <string name="effects_invalid">اثرات چیک کریں: نام، ہدف حصے اور درست فارمولے ضروری ہیں۔</string>
+    <string name="effects_trace_triggered">فعال ہوا</string>
+    <string name="effects_trace_skipped">فعال نہیں ہوا</string>
+</resources>

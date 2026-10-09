@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">အခြေအနေပေါ်မူတည်သော အပိုဆု သို့မဟုတ် ပြစ်ဒဏ်စည်းမျဉ်းများ ထည့်ပါ။ အုပ်စုအတွင်း အခြေအနေများကို AND ဖြင့်၊ အုပ်စုများကို OR ဖြင့် ချိတ်ဆက်သည်။</string>
+    <string name="effects_formula_help">ဖော်မြူလာများ: f(x)=floor, c(x)=ceil, r(x)=round (တစ်ဝက်တန်ဖိုးကို သုညမှဝေးရာသို့ အနီးစပ်ဆုံးကိန်းပြည့်လုပ်သည်)။ အပိုင်းစုစုပေါင်းအတွက် {parts:Name} ကို အသုံးပြုပါ။ အခြေအနေနှင့် လုပ်ဆောင်ချက်တိုင်းအတွက် အန်စာတုံးသာ၊ ပြင်ဆင်ကိန်းသာ သို့မဟုတ် စုစုပေါင်းကို ရွေးပါ။</string>
+    <string name="effects_or_group_number">OR အုပ်စု %1$d</string>
+    <string name="effects_and_condition">AND အခြေအနေ %1$d</string>
+    <string name="effects_add_and">+ AND အခြေအနေ</string>
+    <string name="effects_add_or">+ OR အုပ်စု</string>
+    <string name="effects_actions">လုပ်ဆောင်ချက်များ (အစဉ်လိုက်)</string>
+    <string name="effects_add_action">+ ထည့်ရန် လုပ်ဆောင်ချက်</string>
+    <string name="effects_add_bonus">+ ထည့်ရန် အပိုဆု</string>
+    <string name="effects_add_malus">+ ထည့်ရန် ပြစ်ဒဏ်</string>
+    <string name="effects_heading">အကျိုးသက်ရောက်မှုများ</string>
+    <string name="effects_bonus">အပိုဆု</string>
+    <string name="effects_malus">ပြစ်ဒဏ်</string>
+    <string name="effects_name">အကျိုးသက်ရောက်မှုအမည်</string>
+    <string name="effects_enabled">အကျိုးသက်ရောက်မှု ဖွင့်ထားသည်</string>
+    <string name="effects_stop_following">စတင်သက်ရောက်လျှင် နောက်ထပ်အကျိုးသက်ရောက်မှုအားလုံးကို ကျော်ပါ</string>
+    <string name="effects_or_groups">စတင်သက်ရောက်ရန် အခြေအနေများ</string>
+    <string name="effects_action">လုပ်ဆောင်ချက်</string>
+    <string name="effects_scope">တန်ဖိုးအပိုင်းအခြား</string>
+    <string name="effects_source">အရင်းအမြစ်</string>
+    <string name="effects_target">အပိုင်း</string>
+    <string name="effects_missing_part">အပိုင်းမရှိပါ</string>
+    <string name="effects_comparison">နှိုင်းယှဉ်ခြင်း</string>
+    <string name="effects_threshold">ကန့်သတ်တန်ဖိုး ဖော်မြူလာ</string>
+    <string name="effects_scope_dice">အန်စာတုံးသာ</string>
+    <string name="effects_scope_modifiers">ပြင်ဆင်ကိန်းသာ</string>
+    <string name="effects_scope_total">စုစုပေါင်း</string>
+    <string name="effects_source_part">အပိုင်းရလဒ်</string>
+    <string name="effects_source_roll">ပစ်ချက်ရလဒ်</string>
+    <string name="effects_source_variable">ပြောင်းလဲကိန်း</string>
+    <string name="effects_action_add">ပေါင်းရန်</string>
+    <string name="effects_action_subtract">နုတ်ရန်</string>
+    <string name="effects_action_multiply">မြှောက်ရန်</string>
+    <string name="effects_action_replace">အစားထိုးရန်</string>
+    <string name="effects_action_reroll">ပြန်ပစ်ရန်</string>
+    <string name="effects_action_roll_after">ထပ်ပစ်ရန်</string>
+    <string name="effects_dice_expression">အန်စာတုံးဖော်ပြချက် (ဗလာ: အပိုင်းပြန်လုပ်)</string>
+    <string name="effects_formula">ဖော်မြူလာ</string>
+    <string name="effects_invalid">အကျိုးသက်ရောက်မှုများကို စစ်ဆေးပါ။ အမည်၊ ပစ်မှတ်အပိုင်းနှင့် မှန်ကန်သောဖော်မြူလာ လိုအပ်သည်။</string>
+    <string name="effects_trace_triggered">စတင်သက်ရောက်ပြီး</string>
+    <string name="effects_trace_skipped">မသက်ရောက်သေး</string>
+</resources>

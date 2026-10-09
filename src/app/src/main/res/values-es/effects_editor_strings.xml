@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">Añade reglas condicionales de bonificación o penalización. Las condiciones de un grupo se combinan con AND; los grupos, con OR.</string>
+    <string name="effects_formula_help">Fórmulas: f(x)=floor, c(x)=ceil y r(x)=round (los medios se alejan de cero). Usa {parts:Name} para los totales de las partes. Elige solo dados, solo modificadores o total para cada condición y acción.</string>
+    <string name="effects_or_group_number">OR Grupo %1$d</string>
+    <string name="effects_and_condition">AND Condición %1$d</string>
+    <string name="effects_add_and">+ AND Condición</string>
+    <string name="effects_add_or">+ OR Grupo</string>
+    <string name="effects_actions">Acciones (por orden)</string>
+    <string name="effects_add_action">+ Añadir Acción</string>
+    <string name="effects_add_bonus">+ Añadir Bonificación</string>
+    <string name="effects_add_malus">+ Añadir Penalización</string>
+    <string name="effects_heading">Efectos</string>
+    <string name="effects_bonus">Bonificación</string>
+    <string name="effects_malus">Penalización</string>
+    <string name="effects_name">Nombre del efecto</string>
+    <string name="effects_enabled">Efecto activado</string>
+    <string name="effects_stop_following">Al activarse, omitir todos los efectos siguientes</string>
+    <string name="effects_or_groups">Condiciones de activación</string>
+    <string name="effects_action">Acción</string>
+    <string name="effects_scope">Ámbito del valor</string>
+    <string name="effects_source">Origen</string>
+    <string name="effects_target">Parte</string>
+    <string name="effects_missing_part">Falta una parte</string>
+    <string name="effects_comparison">Comparación</string>
+    <string name="effects_threshold">Fórmula del umbral</string>
+    <string name="effects_scope_dice">Solo dados</string>
+    <string name="effects_scope_modifiers">Solo modificadores</string>
+    <string name="effects_scope_total">Total</string>
+    <string name="effects_source_part">Resultado de la parte</string>
+    <string name="effects_source_roll">Resultado del lanzamiento</string>
+    <string name="effects_source_variable">Variable</string>
+    <string name="effects_action_add">Sumar</string>
+    <string name="effects_action_subtract">Restar</string>
+    <string name="effects_action_multiply">Multiplicar</string>
+    <string name="effects_action_replace">Sustituir</string>
+    <string name="effects_action_reroll">Volver a tirar</string>
+    <string name="effects_action_roll_after">Tirada posterior</string>
+    <string name="effects_dice_expression">Expresión de dados (vacía: repetir parte)</string>
+    <string name="effects_formula">Fórmula</string>
+    <string name="effects_invalid">Revisa los efectos: se necesitan nombres, partes de destino y fórmulas válidas.</string>
+    <string name="effects_trace_triggered">Activado</string>
+    <string name="effects_trace_skipped">No activado</string>
+</resources>

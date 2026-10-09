@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">Feltételes bónuszok vagy hátrányok hozzáadása. A csoporton belüli feltételeket AND, a csoportokat OR kapcsolja össze.</string>
+    <string name="effects_formula_help">Képletek: f(x)=floor, c(x)=ceil, r(x)=round (a feleket nullától távolabb kerekíti). A {parts:Name} a rész összegét jelöli. Válaszd a csak kockák, csak módosítók vagy összesen értéket minden feltételnél és műveletnél.</string>
+    <string name="effects_or_group_number">OR Csoport %1$d</string>
+    <string name="effects_and_condition">AND Feltétel %1$d</string>
+    <string name="effects_add_and">+ AND Feltétel</string>
+    <string name="effects_add_or">+ OR Csoport</string>
+    <string name="effects_actions">Műveletek (sorrendben)</string>
+    <string name="effects_add_action">+ Hozzáadás Művelet</string>
+    <string name="effects_add_bonus">+ Hozzáadás Bónusz</string>
+    <string name="effects_add_malus">+ Hozzáadás Hátrány</string>
+    <string name="effects_heading">Hatások</string>
+    <string name="effects_bonus">Bónusz</string>
+    <string name="effects_malus">Hátrány</string>
+    <string name="effects_name">Hatás neve</string>
+    <string name="effects_enabled">Hatás engedélyezve</string>
+    <string name="effects_stop_following">Aktiváláskor minden további hatás kihagyása</string>
+    <string name="effects_or_groups">Aktiválási feltételek</string>
+    <string name="effects_action">Művelet</string>
+    <string name="effects_scope">Értéktartomány</string>
+    <string name="effects_source">Forrás</string>
+    <string name="effects_target">Rész</string>
+    <string name="effects_missing_part">Hiányzó rész</string>
+    <string name="effects_comparison">Összehasonlítás</string>
+    <string name="effects_threshold">Küszöbképlet</string>
+    <string name="effects_scope_dice">Csak kockák</string>
+    <string name="effects_scope_modifiers">Csak módosítók</string>
+    <string name="effects_scope_total">Összesen</string>
+    <string name="effects_source_part">Rész eredménye</string>
+    <string name="effects_source_roll">Dobás eredménye</string>
+    <string name="effects_source_variable">Változó</string>
+    <string name="effects_action_add">Hozzáad</string>
+    <string name="effects_action_subtract">Kivon</string>
+    <string name="effects_action_multiply">Szoroz</string>
+    <string name="effects_action_replace">Felülír</string>
+    <string name="effects_action_reroll">Újradob</string>
+    <string name="effects_action_roll_after">Kiegészítő dobás</string>
+    <string name="effects_dice_expression">Kockakifejezés (üres: rész ismétlése)</string>
+    <string name="effects_formula">Képlet</string>
+    <string name="effects_invalid">Ellenőrizd a hatásokat: név, célrész és érvényes képlet szükséges.</string>
+    <string name="effects_trace_triggered">Aktiválódott</string>
+    <string name="effects_trace_skipped">Nem aktiválódott</string>
+</resources>

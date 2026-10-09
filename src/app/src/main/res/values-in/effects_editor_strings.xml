@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">Tambahkan aturan bonus atau penalti bersyarat. Syarat dalam grup digabungkan dengan AND; antargrup dengan OR.</string>
+    <string name="effects_formula_help">Rumus: f(x)=floor, c(x)=ceil, r(x)=round (nilai setengah dibulatkan menjauhi nol). Gunakan {parts:Name} untuk total bagian. Pilih hanya dadu, hanya pengubah, atau total untuk setiap syarat dan tindakan.</string>
+    <string name="effects_or_group_number">OR Grup %1$d</string>
+    <string name="effects_and_condition">AND Syarat %1$d</string>
+    <string name="effects_add_and">+ AND Syarat</string>
+    <string name="effects_add_or">+ OR Grup</string>
+    <string name="effects_actions">Tindakan (berurutan)</string>
+    <string name="effects_add_action">+ Tambah Tindakan</string>
+    <string name="effects_add_bonus">+ Tambah Bonus</string>
+    <string name="effects_add_malus">+ Tambah Penalti</string>
+    <string name="effects_heading">Efek</string>
+    <string name="effects_bonus">Bonus</string>
+    <string name="effects_malus">Penalti</string>
+    <string name="effects_name">Nama efek</string>
+    <string name="effects_enabled">Efek aktif</string>
+    <string name="effects_stop_following">Saat terpicu, lewati semua efek berikutnya</string>
+    <string name="effects_or_groups">Syarat aktivasi</string>
+    <string name="effects_action">Tindakan</string>
+    <string name="effects_scope">Cakupan nilai</string>
+    <string name="effects_source">Sumber</string>
+    <string name="effects_target">Bagian</string>
+    <string name="effects_missing_part">Bagian tidak ada</string>
+    <string name="effects_comparison">Perbandingan</string>
+    <string name="effects_threshold">Rumus ambang</string>
+    <string name="effects_scope_dice">Dadu saja</string>
+    <string name="effects_scope_modifiers">Pengubah saja</string>
+    <string name="effects_scope_total">Total</string>
+    <string name="effects_source_part">Hasil bagian</string>
+    <string name="effects_source_roll">Hasil lemparan</string>
+    <string name="effects_source_variable">Variabel</string>
+    <string name="effects_action_add">Tambah</string>
+    <string name="effects_action_subtract">Kurangi</string>
+    <string name="effects_action_multiply">Kalikan</string>
+    <string name="effects_action_replace">Ganti</string>
+    <string name="effects_action_reroll">Lempar ulang</string>
+    <string name="effects_action_roll_after">Lemparan tambahan</string>
+    <string name="effects_dice_expression">Ekspresi dadu (kosong: ulangi bagian)</string>
+    <string name="effects_formula">Rumus</string>
+    <string name="effects_invalid">Periksa efek: nama, bagian target, dan rumus yang valid diperlukan.</string>
+    <string name="effects_trace_triggered">Terpicu</string>
+    <string name="effects_trace_skipped">Tidak terpicu</string>
+</resources>

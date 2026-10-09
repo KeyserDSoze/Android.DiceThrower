@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">ಷರತ್ತಿನ ಬೋನಸ್ ಅಥವಾ ದಂಡ ನಿಯಮಗಳನ್ನು ಸೇರಿಸಿ. ಗುಂಪಿನೊಳಗಿನ ಷರತ್ತುಗಳನ್ನು AND ಮತ್ತು ಗುಂಪುಗಳನ್ನು OR ಮೂಲಕ ಜೋಡಿಸಲಾಗುತ್ತದೆ.</string>
+    <string name="effects_formula_help">ಸೂತ್ರಗಳು: f(x)=floor, c(x)=ceil, r(x)=round (ಅರ್ಧ ಮೌಲ್ಯಗಳನ್ನು ಶೂನ್ಯದಿಂದ ದೂರಕ್ಕೆ ಪೂರ್ಣಾಂಕಗೊಳಿಸಲಾಗುತ್ತದೆ). ಭಾಗದ ಒಟ್ಟುಗಾಗಿ {parts:Name} ಬಳಸಿ. ಪ್ರತಿ ಷರತ್ತು ಮತ್ತು ಕ್ರಿಯೆಗೆ ಕೇವಲ ದಾಳಗಳು, ಕೇವಲ ಮಾರ್ಪಡಕಗಳು ಅಥವಾ ಒಟ್ಟು ಆಯ್ಕೆಮಾಡಿ.</string>
+    <string name="effects_or_group_number">OR ಗುಂಪು %1$d</string>
+    <string name="effects_and_condition">AND ಷರತ್ತು %1$d</string>
+    <string name="effects_add_and">+ AND ಷರತ್ತು</string>
+    <string name="effects_add_or">+ OR ಗುಂಪು</string>
+    <string name="effects_actions">ಕ್ರಿಯೆಗಳು (ಕ್ರಮದಲ್ಲಿ)</string>
+    <string name="effects_add_action">+ ಸೇರಿಸಿ ಕ್ರಿಯೆ</string>
+    <string name="effects_add_bonus">+ ಸೇರಿಸಿ ಬೋನಸ್</string>
+    <string name="effects_add_malus">+ ಸೇರಿಸಿ ದಂಡ</string>
+    <string name="effects_heading">ಪರಿಣಾಮಗಳು</string>
+    <string name="effects_bonus">ಬೋನಸ್</string>
+    <string name="effects_malus">ದಂಡ</string>
+    <string name="effects_name">ಪರಿಣಾಮದ ಹೆಸರು</string>
+    <string name="effects_enabled">ಪರಿಣಾಮ ಸಕ್ರಿಯ</string>
+    <string name="effects_stop_following">ಸಕ್ರಿಯವಾದಾಗ ನಂತರದ ಎಲ್ಲಾ ಪರಿಣಾಮಗಳನ್ನು ಬಿಡಿ</string>
+    <string name="effects_or_groups">ಸಕ್ರಿಯಗೊಳಿಸುವ ಷರತ್ತುಗಳು</string>
+    <string name="effects_action">ಕ್ರಿಯೆ</string>
+    <string name="effects_scope">ಮೌಲ್ಯದ ವ್ಯಾಪ್ತಿ</string>
+    <string name="effects_source">ಮೂಲ</string>
+    <string name="effects_target">ಭಾಗ</string>
+    <string name="effects_missing_part">ಭಾಗ ಸಿಗಲಿಲ್ಲ</string>
+    <string name="effects_comparison">ಹೋಲಿಕೆ</string>
+    <string name="effects_threshold">ಮಿತಿ ಸೂತ್ರ</string>
+    <string name="effects_scope_dice">ಕೇವಲ ದಾಳಗಳು</string>
+    <string name="effects_scope_modifiers">ಕೇವಲ ಮಾರ್ಪಡಕಗಳು</string>
+    <string name="effects_scope_total">ಒಟ್ಟು</string>
+    <string name="effects_source_part">ಭಾಗದ ಫಲಿತಾಂಶ</string>
+    <string name="effects_source_roll">ಎಸೆತದ ಫಲಿತಾಂಶ</string>
+    <string name="effects_source_variable">ಚರ</string>
+    <string name="effects_action_add">ಸೇರಿಸಿ</string>
+    <string name="effects_action_subtract">ಕಳೆಯಿರಿ</string>
+    <string name="effects_action_multiply">ಗುಣಿಸಿ</string>
+    <string name="effects_action_replace">ಬದಲಿಸಿ</string>
+    <string name="effects_action_reroll">ಮತ್ತೆ ಎಸೆಯಿರಿ</string>
+    <string name="effects_action_roll_after">ಹೆಚ್ಚುವರಿ ಎಸೆತ</string>
+    <string name="effects_dice_expression">ದಾಳದ ಅಭಿವ್ಯಕ್ತಿ (ಖಾಲಿ: ಭಾಗ ಮರುಕಳಿಸಿ)</string>
+    <string name="effects_formula">ಸೂತ್ರ</string>
+    <string name="effects_invalid">ಪರಿಣಾಮಗಳನ್ನು ಪರಿಶೀಲಿಸಿ: ಹೆಸರುಗಳು, ಗುರಿ ಭಾಗಗಳು ಮತ್ತು ಮಾನ್ಯ ಸೂತ್ರಗಳು ಅಗತ್ಯ.</string>
+    <string name="effects_trace_triggered">ಸಕ್ರಿಯವಾಯಿತು</string>
+    <string name="effects_trace_skipped">ಸಕ್ರಿಯವಾಗಲಿಲ್ಲ</string>
+</resources>

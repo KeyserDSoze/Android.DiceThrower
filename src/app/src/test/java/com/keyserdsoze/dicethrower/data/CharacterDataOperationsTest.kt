@@ -7,6 +7,14 @@ import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 import com.keyserdsoze.dicethrower.model.DiceMaterial
 import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.DiceTableTheme
+import com.keyserdsoze.dicethrower.model.EffectAction
+import com.keyserdsoze.dicethrower.model.EffectActionType
+import com.keyserdsoze.dicethrower.model.EffectActivationGroup
+import com.keyserdsoze.dicethrower.model.EffectCondition
+import com.keyserdsoze.dicethrower.model.EffectType
+import com.keyserdsoze.dicethrower.model.EffectValueScope
+import com.keyserdsoze.dicethrower.model.PartReferenceAliases
+import com.keyserdsoze.dicethrower.model.RollEffect
 import com.keyserdsoze.dicethrower.model.LevelRuleKind
 import com.keyserdsoze.dicethrower.model.RollDefinition
 import com.keyserdsoze.dicethrower.model.RollDiceAppearance
@@ -134,6 +142,72 @@ class CharacterDataOperationsTest {
             duplicatedRoll.diceAppearance.subgroupStyleIds,
         )
         assertTrue(AppDataValidator.validate(result).isEmpty())
+    }
+
+    @Test
+    fun duplicateCharacterRewritesEntireEffectsGraphAndStoredPartAliases() {
+        val parts = listOf(
+            RollSubgroup("attack", "Attack", "1d20"),
+            RollSubgroup("damage", "Damage", "2d6"),
+        )
+        val originalEffect = RollEffect(
+            id = "effect-id", name = "Critical damage", type = EffectType.BONUS,
+            activationGroups = listOf(EffectActivationGroup(
+                id = "group-id",
+                conditions = listOf(EffectCondition(
+                    id = "condition-id", partId = "attack",
+                    threshold = "{partId:damage}+f({level}/10)",
+                )),
+            )),
+            actions = listOf(EffectAction(
+                id = "action-id", kind = EffectActionType.MULTIPLY,
+                targetPartId = "damage", scope = EffectValueScope.TOTAL,
+                expression = "{partId:damage}*2",
+            )),
+        )
+        val source = sampleData().let { data ->
+            data.copy(rolls = data.rolls.map { roll ->
+                roll.copy(
+                    expression = "(1d20)+(2d6)",
+                    subgroups = parts,
+                    effects = listOf(originalEffect),
+                )
+            })
+        }
+        assertTrue(AppDataValidator.validate(source).isEmpty())
+        var nextId = 0
+        val duplicated = CharacterDataOperations.duplicateCharacter(
+            source, "character-a", "Copy with Effects", idFactory = { "copy-${nextId++}" },
+        )
+        val copy = duplicated.rolls.single {
+            it.characterId == duplicated.characters.last().id
+        }
+        val newParts = copy.subgroups.associateBy { it.name }
+        val copiedEffect = copy.effects.single()
+        val condition = copiedEffect.activationGroups.single().conditions.single()
+        val action = copiedEffect.actions.single()
+
+        assertNotEquals(originalEffect.id, copiedEffect.id)
+        assertNotEquals("group-id", copiedEffect.activationGroups.single().id)
+        assertNotEquals("condition-id", condition.id)
+        assertNotEquals("action-id", action.id)
+        assertNotEquals("attack", condition.partId)
+        assertEquals(newParts.getValue("Attack").id, condition.partId)
+        assertEquals(newParts.getValue("Damage").id, action.targetPartId)
+        assertEquals("{partId:${newParts.getValue("Damage").id}}*2", action.expression)
+        assertEquals(
+            "{partId:${newParts.getValue("Damage").id}}+f({level}/10)",
+            condition.threshold,
+        )
+        assertEquals("{parts:Damage}*2",
+            PartReferenceAliases.display(action.expression, copy.subgroups))
+        assertEquals(originalEffect, duplicated.rolls.single { it.id == "roll-a" }.effects.single())
+        assertTrue(AppDataValidator.validate(duplicated).isEmpty())
+        assertEquals(duplicated, AppDataJsonCodec.decodeData(AppDataJsonCodec.encodeData(duplicated)))
+        val deletedSource = CharacterDataOperations.deleteCharacter(duplicated, "character-a")
+        assertTrue(AppDataValidator.validate(deletedSource).isEmpty())
+        assertEquals(1, deletedSource.rolls.size)
+        assertEquals(copy, deletedSource.rolls.single())
     }
 
     private fun sampleData(): AppData = AppData(

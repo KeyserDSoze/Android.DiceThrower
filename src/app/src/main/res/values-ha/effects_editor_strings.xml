@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">Ƙara dokokin kyauta ko hukunci masu sharadi. Sharuɗɗan rukuni suna haɗuwa da AND, rukunoni kuma da OR.</string>
+    <string name="effects_formula_help">Tsare-tsare: f(x)=floor, c(x)=ceil, r(x)=round (rabin ƙima yana zagaye nesa da sifili). Yi amfani da {parts:Name} don jimillar sashe. Zaɓi ƙwallaye kawai, masu gyara kawai ko jimilla ga kowane sharadi da aiki.</string>
+    <string name="effects_or_group_number">OR Rukuni %1$d</string>
+    <string name="effects_and_condition">AND Sharadi %1$d</string>
+    <string name="effects_add_and">+ AND Sharadi</string>
+    <string name="effects_add_or">+ OR Rukuni</string>
+    <string name="effects_actions">Ayyuka (a jere)</string>
+    <string name="effects_add_action">+ Ƙara Aiki</string>
+    <string name="effects_add_bonus">+ Ƙara Kyauta</string>
+    <string name="effects_add_malus">+ Ƙara Hukunci</string>
+    <string name="effects_heading">Tasiri</string>
+    <string name="effects_bonus">Kyauta</string>
+    <string name="effects_malus">Hukunci</string>
+    <string name="effects_name">Sunan tasiri</string>
+    <string name="effects_enabled">An kunna tasiri</string>
+    <string name="effects_stop_following">Idan ya kunna, tsallake duk tasirin da ke biye</string>
+    <string name="effects_or_groups">Sharuɗɗan kunnawa</string>
+    <string name="effects_action">Aiki</string>
+    <string name="effects_scope">Iyakokin ƙima</string>
+    <string name="effects_source">Tushe</string>
+    <string name="effects_target">Sashe</string>
+    <string name="effects_missing_part">Ba a sami sashe ba</string>
+    <string name="effects_comparison">Kwatantawa</string>
+    <string name="effects_threshold">Tsarin iyaka</string>
+    <string name="effects_scope_dice">Ƙwallaye kawai</string>
+    <string name="effects_scope_modifiers">Masu gyara kawai</string>
+    <string name="effects_scope_total">Jimilla</string>
+    <string name="effects_source_part">Sakamakon sashe</string>
+    <string name="effects_source_roll">Sakamakon jefa</string>
+    <string name="effects_source_variable">Mai canzawa</string>
+    <string name="effects_action_add">Ƙara</string>
+    <string name="effects_action_subtract">Cire</string>
+    <string name="effects_action_multiply">Ninka</string>
+    <string name="effects_action_replace">Maye gurbi</string>
+    <string name="effects_action_reroll">Sake jefa</string>
+    <string name="effects_action_roll_after">Ƙarin jefa</string>
+    <string name="effects_dice_expression">Tsarin ƙwallaye (fanko: maimaita sashe)</string>
+    <string name="effects_formula">Tsari</string>
+    <string name="effects_invalid">Duba tasiri: ana buƙatar sunaye, sassan manufa da tsare-tsare masu inganci.</string>
+    <string name="effects_trace_triggered">Ya kunna</string>
+    <string name="effects_trace_skipped">Bai kunna ba</string>
+</resources>

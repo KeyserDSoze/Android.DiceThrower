@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">വ്യവസ്ഥകളുള്ള ബോണസ് അല്ലെങ്കിൽ പിഴ നിയമങ്ങൾ ചേർക്കുക. ഗ്രൂപ്പിലെ വ്യവസ്ഥകൾ AND ഉപയോഗിച്ചും ഗ്രൂപ്പുകൾ OR ഉപയോഗിച്ചും ബന്ധിപ്പിക്കുന്നു.</string>
+    <string name="effects_formula_help">ഫോർമുലകൾ: f(x)=floor, c(x)=ceil, r(x)=round (പകുതി മൂല്യങ്ങൾ പൂജ്യത്തിൽ നിന്ന് അകലേക്ക് റൗണ്ട് ചെയ്യും). ഭാഗത്തിന്റെ ആകെ മൂല്യത്തിന് {parts:Name} ഉപയോഗിക്കുക. ഓരോ വ്യവസ്ഥയ്ക്കും പ്രവർത്തനത്തിനും ഡൈസുകൾ മാത്രം, മോഡിഫയറുകൾ മാത്രം അല്ലെങ്കിൽ ആകെ തിരഞ്ഞെടുക്കുക.</string>
+    <string name="effects_or_group_number">OR ഗ്രൂപ്പ് %1$d</string>
+    <string name="effects_and_condition">AND വ്യവസ്ഥ %1$d</string>
+    <string name="effects_add_and">+ AND വ്യവസ്ഥ</string>
+    <string name="effects_add_or">+ OR ഗ്രൂപ്പ്</string>
+    <string name="effects_actions">പ്രവർത്തനങ്ങൾ (ക്രമത്തിൽ)</string>
+    <string name="effects_add_action">+ ചേർക്കുക പ്രവർത്തനം</string>
+    <string name="effects_add_bonus">+ ചേർക്കുക ബോണസ്</string>
+    <string name="effects_add_malus">+ ചേർക്കുക പിഴ</string>
+    <string name="effects_heading">ഇഫക്റ്റുകൾ</string>
+    <string name="effects_bonus">ബോണസ്</string>
+    <string name="effects_malus">പിഴ</string>
+    <string name="effects_name">ഇഫക്റ്റിന്റെ പേര്</string>
+    <string name="effects_enabled">ഇഫക്റ്റ് സജീവം</string>
+    <string name="effects_stop_following">പ്രവർത്തിക്കുമ്പോൾ തുടർന്നുള്ള എല്ലാ ഇഫക്റ്റുകളും ഒഴിവാക്കുക</string>
+    <string name="effects_or_groups">സജീവമാകാനുള്ള വ്യവസ്ഥകൾ</string>
+    <string name="effects_action">പ്രവർത്തനം</string>
+    <string name="effects_scope">മൂല്യപരിധി</string>
+    <string name="effects_source">ഉറവിടം</string>
+    <string name="effects_target">ഭാഗം</string>
+    <string name="effects_missing_part">ഭാഗം കണ്ടെത്തിയില്ല</string>
+    <string name="effects_comparison">താരതമ്യം</string>
+    <string name="effects_threshold">പരിധി ഫോർമുല</string>
+    <string name="effects_scope_dice">ഡൈസുകൾ മാത്രം</string>
+    <string name="effects_scope_modifiers">മോഡിഫയറുകൾ മാത്രം</string>
+    <string name="effects_scope_total">ആകെ</string>
+    <string name="effects_source_part">ഭാഗത്തിന്റെ ഫലം</string>
+    <string name="effects_source_roll">റോൾ ഫലം</string>
+    <string name="effects_source_variable">വേരിയബിൾ</string>
+    <string name="effects_action_add">കൂട്ടുക</string>
+    <string name="effects_action_subtract">കുറയ്ക്കുക</string>
+    <string name="effects_action_multiply">ഗുണിക്കുക</string>
+    <string name="effects_action_replace">മാറ്റിസ്ഥാപിക്കുക</string>
+    <string name="effects_action_reroll">വീണ്ടും ഉരുട്ടുക</string>
+    <string name="effects_action_roll_after">അധിക റോൾ</string>
+    <string name="effects_dice_expression">ഡൈസ് എക്സ്പ്രഷൻ (ശൂന്യം: ഭാഗം ആവർത്തിക്കുക)</string>
+    <string name="effects_formula">ഫോർമുല</string>
+    <string name="effects_invalid">ഇഫക്റ്റുകൾ പരിശോധിക്കുക: പേര്, ലക്ഷ്യഭാഗം, ശരിയായ ഫോർമുല എന്നിവ ആവശ്യമാണ്.</string>
+    <string name="effects_trace_triggered">സജീവമായി</string>
+    <string name="effects_trace_skipped">സജീവമായില്ല</string>
+</resources>

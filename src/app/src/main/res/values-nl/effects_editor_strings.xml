@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">Voeg voorwaardelijke bonus- of malusregels toe. Voorwaarden binnen een groep gebruiken AND; groepen gebruiken OR.</string>
+    <string name="effects_formula_help">Formules: f(x)=floor, c(x)=ceil, r(x)=round (halve waarden van nul af afronden). Gebruik {parts:Name} voor het onderdeelresultaat. Kies alleen dobbelstenen, alleen modifiers of totaal voor elke voorwaarde en actie.</string>
+    <string name="effects_or_group_number">OR Groep %1$d</string>
+    <string name="effects_and_condition">AND Voorwaarde %1$d</string>
+    <string name="effects_add_and">+ AND Voorwaarde</string>
+    <string name="effects_add_or">+ OR Groep</string>
+    <string name="effects_actions">Acties (op volgorde)</string>
+    <string name="effects_add_action">+ Toevoegen Actie</string>
+    <string name="effects_add_bonus">+ Toevoegen Bonus</string>
+    <string name="effects_add_malus">+ Toevoegen Malus</string>
+    <string name="effects_heading">Effecten</string>
+    <string name="effects_bonus">Bonus</string>
+    <string name="effects_malus">Malus</string>
+    <string name="effects_name">Effectnaam</string>
+    <string name="effects_enabled">Effect ingeschakeld</string>
+    <string name="effects_stop_following">Bij activering alle volgende effecten overslaan</string>
+    <string name="effects_or_groups">Activeringsvoorwaarden</string>
+    <string name="effects_action">Actie</string>
+    <string name="effects_scope">Waardebereik</string>
+    <string name="effects_source">Bron</string>
+    <string name="effects_target">Onderdeel</string>
+    <string name="effects_missing_part">Onderdeel ontbreekt</string>
+    <string name="effects_comparison">Vergelijking</string>
+    <string name="effects_threshold">Drempelformule</string>
+    <string name="effects_scope_dice">Alleen dobbelstenen</string>
+    <string name="effects_scope_modifiers">Alleen modifiers</string>
+    <string name="effects_scope_total">Totaal</string>
+    <string name="effects_source_part">Resultaat onderdeel</string>
+    <string name="effects_source_roll">Worpresultaat</string>
+    <string name="effects_source_variable">Variabele</string>
+    <string name="effects_action_add">Optellen</string>
+    <string name="effects_action_subtract">Aftrekken</string>
+    <string name="effects_action_multiply">Vermenigvuldigen</string>
+    <string name="effects_action_replace">Vervangen</string>
+    <string name="effects_action_reroll">Opnieuw gooien</string>
+    <string name="effects_action_roll_after">Extra worp</string>
+    <string name="effects_dice_expression">Dobbelsteenexpressie (leeg: onderdeel herhalen)</string>
+    <string name="effects_formula">Formule</string>
+    <string name="effects_invalid">Controleer de effecten: namen, doelonderdelen en geldige formules zijn vereist.</string>
+    <string name="effects_trace_triggered">Geactiveerd</string>
+    <string name="effects_trace_skipped">Niet geactiveerd</string>
+</resources>

@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">Füge bedingte Bonus- oder Malusregeln hinzu. Bedingungen einer Gruppe gelten mit AND, Gruppen untereinander mit OR.</string>
+    <string name="effects_formula_help">Formeln: f(x)=floor, c(x)=ceil, r(x)=round (bei halben Zahlen von null weg runden). Verwende {parts:Name} für Teilsummen. Wähle nur Würfel, nur Modifikatoren oder Gesamt für jede Bedingung und Aktion.</string>
+    <string name="effects_or_group_number">OR Gruppe %1$d</string>
+    <string name="effects_and_condition">AND Bedingung %1$d</string>
+    <string name="effects_add_and">+ AND Bedingung</string>
+    <string name="effects_add_or">+ OR Gruppe</string>
+    <string name="effects_actions">Aktionen (in Reihenfolge)</string>
+    <string name="effects_add_action">+ Hinzufügen Aktion</string>
+    <string name="effects_add_bonus">+ Hinzufügen Bonus</string>
+    <string name="effects_add_malus">+ Hinzufügen Malus</string>
+    <string name="effects_heading">Effekte</string>
+    <string name="effects_bonus">Bonus</string>
+    <string name="effects_malus">Malus</string>
+    <string name="effects_name">Effektname</string>
+    <string name="effects_enabled">Effekt aktiviert</string>
+    <string name="effects_stop_following">Bei Auslösung alle folgenden Effekte überspringen</string>
+    <string name="effects_or_groups">Aktivierungsbedingungen</string>
+    <string name="effects_action">Aktion</string>
+    <string name="effects_scope">Wertebereich</string>
+    <string name="effects_source">Quelle</string>
+    <string name="effects_target">Teil</string>
+    <string name="effects_missing_part">Teil fehlt</string>
+    <string name="effects_comparison">Vergleich</string>
+    <string name="effects_threshold">Schwellenformel</string>
+    <string name="effects_scope_dice">Nur Würfel</string>
+    <string name="effects_scope_modifiers">Nur Modifikatoren</string>
+    <string name="effects_scope_total">Gesamt</string>
+    <string name="effects_source_part">Teilergebnis</string>
+    <string name="effects_source_roll">Wurfergebnis</string>
+    <string name="effects_source_variable">Variable</string>
+    <string name="effects_action_add">Addieren</string>
+    <string name="effects_action_subtract">Subtrahieren</string>
+    <string name="effects_action_multiply">Multiplizieren</string>
+    <string name="effects_action_replace">Ersetzen</string>
+    <string name="effects_action_reroll">Erneut würfeln</string>
+    <string name="effects_action_roll_after">Zusatzwurf</string>
+    <string name="effects_dice_expression">Würfelausdruck (leer: Teil wiederholen)</string>
+    <string name="effects_formula">Formel</string>
+    <string name="effects_invalid">Effekte prüfen: Namen, Zielteile und gültige Formeln sind erforderlich.</string>
+    <string name="effects_trace_triggered">Ausgelöst</string>
+    <string name="effects_trace_skipped">Nicht ausgelöst</string>
+</resources>

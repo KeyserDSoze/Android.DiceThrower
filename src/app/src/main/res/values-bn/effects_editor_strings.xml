@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">শর্তসাপেক্ষ বোনাস বা জরিমানার নিয়ম যোগ করুন। গ্রুপের শর্ত AND দিয়ে এবং গ্রুপগুলো OR দিয়ে যুক্ত হয়।</string>
+    <string name="effects_formula_help">সূত্র: f(x)=floor, c(x)=ceil, r(x)=round (অর্ধেক মান শূন্য থেকে দূরে পূর্ণসংখ্যায় যায়)। অংশের মোটের জন্য {parts:Name} ব্যবহার করুন। প্রতিটি শর্ত ও কাজের জন্য শুধু পাশা, শুধু সংশোধক বা মোট বেছে নিন।</string>
+    <string name="effects_or_group_number">OR গ্রুপ %1$d</string>
+    <string name="effects_and_condition">AND শর্ত %1$d</string>
+    <string name="effects_add_and">+ AND শর্ত</string>
+    <string name="effects_add_or">+ OR গ্রুপ</string>
+    <string name="effects_actions">কাজ (ক্রম অনুযায়ী)</string>
+    <string name="effects_add_action">+ যোগ করুন কাজ</string>
+    <string name="effects_add_bonus">+ যোগ করুন বোনাস</string>
+    <string name="effects_add_malus">+ যোগ করুন জরিমানা</string>
+    <string name="effects_heading">প্রভাব</string>
+    <string name="effects_bonus">বোনাস</string>
+    <string name="effects_malus">জরিমানা</string>
+    <string name="effects_name">প্রভাবের নাম</string>
+    <string name="effects_enabled">প্রভাব চালু</string>
+    <string name="effects_stop_following">সক্রিয় হলে পরবর্তী সব প্রভাব এড়িয়ে যান</string>
+    <string name="effects_or_groups">সক্রিয় হওয়ার শর্ত</string>
+    <string name="effects_action">কাজ</string>
+    <string name="effects_scope">মানের পরিসর</string>
+    <string name="effects_source">উৎস</string>
+    <string name="effects_target">অংশ</string>
+    <string name="effects_missing_part">অংশ পাওয়া যায়নি</string>
+    <string name="effects_comparison">তুলনা</string>
+    <string name="effects_threshold">সীমার সূত্র</string>
+    <string name="effects_scope_dice">শুধু পাশা</string>
+    <string name="effects_scope_modifiers">শুধু সংশোধক</string>
+    <string name="effects_scope_total">মোট</string>
+    <string name="effects_source_part">অংশের ফল</string>
+    <string name="effects_source_roll">রোলের ফল</string>
+    <string name="effects_source_variable">চলক</string>
+    <string name="effects_action_add">যোগ</string>
+    <string name="effects_action_subtract">বিয়োগ</string>
+    <string name="effects_action_multiply">গুণ</string>
+    <string name="effects_action_replace">প্রতিস্থাপন</string>
+    <string name="effects_action_reroll">আবার রোল</string>
+    <string name="effects_action_roll_after">অতিরিক্ত রোল</string>
+    <string name="effects_dice_expression">পাশার এক্সপ্রেশন (ফাঁকা: অংশ পুনরাবৃত্তি)</string>
+    <string name="effects_formula">সূত্র</string>
+    <string name="effects_invalid">প্রভাব যাচাই করুন: নাম, লক্ষ্য অংশ ও বৈধ সূত্র প্রয়োজন।</string>
+    <string name="effects_trace_triggered">সক্রিয়</string>
+    <string name="effects_trace_skipped">সক্রিয় নয়</string>
+</resources>

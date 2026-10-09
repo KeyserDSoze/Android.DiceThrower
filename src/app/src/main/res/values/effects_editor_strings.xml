@@ -1,4 +1,4 @@
-<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+<resources>
     <string name="effects_heading">Effects</string>
     <string name="effects_help">Add conditional bonus or malus rules. AND conditions within a group; OR across groups.</string>
     <string name="effects_bonus">Bonus</string>

@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">நிபந்தனை அடிப்படையிலான போனஸ் அல்லது தண்டனை விதிகளைச் சேர்க்கவும். குழுவிற்குள் நிபந்தனைகள் AND மூலம், குழுக்கள் OR மூலம் இணைக்கப்படுகின்றன.</string>
+    <string name="effects_formula_help">சூத்திரங்கள்: f(x)=floor, c(x)=ceil, r(x)=round (அரை மதிப்புகள் பூஜ்ஜியத்திலிருந்து விலகி வட்டமிடப்படும்). பகுதியின் மொத்தத்திற்கு {parts:Name} பயன்படுத்தவும். ஒவ்வொரு நிபந்தனைக்கும் செயலுக்கும் பகடைகள் மட்டும், மாற்றிகள் மட்டும் அல்லது மொத்தம் என்பதைத் தேர்ந்தெடுக்கவும்.</string>
+    <string name="effects_or_group_number">OR குழு %1$d</string>
+    <string name="effects_and_condition">AND நிபந்தனை %1$d</string>
+    <string name="effects_add_and">+ AND நிபந்தனை</string>
+    <string name="effects_add_or">+ OR குழு</string>
+    <string name="effects_actions">செயல்கள் (வரிசையில்)</string>
+    <string name="effects_add_action">+ சேர் செயல்</string>
+    <string name="effects_add_bonus">+ சேர் போனஸ்</string>
+    <string name="effects_add_malus">+ சேர் தண்டனை</string>
+    <string name="effects_heading">விளைவுகள்</string>
+    <string name="effects_bonus">போனஸ்</string>
+    <string name="effects_malus">தண்டனை</string>
+    <string name="effects_name">விளைவின் பெயர்</string>
+    <string name="effects_enabled">விளைவு இயக்கத்தில் உள்ளது</string>
+    <string name="effects_stop_following">செயல்பட்டால் அடுத்த அனைத்து விளைவுகளையும் தவிர்</string>
+    <string name="effects_or_groups">செயல்படும் நிபந்தனைகள்</string>
+    <string name="effects_action">செயல்</string>
+    <string name="effects_scope">மதிப்பு வரம்பு</string>
+    <string name="effects_source">மூலம்</string>
+    <string name="effects_target">பகுதி</string>
+    <string name="effects_missing_part">பகுதி இல்லை</string>
+    <string name="effects_comparison">ஒப்பீடு</string>
+    <string name="effects_threshold">வரம்புச் சூத்திரம்</string>
+    <string name="effects_scope_dice">பகடைகள் மட்டும்</string>
+    <string name="effects_scope_modifiers">மாற்றிகள் மட்டும்</string>
+    <string name="effects_scope_total">மொத்தம்</string>
+    <string name="effects_source_part">பகுதியின் முடிவு</string>
+    <string name="effects_source_roll">உருட்டலின் முடிவு</string>
+    <string name="effects_source_variable">மாறி</string>
+    <string name="effects_action_add">கூட்டு</string>
+    <string name="effects_action_subtract">கழி</string>
+    <string name="effects_action_multiply">பெருக்கு</string>
+    <string name="effects_action_replace">மாற்று</string>
+    <string name="effects_action_reroll">மீண்டும் உருட்டு</string>
+    <string name="effects_action_roll_after">கூடுதல் உருட்டல்</string>
+    <string name="effects_dice_expression">பகடை வெளிப்பாடு (காலி: பகுதியை மீண்டும் செய்)</string>
+    <string name="effects_formula">சூத்திரம்</string>
+    <string name="effects_invalid">விளைவுகளைச் சரிபார்: பெயர்கள், இலக்குப் பகுதிகள், சரியான சூத்திரங்கள் தேவை.</string>
+    <string name="effects_trace_triggered">செயல்பட்டது</string>
+    <string name="effects_trace_skipped">செயல்படவில்லை</string>
+</resources>

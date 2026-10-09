@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">Ongeza sheria za bonasi au adhabu zenye masharti. Masharti ndani ya kikundi yanaunganishwa kwa AND, vikundi kwa OR.</string>
+    <string name="effects_formula_help">Fomula: f(x)=floor, c(x)=ceil, r(x)=round (nusu huzungushwa mbali na sifuri). Tumia {parts:Name} kwa jumla ya sehemu. Chagua kete pekee, virekebishaji pekee au jumla kwa kila sharti na kitendo.</string>
+    <string name="effects_or_group_number">OR Kikundi %1$d</string>
+    <string name="effects_and_condition">AND Sharti %1$d</string>
+    <string name="effects_add_and">+ AND Sharti</string>
+    <string name="effects_add_or">+ OR Kikundi</string>
+    <string name="effects_actions">Vitendo (kwa mpangilio)</string>
+    <string name="effects_add_action">+ Ongeza Kitendo</string>
+    <string name="effects_add_bonus">+ Ongeza Bonasi</string>
+    <string name="effects_add_malus">+ Ongeza Adhabu</string>
+    <string name="effects_heading">Athari</string>
+    <string name="effects_bonus">Bonasi</string>
+    <string name="effects_malus">Adhabu</string>
+    <string name="effects_name">Jina la athari</string>
+    <string name="effects_enabled">Athari imewashwa</string>
+    <string name="effects_stop_following">Inapoamilishwa, ruka athari zote zinazofuata</string>
+    <string name="effects_or_groups">Masharti ya uanzishaji</string>
+    <string name="effects_action">Kitendo</string>
+    <string name="effects_scope">Wigo wa thamani</string>
+    <string name="effects_source">Chanzo</string>
+    <string name="effects_target">Sehemu</string>
+    <string name="effects_missing_part">Sehemu haipo</string>
+    <string name="effects_comparison">Ulinganisho</string>
+    <string name="effects_threshold">Fomula ya kizingiti</string>
+    <string name="effects_scope_dice">Kete pekee</string>
+    <string name="effects_scope_modifiers">Virekebishaji pekee</string>
+    <string name="effects_scope_total">Jumla</string>
+    <string name="effects_source_part">Matokeo ya sehemu</string>
+    <string name="effects_source_roll">Matokeo ya urushaji</string>
+    <string name="effects_source_variable">Kigeu</string>
+    <string name="effects_action_add">Jumlisha</string>
+    <string name="effects_action_subtract">Toa</string>
+    <string name="effects_action_multiply">Zidisha</string>
+    <string name="effects_action_replace">Badilisha</string>
+    <string name="effects_action_reroll">Rusha tena</string>
+    <string name="effects_action_roll_after">Urushaji wa ziada</string>
+    <string name="effects_dice_expression">Fomula ya kete (tupu: rudia sehemu)</string>
+    <string name="effects_formula">Fomula</string>
+    <string name="effects_invalid">Kagua athari: majina, sehemu lengwa na fomula sahihi zinahitajika.</string>
+    <string name="effects_trace_triggered">Imeamilishwa</string>
+    <string name="effects_trace_skipped">Haijaamilishwa</string>
+</resources>

@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">Thêm quy tắc thưởng hoặc phạt có điều kiện. Các điều kiện trong nhóm dùng AND; giữa các nhóm dùng OR.</string>
+    <string name="effects_formula_help">Công thức: f(x)=floor, c(x)=ceil, r(x)=round (giá trị nửa được làm tròn xa số không). Dùng {parts:Name} cho tổng của phần. Chọn chỉ xúc xắc, chỉ bộ điều chỉnh hoặc tổng cho từng điều kiện và hành động.</string>
+    <string name="effects_or_group_number">OR Nhóm %1$d</string>
+    <string name="effects_and_condition">AND Điều kiện %1$d</string>
+    <string name="effects_add_and">+ AND Điều kiện</string>
+    <string name="effects_add_or">+ OR Nhóm</string>
+    <string name="effects_actions">Hành động (theo thứ tự)</string>
+    <string name="effects_add_action">+ Thêm Hành động</string>
+    <string name="effects_add_bonus">+ Thêm Thưởng</string>
+    <string name="effects_add_malus">+ Thêm Phạt</string>
+    <string name="effects_heading">Hiệu ứng</string>
+    <string name="effects_bonus">Thưởng</string>
+    <string name="effects_malus">Phạt</string>
+    <string name="effects_name">Tên hiệu ứng</string>
+    <string name="effects_enabled">Bật hiệu ứng</string>
+    <string name="effects_stop_following">Khi kích hoạt, bỏ qua tất cả hiệu ứng tiếp theo</string>
+    <string name="effects_or_groups">Điều kiện kích hoạt</string>
+    <string name="effects_action">Hành động</string>
+    <string name="effects_scope">Phạm vi giá trị</string>
+    <string name="effects_source">Nguồn</string>
+    <string name="effects_target">Phần</string>
+    <string name="effects_missing_part">Thiếu phần</string>
+    <string name="effects_comparison">So sánh</string>
+    <string name="effects_threshold">Công thức ngưỡng</string>
+    <string name="effects_scope_dice">Chỉ xúc xắc</string>
+    <string name="effects_scope_modifiers">Chỉ bộ điều chỉnh</string>
+    <string name="effects_scope_total">Tổng</string>
+    <string name="effects_source_part">Kết quả phần</string>
+    <string name="effects_source_roll">Kết quả lượt tung</string>
+    <string name="effects_source_variable">Biến</string>
+    <string name="effects_action_add">Cộng</string>
+    <string name="effects_action_subtract">Trừ</string>
+    <string name="effects_action_multiply">Nhân</string>
+    <string name="effects_action_replace">Thay thế</string>
+    <string name="effects_action_reroll">Tung lại</string>
+    <string name="effects_action_roll_after">Tung bổ sung</string>
+    <string name="effects_dice_expression">Biểu thức xúc xắc (để trống: lặp lại phần)</string>
+    <string name="effects_formula">Công thức</string>
+    <string name="effects_invalid">Kiểm tra hiệu ứng: cần có tên, phần đích và công thức hợp lệ.</string>
+    <string name="effects_trace_triggered">Đã kích hoạt</string>
+    <string name="effects_trace_skipped">Chưa kích hoạt</string>
+</resources>

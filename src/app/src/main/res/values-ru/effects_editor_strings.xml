@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">Добавьте условные бонусы или штрафы. Условия в группе объединяются через AND, а группы — через OR.</string>
+    <string name="effects_formula_help">Формулы: f(x)=floor, c(x)=ceil, r(x)=round (половины округляются от нуля). Используйте {parts:Name} для суммы части. Выбирайте только кубики, только модификаторы или итог для каждого условия и действия.</string>
+    <string name="effects_or_group_number">OR Группа %1$d</string>
+    <string name="effects_and_condition">AND Условие %1$d</string>
+    <string name="effects_add_and">+ AND Условие</string>
+    <string name="effects_add_or">+ OR Группа</string>
+    <string name="effects_actions">Действия (по порядку)</string>
+    <string name="effects_add_action">+ Добавить Действие</string>
+    <string name="effects_add_bonus">+ Добавить Бонус</string>
+    <string name="effects_add_malus">+ Добавить Штраф</string>
+    <string name="effects_heading">Эффекты</string>
+    <string name="effects_bonus">Бонус</string>
+    <string name="effects_malus">Штраф</string>
+    <string name="effects_name">Название эффекта</string>
+    <string name="effects_enabled">Эффект включён</string>
+    <string name="effects_stop_following">При срабатывании пропустить все последующие эффекты</string>
+    <string name="effects_or_groups">Условия срабатывания</string>
+    <string name="effects_action">Действие</string>
+    <string name="effects_scope">Область значения</string>
+    <string name="effects_source">Источник</string>
+    <string name="effects_target">Часть</string>
+    <string name="effects_missing_part">Часть не найдена</string>
+    <string name="effects_comparison">Сравнение</string>
+    <string name="effects_threshold">Формула порога</string>
+    <string name="effects_scope_dice">Только кубики</string>
+    <string name="effects_scope_modifiers">Только модификаторы</string>
+    <string name="effects_scope_total">Итого</string>
+    <string name="effects_source_part">Результат части</string>
+    <string name="effects_source_roll">Результат броска</string>
+    <string name="effects_source_variable">Переменная</string>
+    <string name="effects_action_add">Прибавить</string>
+    <string name="effects_action_subtract">Вычесть</string>
+    <string name="effects_action_multiply">Умножить</string>
+    <string name="effects_action_replace">Заменить</string>
+    <string name="effects_action_reroll">Перебросить</string>
+    <string name="effects_action_roll_after">Дополнительный бросок</string>
+    <string name="effects_dice_expression">Формула кубиков (пусто: повторить часть)</string>
+    <string name="effects_formula">Формула</string>
+    <string name="effects_invalid">Проверьте эффекты: требуются названия, целевые части и корректные формулы.</string>
+    <string name="effects_trace_triggered">Сработал</string>
+    <string name="effects_trace_skipped">Не сработал</string>
+</resources>
