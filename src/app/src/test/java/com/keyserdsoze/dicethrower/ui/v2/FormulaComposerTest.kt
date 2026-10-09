@@ -84,4 +84,40 @@ class FormulaComposerTest {
         assertNull(FormulaComposer.parse("1d20+(", 1, emptyList()))
         assertNull(FormulaComposer.parse("1d20+{missing}", 1, emptyList()))
     }
+
+    @Test
+    fun simpleTermSelectionProjectsLiveDiceConstantAndVariableFields() {
+        val mods = listOf(CharacterModifier("strength", "hero", "Strength", 3))
+        val terms = requireNotNull(FormulaComposer.parse("1d20+3d6-20d10+{level}+{Strength}", 4, mods))
+        assertEquals(5, terms.size)
+        assertEquals(ComposerSimpleInput('+', "1", 20), FormulaComposer.simpleInput(terms[0]))
+        assertEquals(ComposerSimpleInput('+', "3", 6), FormulaComposer.simpleInput(terms[1]))
+        assertEquals(ComposerSimpleInput('-', "20", 10), FormulaComposer.simpleInput(terms[2]))
+        assertEquals(ComposerSimpleInput('+', "{level}"), FormulaComposer.simpleInput(terms[3]))
+        assertEquals(ComposerSimpleInput('+', "{Strength}"), FormulaComposer.simpleInput(terms[4]))
+    }
+
+    @Test
+    fun editingExistingSelectedTermImmediatelyChangesExpressionWithoutAppending() {
+        val original = requireNotNull(FormulaComposer.parse("1d20+3d6+20d10", 1, emptyList()))
+        val updated = requireNotNull(FormulaComposer.replaceSimpleTerm(original, 1, "5", 8, '-'))
+        assertEquals("1d20-5d8+20d10", FormulaComposer.serialize(updated))
+        assertEquals(3, updated.size)
+        assertEquals("1d20+3d6+20d10", FormulaComposer.serialize(original))
+        assertEquals(ComposerSimpleInput('-', "5", 8), FormulaComposer.simpleInput(updated[1]))
+        assertEquals("1d20-5d8+20d10", FormulaComposer.serialize(
+            requireNotNull(FormulaComposer.parse(FormulaComposer.serialize(updated), 1, emptyList())),
+        ))
+    }
+
+    @Test
+    fun replacingTermPreservesComplexExpressionsAndRejectsIncompleteValues() {
+        val complex = requireNotNull(FormulaComposer.parse("2*(1d20+1)+3d6", 4, emptyList()))
+        assertNull(FormulaComposer.simpleInput(complex[0]))
+        assertNull(FormulaComposer.replaceSimpleTerm(complex, 0, "5", 20, '+'))
+        assertNull(FormulaComposer.replaceSimpleTerm(complex, 1, "", 6, '+'))
+        assertNull(FormulaComposer.replaceSimpleTerm(complex, 1, "{missing", 6, '+'))
+        // The existing composer normalizes prefix multiplication to suffix form.
+        assertEquals("(1d20+1)x2+3d6", FormulaComposer.serialize(complex))
+    }
 }

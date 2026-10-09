@@ -1,15 +1,18 @@
 package com.keyserdsoze.dicethrower.ui.v2
 
 import android.graphics.Color
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollToIndexAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
@@ -341,6 +344,62 @@ class RollDialogV2Test {
         composeRule.runOnIdle {
             assertEquals("(1d20+3d6+20d10)", saved?.expression)
             assertEquals("1d20+3d6+20d10", saved?.subgroups?.singleOrNull()?.expression)
+        }
+    }
+
+    @Test
+    fun editingExpressionUpdatesVisualTermsBeforeSaving() {
+        val character = CharacterProfile(id = "character", name = "Test", level = 3)
+        val roll = RollDefinition(
+            id = "combo", characterId = character.id, name = "Combo",
+            expression = "(1d20)", subgroups = listOf(RollSubgroup("part", expression = "1d20")),
+        )
+        composeRule.setContent {
+            DiceThrowerTheme(themeMode = ThemeMode.DARK) {
+                RollBuilderScreenV2(
+                    title = "Edit roll", character = character, modifiers = emptyList(),
+                    groups = emptyList(), existing = roll, onDismiss = {}, onSave = {},
+                )
+            }
+        }
+
+        composeRule.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("composer-expression"))
+        composeRule.onNodeWithTag("composer-expression").performTextReplacement("1d20+3d6+20d10")
+        composeRule.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("composer-term-2"))
+        composeRule.onNodeWithTag("composer-term-1").assertIsDisplayed()
+        composeRule.onNodeWithTag("composer-term-2").assertIsDisplayed()
+        composeRule.onNodeWithText("+ 20d10").assertIsDisplayed()
+    }
+
+    @Test
+    fun editingSelectedBuilderDiceCountUpdatesExpressionWithoutAddingPart() {
+        val character = CharacterProfile(id = "character", name = "Test", level = 3)
+        val roll = RollDefinition(
+            id = "combo", characterId = character.id, name = "Combo",
+            expression = "(1d20+3d6)",
+            subgroups = listOf(RollSubgroup("part", expression = "1d20+3d6")),
+        )
+        var saved: RollDefinition? = null
+        composeRule.setContent {
+            DiceThrowerTheme(themeMode = ThemeMode.DARK) {
+                RollBuilderScreenV2(
+                    title = "Edit roll", character = character, modifiers = emptyList(),
+                    groups = emptyList(), existing = roll, onDismiss = {}, onSave = { saved = it },
+                )
+            }
+        }
+
+        composeRule.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("composer-term-1"))
+        composeRule.onNodeWithTag("composer-term-1").performClick()
+        composeRule.onNodeWithTag("composer-count").performTextReplacement("5")
+        composeRule.onNodeWithText("+ 5d6").assertIsDisplayed()
+        composeRule.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("composer-expression"))
+        composeRule.onNodeWithTag("composer-expression").assert(hasText("1d20+5d6"))
+        composeRule.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Save"))
+        composeRule.onNodeWithText("Save").performClick()
+        composeRule.runOnIdle {
+            assertEquals("(1d20+5d6)", saved?.expression)
+            assertEquals(1, saved?.subgroups?.size)
         }
     }
 }

@@ -17,7 +17,50 @@ internal data class ComposerTerm(
     val isGroup: Boolean get() = grouped.isNotEmpty()
 }
 
+/**
+ * Editable fields for a single atomic composer term. Complex expressions remain
+ * represented as opaque terms and are never rewritten by the simple controls.
+ */
+internal data class ComposerSimpleInput(
+    val sign: Char,
+    val amount: String,
+    val sides: Int? = null,
+)
+
 internal object FormulaComposer {
+    private val diceTerm = Regex("""^([{][^{}]+[}]|[0-9]*)[dD]([0-9]+)$""")
+    private val scalarTerm = Regex("""^([{][^{}]+[}]|[0-9]+)$""")
+
+    fun simpleInput(term: ComposerTerm): ComposerSimpleInput? {
+        if (term.isGroup) return null
+        diceTerm.matchEntire(term.expression)?.let {
+            val amount = it.groupValues[1].ifBlank { "1" }
+            val sides = it.groupValues[2].toIntOrNull() ?: return null
+            return ComposerSimpleInput(term.sign, amount, sides)
+        }
+        if (scalarTerm.matches(term.expression)) {
+            return ComposerSimpleInput(term.sign, term.expression)
+        }
+        return null
+    }
+
+    fun replaceSimpleTerm(
+        terms: List<ComposerTerm>,
+        index: Int,
+        amount: String,
+        sides: Int?,
+        sign: Char,
+    ): List<ComposerTerm>? {
+        val old = terms.getOrNull(index) ?: return null
+        if (simpleInput(old) == null || sign != '+' && sign != '-') return null
+        if (!scalarTerm.matches(amount)) return null
+        if (sides != null && sides !in com.keyserdsoze.dicethrower.dice.DiceExpression.supportedSides) return null
+        val next = amount + (sides?.let { "d$it" } ?: "")
+        return terms.toMutableList().apply {
+            set(index, old.copy(sign = sign, expression = next))
+        }
+    }
+
     fun parse(
         expression: String,
         level: Int,
