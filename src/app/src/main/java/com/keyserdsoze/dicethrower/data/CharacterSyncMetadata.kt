@@ -68,6 +68,8 @@ object CharacterRevision {
             canonical.field("groupId", roll.groupId)
             canonical.field("enabled", roll.enabled)
             canonical.field("order", roll.order)
+            // Keep the hash of all old Roll records stable when no gate is set.
+            if (roll.minimumLevel != 1) canonical.field("minimumLevel", roll.minimumLevel)
             // Preserve legacy revision hashes when double-roll is disabled.
             if (roll.doubleRollEnabled) canonical.field("doubleRollEnabled", true)
             roll.levelRules.sortedBy { it.id }.forEach { rule ->
