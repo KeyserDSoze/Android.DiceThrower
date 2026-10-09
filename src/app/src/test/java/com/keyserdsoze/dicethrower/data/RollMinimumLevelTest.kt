@@ -64,7 +64,7 @@ class RollMinimumLevelTest {
         assertEquals(14, json.getInt("version"))
         assertEquals(baseline, AppDataJsonCodec.decodeData(json))
         assertEquals(baseline,
-            AppDataJsonCodec.decodeDataForSync(AppDataJsonCodec.encodeDataForSync(baseline)))
+            AppDataJsonCodec.decodeData(AppDataJsonCodec.encodeDataForSync(baseline)))
         val backup = AppBackupCodec.decode(AppBackupCodec.encode(baseline, AppSettings(), "it"))
         assertEquals(baseline, backup.data)
 
