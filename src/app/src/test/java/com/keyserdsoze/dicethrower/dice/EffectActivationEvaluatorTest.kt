@@ -131,7 +131,7 @@ class EffectActivationEvaluatorTest {
         val group = EffectActivationGroup("invalid", listOf(
             condition("missing", threshold = "{partId:deleted}"),
             condition("rngForbidden", threshold = "1d20"),
-            condition("unsupported", threshold = "f(20/3)"),
+            condition("unsupported", threshold = "bad(20/3)"),
             condition("missingValue").copy(partId = "not-found"),
         ))
         val evaluation = EffectActivationEvaluator.evaluate(effect(group), snapshot)
