@@ -301,8 +301,9 @@ class RollDialogV2Test {
         }
 
         composeRule.onAllNodesWithContentDescription("Move down")[0].performClick()
-        // Roll name [0], first Part name [1], first Part expression [2].
-        composeRule.onAllNodes(hasSetTextAction())[2].performTextReplacement("2*(1d20+1)")
+        // Target the first visible Part composer after reordering; input indices change as the editor evolves.
+        composeRule.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("composer-expression"))
+        composeRule.onAllNodes(hasTestTag("composer-expression"))[0].performTextReplacement("2*(1d20+1)")
         composeRule.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Save"))
         composeRule.onNodeWithText("Save").performClick()
         composeRule.runOnIdle {
@@ -338,7 +339,8 @@ class RollDialogV2Test {
         }
 
         // There is no top-level editable formula: the Part field is the only editor.
-        composeRule.onAllNodes(hasSetTextAction())[2].performTextReplacement("1d20+3d6+20d10")
+        composeRule.onNode(hasScrollToIndexAction()).performScrollToNode(hasTestTag("composer-expression"))
+        composeRule.onNodeWithTag("composer-expression").performTextReplacement("1d20+3d6+20d10")
         composeRule.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Save"))
         composeRule.onNodeWithText("Save").performClick()
         composeRule.runOnIdle {

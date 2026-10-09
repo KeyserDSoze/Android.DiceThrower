@@ -1,0 +1,3 @@
+<resources>
+    <string name="roll_min_level_help">低于此等级时，掷骰仍保留在编辑中，但在使用模式下隐藏。</string>
+</resources>

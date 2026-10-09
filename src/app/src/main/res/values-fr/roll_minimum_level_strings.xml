@@ -1,0 +1,3 @@
+<resources>
+    <string name="roll_min_level_help">En dessous de ce niveau, le lancer reste dans Modifier, mais disparaît du mode Utiliser.</string>
+</resources>

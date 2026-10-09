@@ -134,6 +134,8 @@ data class RollDefinition(
     val diceAppearance: RollDiceAppearance = RollDiceAppearance(),
     val doubleRollEnabled: Boolean = false,
     val effects: List<RollEffect> = emptyList(),
+    /** 1 keeps older Rolls available at every valid character level. */
+    val minimumLevel: Int = 1,
 )
 
 /** Immutable, backup-safe roll execution trace, independent of the renderer. */

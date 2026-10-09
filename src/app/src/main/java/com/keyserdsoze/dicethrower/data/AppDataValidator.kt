@@ -129,6 +129,7 @@ object AppDataValidator {
                 return@forEach
             }
             if (roll.name.isBlank()) errors += "Roll ${roll.id} has a blank name"
+            if (roll.minimumLevel !in 1..9999) errors += "Roll ${roll.id} has an invalid minimum level"
 
             val modifiers = data.modifiers.filter { it.characterId == character.id }
             if (!RollFormulaResolver.validateTemplate(roll.expression, character.level, modifiers)) {

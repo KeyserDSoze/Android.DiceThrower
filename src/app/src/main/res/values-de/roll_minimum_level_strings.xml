@@ -1,0 +1,3 @@
+<resources>
+    <string name="roll_min_level_help">Unter dieser Stufe bleibt der Wurf im Bearbeitungsmodus, wird aber beim Spielen ausgeblendet.</string>
+</resources>

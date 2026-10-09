@@ -1,0 +1,3 @@
+<resources>
+    <string name="roll_min_level_help">이 레벨보다 낮으면 굴림은 편집에서 유지되지만 사용 화면에서는 숨겨집니다.</string>
+</resources>

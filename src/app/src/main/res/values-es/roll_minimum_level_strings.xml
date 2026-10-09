@@ -1,0 +1,3 @@
+<resources>
+    <string name="roll_min_level_help">Por debajo de este nivel, el tiro sigue en Editar, pero se oculta en Usar.</string>
+</resources>
