@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">Ativar lançamento duplo nesta jogada</string>
+    <string name="double_roll_part">Incluir esta parte nos lançamentos duplos</string>
+    <string name="directional_double_roll_swipes">Deslizar (esquerda: pior, direita: melhor, cima: normal)</string>
+    <string name="double_roll_best">Lançamento duplo: melhor</string>
+    <string name="double_roll_worst">Lançamento duplo: pior</string>
+    <string name="double_roll_selected">Selecionado</string>
+    <string name="double_roll_alternative">Outro resultado</string>
+</resources>
