@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.keyserdsoze.dicethrower.model.EffectType
 import com.keyserdsoze.dicethrower.model.RollEffect
 import com.keyserdsoze.dicethrower.model.RollSubgroup
@@ -45,7 +46,7 @@ class EffectsEditorV2Test {
             assertEquals(1, effects.size)
             assertEquals(EffectType.BONUS, effects.single().type)
         }
-        composeRule.onNodeWithText("+ Add malus").performClick()
+        composeRule.onNodeWithText("+ Add malus").performScrollTo().performClick()
         composeRule.runOnIdle {
             assertEquals(2, effects.size)
             assertEquals(listOf(0, 1), effects.map { it.order })
