@@ -121,6 +121,10 @@ import com.keyserdsoze.dicethrower.data.sync.SyncStatusKind
 import com.keyserdsoze.dicethrower.dice.DiceAppearanceResolver
 import com.keyserdsoze.dicethrower.dice.DoubleRollEngine
 import com.keyserdsoze.dicethrower.dice.DoubleRollEvaluation
+import com.keyserdsoze.dicethrower.dice.EffectExecutionResult
+import com.keyserdsoze.dicethrower.dice.EffectRollSnapshot
+import com.keyserdsoze.dicethrower.dice.EffectSequenceExecutor
+import com.keyserdsoze.dicethrower.dice.EffectRuntimeHistory
 import com.keyserdsoze.dicethrower.dice.DiceComponent
 import com.keyserdsoze.dicethrower.dice.DiceExpression
 import com.keyserdsoze.dicethrower.dice.DiceRollResult
@@ -2222,6 +2226,12 @@ private fun RollScreenV2(
     var doubleEvaluation by remember(roll.id, character.level, formula.expression) {
         mutableStateOf<DoubleRollEvaluation?>(null)
     }
+    var effectsExecution by remember(roll.id, character.level, formula.expression, roll.effects) {
+        mutableStateOf<EffectExecutionResult?>(null)
+    }
+    var finalRollTotal by remember(roll.id, character.level, formula.expression, roll.effects) {
+        mutableStateOf<Int?>(null)
+    }
     var hasRolled by remember(roll.id, character.level, formula.expression) { mutableStateOf(false) }
     var resultRevealed by remember(roll.id, character.level, formula.expression) { mutableStateOf(false) }
     var showStats by remember(roll.id) { mutableStateOf(false) }
@@ -2233,6 +2243,29 @@ private fun RollScreenV2(
             roll.subgroups.filter { it.includeInDoubleRoll }.map { it.id }.toSet()
         val evaluation = DoubleRollEngine.evaluate(formula, mode, selectedPartIds)
         val result = evaluation.result
+        // Logical effects consume only the selected double-roll candidates.
+        // The unselected dice remain visual alternatives, never trigger inputs.
+        val execution = if (roll.effects.isEmpty()) null else EffectSequenceExecutor.execute(
+            original = EffectRollSnapshot.fromDoubleRoll(
+                evaluation,
+                variables = buildMap {
+                    put("level", character.level)
+                    modifiers.filter { it.characterId == character.id }.forEach { modifier ->
+                        put(modifier.name, modifier.value)
+                    }
+                },
+            ),
+            effects = roll.effects,
+            resolvedPartExpressions = if (formula.subgroups.isEmpty()) {
+                mapOf("single" to formula.expression)
+            } else {
+                formula.subgroups.associate { it.id to it.expression }
+            },
+        )
+        val adjustedTotal = execution?.let {
+            runCatching { EffectRuntimeHistory.adjustedLegacyTotal(it, result.total) }
+                .getOrDefault(result.total)
+        } ?: result.total
         val extraComponentOwners = buildMap {
             var offset = parsedExpression.diceShape().size
             formula.subgroups.filter { it.id in selectedPartIds && mode != DoubleRollMode.NORMAL }
@@ -2257,6 +2290,8 @@ private fun RollScreenV2(
             dimmedComponentIndices = evaluation.dimmedComponentIndices,
         )
         doubleEvaluation = evaluation
+        effectsExecution = execution
+        finalRollTotal = adjustedTotal
         outcome = result
         hasRolled = true
         resultRevealed = false
@@ -2268,19 +2303,26 @@ private fun RollScreenV2(
                 rollDefinitionId = roll.id,
                 rollName = roll.name,
                 expression = formula.expression,
-                total = result.total,
+                total = adjustedTotal,
                 detail = result.detail(),
                 timestamp = System.currentTimeMillis(),
                 doubleRollMode = evaluation.mode,
                 comparisonTotal = evaluation.comparisonTotal,
                 alternativeComparisonTotal = evaluation.alternativeComparisonTotal,
-                parts = evaluation.parts.takeIf { it.size > 1 || evaluation.mode != DoubleRollMode.NORMAL }
+                effectSteps = execution?.let { EffectRuntimeHistory.steps(it, roll.effects) }.orEmpty(),
+                parts = evaluation.parts.takeIf { it.size > 1 || evaluation.mode != DoubleRollMode.NORMAL || execution != null }
                     ?.mapIndexed { index, part ->
                         RollLogPart(
                             name = part.subgroup.name.ifBlank { "${roll.name} ${index + 1}" },
                             expression = part.subgroup.expression,
-                            total = part.chosen.total,
+                            total = execution?.finalSnapshot?.parts?.get(part.subgroup.id)?.total ?: part.chosen.total,
                             detail = part.chosen.detail(),
+                            originalTotal = part.chosen.total.takeIf {
+                                it != execution?.finalSnapshot?.parts?.get(part.subgroup.id)?.total
+                            },
+                            originalDetail = part.chosen.detail().takeIf {
+                                part.chosen.total != execution?.finalSnapshot?.parts?.get(part.subgroup.id)?.total
+                            },
                             alternativeTotal = part.alternative?.total,
                             alternativeDetail = part.alternative?.detail(),
                         )
@@ -2346,8 +2388,9 @@ private fun RollScreenV2(
                     RollResultsOverlayV2(
                         parts = doubleEvaluation?.parts?.map { ResolvedRollSubgroupResult(it.subgroup, it.chosen) }
                             ?: formula.subgroupResults(value),
-                        total = value.total,
-                        aboveAverage = value.total > value.expectedTotal(),
+                        total = finalRollTotal ?: value.total,
+                        partTotalsById = effectsExecution?.finalSnapshot?.parts?.mapValues { it.value.total }.orEmpty(),
+                        aboveAverage = (finalRollTotal ?: value.total) > value.expectedTotal(),
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .navigationBarsPadding()
