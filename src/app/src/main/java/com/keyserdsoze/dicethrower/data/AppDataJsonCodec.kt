@@ -27,7 +27,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 object AppDataJsonCodec {
-    const val DATA_VERSION = 12
+    const val DATA_VERSION = 13
 
     fun encodeData(data: AppData): JSONObject = encodeData(data, includeLegacyImageUris = true)
 
@@ -117,6 +117,7 @@ object AppDataJsonCodec {
                     .put("doubleRollMode", item.doubleRollMode.name)
                     .put("comparisonTotal", item.comparisonTotal ?: JSONObject.NULL)
                     .put("alternativeComparisonTotal", item.alternativeComparisonTotal ?: JSONObject.NULL)
+                    .put("effectSteps", RollLogEffectsJsonCodec.encode(item.effectSteps))
                     .put("parts", JSONArray().apply {
                         item.parts.forEach { part ->
                             put(JSONObject()
@@ -125,7 +126,9 @@ object AppDataJsonCodec {
                                 .put("total", part.total)
                                 .put("detail", part.detail)
                                 .put("alternativeTotal", part.alternativeTotal ?: JSONObject.NULL)
-                                .put("alternativeDetail", part.alternativeDetail ?: JSONObject.NULL))
+                                .put("alternativeDetail", part.alternativeDetail ?: JSONObject.NULL)
+                                .put("originalTotal", part.originalTotal ?: JSONObject.NULL)
+                                .put("originalDetail", part.originalDetail ?: JSONObject.NULL))
                         }
                     }))
             }
@@ -239,6 +242,7 @@ object AppDataJsonCodec {
                 doubleRollMode = enumValueOrDefault(item.optString("doubleRollMode"), DoubleRollMode.NORMAL),
                 comparisonTotal = item.optIntOrNull("comparisonTotal"),
                 alternativeComparisonTotal = item.optIntOrNull("alternativeComparisonTotal"),
+                effectSteps = RollLogEffectsJsonCodec.decode(item.optJSONArray("effectSteps")),
                 parts = item.optJSONArray("parts").mapObjects { part ->
                     RollLogPart(
                         name = part.optString("name"),
@@ -247,6 +251,8 @@ object AppDataJsonCodec {
                         detail = part.optString("detail"),
                         alternativeTotal = part.optIntOrNull("alternativeTotal"),
                         alternativeDetail = part.optNullableString("alternativeDetail"),
+                        originalTotal = part.optIntOrNull("originalTotal"),
+                        originalDetail = part.optNullableString("originalDetail"),
                     )
                 },
             )
