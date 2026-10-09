@@ -17,6 +17,7 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Column
@@ -100,6 +101,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -148,6 +150,7 @@ import com.keyserdsoze.dicethrower.model.LevelRuleKind
 import com.keyserdsoze.dicethrower.model.RollButtonPosition
 import com.keyserdsoze.dicethrower.model.RollDiceAppearance
 import com.keyserdsoze.dicethrower.model.RollDefinition
+import com.keyserdsoze.dicethrower.model.RollLevelAvailability
 import com.keyserdsoze.dicethrower.model.RollGroup
 import com.keyserdsoze.dicethrower.model.RollLevelRule
 import com.keyserdsoze.dicethrower.model.RollLog
@@ -433,7 +436,8 @@ fun DiceThrowerAppV2(
         RouteV2.ROLL -> {
             val character = data.characters.firstOrNull { it.id == selectedCharacterId }
             val roll = data.rolls.firstOrNull { it.id == selectedRollId }
-            if (character == null || roll == null) {
+            if (character == null || roll == null || roll.characterId != character.id ||
+                (!editingActiveRoll && !RollLevelAvailability.isAvailable(roll, character.level))) {
                 route = RouteV2.CHARACTER
             } else {
                 val characterModifiers = data.modifiers.filter { it.characterId == character.id }
@@ -809,7 +813,7 @@ private fun DashboardContentV2(
     modifier: Modifier = Modifier,
 ) {
     val modifiers = data.modifiers.filter { it.characterId == character.id }
-    val activeRolls = data.rolls.filter { it.characterId == character.id && it.enabled }
+    val activeRolls = RollLevelAvailability.usable(data.rolls, character.id, character.level)
     val visibleGroups = data.groups
         .filter { it.characterId == character.id }
         .filter { group -> activeRolls.any { it.groupId == group.id } }
@@ -1609,7 +1613,8 @@ private fun GroupLaunchContentV2(
 ) {
     val modifiers = data.modifiers.filter { it.characterId == character.id }
     val rolls = data.rolls
-        .filter { it.characterId == character.id && it.groupId == group.id && it.enabled }
+        .filter { it.characterId == character.id && it.groupId == group.id &&
+            RollLevelAvailability.isAvailable(it, character.level) }
         .sortedBy { it.order }
 
     LazyColumn(
@@ -1968,6 +1973,14 @@ private fun RollEditorCardV2(
                 Column(Modifier.weight(1f)) {
                     Text(roll.name, fontWeight = FontWeight.Bold)
                     Text(roll.expression, style = MaterialTheme.typography.bodyMedium)
+                    if (roll.minimumLevel > 1) {
+                        Text(
+                            "${stringResource(R.string.from_level)} ${roll.minimumLevel}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (character.level >= roll.minimumLevel)
+                                MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        )
+                    }
                     if (resolved != null && resolved != roll.expression) {
                         Text(
                             "${stringResource(R.string.resolved_expression)}: $resolved",
@@ -3719,6 +3732,7 @@ internal fun RollBuilderScreenV2(
     var groupId by remember(existing?.id, initialGroupId) { mutableStateOf(existing?.groupId ?: initialGroupId) }
     var groupMenu by remember(existing?.id) { mutableStateOf(false) }
     var doubleRollEnabled by remember(existing?.id) { mutableStateOf(existing?.doubleRollEnabled ?: true) }
+    var minimumLevelText by remember(existing?.id) { mutableStateOf((existing?.minimumLevel ?: 1).toString()) }
     var effects by remember(existing?.id) { mutableStateOf(existing?.effects.orEmpty()) }
     var subgroups by remember(existing?.id) {
         mutableStateOf(
@@ -3744,7 +3758,9 @@ internal fun RollBuilderScreenV2(
     val effectsToSave = runCatching {
         EffectEditorDraft.canonicalize(effects, subgroups, character.level, modifiers)
     }.getOrNull()
-    val valid = name.isNotBlank() && groupsValid && expressionValid && effectsToSave != null
+    val minimumLevel = minimumLevelText.toIntOrNull()
+    val valid = name.isNotBlank() && groupsValid && expressionValid && effectsToSave != null &&
+        minimumLevel != null && minimumLevel in 1..9999
     fun updateSubgroups(updated: List<RollSubgroup>) {
         subgroups = updated
     }
@@ -3778,6 +3794,18 @@ internal fun RollBuilderScreenV2(
                         label = { Text(stringResource(R.string.roll_name)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = minimumLevelText,
+                        onValueChange = { input ->
+                            if (input.length <= 4 && input.all(Char::isDigit)) minimumLevelText = input
+                        },
+                        label = { Text(stringResource(R.string.from_level)) },
+                        supportingText = { Text(stringResource(R.string.roll_min_level_help)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        isError = minimumLevel == null || minimumLevel !in 1..9999,
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth().testTag("roll-minimum-level"),
                     )
                     Box {
                         OutlinedButton(onClick = { groupMenu = true }) {
@@ -3981,6 +4009,7 @@ internal fun RollBuilderScreenV2(
                             groupId = groupId,
                             subgroups = subgroups,
                             doubleRollEnabled = doubleRollEnabled,
+                            minimumLevel = minimumLevel ?: 1,
                             effects = effectsToSave.orEmpty(),
                         )
                         val slots = runCatching {
