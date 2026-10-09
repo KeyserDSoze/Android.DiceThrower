@@ -206,8 +206,8 @@ jobs:
           VERSION: ${{ needs.release.outputs.version }}
         run: |
           mkdir -p distribution/whatsnew
-          printf 'Dice Thrower %s: fixes Roll Part formula editing and saving, including the Formula Composer. Adds direct Roll editing and level controls in the statistics panel.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
-          printf 'Dice Thrower %s: corregge modifica e salvataggio delle formule nelle Roll Parts e il Formula Composer. Aggiunge modifica diretta del tiro e controlli livello dalle statistiche.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
+          printf 'Dice Thrower %s: prepare Rolls with a minimum character level; they appear automatically as levels change. Adds Bonus/Malus Effects with conditions, rerolls and extra dice, Best/Worst throws and improved 3D visuals.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
+          printf 'Dice Thrower %s: prepara tiri con livello minimo che compaiono automaticamente al livello giusto. Aggiunge Effects Bonus/Malus con condizioni, rilanci e dadi extra, Best/Worst e grafica 3D migliorata.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
 
       - name: Upload to Google Play Internal testing
         uses: r0adkll/upload-google-play@v1.1.5
