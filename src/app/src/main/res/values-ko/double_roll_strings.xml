@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">이 굴림에 이중 굴림 사용</string>
+    <string name="double_roll_part">이 부분을 이중 굴림에 포함</string>
+    <string name="directional_double_roll_swipes">스와이프 (왼쪽: 낮은 값, 오른쪽: 높은 값, 위: 일반)</string>
+    <string name="double_roll_best">이중 굴림: 높은 값</string>
+    <string name="double_roll_worst">이중 굴림: 낮은 값</string>
+    <string name="double_roll_selected">선택됨</string>
+    <string name="double_roll_alternative">다른 결과</string>
+</resources>
