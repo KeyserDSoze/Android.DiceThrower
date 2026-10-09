@@ -3937,7 +3937,7 @@ private fun GuidedExpressionEditorV2(
                         onClick = {
                             nextOperator = operator
                             operatorMenu = false
-                            if (editingIndex != null) editSelected(operator = operator)
+                            if (editingIndex != null && operator != "x") editSelected(operator = operator)
                         },
                     )
                 }
