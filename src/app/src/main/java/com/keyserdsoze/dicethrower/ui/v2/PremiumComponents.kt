@@ -46,6 +46,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
@@ -186,6 +187,9 @@ fun PremiumCard(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+            // Alpha-adjusted surfaces are not equal to colorScheme.surface, so
+            // contentColorFor may be unspecified. Always provide readable text/icons.
+            contentColor = MaterialTheme.colorScheme.onSurface,
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
     ) {
@@ -220,6 +224,7 @@ fun ParameterizedExpressionField(
     helper: String,
     errorText: String,
     modifier: Modifier = Modifier,
+    fieldTestTag: String? = null,
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -228,7 +233,9 @@ fun ParameterizedExpressionField(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().then(
+                if (fieldTestTag != null) Modifier.testTag(fieldTestTag) else Modifier
+            ),
             label = { Text(label) },
             singleLine = true,
             isError = value.text.isNotBlank() && !isValid,
