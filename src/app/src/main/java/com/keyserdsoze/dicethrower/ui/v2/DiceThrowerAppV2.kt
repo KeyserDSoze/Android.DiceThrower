@@ -108,6 +108,7 @@ import com.keyserdsoze.dicethrower.GoogleConnectionFailure
 import com.keyserdsoze.dicethrower.R
 import com.keyserdsoze.dicethrower.data.CharacterImageAssetStore
 import com.keyserdsoze.dicethrower.data.CloudAccountState
+import com.keyserdsoze.dicethrower.data.AppDataValidator
 import com.keyserdsoze.dicethrower.data.DashboardDataOperations
 import com.keyserdsoze.dicethrower.data.LocalStore
 import com.keyserdsoze.dicethrower.data.sync.ConflictArea
@@ -448,8 +449,17 @@ fun DiceThrowerAppV2(
                         settings = settings,
                         onBack = ::navigateBack,
                         onEditRoll = { editingActiveRoll = true },
+                        canChangeLevel = { proposed ->
+                            proposed in 1..9999 &&
+                                AppDataValidator.validate(data.withCharacterLevel(character.id, proposed)).isEmpty()
+                        },
                         onLevelChanged = { newLevel ->
-                            persist(data.withCharacterLevel(character.id, newLevel))
+                            if (newLevel in 1..9999) {
+                                val proposed = data.withCharacterLevel(character.id, newLevel)
+                                // Dynamic dice counts like {level}d6 can become invalid
+                                // above 100. Reject the change rather than crash in LocalStore.
+                                if (AppDataValidator.validate(proposed).isEmpty()) persist(proposed)
+                            }
                         },
                         onLogged = { log ->
                             val logs = (data.logs + log).let { all ->
@@ -2132,6 +2142,7 @@ private fun RollScreenV2(
     settings: AppSettings,
     onBack: () -> Unit,
     onEditRoll: () -> Unit,
+    canChangeLevel: (Int) -> Boolean,
     onLevelChanged: (Int) -> Unit,
     onLogged: (RollLog) -> Unit,
 ) {
@@ -2403,7 +2414,7 @@ private fun RollScreenV2(
                                 fontWeight = FontWeight.Bold,
                             )
                             IconButton(
-                                enabled = character.level > 1,
+                                enabled = character.level > 1 && canChangeLevel(character.level - 1),
                                 onClick = { onLevelChanged(character.level - 1) },
                             ) {
                                 Icon(
@@ -2412,7 +2423,7 @@ private fun RollScreenV2(
                                 )
                             }
                             IconButton(
-                                enabled = character.level < 9999,
+                                enabled = character.level < 9999 && canChangeLevel(character.level + 1),
                                 onClick = { onLevelChanged(character.level + 1) },
                             ) {
                                 Icon(
