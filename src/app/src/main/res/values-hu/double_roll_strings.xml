@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">Dupla dobás engedélyezése</string>
+    <string name="double_roll_part">Ezt a részt is duplán dobja</string>
+    <string name="directional_double_roll_swipes">Csúsztatás (balra: rosszabb, jobbra: jobb, fel: normál)</string>
+    <string name="double_roll_best">Dupla dobás: jobb</string>
+    <string name="double_roll_worst">Dupla dobás: rosszabb</string>
+    <string name="double_roll_selected">Kiválasztva</string>
+    <string name="double_roll_alternative">Másik eredmény</string>
+</resources>
