@@ -3575,6 +3575,7 @@ internal fun RollBuilderScreenV2(
     var groupId by remember(existing?.id, initialGroupId) { mutableStateOf(existing?.groupId ?: initialGroupId) }
     var groupMenu by remember(existing?.id) { mutableStateOf(false) }
     var doubleRollEnabled by remember(existing?.id) { mutableStateOf(existing?.doubleRollEnabled ?: true) }
+    var effects by remember(existing?.id) { mutableStateOf(existing?.effects.orEmpty()) }
     var subgroups by remember(existing?.id) {
         mutableStateOf(
             existing?.subgroups?.takeIf { it.isNotEmpty() } ?: listOf(
@@ -3596,7 +3597,10 @@ internal fun RollBuilderScreenV2(
             RollFormulaResolver.validateTemplate(subgroup.expression, character.level, modifiers)
     }
     val expressionValid = RollFormulaResolver.validateTemplate(expressionToSave, character.level, modifiers)
-    val valid = name.isNotBlank() && groupsValid && expressionValid
+    val effectsToSave = runCatching {
+        EffectEditorDraft.canonicalize(effects, subgroups, character.level, modifiers)
+    }.getOrNull()
+    val valid = name.isNotBlank() && groupsValid && expressionValid && effectsToSave != null
     fun updateSubgroups(updated: List<RollSubgroup>) {
         subgroups = updated
     }
@@ -3795,6 +3799,22 @@ internal fun RollBuilderScreenV2(
             }
 
         item {
+            EffectsEditorSectionV2(
+                effects = effects,
+                parts = subgroups,
+                variableNames = RollFormulaResolver.variableNames(modifiers),
+                onChange = { effects = it },
+            )
+            if (effectsToSave == null) {
+                Text(
+                    stringResource(R.string.effects_invalid),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+
+        item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -3817,6 +3837,7 @@ internal fun RollBuilderScreenV2(
                             groupId = groupId,
                             subgroups = subgroups,
                             doubleRollEnabled = doubleRollEnabled,
+                            effects = effectsToSave.orEmpty(),
                         )
                         val slots = runCatching {
                             val resolved = RollFormulaResolver.resolve(character, modifiers, saved).expression
