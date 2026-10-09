@@ -3,6 +3,9 @@ package com.keyserdsoze.dicethrower.data
 import com.keyserdsoze.dicethrower.dice.RollFormulaResolver
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
+import com.keyserdsoze.dicethrower.model.EffectValueSource
+import com.keyserdsoze.dicethrower.model.EffectActionType
+import com.keyserdsoze.dicethrower.model.PartReferenceAliases
 
 object AppDataValidator {
     private val dieSlotRegex = Regex("""\d+:\d+""")
@@ -32,6 +35,11 @@ object AppDataValidator {
             data.rolls.flatMap { roll -> roll.subgroups.map { it.id } },
             errors,
         )
+
+        checkUnique("effect", data.rolls.flatMap { it.effects.map { effect -> effect.id } }, errors)
+        checkUnique("activation group", data.rolls.flatMap { it.effects.flatMap { effect -> effect.activationGroups.map { group -> group.id } } }, errors)
+        checkUnique("effect condition", data.rolls.flatMap { it.effects.flatMap { effect -> effect.activationGroups.flatMap { group -> group.conditions.map { condition -> condition.id } } } }, errors)
+        checkUnique("effect action", data.rolls.flatMap { it.effects.flatMap { effect -> effect.actions.map { action -> action.id } } }, errors)
 
         data.characters.forEach { character ->
             if (character.name.isBlank()) errors += "Character ${character.id} has a blank name"
@@ -135,6 +143,58 @@ object AppDataValidator {
                 val canonical = runCatching { RollFormulaResolver.canonicalExpression(roll.subgroups) }.getOrNull()
                 if (canonical == null || canonical != roll.expression) {
                     errors += "Roll ${roll.id} subgroup formula does not match its canonical expression"
+                }
+            }
+
+            val partIds = roll.subgroups.map { it.id }.toSet()
+            val effectOrders = roll.effects.map { it.order }
+            if (effectOrders.size != effectOrders.toSet().size || effectOrders.any { it < 0 }) {
+                errors += "Roll ${roll.id} contains invalid or duplicate effect orders"
+            }
+            roll.effects.forEach { effect ->
+                if (effect.name.isBlank()) errors += "Effect ${effect.id} has a blank name"
+                if (effect.activationGroups.isEmpty()) {
+                    errors += "Effect ${effect.id} needs at least one activation group"
+                }
+                if (effect.actions.isEmpty()) errors += "Effect ${effect.id} needs at least one action"
+                effect.activationGroups.forEach { group ->
+                    if (group.conditions.isEmpty()) {
+                        errors += "Effect group ${group.id} needs at least one condition"
+                    }
+                    group.conditions.forEach { condition ->
+                        if (condition.source == EffectValueSource.PART && condition.partId !in partIds) {
+                            errors += "Effect condition ${condition.id} references missing Part"
+                        }
+                        if (condition.source != EffectValueSource.PART && condition.partId != null) {
+                            errors += "Effect condition ${condition.id} has unexpected Part reference"
+                        }
+                        if (condition.source == EffectValueSource.VARIABLE && condition.variableName.isNullOrBlank()) {
+                            errors += "Effect condition ${condition.id} is missing variable name"
+                        }
+                        if (condition.threshold.isBlank()) {
+                            errors += "Effect condition ${condition.id} has a blank threshold"
+                        }
+                        if (runCatching {
+                                PartReferenceAliases.validateStoredReferences(condition.threshold, roll.subgroups)
+                            }.isFailure) {
+                            errors += "Effect condition ${condition.id} contains invalid Part references"
+                        }
+                    }
+                }
+                effect.actions.forEach { action ->
+                    if (action.targetPartId != null && action.targetPartId !in partIds) {
+                        errors += "Effect action ${action.id} references missing Part"
+                    }
+                    if (action.kind != EffectActionType.REROLL &&
+                        action.kind != EffectActionType.ROLL_AFTER &&
+                        action.expression.isBlank()) {
+                        errors += "Effect action ${action.id} needs a formula"
+                    }
+                    if (runCatching {
+                            PartReferenceAliases.validateStoredReferences(action.expression, roll.subgroups)
+                        }.isFailure) {
+                        errors += "Effect action ${action.id} contains invalid Part references"
+                    }
                 }
             }
 
