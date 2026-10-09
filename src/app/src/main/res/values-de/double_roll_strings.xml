@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">Doppelwürfe für diesen Wurf aktivieren</string>
+    <string name="double_roll_part">Diesen Teil in Doppelwürfe einbeziehen</string>
+    <string name="directional_double_roll_swipes">Wischen (links: schlechter, rechts: besser, oben: normal)</string>
+    <string name="double_roll_best">Doppelwurf: besser</string>
+    <string name="double_roll_worst">Doppelwurf: schlechter</string>
+    <string name="double_roll_selected">Ausgewählt</string>
+    <string name="double_roll_alternative">Anderes Ergebnis</string>
+</resources>
