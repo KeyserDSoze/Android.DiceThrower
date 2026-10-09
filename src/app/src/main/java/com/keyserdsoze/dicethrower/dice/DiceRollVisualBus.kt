@@ -1,5 +1,6 @@
 package com.keyserdsoze.dicethrower.dice
 
+import com.keyserdsoze.dicethrower.model.EffectType
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.atomic.AtomicLong
 
@@ -8,6 +9,8 @@ data class DiceRollVisualEvent(
     val result: DiceRollResult,
     val appearances: List<ResolvedDiceAppearance>,
     val dimmedComponentIndices: Set<Int> = emptySet(),
+    val effectAccentComponents: Map<Int, EffectType> = emptyMap(),
+    val persistentDiceCount: Int = 0,
 )
 
 /**

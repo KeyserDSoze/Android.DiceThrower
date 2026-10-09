@@ -14,6 +14,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.keyserdsoze.dicethrower.dice.DiceRollVisualEvent
+import com.keyserdsoze.dicethrower.model.EffectType
 import com.keyserdsoze.dicethrower.model.DiceTableTheme
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -100,6 +101,7 @@ private data class VisualDie(
     val phase: Float,
     val renderStyle: DiceRenderStyle,
     val dimmed: Boolean = false,
+    val effectAccent: EffectType? = null,
 )
 
 private data class GpuMesh(
@@ -259,6 +261,7 @@ private class DiceSceneRenderer(
 
     private val gpuMeshes = mutableMapOf<Int, GpuMesh>()
     private var dice: List<VisualDie> = emptyList()
+    private var persistentStates: List<DiceTablePhysics.State> = emptyList()
     private var tableTheme = DiceTableTheme.ARCANE
     private var physics: DiceTablePhysics? = null
     private var animateRoll = true
@@ -284,6 +287,12 @@ private class DiceSceneRenderer(
         tableImage: Bitmap?,
         animateRoll: Boolean,
     ) {
+        // Preserve the already-settled bodies before changing the scene. New
+        // effect-generated dice animate independently, without replaying old throws.
+        val previousPositions = persistentStates + (physics?.states().orEmpty())
+        persistentStates = if (animateRoll && event.persistentDiceCount > 0 &&
+            previousPositions.size >= event.persistentDiceCount
+        ) previousPositions.take(event.persistentDiceCount) else emptyList()
         val appearanceBySlot = event.appearances.associateBy { it.slotKey }
         dice = buildList {
             event.result.components.forEachIndexed { componentIndex, component ->
@@ -297,6 +306,7 @@ private class DiceSceneRenderer(
                                 phase = ((component.sides * 37 + value * 19 + index * 53) % 360).toFloat(),
                                 renderStyle = DiceRenderStyleFactory.create(appearanceBySlot[slotKey]),
                                 dimmed = componentIndex in event.dimmedComponentIndices,
+                                effectAccent = event.effectAccentComponents[componentIndex],
                             ),
                         )
                     }
@@ -310,7 +320,9 @@ private class DiceSceneRenderer(
         }
         this.animateRoll = animateRoll
         currentEventId = event.id
-        physics = if (animateRoll) DiceTablePhysics(dice.size, event.id) else null
+        physics = if (animateRoll) DiceTablePhysics(
+            dice.size - persistentStates.size, event.id,
+        ) else null
         lastFrameAt = SystemClock.elapsedRealtimeNanos()
         settledReported = false
     }
@@ -367,7 +379,9 @@ private class DiceSceneRenderer(
             count <= 8 -> 0.52f
             else -> 0.44f
         }
-        val states = physics?.states() ?: staticStates(count, dieScale)
+        val states = if (persistentStates.isNotEmpty()) {
+            persistentStates + (physics?.states() ?: emptyList())
+        } else physics?.states() ?: staticStates(count, dieScale)
         val settleProgress = if (animateRoll) physics?.settleProgress ?: 1f else 1f
 
         Matrix.setLookAtM(view, 0, 0f, -0.12f, cameraDistance, 0f, 0f, 0f, 0f, 1f, 0f)
@@ -384,13 +398,16 @@ private class DiceSceneRenderer(
             Matrix.setIdentityM(model, 0)
             Matrix.translateM(model, 0, state.x, state.y, 0f)
             val gpuMesh = gpuMesh(die.sides)
+            val alreadySettled = index < persistentStates.size
             if (animateRoll) {
                 val angleX = state.angleX + die.phase * 0.17f
                 val angleY = state.angleY + die.value * 3.7f
                 val angleZ = state.angleZ
                 resolvedFaceNormal(die, gpuMesh)?.let { localNormal ->
                     val movingNormal = rotateFaceNormal(localNormal, angleX, angleY, angleZ)
-                    val correction = faceAlignmentCorrection(movingNormal, settleProgress)
+                    val correction = faceAlignmentCorrection(
+                        movingNormal, if (alreadySettled) 1f else settleProgress,
+                    )
                     if (correction.angleDegrees > 0.0001f) {
                         // Pre-multiply a progressively stronger world-space correction before
                         // the physical rotations. The engine-selected value never changes; the
@@ -427,18 +444,35 @@ private class DiceSceneRenderer(
             val style = die.renderStyle
             // The less favorable sampled candidate stays visible, but recedes visually.
             val candidateBrightness = if (die.dimmed) 0.45f else 1f
+            // Accent is visual-only: green/cyan for bonuses and warm crimson
+            // for maluses. No GPU path can change the sampled die value.
+            val accentRgb = when (die.effectAccent) {
+                EffectType.BONUS -> floatArrayOf(0.20f, 0.95f, 0.62f)
+                EffectType.MALUS -> floatArrayOf(0.99f, 0.25f, 0.35f)
+                null -> null
+            }
+            val flash = if (animateRoll && accentRgb != null && !alreadySettled) {
+                (0.20f + 0.12f * sin(now / 240_000_000.0).toFloat())
+            } else 0.16f
+            fun toned(base: Float, target: Float, mix: Float): Float =
+                ((base * (1f - mix) + target * mix) * candidateBrightness).coerceIn(0f, 1f)
+            val effectiveRed = if (accentRgb == null) style.primary.red * candidateBrightness
+                else toned(style.primary.red, accentRgb[0], flash)
+            val effectiveGreen = if (accentRgb == null) style.primary.green * candidateBrightness
+                else toned(style.primary.green, accentRgb[1], flash)
+            val effectiveBlue = if (accentRgb == null) style.primary.blue * candidateBrightness
+                else toned(style.primary.blue, accentRgb[2], flash)
             GLES20.glUniform4f(
-                primaryColorHandle,
-                style.primary.red * candidateBrightness,
-                style.primary.green * candidateBrightness,
-                style.primary.blue * candidateBrightness,
-                style.primary.alpha,
+                primaryColorHandle, effectiveRed, effectiveGreen, effectiveBlue, style.primary.alpha,
             )
             GLES20.glUniform4f(
                 secondaryColorHandle,
-                style.secondary.red * candidateBrightness,
-                style.secondary.green * candidateBrightness,
-                style.secondary.blue * candidateBrightness,
+                if (accentRgb == null) style.secondary.red * candidateBrightness
+                    else toned(style.secondary.red, accentRgb[0], 0.48f),
+                if (accentRgb == null) style.secondary.green * candidateBrightness
+                    else toned(style.secondary.green, accentRgb[1], 0.48f),
+                if (accentRgb == null) style.secondary.blue * candidateBrightness
+                    else toned(style.secondary.blue, accentRgb[2], 0.48f),
                 style.secondary.alpha,
             )
             GLES20.glUniform4f(
@@ -450,9 +484,9 @@ private class DiceSceneRenderer(
             )
             GLES20.glUniform4f(
                 materialAccentHandle,
-                style.lighting.rim,
-                style.lighting.accentMix,
-                style.lighting.innerGlow,
+                (style.lighting.rim + if (accentRgb != null) 0.25f else 0f).coerceAtMost(1f),
+                (style.lighting.accentMix + if (accentRgb != null) 0.20f else 0f).coerceAtMost(1f),
+                (style.lighting.innerGlow + if (accentRgb != null) 0.35f else 0f).coerceAtMost(1f),
                 0f,
             )
             GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, gpuMesh.vertexCount)
@@ -461,7 +495,7 @@ private class DiceSceneRenderer(
             gpuMesh.numberNormals.position(0)
             GLES20.glVertexAttribPointer(positionHandle, 3, GLES20.GL_FLOAT, false, 0, gpuMesh.numberPositions)
             GLES20.glVertexAttribPointer(normalHandle, 3, GLES20.GL_FLOAT, false, 0, gpuMesh.numberNormals)
-            val luminance = style.primary.red * 0.299f + style.primary.green * 0.587f + style.primary.blue * 0.114f
+            val luminance = effectiveRed * 0.299f + effectiveGreen * 0.587f + effectiveBlue * 0.114f
             val numeral = if (luminance > 0.58f) 0.045f else 0.97f
             GLES20.glUniform4f(primaryColorHandle, numeral, numeral, numeral, 1f)
             GLES20.glUniform4f(secondaryColorHandle, numeral, numeral, numeral, 1f)
