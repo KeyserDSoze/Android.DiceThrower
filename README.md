@@ -52,6 +52,12 @@ Nell'editor del Roll, sotto le Parts, si possono aggiungere **Effects di tipo Bo
 
 I numeri vengono sempre stabiliti dal **motore logico**, non dalla fisica 3D. Durante le animazioni, gli eventuali dadi di Reroll/Roll After entrano sul tavolo dopo quelli originali. Lo storico locale registra per ogni effetto le condizioni, i passaggi e i risultati originali/finali delle Parts: un malus non altera in retrospettiva il lancio originale. Il backup JSON e la sync Drive opzionale conservano anche gli Effects e le loro tracce, mantenendo compatibilità con gli archivi precedenti. La schermata e le sue istruzioni sono localizzate nelle 40 lingue Android supportate.
 
+## Roll disponibili dal livello minimo
+
+Nell'editor di ogni Roll puoi impostare **Dal livello** (da 1 a 9999). Il valore predefinito è 1, così tutti i Roll precedenti mantengono lo stesso comportamento. Un Roll preparato per un livello futuro viene **nascosto solo in modalità Usa**, sia in dashboard sia nei gruppi, fino al raggiungimento della soglia. Salendo o scendendo di livello compare o scompare automaticamente; non viene mai cancellato. In **Modifica** resta sempre presente e modificabile. La disattivazione manuale del Roll è indipendente dal livello, e le regole di progressione che cambiano i dadi restano invariate.
+
+La soglia è inclusa nei backup locali, nei dati sincronizzati opzionalmente via Google Drive e nella duplicazione del personaggio; i vecchi backup senza il campo vengono interpretati come livello minimo 1. Il cambio di livello che rende il tiro corrente non disponibile riporta l'utente alla schermata del personaggio senza eseguire tiri nascosti.
+
 ## Gestione personaggi
 
 La logica dati supporta duplicazione e cancellazione sicura del personaggio:
