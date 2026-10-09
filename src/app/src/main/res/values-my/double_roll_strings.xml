@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">နှစ်ကြိမ်လှိမ့်ခြင်း ဖွင့်ရန်</string>
+    <string name="double_roll_part">ဤအပိုင်းကို နှစ်ကြိမ်လှိမ့်ခြင်းတွင် ပါဝင်စေရန်</string>
+    <string name="directional_double_roll_swipes">ပွတ်ဆွဲ (ဘယ်: နိမ့်၊ ညာ: မြင့်၊ အပေါ်: ပုံမှန်)</string>
+    <string name="double_roll_best">နှစ်ကြိမ်လှိမ့်: အကောင်းဆုံး</string>
+    <string name="double_roll_worst">နှစ်ကြိမ်လှိမ့်: အဆိုးဆုံး</string>
+    <string name="double_roll_selected">ရွေးထားသည်</string>
+    <string name="double_roll_alternative">အခြားရလဒ်</string>
+</resources>
