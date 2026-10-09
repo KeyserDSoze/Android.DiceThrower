@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">Povolit dvojitý hod</string>
+    <string name="double_roll_part">Zahrnout tuto část do dvojitého hodu</string>
+    <string name="directional_double_roll_swipes">Přejeďte (vlevo: horší, vpravo: lepší, nahoru: běžný)</string>
+    <string name="double_roll_best">Dvojitý hod: lepší</string>
+    <string name="double_roll_worst">Dvojitý hod: horší</string>
+    <string name="double_roll_selected">Vybráno</string>
+    <string name="double_roll_alternative">Druhý výsledek</string>
+</resources>

@@ -18,6 +18,8 @@ enum class LevelRuleKind {
     EVERY_LEVELS,
 }
 
+enum class DoubleRollMode { NORMAL, BEST, WORST }
+
 enum class RollSubgroupOperator {
     ADD,
     SUBTRACT,
@@ -109,6 +111,7 @@ data class RollSubgroup(
     val name: String = "",
     val expression: String,
     val operator: RollSubgroupOperator = RollSubgroupOperator.ADD,
+    val includeInDoubleRoll: Boolean = false,
 )
 
 data class RollGroup(
@@ -129,6 +132,7 @@ data class RollDefinition(
     val levelRules: List<RollLevelRule> = emptyList(),
     val subgroups: List<RollSubgroup> = emptyList(),
     val diceAppearance: RollDiceAppearance = RollDiceAppearance(),
+    val doubleRollEnabled: Boolean = false,
 )
 
 data class RollLogPart(
@@ -136,6 +140,8 @@ data class RollLogPart(
     val expression: String,
     val total: Int,
     val detail: String,
+    val alternativeTotal: Int? = null,
+    val alternativeDetail: String? = null,
 )
 
 data class RollLog(
@@ -150,6 +156,9 @@ data class RollLog(
     // The legacy aggregate is retained for compatibility with older backups and clients.
     // Multiple named parts are presented independently to the user.
     val parts: List<RollLogPart> = emptyList(),
+    val doubleRollMode: DoubleRollMode = DoubleRollMode.NORMAL,
+    val comparisonTotal: Int? = null,
+    val alternativeComparisonTotal: Int? = null,
 )
 
 data class AppSettings(
@@ -163,6 +172,7 @@ data class AppSettings(
     val rerollShakeEnabled: Boolean = false,
     // Local gesture preference; defaults on when reading pre-feature settings/backups.
     val doubleTapStatsEnabled: Boolean = true,
+    val doubleRollDirectionalSwipeEnabled: Boolean = true,
     val animationsEnabled: Boolean = true,
     val showRollButton: Boolean = true,
     val rollButtonPosition: RollButtonPosition = RollButtonPosition.BOTTOM_RIGHT,

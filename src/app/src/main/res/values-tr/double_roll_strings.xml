@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">Bu atışta çift zar etkin</string>
+    <string name="double_roll_part">Bu parçayı çift zara dahil et</string>
+    <string name="directional_double_roll_swipes">Kaydır (sol: kötü, sağ: iyi, yukarı: normal)</string>
+    <string name="double_roll_best">Çift atış: iyi</string>
+    <string name="double_roll_worst">Çift atış: kötü</string>
+    <string name="double_roll_selected">Seçilen</string>
+    <string name="double_roll_alternative">Diğer sonuç</string>
+</resources>

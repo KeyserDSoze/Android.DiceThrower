@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">Aktifkan balingan berganda</string>
+    <string name="double_roll_part">Sertakan bahagian ini dalam balingan berganda</string>
+    <string name="directional_double_roll_swipes">Leret (kiri: terburuk, kanan: terbaik, atas: biasa)</string>
+    <string name="double_roll_best">Balingan berganda: terbaik</string>
+    <string name="double_roll_worst">Balingan berganda: terburuk</string>
+    <string name="double_roll_selected">Dipilih</string>
+    <string name="double_roll_alternative">Keputusan lain</string>
+</resources>

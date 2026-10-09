@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">Abilita il doppio tiro per questo tiro</string>
+    <string name="double_roll_part">Includi questa parte nel doppio tiro</string>
+    <string name="directional_double_roll_swipes">Swipe direzionali (sinistra: peggiore, destra: migliore, alto: normale)</string>
+    <string name="double_roll_best">Doppio tiro: migliore</string>
+    <string name="double_roll_worst">Doppio tiro: peggiore</string>
+    <string name="double_roll_selected">Selezionato</string>
+    <string name="double_roll_alternative">Altro risultato</string>
+</resources>

@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">Aktivera dubbla kast</string>
+    <string name="double_roll_part">Ta med den här delen i dubbla kast</string>
+    <string name="directional_double_roll_swipes">Svep (vänster: sämre, höger: bättre, upp: vanligt)</string>
+    <string name="double_roll_best">Dubbelt kast: bättre</string>
+    <string name="double_roll_worst">Dubbelt kast: sämre</string>
+    <string name="double_roll_selected">Vald</string>
+    <string name="double_roll_alternative">Annat resultat</string>
+</resources>

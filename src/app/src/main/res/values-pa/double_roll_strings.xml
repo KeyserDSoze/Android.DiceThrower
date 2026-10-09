@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">ਦੋਹਰਾ ਰੋਲ ਚਾਲੂ ਕਰੋ</string>
+    <string name="double_roll_part">ਇਸ ਹਿੱਸੇ ਨੂੰ ਦੋਹਰੇ ਰੋਲ ਵਿੱਚ ਸ਼ਾਮਲ ਕਰੋ</string>
+    <string name="directional_double_roll_swipes">ਸਵਾਈਪ (ਖੱਬੇ: ਮਾੜਾ, ਸੱਜੇ: ਚੰਗਾ, ਉੱਪਰ: ਆਮ)</string>
+    <string name="double_roll_best">ਦੋਹਰਾ ਰੋਲ: ਚੰਗਾ</string>
+    <string name="double_roll_worst">ਦੋਹਰਾ ਰੋਲ: ਮਾੜਾ</string>
+    <string name="double_roll_selected">ਚੁਣਿਆ</string>
+    <string name="double_roll_alternative">ਦੂਜਾ ਨਤੀਜਾ</string>
+</resources>

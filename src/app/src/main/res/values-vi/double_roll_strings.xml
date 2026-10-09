@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">Bật tung đôi cho lượt này</string>
+    <string name="double_roll_part">Đưa phần này vào tung đôi</string>
+    <string name="directional_double_roll_swipes">Vuốt (trái: thấp, phải: cao, lên: thường)</string>
+    <string name="double_roll_best">Tung đôi: cao</string>
+    <string name="double_roll_worst">Tung đôi: thấp</string>
+    <string name="double_roll_selected">Đã chọn</string>
+    <string name="double_roll_alternative">Kết quả khác</string>
+</resources>

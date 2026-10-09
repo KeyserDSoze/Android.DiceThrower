@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">اس رول کے لیے ڈبل تھرو فعال کریں</string>
+    <string name="double_roll_part">اس حصے کو ڈبل تھرو میں شامل کریں</string>
+    <string name="directional_double_roll_swipes">سوائپ (بائیں: بدتر، دائیں: بہتر، اوپر: عام)</string>
+    <string name="double_roll_best">ڈبل تھرو: بہتر</string>
+    <string name="double_roll_worst">ڈبل تھرو: بدتر</string>
+    <string name="double_roll_selected">منتخب</string>
+    <string name="double_roll_alternative">دوسرا نتیجہ</string>
+</resources>

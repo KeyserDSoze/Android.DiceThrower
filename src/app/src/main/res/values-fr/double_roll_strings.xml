@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">Activer les doubles lancers pour ce lancer</string>
+    <string name="double_roll_part">Inclure cette partie dans les doubles lancers</string>
+    <string name="directional_double_roll_swipes">Glisser (gauche : pire, droite : meilleur, haut : normal)</string>
+    <string name="double_roll_best">Double lancer : meilleur</string>
+    <string name="double_roll_worst">Double lancer : pire</string>
+    <string name="double_roll_selected">Sélectionné</string>
+    <string name="double_roll_alternative">Autre résultat</string>
+</resources>

@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">दुहेरी फेक सुरू करा</string>
+    <string name="double_roll_part">हा भाग दुहेरी फेकीत समाविष्ट करा</string>
+    <string name="directional_double_roll_swipes">स्वाइप (डावे: वाईट, उजवे: चांगले, वर: सामान्य)</string>
+    <string name="double_roll_best">दुहेरी फेक: चांगली</string>
+    <string name="double_roll_worst">दुहेरी फेक: वाईट</string>
+    <string name="double_roll_selected">निवडलेले</string>
+    <string name="double_roll_alternative">दुसरा निकाल</string>
+</resources>

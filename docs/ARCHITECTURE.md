@@ -218,3 +218,10 @@ The locale registry mirrors Android.ScreenLock's 40 languages. English and Itali
 ## Website
 
 `src/overviewapp` is a React/Vite static site with localized copy, light/dark theme, privacy, terms and contact pages.
+
+
+### Scoped double rolls (Effects Engine groundwork, #107)
+
+A Roll may enable `doubleRollEnabled`; each stable-ID Roll Part carries `includeInDoubleRoll`. On creation only the first Part participates by default, while legacy Rolls remain in normal mode. The `DoubleRollEngine` samples the baseline once and samples each participating Part again only in BEST/WORST mode. It compares the **sum of complete participating Part totals** across both candidate groups and selects the entire best/worst group, without independently selecting individual dice. Unselected Parts and level-rule dice remain single-sampled. Subtractive Parts respect their operator in group comparison.
+
+The engine returns the chosen numerical result, the two Part candidates, the selected comparison sum and all visual dice independently. `Dice3DScene` reads preselected faces and receives component indices to dim; renderer physics never affects RNG. UI gestures are normal/up, best/right and worst/left when the global directional double-roll swipe preference is on. BEST/WORST footer controls remain available even with directional gestures off; NORMAL stays at the rightmost position. Candidate breakdowns persist in `RollLog` / `RollLogPart` via versioned JSON and are included in backup/restore and optional cloud sync. Older data omits these fields and decodes safely.

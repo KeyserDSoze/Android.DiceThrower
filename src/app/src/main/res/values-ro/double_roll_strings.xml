@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">Activează aruncarea dublă</string>
+    <string name="double_roll_part">Include această parte în aruncarea dublă</string>
+    <string name="directional_double_roll_swipes">Glisează (stânga: slab, dreapta: bun, sus: normal)</string>
+    <string name="double_roll_best">Aruncare dublă: bun</string>
+    <string name="double_roll_worst">Aruncare dublă: slab</string>
+    <string name="double_roll_selected">Selectat</string>
+    <string name="double_roll_alternative">Alt rezultat</string>
+</resources>

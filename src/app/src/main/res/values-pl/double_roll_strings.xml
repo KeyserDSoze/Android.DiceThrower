@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">Włącz podwójne rzuty</string>
+    <string name="double_roll_part">Uwzględnij tę część w podwójnym rzucie</string>
+    <string name="directional_double_roll_swipes">Przesuń (lewo: gorszy, prawo: lepszy, góra: zwykły)</string>
+    <string name="double_roll_best">Podwójny rzut: lepszy</string>
+    <string name="double_roll_worst">Podwójny rzut: gorszy</string>
+    <string name="double_roll_selected">Wybrany</string>
+    <string name="double_roll_alternative">Drugi wynik</string>
+</resources>

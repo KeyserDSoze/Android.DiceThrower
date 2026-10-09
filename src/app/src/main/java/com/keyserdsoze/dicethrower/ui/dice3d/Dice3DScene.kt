@@ -99,6 +99,7 @@ private data class VisualDie(
     val value: Int,
     val phase: Float,
     val renderStyle: DiceRenderStyle,
+    val dimmed: Boolean = false,
 )
 
 private data class GpuMesh(
@@ -295,6 +296,7 @@ private class DiceSceneRenderer(
                                 value = value,
                                 phase = ((component.sides * 37 + value * 19 + index * 53) % 360).toFloat(),
                                 renderStyle = DiceRenderStyleFactory.create(appearanceBySlot[slotKey]),
+                                dimmed = componentIndex in event.dimmedComponentIndices,
                             ),
                         )
                     }
@@ -423,18 +425,20 @@ private class DiceSceneRenderer(
             GLES20.glUniformMatrix4fv(modelHandle, 1, false, model, 0)
 
             val style = die.renderStyle
+            // The less favorable sampled candidate stays visible, but recedes visually.
+            val candidateBrightness = if (die.dimmed) 0.45f else 1f
             GLES20.glUniform4f(
                 primaryColorHandle,
-                style.primary.red,
-                style.primary.green,
-                style.primary.blue,
+                style.primary.red * candidateBrightness,
+                style.primary.green * candidateBrightness,
+                style.primary.blue * candidateBrightness,
                 style.primary.alpha,
             )
             GLES20.glUniform4f(
                 secondaryColorHandle,
-                style.secondary.red,
-                style.secondary.green,
-                style.secondary.blue,
+                style.secondary.red * candidateBrightness,
+                style.secondary.green * candidateBrightness,
+                style.secondary.blue * candidateBrightness,
                 style.secondary.alpha,
             )
             GLES20.glUniform4f(

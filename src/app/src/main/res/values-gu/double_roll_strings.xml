@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">ડબલ રોલ ચાલુ કરો</string>
+    <string name="double_roll_part">આ ભાગને ડબલ રોલમાં ઉમેરો</string>
+    <string name="directional_double_roll_swipes">સ્વાઇપ (ડાબે: ખરાબ, જમણે: સારું, ઉપર: સામાન્ય)</string>
+    <string name="double_roll_best">ડબલ રોલ: સારું</string>
+    <string name="double_roll_worst">ડબલ રોલ: ખરાબ</string>
+    <string name="double_roll_selected">પસંદ કરેલું</string>
+    <string name="double_roll_alternative">બીજું પરિણામ</string>
+</resources>

@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">இரட்டை உருட்டலை இயக்கு</string>
+    <string name="double_roll_part">இந்தப் பகுதியை இரட்டை உருட்டலில் சேர்</string>
+    <string name="directional_double_roll_swipes">ஸ்வைப் (இடது: குறைவு, வலது: அதிகம், மேல்: வழக்கம்)</string>
+    <string name="double_roll_best">இரட்டை உருட்டல்: சிறந்தது</string>
+    <string name="double_roll_worst">இரட்டை உருட்டல்: மோசமானது</string>
+    <string name="double_roll_selected">தேர்ந்தது</string>
+    <string name="double_roll_alternative">மற்ற முடிவு</string>
+</resources>

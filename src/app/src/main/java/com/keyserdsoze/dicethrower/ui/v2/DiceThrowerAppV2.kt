@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
@@ -118,6 +119,8 @@ import com.keyserdsoze.dicethrower.data.sync.SyncErrorKind
 import com.keyserdsoze.dicethrower.data.sync.SyncStatus
 import com.keyserdsoze.dicethrower.data.sync.SyncStatusKind
 import com.keyserdsoze.dicethrower.dice.DiceAppearanceResolver
+import com.keyserdsoze.dicethrower.dice.DoubleRollEngine
+import com.keyserdsoze.dicethrower.dice.DoubleRollEvaluation
 import com.keyserdsoze.dicethrower.dice.DiceComponent
 import com.keyserdsoze.dicethrower.dice.DiceExpression
 import com.keyserdsoze.dicethrower.dice.DiceRollResult
@@ -132,6 +135,7 @@ import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterImageRef
 import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.ConflictPolicy
+import com.keyserdsoze.dicethrower.model.DoubleRollMode
 import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.DiceTableTheme
 import com.keyserdsoze.dicethrower.model.LevelRuleKind
@@ -2081,7 +2085,12 @@ internal fun RollTableGestureLayerV2(
     onRollRequest: () -> Unit,
     onStatsToggle: () -> Unit,
     modifier: Modifier = Modifier,
+    directionalDoubleRollEnabled: Boolean = false,
+    onBestRollRequest: () -> Unit = onRollRequest,
+    onWorstRollRequest: () -> Unit = onRollRequest,
 ) {
+    val latestBestRequest by rememberUpdatedState(onBestRollRequest)
+    val latestWorstRequest by rememberUpdatedState(onWorstRollRequest)
     val latestRollRequest by rememberUpdatedState(onRollRequest)
     val latestStatsToggle by rememberUpdatedState(onStatsToggle)
     Box(
@@ -2099,17 +2108,39 @@ internal fun RollTableGestureLayerV2(
                     )
                 }
             }
-            .pointerInput(swipeToRollEnabled, canRoll) {
-                if (swipeToRollEnabled) {
+            .pointerInput(swipeToRollEnabled, directionalDoubleRollEnabled, canRoll) {
+                if (directionalDoubleRollEnabled) {
+                    var horizontal = 0f
+                    var vertical = 0f
+                    detectDragGestures(
+                        onDragStart = { horizontal = 0f; vertical = 0f },
+                        onDrag = { change, delta ->
+                            horizontal += delta.x
+                            vertical += delta.y
+                            change.consume()
+                        },
+                        onDragCancel = { horizontal = 0f; vertical = 0f },
+                        onDragEnd = {
+                            val minimum = 80.dp.toPx()
+                            if (canRoll) {
+                                when {
+                                    horizontal >= minimum && horizontal > kotlin.math.abs(vertical) -> latestBestRequest()
+                                    horizontal <= -minimum && -horizontal > kotlin.math.abs(vertical) -> latestWorstRequest()
+                                    vertical <= -minimum && -vertical > kotlin.math.abs(horizontal) -> latestRollRequest()
+                                }
+                            }
+                            horizontal = 0f
+                            vertical = 0f
+                        },
+                    )
+                } else if (swipeToRollEnabled) {
                     var verticalDistance = 0f
                     detectVerticalDragGestures(
                         onDragStart = { verticalDistance = 0f },
                         onVerticalDrag = { _, dragAmount -> verticalDistance += dragAmount },
                         onDragCancel = { verticalDistance = 0f },
                         onDragEnd = {
-                            if (canRoll && verticalDistance <= -80.dp.toPx()) {
-                                latestRollRequest()
-                            }
+                            if (canRoll && verticalDistance <= -80.dp.toPx()) latestRollRequest()
                             verticalDistance = 0f
                         },
                     )
@@ -2188,26 +2219,44 @@ private fun RollScreenV2(
     // previous result or settled animation for a new level/formula.
     var visualEvent by remember(roll.id, character.level, formula.expression) { mutableStateOf(previewEvent) }
     var outcome by remember(roll.id, character.level, formula.expression) { mutableStateOf<DiceRollResult?>(null) }
+    var doubleEvaluation by remember(roll.id, character.level, formula.expression) {
+        mutableStateOf<DoubleRollEvaluation?>(null)
+    }
     var hasRolled by remember(roll.id, character.level, formula.expression) { mutableStateOf(false) }
     var resultRevealed by remember(roll.id, character.level, formula.expression) { mutableStateOf(false) }
     var showStats by remember(roll.id) { mutableStateOf(false) }
 
-    fun throwDice() {
+    fun throwDice(requestedMode: DoubleRollMode = DoubleRollMode.NORMAL) {
         if (hasRolled && !resultRevealed) return
-        val result = parsedExpression.evaluate()
+        val mode = if (roll.doubleRollEnabled) requestedMode else DoubleRollMode.NORMAL
+        val selectedPartIds = if (roll.subgroups.isEmpty()) setOf("single") else
+            roll.subgroups.filter { it.includeInDoubleRoll }.map { it.id }.toSet()
+        val evaluation = DoubleRollEngine.evaluate(formula, mode, selectedPartIds)
+        val result = evaluation.result
+        val extraComponentOwners = buildMap {
+            var offset = parsedExpression.diceShape().size
+            formula.subgroups.filter { it.id in selectedPartIds && mode != DoubleRollMode.NORMAL }
+                .forEach { part ->
+                    repeat(DiceExpression.parse(part.expression).diceShape().size) {
+                        put(offset++, part.id)
+                    }
+                }
+        }
         val appearances = DiceAppearanceResolver.resolve(
             character = character,
             styles = diceStyles,
             appearance = roll.diceAppearance,
-            result = result,
-            subgroupIdByComponentIndex = subgroupIdByComponentIndex,
+            result = evaluation.visualResult,
+            subgroupIdByComponentIndex = subgroupIdByComponentIndex + extraComponentOwners,
             random = appearanceRandom,
         )
         visualEvent = DiceRollVisualEvent(
             id = System.nanoTime(),
-            result = result,
+            result = evaluation.visualResult,
             appearances = appearances,
+            dimmedComponentIndices = evaluation.dimmedComponentIndices,
         )
+        doubleEvaluation = evaluation
         outcome = result
         hasRolled = true
         resultRevealed = false
@@ -2222,32 +2271,38 @@ private fun RollScreenV2(
                 total = result.total,
                 detail = result.detail(),
                 timestamp = System.currentTimeMillis(),
-                parts = formula.subgroupResults(result).takeIf { it.size > 1 }?.mapIndexed { index, part ->
-                    RollLogPart(
-                        name = part.subgroup.name.ifBlank { "${roll.name} ${index + 1}" },
-                        expression = part.subgroup.expression,
-                        total = part.result.total,
-                        detail = part.result.detail(),
-                    )
-                }.orEmpty(),
+                doubleRollMode = evaluation.mode,
+                comparisonTotal = evaluation.comparisonTotal,
+                alternativeComparisonTotal = evaluation.alternativeComparisonTotal,
+                parts = evaluation.parts.takeIf { it.size > 1 || evaluation.mode != DoubleRollMode.NORMAL }
+                    ?.mapIndexed { index, part ->
+                        RollLogPart(
+                            name = part.subgroup.name.ifBlank { "${roll.name} ${index + 1}" },
+                            expression = part.subgroup.expression,
+                            total = part.chosen.total,
+                            detail = part.chosen.detail(),
+                            alternativeTotal = part.alternative?.total,
+                            alternativeDetail = part.alternative?.detail(),
+                        )
+                    }.orEmpty(),
             ),
         )
     }
 
     var lastThrowRequestAtNanos by remember(roll.id) { mutableStateOf(0L) }
 
-    fun requestThrow() {
+    fun requestThrow(mode: DoubleRollMode = DoubleRollMode.NORMAL) {
         if (hasRolled && !resultRevealed) return
         val now = System.nanoTime()
         if (now - lastThrowRequestAtNanos < 450_000_000L) return
         lastThrowRequestAtNanos = now
-        throwDice()
+        throwDice(mode)
     }
 
     val shakeTriggerEnabled = if (hasRolled) settings.rerollShakeEnabled else settings.shakeEnabled
     DisposableEffect(shakeTriggerEnabled, hasRolled, resultRevealed, roll.id, formula.expression) {
         val detector = if (shakeTriggerEnabled && (!hasRolled || resultRevealed)) {
-            ShakeDetector(context, ::requestThrow).also { it.start() }
+            ShakeDetector(context) { requestThrow() }.also { it.start() }
         } else null
         onDispose { detector?.stop() }
     }
@@ -2276,8 +2331,11 @@ private fun RollScreenV2(
                 canRoll = gestureTriggerReady,
                 statsDoubleTapEnabled = settings.doubleTapStatsEnabled,
                 canToggleStats = hasRolled && resultRevealed,
-                onRollRequest = ::requestThrow,
+                onRollRequest = { requestThrow() },
                 onStatsToggle = { showStats = !showStats },
+                directionalDoubleRollEnabled = roll.doubleRollEnabled && settings.doubleRollDirectionalSwipeEnabled,
+                onBestRollRequest = { requestThrow(DoubleRollMode.BEST) },
+                onWorstRollRequest = { requestThrow(DoubleRollMode.WORST) },
                 modifier = Modifier.fillMaxSize().padding(bottom = 88.dp),
             )
 
@@ -2286,7 +2344,8 @@ private fun RollScreenV2(
                     // Keep the center of the table free for the 3D dice. The result stack
                     // grows upwards from the footer, with a viewport bound on small screens.
                     RollResultsOverlayV2(
-                        parts = formula.subgroupResults(value),
+                        parts = doubleEvaluation?.parts?.map { ResolvedRollSubgroupResult(it.subgroup, it.chosen) }
+                            ?: formula.subgroupResults(value),
                         total = value.total,
                         aboveAverage = value.total > value.expectedTotal(),
                         modifier = Modifier
@@ -2342,8 +2401,32 @@ private fun RollScreenV2(
                             tint = Color.White.copy(alpha = 0.9f),
                         )
                     }
+                    if (roll.doubleRollEnabled) {
+                        IconButton(
+                            onClick = { requestThrow(DoubleRollMode.WORST) },
+                            enabled = !hasRolled || resultRevealed,
+                        ) {
+                            Icon(
+                                Icons.Rounded.Casino,
+                                contentDescription = stringResource(R.string.double_roll_worst),
+                                modifier = Modifier.size(27.dp),
+                                tint = Color(0xFFF87171),
+                            )
+                        }
+                        IconButton(
+                            onClick = { requestThrow(DoubleRollMode.BEST) },
+                            enabled = !hasRolled || resultRevealed,
+                        ) {
+                            Icon(
+                                Icons.Rounded.Casino,
+                                contentDescription = stringResource(R.string.double_roll_best),
+                                modifier = Modifier.size(27.dp),
+                                tint = Color(0xFF86EFAC),
+                            )
+                        }
+                    }
                     IconButton(
-                        onClick = ::requestThrow,
+                        onClick = { requestThrow() },
                         enabled = !hasRolled || resultRevealed,
                     ) {
                         Icon(
@@ -2434,8 +2517,35 @@ private fun RollScreenV2(
                         }
                     }
                 }
+                doubleEvaluation?.takeIf { it.mode != DoubleRollMode.NORMAL }?.let { comparison ->
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                    ) {
+                        Column(Modifier.fillMaxWidth().padding(14.dp)) {
+                            Text(
+                                stringResource(
+                                    if (comparison.mode == DoubleRollMode.BEST) R.string.double_roll_best
+                                    else R.string.double_roll_worst,
+                                ),
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                "${stringResource(R.string.double_roll_selected)}: ${comparison.comparisonTotal}",
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                "${stringResource(R.string.double_roll_alternative)}: ${comparison.alternativeComparisonTotal}",
+                                modifier = Modifier.graphicsLayer { alpha = 0.54f },
+                            )
+                        }
+                    }
+                }
                 outcome?.let { rolled ->
-                    formula.subgroupResults(rolled).forEachIndexed { index, grouped ->
+                    val displayParts = doubleEvaluation?.parts?.map {
+                        ResolvedRollSubgroupResult(it.subgroup, it.chosen)
+                    } ?: formula.subgroupResults(rolled)
+                    displayParts.forEachIndexed { index, grouped ->
                         Surface(
                             shape = RoundedCornerShape(16.dp),
                             color = MaterialTheme.colorScheme.secondaryContainer,
@@ -2459,6 +2569,15 @@ private fun RollScreenV2(
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                                     )
+                                    doubleEvaluation?.parts?.getOrNull(index)?.alternative?.let { alternative ->
+                                        Column(Modifier.graphicsLayer { alpha = 0.54f }) {
+                                            Text(
+                                                "${stringResource(R.string.double_roll_alternative)}: ${alternative.total}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                            )
+                                            Text(alternative.detail(), style = MaterialTheme.typography.labelSmall)
+                                        }
+                                    }
                                 }
                                 Text(
                                     grouped.result.total.toString(),
@@ -3002,6 +3121,11 @@ private fun SettingsScreenV2(
                             )
                             Spacer(Modifier.height(4.dp))
                             RollTriggerToggle(
+                                label = stringResource(R.string.directional_double_roll_swipes),
+                                checked = settings.doubleRollDirectionalSwipeEnabled,
+                                onChecked = { onSettingsChanged(settings.copy(doubleRollDirectionalSwipeEnabled = it)) },
+                            )
+                            RollTriggerToggle(
                                 label = stringResource(R.string.double_tap_statistics),
                                 checked = settings.doubleTapStatsEnabled,
                                 onChecked = { onSettingsChanged(settings.copy(doubleTapStatsEnabled = it)) },
@@ -3450,12 +3574,14 @@ internal fun RollBuilderScreenV2(
     var name by remember(existing?.id) { mutableStateOf(existing?.name ?: "") }
     var groupId by remember(existing?.id, initialGroupId) { mutableStateOf(existing?.groupId ?: initialGroupId) }
     var groupMenu by remember(existing?.id) { mutableStateOf(false) }
+    var doubleRollEnabled by remember(existing?.id) { mutableStateOf(existing?.doubleRollEnabled ?: true) }
     var subgroups by remember(existing?.id) {
         mutableStateOf(
             existing?.subgroups?.takeIf { it.isNotEmpty() } ?: listOf(
                 RollSubgroup(
                     id = UUID.randomUUID().toString(),
                     expression = existing?.expression ?: "1d20",
+                    includeInDoubleRoll = existing == null,
                 ),
             ),
         )
@@ -3628,6 +3754,15 @@ internal fun RollBuilderScreenV2(
                                 }
                             }
                         }
+                        RollTriggerToggle(
+                            label = stringResource(R.string.double_roll_part),
+                            checked = subgroup.includeInDoubleRoll,
+                            onChecked = { selected ->
+                                updateSubgroups(subgroups.map { part ->
+                                    if (part.id == subgroup.id) part.copy(includeInDoubleRoll = selected) else part
+                                })
+                            },
+                        )
                         GuidedExpressionEditorV2(
                             value = subgroup.expression,
                             character = character,
@@ -3643,6 +3778,11 @@ internal fun RollBuilderScreenV2(
             }
 
             item {
+                RollTriggerToggle(
+                    label = stringResource(R.string.double_roll_enable),
+                    checked = doubleRollEnabled,
+                    onChecked = { doubleRollEnabled = it },
+                )
                 Surface(
                     shape = RoundedCornerShape(14.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
@@ -3676,6 +3816,7 @@ internal fun RollBuilderScreenV2(
                             expression = expressionToSave,
                             groupId = groupId,
                             subgroups = subgroups,
+                            doubleRollEnabled = doubleRollEnabled,
                         )
                         val slots = runCatching {
                             val resolved = RollFormulaResolver.resolve(character, modifiers, saved).expression

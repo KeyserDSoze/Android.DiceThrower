@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">הפעל הטלה כפולה</string>
+    <string name="double_roll_part">כלול חלק זה בהטלה כפולה</string>
+    <string name="directional_double_roll_swipes">החלקה (שמאלה: גרוע, ימינה: טוב, למעלה: רגיל)</string>
+    <string name="double_roll_best">הטלה כפולה: טוב</string>
+    <string name="double_roll_worst">הטלה כפולה: גרוע</string>
+    <string name="double_roll_selected">נבחר</string>
+    <string name="double_roll_alternative">תוצאה אחרת</string>
+</resources>

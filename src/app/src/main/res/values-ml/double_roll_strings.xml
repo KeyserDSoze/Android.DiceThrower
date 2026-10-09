@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">ഇരട്ട റോൾ പ്രവർത്തനക്ഷമമാക്കുക</string>
+    <string name="double_roll_part">ഈ ഭാഗം ഇരട്ട റോളിൽ ഉൾപ്പെടുത്തുക</string>
+    <string name="directional_double_roll_swipes">സ്വൈപ്പ് (ഇടത്: മോശം, വലത്: നല്ലത്, മുകളിൽ: സാധാരണം)</string>
+    <string name="double_roll_best">ഇരട്ട റോൾ: നല്ലത്</string>
+    <string name="double_roll_worst">ഇരട്ട റോൾ: മോശം</string>
+    <string name="double_roll_selected">തിരഞ്ഞെടുത്തത്</string>
+    <string name="double_roll_alternative">മറ്റൊരു ഫലം</string>
+</resources>

@@ -14,6 +14,8 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.doubleClick
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -98,6 +100,68 @@ class RollTableGestureV2Test {
         composeRule.runOnIdle {
             assertEquals(1, throws)
             assertEquals(0, toggles)
+        }
+    }
+
+    @Test
+    fun directionSwipesDispatchExactRequestedMode() {
+        var normal = 0
+        var best = 0
+        var worst = 0
+        composeRule.setContent {
+            RollTableGestureLayerV2(
+                tapToRollEnabled = false,
+                swipeToRollEnabled = true,
+                canRoll = true,
+                statsDoubleTapEnabled = false,
+                canToggleStats = false,
+                onRollRequest = { normal++ },
+                onStatsToggle = {},
+                modifier = Modifier.size(300.dp),
+                directionalDoubleRollEnabled = true,
+                onBestRollRequest = { best++ },
+                onWorstRollRequest = { worst++ },
+            )
+        }
+        val table = composeRule.onNodeWithTag("roll-table-gesture-layer")
+        table.performTouchInput { swipeLeft() }
+        table.performTouchInput { swipeRight() }
+        table.performTouchInput { swipeUp() }
+        composeRule.runOnIdle {
+            assertEquals(1, worst)
+            assertEquals(1, best)
+            assertEquals(1, normal)
+        }
+    }
+
+    @Test
+    fun directionalPreferenceOffRestoresOriginalUpSwipeOnly() {
+        var normal = 0
+        var best = 0
+        var worst = 0
+        composeRule.setContent {
+            RollTableGestureLayerV2(
+                tapToRollEnabled = false,
+                swipeToRollEnabled = true,
+                canRoll = true,
+                statsDoubleTapEnabled = false,
+                canToggleStats = false,
+                onRollRequest = { normal++ },
+                onStatsToggle = {},
+                modifier = Modifier.size(300.dp),
+                directionalDoubleRollEnabled = false,
+                onBestRollRequest = { best++ },
+                onWorstRollRequest = { worst++ },
+            )
+        }
+        val table = composeRule.onNodeWithTag("roll-table-gesture-layer")
+        table.performTouchInput { swipeLeft() }
+        table.performTouchInput { swipeRight() }
+        table.performTouchInput { swipeUp() }
+        composeRule.runOnIdle {
+            assertEquals(0, worst)
+            assertEquals(0, best)
+            assertEquals(1, normal)
         }
     }
 

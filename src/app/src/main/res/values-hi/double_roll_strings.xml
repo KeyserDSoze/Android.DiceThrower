@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">इस रोल के लिए दोहरा थ्रो चालू करें</string>
+    <string name="double_roll_part">इस भाग को दोहरे थ्रो में शामिल करें</string>
+    <string name="directional_double_roll_swipes">स्वाइप (बाएँ: खराब, दाएँ: बेहतर, ऊपर: सामान्य)</string>
+    <string name="double_roll_best">दोहरा थ्रो: बेहतर</string>
+    <string name="double_roll_worst">दोहरा थ्रो: खराब</string>
+    <string name="double_roll_selected">चुना गया</string>
+    <string name="double_roll_alternative">अन्य परिणाम</string>
+</resources>

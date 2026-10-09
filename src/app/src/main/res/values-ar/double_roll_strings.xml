@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">تفعيل الرميات المزدوجة لهذه الرمية</string>
+    <string name="double_roll_part">تضمين هذا الجزء في الرميات المزدوجة</string>
+    <string name="directional_double_roll_swipes">سحب اتجاهي (يسار: الأسوأ، يمين: الأفضل، أعلى: عادي)</string>
+    <string name="double_roll_best">رمي مزدوج: الأفضل</string>
+    <string name="double_roll_worst">رمي مزدوج: الأسوأ</string>
+    <string name="double_roll_selected">المختار</string>
+    <string name="double_roll_alternative">النتيجة الأخرى</string>
+</resources>
