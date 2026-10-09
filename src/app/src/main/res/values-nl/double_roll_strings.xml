@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">Dubbele worpen inschakelen</string>
+    <string name="double_roll_part">Neem dit deel op in dubbele worpen</string>
+    <string name="directional_double_roll_swipes">Veeg (links: slechtste, rechts: beste, omhoog: normaal)</string>
+    <string name="double_roll_best">Dubbele worp: beste</string>
+    <string name="double_roll_worst">Dubbele worp: slechtste</string>
+    <string name="double_roll_selected">Geselecteerd</string>
+    <string name="double_roll_alternative">Andere uitslag</string>
+</resources>
