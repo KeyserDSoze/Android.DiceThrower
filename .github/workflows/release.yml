@@ -206,8 +206,8 @@ jobs:
           VERSION: ${{ needs.release.outputs.version }}
         run: |
           mkdir -p distribution/whatsnew
-          printf 'Dice Thrower %s: fixes Roll Part formula editing and saving, including the Formula Composer. Adds direct Roll editing and level controls in the statistics panel.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
-          printf 'Dice Thrower %s: corregge modifica e salvataggio delle formule nelle Roll Parts e il Formula Composer. Aggiunge modifica diretta del tiro e controlli livello dalle statistiche.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
+          printf 'Dice Thrower %s: synchronizes Roll Part expressions and visual Formula Composer terms live in both directions, and improves icon/text contrast in dark and light themes.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
+          printf 'Dice Thrower %s: sincronizza in tempo reale le formule delle Roll Parts con il Formula Composer in entrambi i sensi e migliora il contrasto di testi e icone nei temi chiaro e scuro.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
 
       - name: Upload to Google Play Internal testing
         uses: r0adkll/upload-google-play@v1.1.5
