@@ -83,6 +83,7 @@ object EffectActivationEvaluator {
         effect: RollEffect,
         snapshot: EffectRollSnapshot,
         thresholdResolver: (String, EffectRollSnapshot) -> Int = ::resolveIntegerThreshold,
+        valueResolver: ((EffectCondition, EffectRollSnapshot) -> Int)? = null,
     ): EffectActivationEvaluation {
         if (!effect.enabled) return EffectActivationEvaluation(
             effectId = effect.id,
@@ -92,7 +93,7 @@ object EffectActivationEvaluator {
         )
         val groups = effect.activationGroups.map { group ->
             val conditions = group.conditions.map { condition ->
-                evaluateCondition(condition, snapshot, thresholdResolver)
+                evaluateCondition(condition, snapshot, thresholdResolver, valueResolver)
             }
             EffectGroupEvaluation(
                 groupId = group.id,
@@ -112,8 +113,11 @@ object EffectActivationEvaluator {
         condition: EffectCondition,
         snapshot: EffectRollSnapshot,
         thresholdResolver: (String, EffectRollSnapshot) -> Int = ::resolveIntegerThreshold,
+        valueResolver: ((EffectCondition, EffectRollSnapshot) -> Int)? = null,
     ): EffectConditionEvaluation {
-        val actual = runCatching { readValue(condition, snapshot) }
+        val actual = runCatching {
+            valueResolver?.invoke(condition, snapshot) ?: readValue(condition, snapshot)
+        }
             .getOrElse {
                 return EffectConditionEvaluation(condition.id, null, null, false, it.message)
             }
