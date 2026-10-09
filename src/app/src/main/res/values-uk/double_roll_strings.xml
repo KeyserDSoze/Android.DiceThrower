@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">Увімкнути подвійні кидки</string>
+    <string name="double_roll_part">Додати цю частину до подвійних кидків</string>
+    <string name="directional_double_roll_swipes">Свайпи (ліворуч: гірший, праворуч: кращий, угору: звичайний)</string>
+    <string name="double_roll_best">Подвійний кидок: кращий</string>
+    <string name="double_roll_worst">Подвійний кидок: гірший</string>
+    <string name="double_roll_selected">Обраний</string>
+    <string name="double_roll_alternative">Інший результат</string>
+</resources>
