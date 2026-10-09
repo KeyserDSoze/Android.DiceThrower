@@ -7,6 +7,7 @@ data class DiceRollVisualEvent(
     val id: Long,
     val result: DiceRollResult,
     val appearances: List<ResolvedDiceAppearance>,
+    val dimmedComponentIndices: Set<Int> = emptySet(),
 )
 
 /**
