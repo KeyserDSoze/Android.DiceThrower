@@ -17,7 +17,7 @@ class EffectFormulaInterpreterTest {
 
     @Test
     fun floorCeilAndRoundHaveExplicitSemantics() {
-        assertEquals(3.0, eval("f(level/7)"), 0.000001)
+        assertEquals(2.0, eval("f(level/7)"), 0.000001)
         assertEquals(3.0, eval("c(level/7)"), 0.000001)
         assertEquals(3.0, eval("r(level/7)"), 0.000001)
         assertEquals(-2.0, eval("f(-1.2)"), 0.000001)
