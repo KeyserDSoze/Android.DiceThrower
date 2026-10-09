@@ -2305,7 +2305,7 @@ private fun RollScreenV2(
                 subgroupIdByComponentIndex = firstStage.componentOwners,
                 random = Random(visualSeed),
             ),
-            dimmedComponentIndices = evaluation.dimmedComponentIndices,
+            dimmedComponentIndices = (if (firstStage.retainsBaseline) evaluation.dimmedComponentIndices else emptySet()) + firstStage.rerolledComponentIndices,
             effectAccentComponents = firstStage.accentByComponentIndex,
         )
         doubleEvaluation = evaluation
@@ -2396,7 +2396,9 @@ private fun RollScreenV2(
                                     subgroupIdByComponentIndex = stage.componentOwners,
                                     random = Random(visualSeed),
                                 ),
-                                dimmedComponentIndices = doubleEvaluation?.dimmedComponentIndices.orEmpty(),
+                                dimmedComponentIndices =
+                                    (if (stage.retainsBaseline) doubleEvaluation?.dimmedComponentIndices.orEmpty()
+                                    else emptySet()) + stage.rerolledComponentIndices,
                                 effectAccentComponents = stage.accentByComponentIndex,
                                 persistentDiceCount = stage.persistentDiceCount,
                             )
