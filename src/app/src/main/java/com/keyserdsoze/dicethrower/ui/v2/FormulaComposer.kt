@@ -28,8 +28,8 @@ internal data class ComposerSimpleInput(
 )
 
 internal object FormulaComposer {
-    private val diceTerm = Regex("""^(\\{[^{}]+\\}|[0-9]*)[dD]([0-9]+)$""")
-    private val scalarTerm = Regex("""^(\\{[^{}]+\\}|[0-9]+)$""")
+    private val diceTerm = Regex("""^([{][^{}]+[}]|[0-9]*)[dD]([0-9]+)$""")
+    private val scalarTerm = Regex("""^([{][^{}]+[}]|[0-9]+)$""")
 
     fun simpleInput(term: ComposerTerm): ComposerSimpleInput? {
         if (term.isGroup) return null
