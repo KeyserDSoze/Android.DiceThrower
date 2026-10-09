@@ -54,6 +54,7 @@ object EffectSequenceExecutor {
     ): EffectExecutionResult {
         var numeric = EffectNumericSnapshot.fromRoll(original)
         val traces = mutableListOf<EffectExecutionStep>()
+        val pending = linkedMapOf<String, EffectActivationEvaluation>()
         val generated = mutableListOf<EffectGeneratedDice>()
         var stoppedBy: String? = null
         val activatedIds = mutableSetOf<String>()
@@ -86,11 +87,11 @@ object EffectSequenceExecutor {
                     },
                 )
                 if (!evaluation.activated) {
-                    // Preserve one trace per evaluated group in the final pass only.
-                    if (pass == MAX_PASSES - 1) traces += EffectExecutionStep(effect.id, evaluation)
+                    pending[effect.id] = evaluation
                     continue
                 }
                 activatedIds += effect.id
+                pending.remove(effect.id)
                 val results = mutableListOf<EffectActionResult>()
                 for (action in effect.actions) {
                     if (++actionsCount > MAX_ACTIONS) {
@@ -138,11 +139,11 @@ object EffectSequenceExecutor {
                 if (stoppedBy != null || limited) break
             }
             if (stoppedBy != null || limited || !generatedThisPass) {
-                return EffectExecutionResult(original, numeric, traces, generated, stoppedBy, limited)
+                return EffectExecutionResult(original, numeric, traces + pending.map { EffectExecutionStep(it.key, it.value) }, generated, stoppedBy, limited)
             }
         }
         // All remaining Effects were checked in the last pass. No recursive retry.
-        return EffectExecutionResult(original, numeric, traces, generated, stoppedBy, true)
+        return EffectExecutionResult(original, numeric, traces + pending.map { EffectExecutionStep(it.key, it.value) }, generated, stoppedBy, true)
     }
 
     private fun readCurrent(
