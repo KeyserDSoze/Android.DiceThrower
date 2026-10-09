@@ -3382,28 +3382,19 @@ internal fun RollBuilderScreenV2(
             ),
         )
     }
-    val guidedExpression = remember(subgroups) {
-        runCatching { RollFormulaResolver.canonicalExpression(subgroups) }.getOrDefault("")
-    }
-    var formulaText by remember(existing?.id) {
-        mutableStateOf(TextFieldValue(existing?.expression ?: guidedExpression.ifBlank { "1d20" }))
-    }
+    // Roll Parts are the only editable source of truth. Storage always receives
+    // their canonical expression, including the parentheses required for a single part.
+    val expressionToSave = runCatching {
+        RollFormulaResolver.canonicalExpression(subgroups)
+    }.getOrDefault("")
     val groupsValid = subgroups.isNotEmpty() && subgroups.all { subgroup ->
         subgroup.expression.isNotBlank() &&
             RollFormulaResolver.validateTemplate(subgroup.expression, character.level, modifiers)
     }
-    val expressionToSave = formulaText.text.trim()
     val expressionValid = RollFormulaResolver.validateTemplate(expressionToSave, character.level, modifiers)
-    // The canonical subgroup rendering wraps every part in parentheses. A valid
-    // single-part text edit is equivalent to its canonical wrapped expression.
-    val synced = expressionToSave == guidedExpression ||
-        (subgroups.size == 1 && expressionToSave == subgroups.single().expression.trim())
-    val valid = name.isNotBlank() && expressionValid && groupsValid && synced
+    val valid = name.isNotBlank() && groupsValid && expressionValid
     fun updateSubgroups(updated: List<RollSubgroup>) {
         subgroups = updated
-        formulaText = TextFieldValue(
-            runCatching { RollFormulaResolver.canonicalExpression(updated) }.getOrDefault("")
-        )
     }
 
     LazyColumn(
@@ -3464,28 +3455,6 @@ internal fun RollBuilderScreenV2(
             }
         }
 
-        item {
-            PremiumCard(Modifier.fillMaxWidth()) {
-                ParameterizedExpressionField(
-                    value = formulaText,
-                    onValueChange = { updated ->
-                        formulaText = updated
-                        guidedSubgroupsFromAdvancedExpression(
-                            expression = updated.text,
-                            current = subgroups,
-                            level = character.level,
-                            modifiers = modifiers,
-                        )?.let { imported -> subgroups = imported }
-                    },
-                    label = stringResource(R.string.expression),
-                    modifiers = modifiers,
-                    isValid = expressionValid,
-                    helper = stringResource(R.string.expression_hint),
-                    errorText = stringResource(R.string.invalid_expression),
-                    modifier = Modifier.padding(16.dp),
-                )
-            }
-        }
         item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -3689,16 +3658,23 @@ private fun GuidedExpressionEditorV2(
         }
     }
 
-    OutlinedTextField(
-        value = value,
-        onValueChange = {},
-        readOnly = true,
-        isError = value.isNotBlank() && !valid,
-        label = { Text(stringResource(R.string.expression)) },
-        supportingText = {
-            Text(stringResource(if (valid) R.string.expression_hint else R.string.invalid_expression))
+    // Keep TextFieldValue (cursor/selection) stable while the composer updates the
+    // same Roll Part expression, including manual edits and inserted variable chips.
+    var editingValue by remember { mutableStateOf(TextFieldValue(value)) }
+    LaunchedEffect(value) {
+        if (editingValue.text != value) editingValue = TextFieldValue(value)
+    }
+    ParameterizedExpressionField(
+        value = editingValue,
+        onValueChange = { updated ->
+            editingValue = updated
+            onValueChange(updated.text)
         },
-        modifier = Modifier.fillMaxWidth(),
+        label = stringResource(R.string.expression),
+        modifiers = modifiers,
+        isValid = valid,
+        helper = stringResource(R.string.expression_hint),
+        errorText = stringResource(R.string.invalid_expression),
     )
 
     if (composer != null && composer.isNotEmpty()) {
