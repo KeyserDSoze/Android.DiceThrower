@@ -54,6 +54,8 @@ class EffectsVisualTimelineTest {
         assertEquals(EffectType.MALUS, stages[2].accentByComponentIndex[3])
         assertEquals("damage", stages[1].componentOwners[2])
         assertEquals("attack", stages[2].componentOwners[3])
+        assertEquals(setOf(0), stages[2].rerolledComponentIndices)
+        assertTrue(stages[2].retainsBaseline)
     }
 
     @Test
@@ -85,6 +87,7 @@ class EffectsVisualTimelineTest {
             mapOf("bonus" to EffectType.BONUS), animate = true)
         assertEquals(2, stages.size)
         assertEquals(0, stages.last().persistentDiceCount)
+        assertFalse(stages.last().retainsBaseline)
         assertEquals(listOf(3), stages.last().result.components.single().rolls)
         assertEquals(EffectType.BONUS, stages.last().accentByComponentIndex[0])
     }
