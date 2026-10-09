@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">రెండు సార్లు రోల్ చేయడం ప్రారంభించు</string>
+    <string name="double_roll_part">ఈ భాగాన్ని డబుల్ రోల్‌లో చేర్చు</string>
+    <string name="directional_double_roll_swipes">స్వైప్ (ఎడమ: తక్కువ, కుడి: ఎక్కువ, పైకి: సాధారణం)</string>
+    <string name="double_roll_best">డబుల్ రోల్: మెరుగైనది</string>
+    <string name="double_roll_worst">డబుల్ రోల్: తక్కువది</string>
+    <string name="double_roll_selected">ఎంచుకున్నది</string>
+    <string name="double_roll_alternative">ఇతర ఫలితం</string>
+</resources>
