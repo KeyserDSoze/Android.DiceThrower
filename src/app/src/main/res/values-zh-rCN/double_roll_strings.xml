@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">为本次投掷启用双重投掷</string>
+    <string name="double_roll_part">将此部分加入双重投掷</string>
+    <string name="directional_double_roll_swipes">方向滑动（左：较差，右：较好，上：正常）</string>
+    <string name="double_roll_best">双重投掷：较好</string>
+    <string name="double_roll_worst">双重投掷：较差</string>
+    <string name="double_roll_selected">已选择</string>
+    <string name="double_roll_alternative">其他结果</string>
+</resources>
