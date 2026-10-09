@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">ਸ਼ਰਤਾਂ ਵਾਲੇ ਬੋਨਸ ਜਾਂ ਜੁਰਮਾਨੇ ਦੇ ਨਿਯਮ ਜੋੜੋ। ਸਮੂਹ ਦੀਆਂ ਸ਼ਰਤਾਂ AND ਨਾਲ ਅਤੇ ਸਮੂਹ OR ਨਾਲ ਜੁੜਦੇ ਹਨ।</string>
+    <string name="effects_formula_help">ਫਾਰਮੂਲੇ: f(x)=floor, c(x)=ceil, r(x)=round (ਅੱਧੇ ਮੁੱਲ ਸਿਫ਼ਰ ਤੋਂ ਦੂਰ ਗੋਲ ਹੁੰਦੇ ਹਨ)। ਹਿੱਸੇ ਦੇ ਕੁੱਲ ਲਈ {parts:Name} ਵਰਤੋ। ਹਰ ਸ਼ਰਤ ਅਤੇ ਕਾਰਵਾਈ ਲਈ ਸਿਰਫ਼ ਪਾਸੇ, ਸਿਰਫ਼ ਸੋਧਕ ਜਾਂ ਕੁੱਲ ਚੁਣੋ।</string>
+    <string name="effects_or_group_number">OR ਸਮੂਹ %1$d</string>
+    <string name="effects_and_condition">AND ਸ਼ਰਤ %1$d</string>
+    <string name="effects_add_and">+ AND ਸ਼ਰਤ</string>
+    <string name="effects_add_or">+ OR ਸਮੂਹ</string>
+    <string name="effects_actions">ਕਾਰਵਾਈਆਂ (ਤਰਤੀਬ ਨਾਲ)</string>
+    <string name="effects_add_action">+ ਜੋੜੋ ਕਾਰਵਾਈ</string>
+    <string name="effects_add_bonus">+ ਜੋੜੋ ਬੋਨਸ</string>
+    <string name="effects_add_malus">+ ਜੋੜੋ ਜੁਰਮਾਨਾ</string>
+    <string name="effects_heading">ਪ੍ਰਭਾਵ</string>
+    <string name="effects_bonus">ਬੋਨਸ</string>
+    <string name="effects_malus">ਜੁਰਮਾਨਾ</string>
+    <string name="effects_name">ਪ੍ਰਭਾਵ ਦਾ ਨਾਮ</string>
+    <string name="effects_enabled">ਪ੍ਰਭਾਵ ਚਾਲੂ ਹੈ</string>
+    <string name="effects_stop_following">ਚਾਲੂ ਹੋਣ ਉੱਤੇ ਅਗਲੇ ਸਾਰੇ ਪ੍ਰਭਾਵ ਛੱਡੋ</string>
+    <string name="effects_or_groups">ਚਾਲੂ ਹੋਣ ਦੀਆਂ ਸ਼ਰਤਾਂ</string>
+    <string name="effects_action">ਕਾਰਵਾਈ</string>
+    <string name="effects_scope">ਮੁੱਲ ਦਾ ਦਾਇਰਾ</string>
+    <string name="effects_source">ਸਰੋਤ</string>
+    <string name="effects_target">ਹਿੱਸਾ</string>
+    <string name="effects_missing_part">ਹਿੱਸਾ ਨਹੀਂ ਮਿਲਿਆ</string>
+    <string name="effects_comparison">ਤੁਲਨਾ</string>
+    <string name="effects_threshold">ਸੀਮਾ ਦਾ ਫਾਰਮੂਲਾ</string>
+    <string name="effects_scope_dice">ਸਿਰਫ਼ ਪਾਸੇ</string>
+    <string name="effects_scope_modifiers">ਸਿਰਫ਼ ਸੋਧਕ</string>
+    <string name="effects_scope_total">ਕੁੱਲ</string>
+    <string name="effects_source_part">ਹਿੱਸੇ ਦਾ ਨਤੀਜਾ</string>
+    <string name="effects_source_roll">ਰੋਲ ਦਾ ਨਤੀਜਾ</string>
+    <string name="effects_source_variable">ਵੇਰੀਏਬਲ</string>
+    <string name="effects_action_add">ਜੋੜੋ</string>
+    <string name="effects_action_subtract">ਘਟਾਓ</string>
+    <string name="effects_action_multiply">ਗੁਣਾ ਕਰੋ</string>
+    <string name="effects_action_replace">ਬਦਲੋ</string>
+    <string name="effects_action_reroll">ਮੁੜ ਰੋਲ ਕਰੋ</string>
+    <string name="effects_action_roll_after">ਵਾਧੂ ਰੋਲ</string>
+    <string name="effects_dice_expression">ਪਾਸਿਆਂ ਦਾ ਸਮੀਕਰਨ (ਖਾਲੀ: ਹਿੱਸਾ ਦੁਹਰਾਓ)</string>
+    <string name="effects_formula">ਫਾਰਮੂਲਾ</string>
+    <string name="effects_invalid">ਪ੍ਰਭਾਵ ਜਾਂਚੋ: ਨਾਮ, ਨਿਸ਼ਾਨੇ ਵਾਲੇ ਹਿੱਸੇ ਅਤੇ ਸਹੀ ਫਾਰਮੂਲੇ ਲੋੜੀਂਦੇ ਹਨ।</string>
+    <string name="effects_trace_triggered">ਚਾਲੂ ਹੋਇਆ</string>
+    <string name="effects_trace_skipped">ਚਾਲੂ ਨਹੀਂ ਹੋਇਆ</string>
+</resources>

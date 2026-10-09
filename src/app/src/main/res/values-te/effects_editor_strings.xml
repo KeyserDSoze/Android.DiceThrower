@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">షరతులపై ఆధారపడి బోనస్ లేదా శిక్ష నియమాలను జోడించండి. సమూహంలోని షరతులు AND తో, సమూహాలు OR తో కలుపబడతాయి.</string>
+    <string name="effects_formula_help">సూత్రాలు: f(x)=floor, c(x)=ceil, r(x)=round (సగం విలువలు సున్నా నుంచి దూరంగా గుండ్రం చేయబడతాయి). భాగం మొత్తం కోసం {parts:Name} వాడండి. ప్రతి షరతు మరియు చర్యకు పాచికలు మాత్రమే, మార్పులు మాత్రమే లేదా మొత్తం ఎంచుకోండి.</string>
+    <string name="effects_or_group_number">OR సమూహం %1$d</string>
+    <string name="effects_and_condition">AND షరతు %1$d</string>
+    <string name="effects_add_and">+ AND షరతు</string>
+    <string name="effects_add_or">+ OR సమూహం</string>
+    <string name="effects_actions">చర్యలు (క్రమంలో)</string>
+    <string name="effects_add_action">+ జోడించు చర్య</string>
+    <string name="effects_add_bonus">+ జోడించు బోనస్</string>
+    <string name="effects_add_malus">+ జోడించు శిక్ష</string>
+    <string name="effects_heading">ప్రభావాలు</string>
+    <string name="effects_bonus">బోనస్</string>
+    <string name="effects_malus">శిక్ష</string>
+    <string name="effects_name">ప్రభావం పేరు</string>
+    <string name="effects_enabled">ప్రభావం ప్రారంభం</string>
+    <string name="effects_stop_following">సక్రియమైనప్పుడు తర్వాతి అన్ని ప్రభావాలను దాటవేయి</string>
+    <string name="effects_or_groups">సక్రియత షరతులు</string>
+    <string name="effects_action">చర్య</string>
+    <string name="effects_scope">విలువ పరిధి</string>
+    <string name="effects_source">మూలం</string>
+    <string name="effects_target">భాగం</string>
+    <string name="effects_missing_part">భాగం లేదు</string>
+    <string name="effects_comparison">పోలిక</string>
+    <string name="effects_threshold">పరిమితి సూత్రం</string>
+    <string name="effects_scope_dice">పాచికలు మాత్రమే</string>
+    <string name="effects_scope_modifiers">మార్పులు మాత్రమే</string>
+    <string name="effects_scope_total">మొత్తం</string>
+    <string name="effects_source_part">భాగం ఫలితం</string>
+    <string name="effects_source_roll">విసురు ఫలితం</string>
+    <string name="effects_source_variable">చరరాశి</string>
+    <string name="effects_action_add">కలుపు</string>
+    <string name="effects_action_subtract">తీసివేయి</string>
+    <string name="effects_action_multiply">గుణించు</string>
+    <string name="effects_action_replace">భర్తీ చేయి</string>
+    <string name="effects_action_reroll">మళ్లీ విసురు</string>
+    <string name="effects_action_roll_after">అదనపు విసురు</string>
+    <string name="effects_dice_expression">పాచికల వ్యక్తీకరణ (ఖాళీ: భాగాన్ని పునరావృతం చేయి)</string>
+    <string name="effects_formula">సూత్రం</string>
+    <string name="effects_invalid">ప్రభావాలను తనిఖీ చేయండి: పేర్లు, లక్ష్య భాగాలు, సరైన సూత్రాలు అవసరం.</string>
+    <string name="effects_trace_triggered">సక్రియమైంది</string>
+    <string name="effects_trace_skipped">సక్రియం కాలేదు</string>
+</resources>
