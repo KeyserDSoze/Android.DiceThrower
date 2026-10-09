@@ -136,6 +136,38 @@ data class RollDefinition(
     val effects: List<RollEffect> = emptyList(),
 )
 
+/** Immutable, backup-safe roll execution trace, independent of the renderer. */
+data class RollLogEffectCondition(
+    val groupId: String,
+    val conditionId: String,
+    val actual: Int? = null,
+    val threshold: Int? = null,
+    val comparison: EffectComparison,
+    val passed: Boolean,
+    val error: String? = null,
+)
+
+data class RollLogEffectAction(
+    val actionId: String,
+    val kind: EffectActionType,
+    val targetPartId: String? = null,
+    val scope: EffectValueScope,
+    val before: Int? = null,
+    val after: Int? = null,
+    val applied: Boolean,
+    val generatedDiceDetail: String? = null,
+    val error: String? = null,
+)
+
+data class RollLogEffectStep(
+    val effectId: String,
+    val name: String,
+    val type: EffectType,
+    val activated: Boolean,
+    val conditions: List<RollLogEffectCondition> = emptyList(),
+    val actions: List<RollLogEffectAction> = emptyList(),
+)
+
 data class RollLogPart(
     val name: String,
     val expression: String,
@@ -143,6 +175,8 @@ data class RollLogPart(
     val detail: String,
     val alternativeTotal: Int? = null,
     val alternativeDetail: String? = null,
+    val originalTotal: Int? = null,
+    val originalDetail: String? = null,
 )
 
 data class RollLog(
@@ -160,6 +194,7 @@ data class RollLog(
     val doubleRollMode: DoubleRollMode = DoubleRollMode.NORMAL,
     val comparisonTotal: Int? = null,
     val alternativeComparisonTotal: Int? = null,
+    val effectSteps: List<RollLogEffectStep> = emptyList(),
 )
 
 data class AppSettings(
