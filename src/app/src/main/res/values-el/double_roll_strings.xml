@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">Ενεργοποίηση διπλής ζαριάς</string>
+    <string name="double_roll_part">Συμπερίληψη αυτού του μέρους στη διπλή ζαριά</string>
+    <string name="directional_double_roll_swipes">Σύρσιμο (αριστερά: χειρότερο, δεξιά: καλύτερο, πάνω: κανονικό)</string>
+    <string name="double_roll_best">Διπλή ζαριά: καλύτερο</string>
+    <string name="double_roll_worst">Διπλή ζαριά: χειρότερο</string>
+    <string name="double_roll_selected">Επιλεγμένο</string>
+    <string name="double_roll_alternative">Άλλο αποτέλεσμα</string>
+</resources>
