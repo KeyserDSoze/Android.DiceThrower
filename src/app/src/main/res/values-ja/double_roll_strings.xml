@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">このロールでダブルロールを有効にする</string>
+    <string name="double_roll_part">このパートをダブルロールに含める</string>
+    <string name="directional_double_roll_swipes">スワイプ（左：低い方、右：高い方、上：通常）</string>
+    <string name="double_roll_best">ダブルロール：高い方</string>
+    <string name="double_roll_worst">ダブルロール：低い方</string>
+    <string name="double_roll_selected">選択結果</string>
+    <string name="double_roll_alternative">もう一方の結果</string>
+</resources>
