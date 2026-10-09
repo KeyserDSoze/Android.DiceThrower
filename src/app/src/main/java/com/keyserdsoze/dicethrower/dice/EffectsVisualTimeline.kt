@@ -13,6 +13,7 @@ data class EffectsVisualStage(
     /** The previous dice remain on the table; only the additional dice animate. */
     val persistentDiceCount: Int = 0,
     val effectId: String? = null,
+    val rerolledComponentIndices: Set<Int> = emptySet(),
 )
 
 object EffectsVisualTimeline {
@@ -32,6 +33,7 @@ object EffectsVisualTimeline {
         var components = baseline.components
         var owners = baselineOwners
         var accents = emptyMap<Int, EffectType>()
+        var replacedComponents = emptySet<Int>()
         val stages = mutableListOf(original)
         var displayedDice = baseline.components.sumOf { it.rolls.size }
         for (sample in execution.generatedDice.take(MAX_STAGES - 1)) {
@@ -43,6 +45,10 @@ object EffectsVisualTimeline {
             // dice in a fresh phase rather than silently dropping them.
             val previousCount = if (overflow) 0 else displayedDice
             val offset = if (overflow) 0 else components.size
+            if (overflow) replacedComponents = emptySet()
+            if (sample.kind == com.keyserdsoze.dicethrower.model.EffectActionType.REROLL) {
+                replacedComponents = replacedComponents + owners.filterValues { it == sample.partId }.keys
+            }
             components = if (overflow) added else components + added
             owners = if (overflow) emptyMap() else owners
             owners = owners + added.indices.associate { index -> offset + index to sample.partId }
@@ -62,6 +68,7 @@ object EffectsVisualTimeline {
                 accentByComponentIndex = accents,
                 persistentDiceCount = previousCount,
                 effectId = sample.effectId,
+                rerolledComponentIndices = replacedComponents,
             )
         }
         // With animations disabled, render the last already-resolved sample
