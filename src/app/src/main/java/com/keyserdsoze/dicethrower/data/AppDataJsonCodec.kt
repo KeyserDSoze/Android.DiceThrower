@@ -8,6 +8,7 @@ import com.keyserdsoze.dicethrower.model.CharacterImageRef
 import com.keyserdsoze.dicethrower.model.CharacterSyncMetadata
 import com.keyserdsoze.dicethrower.model.ConflictPolicy
 import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
+import com.keyserdsoze.dicethrower.model.DoubleRollMode
 import com.keyserdsoze.dicethrower.model.DiceMaterial
 import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.DiceTableTheme
@@ -26,7 +27,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 object AppDataJsonCodec {
-    const val DATA_VERSION = 10
+    const val DATA_VERSION = 11
 
     fun encodeData(data: AppData): JSONObject = encodeData(data, includeLegacyImageUris = true)
 
@@ -78,6 +79,7 @@ object AppDataJsonCodec {
                     .put("groupId", item.groupId ?: JSONObject.NULL)
                     .put("enabled", item.enabled)
                     .put("order", item.order)
+                    .put("doubleRollEnabled", item.doubleRollEnabled)
                     .put("levelRules", JSONArray().apply {
                         item.levelRules.forEach { rule ->
                             put(JSONObject()
@@ -93,7 +95,8 @@ object AppDataJsonCodec {
                                 .put("id", subgroup.id)
                                 .put("name", subgroup.name)
                                 .put("expression", subgroup.expression)
-                                .put("operator", subgroup.operator.name))
+                                .put("operator", subgroup.operator.name)
+                                .put("includeInDoubleRoll", subgroup.includeInDoubleRoll))
                         }
                     })
                     .put("diceAppearance", encodeDiceAppearance(item.diceAppearance)))
@@ -110,13 +113,18 @@ object AppDataJsonCodec {
                     .put("total", item.total)
                     .put("detail", item.detail)
                     .put("timestamp", item.timestamp)
+                    .put("doubleRollMode", item.doubleRollMode.name)
+                    .put("comparisonTotal", item.comparisonTotal ?: JSONObject.NULL)
+                    .put("alternativeComparisonTotal", item.alternativeComparisonTotal ?: JSONObject.NULL)
                     .put("parts", JSONArray().apply {
                         item.parts.forEach { part ->
                             put(JSONObject()
                                 .put("name", part.name)
                                 .put("expression", part.expression)
                                 .put("total", part.total)
-                                .put("detail", part.detail))
+                                .put("detail", part.detail)
+                                .put("alternativeTotal", part.alternativeTotal ?: JSONObject.NULL)
+                                .put("alternativeDetail", part.alternativeDetail ?: JSONObject.NULL))
                         }
                     }))
             }
@@ -188,6 +196,7 @@ object AppDataJsonCodec {
                 groupId = item.optNullableString("groupId"),
                 enabled = item.optBoolean("enabled", true),
                 order = item.optInt("order"),
+                doubleRollEnabled = item.optBoolean("doubleRollEnabled", false),
                 levelRules = item.optJSONArray("levelRules").mapObjects { rule ->
                     RollLevelRule(
                         id = rule.getString("id"),
@@ -208,6 +217,7 @@ object AppDataJsonCodec {
                             subgroup.optString("operator"),
                             RollSubgroupOperator.ADD,
                         ),
+                        includeInDoubleRoll = subgroup.optBoolean("includeInDoubleRoll", false),
                     )
                 },
                 diceAppearance = item.optJSONObject("diceAppearance")?.let(::decodeDiceAppearance)
@@ -224,12 +234,17 @@ object AppDataJsonCodec {
                 total = item.getInt("total"),
                 detail = item.optString("detail"),
                 timestamp = item.getLong("timestamp"),
+                doubleRollMode = enumValueOrDefault(item.optString("doubleRollMode"), DoubleRollMode.NORMAL),
+                comparisonTotal = item.optIntOrNull("comparisonTotal"),
+                alternativeComparisonTotal = item.optIntOrNull("alternativeComparisonTotal"),
                 parts = item.optJSONArray("parts").mapObjects { part ->
                     RollLogPart(
                         name = part.optString("name"),
                         expression = part.optString("expression"),
                         total = part.getInt("total"),
                         detail = part.optString("detail"),
+                        alternativeTotal = part.optIntOrNull("alternativeTotal"),
+                        alternativeDetail = part.optNullableString("alternativeDetail"),
                     )
                 },
             )
@@ -265,6 +280,7 @@ object AppDataJsonCodec {
         .put("rerollSwipeEnabled", settings.rerollSwipeEnabled)
         .put("rerollShakeEnabled", settings.rerollShakeEnabled)
         .put("doubleTapStatsEnabled", settings.doubleTapStatsEnabled)
+        .put("doubleRollDirectionalSwipeEnabled", settings.doubleRollDirectionalSwipeEnabled)
         .put("animationsEnabled", settings.animationsEnabled)
         .put("showRollButton", settings.showRollButton)
         .put("rollButtonPosition", settings.rollButtonPosition.name)
@@ -280,6 +296,7 @@ object AppDataJsonCodec {
         rerollSwipeEnabled = json.optBoolean("rerollSwipeEnabled", false),
         rerollShakeEnabled = json.optBoolean("rerollShakeEnabled", false),
         doubleTapStatsEnabled = json.optBoolean("doubleTapStatsEnabled", true),
+        doubleRollDirectionalSwipeEnabled = json.optBoolean("doubleRollDirectionalSwipeEnabled", true),
         animationsEnabled = json.optBoolean("animationsEnabled", true),
         showRollButton = json.optBoolean("showRollButton", true),
         rollButtonPosition = enumValueOrDefault(
@@ -331,6 +348,9 @@ object AppDataJsonCodec {
         mimeType = json.getString("mimeType"),
         byteSize = json.getLong("byteSize"),
     )
+
+    private fun JSONObject.optIntOrNull(key: String): Int? =
+        if (has(key) && !isNull(key)) getInt(key) else null
 
     private fun JSONObject.optNullableString(key: String): String? {
         if (!has(key) || isNull(key)) return null
