@@ -9,6 +9,7 @@ import com.keyserdsoze.dicethrower.model.RollLog
 import com.keyserdsoze.dicethrower.model.RollLogPart
 import com.keyserdsoze.dicethrower.model.RollSubgroup
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -50,6 +51,25 @@ class DoubleRollPersistenceTest {
         assertEquals(data, restored.data)
         assertEquals(settings, restored.settings)
         assertEquals(22, restored.data.logs.single().comparisonTotal)
+    }
+
+    @Test
+    fun syncRevisionIncludesDoubleRollFlagsWithoutBreakingLegacyDefaults() {
+        val basic = AppData(
+            characters = listOf(CharacterProfile("hero", "Hero")),
+            rolls = listOf(roll.copy(doubleRollEnabled = false,
+                subgroups = roll.subgroups.map { it.copy(includeInDoubleRoll = false) })),
+        )
+        val basicHash = CharacterRevision.revision(basic, "hero")
+        assertNotEquals(basicHash, CharacterRevision.revision(
+            basic.copy(rolls = listOf(basic.rolls.single().copy(doubleRollEnabled = true))), "hero",
+        ))
+        assertNotEquals(basicHash, CharacterRevision.revision(
+            basic.copy(rolls = listOf(basic.rolls.single().copy(
+                subgroups = listOf(basic.rolls.single().subgroups.first().copy(includeInDoubleRoll = true)) +
+                    basic.rolls.single().subgroups.drop(1),
+            ))), "hero",
+        ))
     }
 
     @Test
