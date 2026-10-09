@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">Включить двойные броски</string>
+    <string name="double_roll_part">Включить эту часть в двойной бросок</string>
+    <string name="directional_double_roll_swipes">Свайпы (влево: худший, вправо: лучший, вверх: обычный)</string>
+    <string name="double_roll_best">Двойной бросок: лучший</string>
+    <string name="double_roll_worst">Двойной бросок: худший</string>
+    <string name="double_roll_selected">Выбран</string>
+    <string name="double_roll_alternative">Другой результат</string>
+</resources>
