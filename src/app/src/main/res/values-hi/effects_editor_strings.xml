@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">शर्तों पर आधारित बोनस या दंड जोड़ें। एक समूह की शर्तें AND से और समूह OR से जुड़े हैं।</string>
+    <string name="effects_formula_help">सूत्र: f(x)=floor, c(x)=ceil और r(x)=round (आधे मान को शून्य से दूर पूर्णांकित करता है)। भाग का कुल पाने के लिए {parts:Name} उपयोग करें। हर शर्त और क्रिया के लिए केवल पासे, केवल संशोधक या कुल चुनें।</string>
+    <string name="effects_or_group_number">OR समूह %1$d</string>
+    <string name="effects_and_condition">AND शर्त %1$d</string>
+    <string name="effects_add_and">+ AND शर्त</string>
+    <string name="effects_add_or">+ OR समूह</string>
+    <string name="effects_actions">क्रियाएँ (क्रम से)</string>
+    <string name="effects_add_action">+ जोड़ें क्रिया</string>
+    <string name="effects_add_bonus">+ जोड़ें बोनस</string>
+    <string name="effects_add_malus">+ जोड़ें दंड</string>
+    <string name="effects_heading">प्रभाव</string>
+    <string name="effects_bonus">बोनस</string>
+    <string name="effects_malus">दंड</string>
+    <string name="effects_name">प्रभाव का नाम</string>
+    <string name="effects_enabled">प्रभाव चालू है</string>
+    <string name="effects_stop_following">सक्रिय होने पर बाद के सभी प्रभाव छोड़ें</string>
+    <string name="effects_or_groups">सक्रियण की शर्तें</string>
+    <string name="effects_action">क्रिया</string>
+    <string name="effects_scope">मान का दायरा</string>
+    <string name="effects_source">स्रोत</string>
+    <string name="effects_target">भाग</string>
+    <string name="effects_missing_part">भाग नहीं मिला</string>
+    <string name="effects_comparison">तुलना</string>
+    <string name="effects_threshold">सीमा का सूत्र</string>
+    <string name="effects_scope_dice">केवल पासे</string>
+    <string name="effects_scope_modifiers">केवल संशोधक</string>
+    <string name="effects_scope_total">कुल</string>
+    <string name="effects_source_part">भाग का परिणाम</string>
+    <string name="effects_source_roll">रोल का परिणाम</string>
+    <string name="effects_source_variable">चर</string>
+    <string name="effects_action_add">जोड़ें</string>
+    <string name="effects_action_subtract">घटाएँ</string>
+    <string name="effects_action_multiply">गुणा करें</string>
+    <string name="effects_action_replace">बदलें</string>
+    <string name="effects_action_reroll">फिर रोल करें</string>
+    <string name="effects_action_roll_after">अतिरिक्त रोल</string>
+    <string name="effects_dice_expression">पासों की अभिव्यक्ति (खाली: भाग दोहराएँ)</string>
+    <string name="effects_formula">सूत्र</string>
+    <string name="effects_invalid">प्रभाव जाँचें: नाम, लक्षित भाग और मान्य सूत्र आवश्यक हैं।</string>
+    <string name="effects_trace_triggered">सक्रिय हुआ</string>
+    <string name="effects_trace_skipped">सक्रिय नहीं हुआ</string>
+</resources>

@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">Koşullu bonus veya ceza kuralları ekleyin. Grup içi koşullar AND, gruplar ise OR ile birleştirilir.</string>
+    <string name="effects_formula_help">Formüller: f(x)=floor, c(x)=ceil, r(x)=round (yarımlar sıfırdan uzağa yuvarlanır). Bölüm toplamı için {parts:Name} kullanın. Her koşul ve işlem için yalnızca zar, yalnızca değiştirici veya toplam seçin.</string>
+    <string name="effects_or_group_number">OR Grup %1$d</string>
+    <string name="effects_and_condition">AND Koşul %1$d</string>
+    <string name="effects_add_and">+ AND Koşul</string>
+    <string name="effects_add_or">+ OR Grup</string>
+    <string name="effects_actions">İşlemler (sırayla)</string>
+    <string name="effects_add_action">+ Ekle İşlem</string>
+    <string name="effects_add_bonus">+ Ekle Bonus</string>
+    <string name="effects_add_malus">+ Ekle Ceza</string>
+    <string name="effects_heading">Etkiler</string>
+    <string name="effects_bonus">Bonus</string>
+    <string name="effects_malus">Ceza</string>
+    <string name="effects_name">Etki adı</string>
+    <string name="effects_enabled">Etki etkin</string>
+    <string name="effects_stop_following">Tetiklendiğinde sonraki tüm etkileri atla</string>
+    <string name="effects_or_groups">Etkinleşme koşulları</string>
+    <string name="effects_action">İşlem</string>
+    <string name="effects_scope">Değer kapsamı</string>
+    <string name="effects_source">Kaynak</string>
+    <string name="effects_target">Bölüm</string>
+    <string name="effects_missing_part">Eksik bölüm</string>
+    <string name="effects_comparison">Karşılaştırma</string>
+    <string name="effects_threshold">Eşik formülü</string>
+    <string name="effects_scope_dice">Yalnızca zarlar</string>
+    <string name="effects_scope_modifiers">Yalnızca değiştiriciler</string>
+    <string name="effects_scope_total">Toplam</string>
+    <string name="effects_source_part">Bölüm sonucu</string>
+    <string name="effects_source_roll">Atış sonucu</string>
+    <string name="effects_source_variable">Değişken</string>
+    <string name="effects_action_add">Ekle</string>
+    <string name="effects_action_subtract">Çıkar</string>
+    <string name="effects_action_multiply">Çarp</string>
+    <string name="effects_action_replace">Değiştir</string>
+    <string name="effects_action_reroll">Yeniden at</string>
+    <string name="effects_action_roll_after">Ek atış</string>
+    <string name="effects_dice_expression">Zar ifadesi (boş: bölümü tekrarla)</string>
+    <string name="effects_formula">Formül</string>
+    <string name="effects_invalid">Etkileri kontrol edin: ad, hedef bölüm ve geçerli formüller gereklidir.</string>
+    <string name="effects_trace_triggered">Tetiklendi</string>
+    <string name="effects_trace_skipped">Tetiklenmedi</string>
+</resources>

@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">قوانین پاداش یا جریمهٔ شرطی اضافه کنید. شرط‌های هر گروه با AND و گروه‌ها با OR ترکیب می‌شوند.</string>
+    <string name="effects_formula_help">فرمول‌ها: f(x)=floor، c(x)=ceil، r(x)=round (نیمه‌ها دور از صفر گرد می‌شوند). برای مجموع بخش از {parts:Name} استفاده کنید. برای هر شرط و اقدام فقط تاس‌ها، فقط اصلاحگرها یا مجموع را انتخاب کنید.</string>
+    <string name="effects_or_group_number">OR گروه %1$d</string>
+    <string name="effects_and_condition">AND شرط %1$d</string>
+    <string name="effects_add_and">+ AND شرط</string>
+    <string name="effects_add_or">+ OR گروه</string>
+    <string name="effects_actions">اقدام‌ها (به ترتیب)</string>
+    <string name="effects_add_action">+ افزودن اقدام</string>
+    <string name="effects_add_bonus">+ افزودن پاداش</string>
+    <string name="effects_add_malus">+ افزودن جریمه</string>
+    <string name="effects_heading">افکت‌ها</string>
+    <string name="effects_bonus">پاداش</string>
+    <string name="effects_malus">جریمه</string>
+    <string name="effects_name">نام افکت</string>
+    <string name="effects_enabled">افکت فعال است</string>
+    <string name="effects_stop_following">پس از فعال‌شدن، همهٔ افکت‌های بعدی رد شوند</string>
+    <string name="effects_or_groups">شرایط فعال‌سازی</string>
+    <string name="effects_action">اقدام</string>
+    <string name="effects_scope">دامنهٔ مقدار</string>
+    <string name="effects_source">منبع</string>
+    <string name="effects_target">بخش</string>
+    <string name="effects_missing_part">بخش یافت نشد</string>
+    <string name="effects_comparison">مقایسه</string>
+    <string name="effects_threshold">فرمول آستانه</string>
+    <string name="effects_scope_dice">فقط تاس‌ها</string>
+    <string name="effects_scope_modifiers">فقط اصلاحگرها</string>
+    <string name="effects_scope_total">مجموع</string>
+    <string name="effects_source_part">نتیجهٔ بخش</string>
+    <string name="effects_source_roll">نتیجهٔ پرتاب</string>
+    <string name="effects_source_variable">متغیر</string>
+    <string name="effects_action_add">جمع</string>
+    <string name="effects_action_subtract">تفریق</string>
+    <string name="effects_action_multiply">ضرب</string>
+    <string name="effects_action_replace">جایگزینی</string>
+    <string name="effects_action_reroll">پرتاب دوباره</string>
+    <string name="effects_action_roll_after">پرتاب اضافه</string>
+    <string name="effects_dice_expression">عبارت تاس (خالی: تکرار بخش)</string>
+    <string name="effects_formula">فرمول</string>
+    <string name="effects_invalid">افکت‌ها را بررسی کنید: نام، بخش هدف و فرمول معتبر لازم است.</string>
+    <string name="effects_trace_triggered">فعال شد</string>
+    <string name="effects_trace_skipped">فعال نشد</string>
+</resources>

@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">أضف قواعد مكافأة أو عقوبة مشروطة. تُجمع الشروط داخل المجموعة باستخدام AND، والمجموعات باستخدام OR.</string>
+    <string name="effects_formula_help">الصيغ: f(x)=floor و c(x)=ceil و r(x)=round (يُقرّب النصف بعيدًا عن الصفر). استخدم {parts:Name} لمجموع الجزء. اختر النرد فقط أو المعدّلات فقط أو المجموع لكل شرط وإجراء.</string>
+    <string name="effects_or_group_number">OR مجموعة %1$d</string>
+    <string name="effects_and_condition">AND شرط %1$d</string>
+    <string name="effects_add_and">+ AND شرط</string>
+    <string name="effects_add_or">+ OR مجموعة</string>
+    <string name="effects_actions">الإجراءات (بالترتيب)</string>
+    <string name="effects_add_action">+ إضافة إجراء</string>
+    <string name="effects_add_bonus">+ إضافة مكافأة</string>
+    <string name="effects_add_malus">+ إضافة عقوبة</string>
+    <string name="effects_heading">التأثيرات</string>
+    <string name="effects_bonus">مكافأة</string>
+    <string name="effects_malus">عقوبة</string>
+    <string name="effects_name">اسم التأثير</string>
+    <string name="effects_enabled">التأثير مفعّل</string>
+    <string name="effects_stop_following">عند التفعيل تجاهل كل التأثيرات التالية</string>
+    <string name="effects_or_groups">شروط التفعيل</string>
+    <string name="effects_action">إجراء</string>
+    <string name="effects_scope">نطاق القيمة</string>
+    <string name="effects_source">المصدر</string>
+    <string name="effects_target">جزء</string>
+    <string name="effects_missing_part">جزء مفقود</string>
+    <string name="effects_comparison">مقارنة</string>
+    <string name="effects_threshold">صيغة الحد</string>
+    <string name="effects_scope_dice">النرد فقط</string>
+    <string name="effects_scope_modifiers">المعدّلات فقط</string>
+    <string name="effects_scope_total">المجموع</string>
+    <string name="effects_source_part">نتيجة الجزء</string>
+    <string name="effects_source_roll">نتيجة الرمية</string>
+    <string name="effects_source_variable">متغيّر</string>
+    <string name="effects_action_add">جمع</string>
+    <string name="effects_action_subtract">طرح</string>
+    <string name="effects_action_multiply">ضرب</string>
+    <string name="effects_action_replace">استبدال</string>
+    <string name="effects_action_reroll">إعادة الرمي</string>
+    <string name="effects_action_roll_after">رمية إضافية</string>
+    <string name="effects_dice_expression">تعبير النرد (فارغ: كرر الجزء)</string>
+    <string name="effects_formula">صيغة</string>
+    <string name="effects_invalid">تحقق من التأثيرات: يجب إدخال الأسماء والأجزاء المستهدفة والصيغ الصحيحة.</string>
+    <string name="effects_trace_triggered">تم التفعيل</string>
+    <string name="effects_trace_skipped">لم يتم التفعيل</string>
+</resources>

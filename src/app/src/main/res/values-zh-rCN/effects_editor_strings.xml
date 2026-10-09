@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">添加有条件的加成或减益规则。组内条件使用 AND 连接，不同组使用 OR 连接。</string>
+    <string name="effects_formula_help">公式：f(x)=floor、c(x)=ceil、r(x)=round（遇到一半时向远离零的方向取整）。使用 {parts:Name} 引用部分总值。每项条件和操作均可选择仅骰子、仅修正值或总计。</string>
+    <string name="effects_or_group_number">OR 组 %1$d</string>
+    <string name="effects_and_condition">AND 条件 %1$d</string>
+    <string name="effects_add_and">+ AND 条件</string>
+    <string name="effects_add_or">+ OR 组</string>
+    <string name="effects_actions">操作 (按顺序)</string>
+    <string name="effects_add_action">+ 添加 操作</string>
+    <string name="effects_add_bonus">+ 添加 加成</string>
+    <string name="effects_add_malus">+ 添加 减益</string>
+    <string name="effects_heading">效果</string>
+    <string name="effects_bonus">加成</string>
+    <string name="effects_malus">减益</string>
+    <string name="effects_name">效果名称</string>
+    <string name="effects_enabled">启用效果</string>
+    <string name="effects_stop_following">触发后跳过后续所有效果</string>
+    <string name="effects_or_groups">触发条件</string>
+    <string name="effects_action">操作</string>
+    <string name="effects_scope">数值范围</string>
+    <string name="effects_source">来源</string>
+    <string name="effects_target">部分</string>
+    <string name="effects_missing_part">缺少部分</string>
+    <string name="effects_comparison">比较</string>
+    <string name="effects_threshold">阈值公式</string>
+    <string name="effects_scope_dice">仅骰子</string>
+    <string name="effects_scope_modifiers">仅修正值</string>
+    <string name="effects_scope_total">总计</string>
+    <string name="effects_source_part">部分结果</string>
+    <string name="effects_source_roll">掷骰结果</string>
+    <string name="effects_source_variable">变量</string>
+    <string name="effects_action_add">加上</string>
+    <string name="effects_action_subtract">减去</string>
+    <string name="effects_action_multiply">乘以</string>
+    <string name="effects_action_replace">替换</string>
+    <string name="effects_action_reroll">重新掷骰</string>
+    <string name="effects_action_roll_after">追加掷骰</string>
+    <string name="effects_dice_expression">骰子表达式（留空：重复该部分）</string>
+    <string name="effects_formula">公式</string>
+    <string name="effects_invalid">请检查效果：必须填写名称、目标部分和有效公式。</string>
+    <string name="effects_trace_triggered">已触发</string>
+    <string name="effects_trace_skipped">未触发</string>
+</resources>

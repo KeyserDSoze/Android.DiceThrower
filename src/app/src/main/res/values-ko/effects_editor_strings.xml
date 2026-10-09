@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">조건부 보너스 또는 페널티 규칙을 추가합니다. 그룹 내 조건은 AND로, 그룹 간에는 OR로 연결합니다.</string>
+    <string name="effects_formula_help">공식: f(x)=floor, c(x)=ceil, r(x)=round (0.5는 0에서 멀어지는 방향으로 반올림). 파트 합계에는 {parts:Name}을 사용하세요. 조건과 작업마다 주사위만, 수정치만 또는 합계를 선택합니다.</string>
+    <string name="effects_or_group_number">OR 그룹 %1$d</string>
+    <string name="effects_and_condition">AND 조건 %1$d</string>
+    <string name="effects_add_and">+ AND 조건</string>
+    <string name="effects_add_or">+ OR 그룹</string>
+    <string name="effects_actions">작업 (순서대로)</string>
+    <string name="effects_add_action">+ 추가 작업</string>
+    <string name="effects_add_bonus">+ 추가 보너스</string>
+    <string name="effects_add_malus">+ 추가 페널티</string>
+    <string name="effects_heading">효과</string>
+    <string name="effects_bonus">보너스</string>
+    <string name="effects_malus">페널티</string>
+    <string name="effects_name">효과 이름</string>
+    <string name="effects_enabled">효과 활성화</string>
+    <string name="effects_stop_following">발동하면 이후 모든 효과 건너뛰기</string>
+    <string name="effects_or_groups">발동 조건</string>
+    <string name="effects_action">작업</string>
+    <string name="effects_scope">값 범위</string>
+    <string name="effects_source">출처</string>
+    <string name="effects_target">파트</string>
+    <string name="effects_missing_part">파트 없음</string>
+    <string name="effects_comparison">비교</string>
+    <string name="effects_threshold">기준값 공식</string>
+    <string name="effects_scope_dice">주사위만</string>
+    <string name="effects_scope_modifiers">수정치만</string>
+    <string name="effects_scope_total">합계</string>
+    <string name="effects_source_part">파트 결과</string>
+    <string name="effects_source_roll">굴림 결과</string>
+    <string name="effects_source_variable">변수</string>
+    <string name="effects_action_add">더하기</string>
+    <string name="effects_action_subtract">빼기</string>
+    <string name="effects_action_multiply">곱하기</string>
+    <string name="effects_action_replace">교체</string>
+    <string name="effects_action_reroll">다시 굴리기</string>
+    <string name="effects_action_roll_after">추가 굴림</string>
+    <string name="effects_dice_expression">주사위 식 (비워 두면 파트 반복)</string>
+    <string name="effects_formula">공식</string>
+    <string name="effects_invalid">효과를 확인하세요. 이름, 대상 파트 및 유효한 공식이 필요합니다.</string>
+    <string name="effects_trace_triggered">발동됨</string>
+    <string name="effects_trace_skipped">발동 안 됨</string>
+</resources>
