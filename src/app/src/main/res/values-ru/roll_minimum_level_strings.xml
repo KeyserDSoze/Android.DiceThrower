@@ -1,0 +1,3 @@
+<resources>
+    <string name="roll_min_level_help">Ниже этого уровня бросок сохраняется в режиме редактирования, но скрывается при использовании.</string>
+</resources>

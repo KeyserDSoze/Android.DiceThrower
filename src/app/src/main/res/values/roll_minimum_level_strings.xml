@@ -1,0 +1,3 @@
+<resources>
+    <string name="roll_min_level_help">Below this level the Roll stays in Edit, but is hidden in Use.</string>
+</resources>
