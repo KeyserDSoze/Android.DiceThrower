@@ -133,6 +133,7 @@ data class RollDefinition(
     val subgroups: List<RollSubgroup> = emptyList(),
     val diceAppearance: RollDiceAppearance = RollDiceAppearance(),
     val doubleRollEnabled: Boolean = false,
+    val effects: List<RollEffect> = emptyList(),
 )
 
 data class RollLogPart(
