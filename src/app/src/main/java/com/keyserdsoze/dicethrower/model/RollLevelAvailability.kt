@@ -7,7 +7,8 @@ package com.keyserdsoze.dicethrower.model
  */
 object RollLevelAvailability {
     fun isAvailable(roll: RollDefinition, characterLevel: Int): Boolean =
-        roll.enabled && characterLevel >= roll.minimumLevel && characterLevel in 1..9999
+        roll.enabled && roll.minimumLevel in 1..9999 &&
+            characterLevel in 1..9999 && characterLevel >= roll.minimumLevel
 
     fun usable(rolls: List<RollDefinition>, characterId: String, characterLevel: Int): List<RollDefinition> =
         rolls.filter { it.characterId == characterId && isAvailable(it, characterLevel) }
