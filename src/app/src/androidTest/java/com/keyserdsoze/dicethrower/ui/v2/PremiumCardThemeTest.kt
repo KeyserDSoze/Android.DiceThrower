@@ -2,10 +2,9 @@ package com.keyserdsoze.dicethrower.ui.v2
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.platform.LocalContentColor
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.keyserdsoze.dicethrower.model.ThemeMode
 import com.keyserdsoze.dicethrower.ui.theme.DiceThrowerTheme
