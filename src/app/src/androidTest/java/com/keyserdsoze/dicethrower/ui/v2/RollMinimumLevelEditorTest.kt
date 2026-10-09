@@ -2,10 +2,13 @@ package com.keyserdsoze.dicethrower.ui.v2
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.hasScrollToIndexAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onNode
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextReplacement
-import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performClick
 import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.RollDefinition
@@ -34,7 +37,8 @@ class RollMinimumLevelEditorTest {
         }
         composeRule.onNodeWithText("Roll name").performTextReplacement("Prepared spell")
         composeRule.onNodeWithTag("roll-minimum-level").performTextReplacement("6")
-        composeRule.onNodeWithText("Save").performScrollTo().performClick()
+        composeRule.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Save"))
+        composeRule.onNodeWithText("Save").performClick()
         composeRule.runOnIdle {
             assertEquals(6, saved?.minimumLevel)
             assertEquals("Prepared spell", saved?.name)
