@@ -136,7 +136,7 @@ object CharacterDataOperations {
         )
     }
 
-    private val effectPartToken = Regex("""\\{partId:([^{}]+)\\}""")
+    private val effectPartToken = Regex("""\{partId:([^{}]+)\}""")
 
     private fun String.remapEffectPartIds(ids: Map<String, String>): String =
         effectPartToken.replace(this) { found ->
