@@ -68,6 +68,8 @@ object CharacterRevision {
             canonical.field("groupId", roll.groupId)
             canonical.field("enabled", roll.enabled)
             canonical.field("order", roll.order)
+            // Preserve legacy revision hashes when double-roll is disabled.
+            if (roll.doubleRollEnabled) canonical.field("doubleRollEnabled", true)
             roll.levelRules.sortedBy { it.id }.forEach { rule ->
                 canonical.section("levelRule")
                 canonical.field("id", rule.id)
@@ -81,6 +83,7 @@ object CharacterRevision {
                 canonical.field("name", subgroup.name)
                 canonical.field("expression", subgroup.expression)
                 canonical.field("operator", subgroup.operator.name)
+                if (subgroup.includeInDoubleRoll) canonical.field("includeInDoubleRoll", true)
             }
             canonical.section("diceAppearance")
             canonical.field("mode", roll.diceAppearance.mode.name)
@@ -121,7 +124,14 @@ object CharacterRevision {
                 canonical.field("expression", part.expression)
                 canonical.field("total", part.total)
                 canonical.field("detail", part.detail)
+                part.alternativeTotal?.let { canonical.field("alternativeTotal", it) }
+                part.alternativeDetail?.let { canonical.field("alternativeDetail", it) }
             }
+            if (log.doubleRollMode != com.keyserdsoze.dicethrower.model.DoubleRollMode.NORMAL) {
+                canonical.field("doubleRollMode", log.doubleRollMode.name)
+            }
+            log.comparisonTotal?.let { canonical.field("comparisonTotal", it) }
+            log.alternativeComparisonTotal?.let { canonical.field("alternativeComparisonTotal", it) }
         }
 
         return canonical.toString()
