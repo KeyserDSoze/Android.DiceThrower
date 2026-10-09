@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
@@ -118,6 +119,8 @@ import com.keyserdsoze.dicethrower.data.sync.SyncErrorKind
 import com.keyserdsoze.dicethrower.data.sync.SyncStatus
 import com.keyserdsoze.dicethrower.data.sync.SyncStatusKind
 import com.keyserdsoze.dicethrower.dice.DiceAppearanceResolver
+import com.keyserdsoze.dicethrower.dice.DoubleRollEngine
+import com.keyserdsoze.dicethrower.dice.DoubleRollEvaluation
 import com.keyserdsoze.dicethrower.dice.DiceComponent
 import com.keyserdsoze.dicethrower.dice.DiceExpression
 import com.keyserdsoze.dicethrower.dice.DiceRollResult
@@ -132,6 +135,7 @@ import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterImageRef
 import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.ConflictPolicy
+import com.keyserdsoze.dicethrower.model.DoubleRollMode
 import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.DiceTableTheme
 import com.keyserdsoze.dicethrower.model.LevelRuleKind
@@ -3002,6 +3006,11 @@ private fun SettingsScreenV2(
                             )
                             Spacer(Modifier.height(4.dp))
                             RollTriggerToggle(
+                                label = stringResource(R.string.directional_double_roll_swipes),
+                                checked = settings.doubleRollDirectionalSwipeEnabled,
+                                onChecked = { onSettingsChanged(settings.copy(doubleRollDirectionalSwipeEnabled = it)) },
+                            )
+                            RollTriggerToggle(
                                 label = stringResource(R.string.double_tap_statistics),
                                 checked = settings.doubleTapStatsEnabled,
                                 onChecked = { onSettingsChanged(settings.copy(doubleTapStatsEnabled = it)) },
@@ -3450,12 +3459,14 @@ internal fun RollBuilderScreenV2(
     var name by remember(existing?.id) { mutableStateOf(existing?.name ?: "") }
     var groupId by remember(existing?.id, initialGroupId) { mutableStateOf(existing?.groupId ?: initialGroupId) }
     var groupMenu by remember(existing?.id) { mutableStateOf(false) }
+    var doubleRollEnabled by remember(existing?.id) { mutableStateOf(existing?.doubleRollEnabled ?: true) }
     var subgroups by remember(existing?.id) {
         mutableStateOf(
             existing?.subgroups?.takeIf { it.isNotEmpty() } ?: listOf(
                 RollSubgroup(
                     id = UUID.randomUUID().toString(),
                     expression = existing?.expression ?: "1d20",
+                    includeInDoubleRoll = existing == null,
                 ),
             ),
         )
@@ -3628,6 +3639,15 @@ internal fun RollBuilderScreenV2(
                                 }
                             }
                         }
+                        RollTriggerToggle(
+                            label = stringResource(R.string.double_roll_part),
+                            checked = subgroup.includeInDoubleRoll,
+                            onChecked = { selected ->
+                                updateSubgroups(subgroups.map { part ->
+                                    if (part.id == subgroup.id) part.copy(includeInDoubleRoll = selected) else part
+                                })
+                            },
+                        )
                         GuidedExpressionEditorV2(
                             value = subgroup.expression,
                             character = character,
@@ -3643,6 +3663,11 @@ internal fun RollBuilderScreenV2(
             }
 
             item {
+                RollTriggerToggle(
+                    label = stringResource(R.string.double_roll_enable),
+                    checked = doubleRollEnabled,
+                    onChecked = { doubleRollEnabled = it },
+                )
                 Surface(
                     shape = RoundedCornerShape(14.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
@@ -3676,6 +3701,7 @@ internal fun RollBuilderScreenV2(
                             expression = expressionToSave,
                             groupId = groupId,
                             subgroups = subgroups,
+                            doubleRollEnabled = doubleRollEnabled,
                         )
                         val slots = runCatching {
                             val resolved = RollFormulaResolver.resolve(character, modifiers, saved).expression
