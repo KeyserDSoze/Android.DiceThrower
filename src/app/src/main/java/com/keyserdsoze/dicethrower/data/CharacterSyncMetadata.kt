@@ -85,6 +85,37 @@ object CharacterRevision {
                 canonical.field("operator", subgroup.operator.name)
                 if (subgroup.includeInDoubleRoll) canonical.field("includeInDoubleRoll", true)
             }
+            roll.effects.sortedWith(compareBy({ it.order }, { it.id })).forEach { effect ->
+                canonical.section("effect")
+                canonical.field("id", effect.id)
+                canonical.field("name", effect.name)
+                canonical.field("type", effect.type.name)
+                canonical.field("order", effect.order)
+                canonical.field("enabled", effect.enabled)
+                canonical.field("stopFollowingEffects", effect.stopFollowingEffects)
+                effect.activationGroups.forEach { group ->
+                    canonical.section("effectActivationGroup")
+                    canonical.field("id", group.id)
+                    group.conditions.forEach { condition ->
+                        canonical.section("effectCondition")
+                        canonical.field("id", condition.id)
+                        canonical.field("source", condition.source.name)
+                        canonical.field("partId", condition.partId)
+                        canonical.field("variableName", condition.variableName)
+                        canonical.field("scope", condition.scope.name)
+                        canonical.field("comparison", condition.comparison.name)
+                        canonical.field("threshold", condition.threshold)
+                    }
+                }
+                effect.actions.forEach { action ->
+                    canonical.section("effectAction")
+                    canonical.field("id", action.id)
+                    canonical.field("kind", action.kind.name)
+                    canonical.field("targetPartId", action.targetPartId)
+                    canonical.field("scope", action.scope.name)
+                    canonical.field("expression", action.expression)
+                }
+            }
             canonical.section("diceAppearance")
             canonical.field("mode", roll.diceAppearance.mode.name)
             canonical.field("styleId", roll.diceAppearance.styleId)
