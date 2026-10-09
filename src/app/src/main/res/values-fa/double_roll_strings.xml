@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">پرتاب دوگانه را فعال کنید</string>
+    <string name="double_roll_part">این بخش را در پرتاب دوگانه قرار دهید</string>
+    <string name="directional_double_roll_swipes">کشیدن (چپ: بدتر، راست: بهتر، بالا: عادی)</string>
+    <string name="double_roll_best">پرتاب دوگانه: بهتر</string>
+    <string name="double_roll_worst">پرتاب دوگانه: بدتر</string>
+    <string name="double_roll_selected">انتخاب‌شده</string>
+    <string name="double_roll_alternative">نتیجه دیگر</string>
+</resources>
