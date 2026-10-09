@@ -456,15 +456,14 @@ private class DiceSceneRenderer(
             } else 0.16f
             fun toned(base: Float, target: Float, mix: Float): Float =
                 ((base * (1f - mix) + target * mix) * candidateBrightness).coerceIn(0f, 1f)
+            val effectiveRed = if (accentRgb == null) style.primary.red * candidateBrightness
+                else toned(style.primary.red, accentRgb[0], flash)
+            val effectiveGreen = if (accentRgb == null) style.primary.green * candidateBrightness
+                else toned(style.primary.green, accentRgb[1], flash)
+            val effectiveBlue = if (accentRgb == null) style.primary.blue * candidateBrightness
+                else toned(style.primary.blue, accentRgb[2], flash)
             GLES20.glUniform4f(
-                primaryColorHandle,
-                if (accentRgb == null) style.primary.red * candidateBrightness
-                    else toned(style.primary.red, accentRgb[0], flash),
-                if (accentRgb == null) style.primary.green * candidateBrightness
-                    else toned(style.primary.green, accentRgb[1], flash),
-                if (accentRgb == null) style.primary.blue * candidateBrightness
-                    else toned(style.primary.blue, accentRgb[2], flash),
-                style.primary.alpha,
+                primaryColorHandle, effectiveRed, effectiveGreen, effectiveBlue, style.primary.alpha,
             )
             GLES20.glUniform4f(
                 secondaryColorHandle,
@@ -496,7 +495,7 @@ private class DiceSceneRenderer(
             gpuMesh.numberNormals.position(0)
             GLES20.glVertexAttribPointer(positionHandle, 3, GLES20.GL_FLOAT, false, 0, gpuMesh.numberPositions)
             GLES20.glVertexAttribPointer(normalHandle, 3, GLES20.GL_FLOAT, false, 0, gpuMesh.numberNormals)
-            val luminance = style.primary.red * 0.299f + style.primary.green * 0.587f + style.primary.blue * 0.114f
+            val luminance = effectiveRed * 0.299f + effectiveGreen * 0.587f + effectiveBlue * 0.114f
             val numeral = if (luminance > 0.58f) 0.045f else 0.97f
             GLES20.glUniform4f(primaryColorHandle, numeral, numeral, numeral, 1f)
             GLES20.glUniform4f(secondaryColorHandle, numeral, numeral, numeral, 1f)
