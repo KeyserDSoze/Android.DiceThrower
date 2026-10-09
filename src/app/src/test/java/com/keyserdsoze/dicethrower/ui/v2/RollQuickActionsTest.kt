@@ -6,6 +6,7 @@ import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.RollDefinition
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -34,6 +35,15 @@ class RollQuickActionsTest {
         assertEquals(1, original.withCharacterLevel("mage", 0).characters.single().level)
         assertEquals(9999, original.withCharacterLevel("mage", 10000).characters.single().level)
         assertEquals(1, original.withCharacterLevel("missing", 8).characters.single().level)
+    }
+
+    @Test
+    fun levelActionsMustBeDisabledWhenDynamicDiceCountWouldBeInvalid() {
+        val character = CharacterProfile(id = "mage", name = "Mage", level = 100)
+        val roll = RollDefinition(id = "scaling", characterId = character.id, name = "Scaling", expression = "{level}d6")
+        val initial = AppData(characters = listOf(character), rolls = listOf(roll))
+        assertTrue(AppDataValidator.validate(initial).isEmpty())
+        assertFalse(AppDataValidator.validate(initial.withCharacterLevel("mage", 101)).isEmpty())
     }
 
     @Test
