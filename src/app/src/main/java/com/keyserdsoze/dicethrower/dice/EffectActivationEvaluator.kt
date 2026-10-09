@@ -71,8 +71,6 @@ data class EffectActivationEvaluation(
 )
 
 object EffectActivationEvaluator {
-    private val variableToken = Regex("""\{([^{}]+)\}""")
-    private val adjacentVariable = Regex("""(?<=[0-9)}])(?=\{)""")
 
     /**
      * All groups are evaluated for an explainable trace: groups are OR-ed,
@@ -160,32 +158,12 @@ object EffectActivationEvaluator {
         EffectValueScope.TOTAL -> result.total
     }
 
-    /**
-     * Initial safe integer-expression adapter using the existing no-dice parser.
-     * Dice expressions are explicitly forbidden in conditions: thresholds must
-     * not consume RNG. Extended arithmetic functions are added in #105.
-     */
-    fun resolveIntegerThreshold(template: String, snapshot: EffectRollSnapshot): Int {
-        require(template.length in 1..512) { "Invalid threshold length" }
-        val withMultiplication = adjacentVariable.replace(template, "x")
-        val resolved = variableToken.replace(withMultiplication) { match ->
-            val token = match.groupValues[1]
-            when {
-                token.startsWith("partId:") -> {
-                    val id = token.removePrefix("partId:")
-                    requireNotNull(snapshot.partsById[id]) {
-                        "Missing referenced Part $id"
-                    }.total.toString()
-                }
-                else -> requireNotNull(lookupVariable(token, snapshot.variables)) {
-                    "Unknown threshold variable $token"
-                }.toString()
-            }
-        }
-        val parsed = DiceExpression.parse(resolved)
-        require(parsed.diceShape().isEmpty()) { "Threshold cannot roll dice" }
-        return parsed.constantTotal()
-    }
+    /** Numerical conditions use the same deterministic math as effect actions. */
+    fun resolveIntegerThreshold(template: String, snapshot: EffectRollSnapshot): Int =
+        EffectFormulaInterpreter.toInt(
+            EffectFormulaInterpreter.evaluate(template, snapshot),
+            EffectResultRounding.FLOOR,
+        )
 
     private fun lookupVariable(name: String, variables: Map<String, Int>): Int? {
         val normalized = name.trim().lowercase(Locale.ROOT)
