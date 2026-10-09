@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">Washa kurusha mara mbili</string>
+    <string name="double_roll_part">Jumuisha sehemu hii katika urushaji wa mara mbili</string>
+    <string name="directional_double_roll_swipes">Telezesha (kushoto: mbaya, kulia: bora, juu: kawaida)</string>
+    <string name="double_roll_best">Mara mbili: bora</string>
+    <string name="double_roll_worst">Mara mbili: mbaya</string>
+    <string name="double_roll_selected">Imechaguliwa</string>
+    <string name="double_roll_alternative">Matokeo mengine</string>
+</resources>
