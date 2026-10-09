@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">เปิดใช้การทอยสองครั้ง</string>
+    <string name="double_roll_part">รวมส่วนนี้ในการทอยสองครั้ง</string>
+    <string name="directional_double_roll_swipes">ปัด (ซ้าย: แย่กว่า ขวา: ดีกว่า ขึ้น: ปกติ)</string>
+    <string name="double_roll_best">ทอยสองครั้ง: ดีที่สุด</string>
+    <string name="double_roll_worst">ทอยสองครั้ง: แย่ที่สุด</string>
+    <string name="double_roll_selected">เลือกแล้ว</string>
+    <string name="double_roll_alternative">ผลอีกชุด</string>
+</resources>
