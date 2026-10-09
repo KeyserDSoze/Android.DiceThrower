@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">ಡಬಲ್ ರೋಲ್ ಸಕ್ರಿಯಗೊಳಿಸಿ</string>
+    <string name="double_roll_part">ಈ ಭಾಗವನ್ನು ಡಬಲ್ ರೋಲ್‌ಗೆ ಸೇರಿಸಿ</string>
+    <string name="directional_double_roll_swipes">ಸ್ವೈಪ್ (ಎಡ: ಕೆಟ್ಟದು, ಬಲ: ಉತ್ತಮ, ಮೇಲೆ: ಸಾಮಾನ್ಯ)</string>
+    <string name="double_roll_best">ಡಬಲ್ ರೋಲ್: ಉತ್ತಮ</string>
+    <string name="double_roll_worst">ಡಬಲ್ ರೋಲ್: ಕೆಟ್ಟದು</string>
+    <string name="double_roll_selected">ಆಯ್ಕೆ</string>
+    <string name="double_roll_alternative">ಇತರೆ ಫಲಿತಾಂಶ</string>
+</resources>
