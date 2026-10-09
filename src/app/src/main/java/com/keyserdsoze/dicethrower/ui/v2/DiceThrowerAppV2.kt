@@ -2517,8 +2517,35 @@ private fun RollScreenV2(
                         }
                     }
                 }
+                doubleEvaluation?.takeIf { it.mode != DoubleRollMode.NORMAL }?.let { comparison ->
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                    ) {
+                        Column(Modifier.fillMaxWidth().padding(14.dp)) {
+                            Text(
+                                stringResource(
+                                    if (comparison.mode == DoubleRollMode.BEST) R.string.double_roll_best
+                                    else R.string.double_roll_worst,
+                                ),
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                "${stringResource(R.string.double_roll_selected)}: ${comparison.comparisonTotal}",
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                "${stringResource(R.string.double_roll_alternative)}: ${comparison.alternativeComparisonTotal}",
+                                modifier = Modifier.graphicsLayer { alpha = 0.54f },
+                            )
+                        }
+                    }
+                }
                 outcome?.let { rolled ->
-                    formula.subgroupResults(rolled).forEachIndexed { index, grouped ->
+                    val displayParts = doubleEvaluation?.parts?.map {
+                        ResolvedRollSubgroupResult(it.subgroup, it.chosen)
+                    } ?: formula.subgroupResults(rolled)
+                    displayParts.forEachIndexed { index, grouped ->
                         Surface(
                             shape = RoundedCornerShape(16.dp),
                             color = MaterialTheme.colorScheme.secondaryContainer,
@@ -2542,6 +2569,15 @@ private fun RollScreenV2(
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                                     )
+                                    doubleEvaluation?.parts?.getOrNull(index)?.alternative?.let { alternative ->
+                                        Column(Modifier.graphicsLayer { alpha = 0.54f }) {
+                                            Text(
+                                                "${stringResource(R.string.double_roll_alternative)}: ${alternative.total}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                            )
+                                            Text(alternative.detail(), style = MaterialTheme.typography.labelSmall)
+                                        }
+                                    }
                                 }
                                 Text(
                                     grouped.result.total.toString(),
