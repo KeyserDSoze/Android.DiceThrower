@@ -3715,11 +3715,32 @@ private fun GuidedExpressionEditorV2(
     val composer = remember(value, character.level, modifiers) {
         FormulaComposer.parse(value, character.level, modifiers)
     }
-    var selected by remember(value) { mutableStateOf(emptySet<Int>()) }
+    // Editing a term must not drop the selection when its expression updates.
+    var selected by remember { mutableStateOf(emptySet<Int>()) }
+    val editingIndex = selected.singleOrNull()?.takeIf { index ->
+        composer?.getOrNull(index)?.let(FormulaComposer::simpleInput) != null
+    }
+
+    fun editSelected(
+        amount: String = countText,
+        dieSides: Int? = if (constantMode) null else sides,
+        operator: String = nextOperator,
+    ) {
+        val terms = composer ?: return
+        val index = editingIndex ?: return
+        val updated = FormulaComposer.replaceSimpleTerm(
+            terms, index, amount, dieSides, if (operator == "-") '-' else '+',
+        ) ?: return
+        val candidate = FormulaComposer.serialize(updated)
+        if (RollFormulaResolver.validateTemplate(candidate, character.level, modifiers)) {
+            onValueChange(candidate)
+        }
+    }
 
     fun commit(terms: List<ComposerTerm>) {
         val candidate = FormulaComposer.serialize(terms)
         if (candidate.isBlank() || RollFormulaResolver.validateTemplate(candidate, character.level, modifiers)) {
+            selected = emptySet()
             onValueChange(candidate)
         }
     }
@@ -3736,16 +3757,15 @@ private fun GuidedExpressionEditorV2(
         }
     }
 
-    // Keep TextFieldValue (cursor/selection) stable while the composer updates the
-    // same Roll Part expression, including manual edits and inserted variable chips.
+    // Reflect builder edits in the same composition, without an asynchronous
+    // effect that briefly exposes stale text. Preserve cursor during direct input.
     var editingValue by remember { mutableStateOf(TextFieldValue(value)) }
-    LaunchedEffect(value) {
-        if (editingValue.text != value) editingValue = TextFieldValue(value)
-    }
+    val visibleValue = if (editingValue.text == value) editingValue else TextFieldValue(value)
     ParameterizedExpressionField(
-        value = editingValue,
+        value = visibleValue,
         onValueChange = { updated ->
             editingValue = updated
+            selected = emptySet()
             onValueChange(updated.text)
         },
         label = stringResource(R.string.expression),
@@ -3753,6 +3773,7 @@ private fun GuidedExpressionEditorV2(
         isValid = valid,
         helper = stringResource(R.string.expression_hint),
         errorText = stringResource(R.string.invalid_expression),
+        fieldTestTag = "composer-expression",
     )
 
     if (composer != null && composer.isNotEmpty()) {
@@ -3761,11 +3782,13 @@ private fun GuidedExpressionEditorV2(
                 stringResource(R.string.composer_terms),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
             )
             composer.forEachIndexed { index, term ->
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ) {
                     Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
                         Row(
@@ -3798,7 +3821,16 @@ private fun GuidedExpressionEditorV2(
                                 FilterChip(
                                     selected = index in selected,
                                     onClick = {
-                                        selected = if (index in selected) selected - index else selected + index
+                                        val next = if (index in selected) selected - index else selected + index
+                                        selected = next
+                                        if (next.size == 1) {
+                                            FormulaComposer.simpleInput(composer[next.single()])?.let { term ->
+                                                countText = term.amount
+                                                constantMode = term.sides == null
+                                                term.sides?.let { sides = it }
+                                                nextOperator = if (term.sign == '-') "-" else "+"
+                                            }
+                                        }
                                     },
                                     label = {
                                         Text(
@@ -3808,7 +3840,7 @@ private fun GuidedExpressionEditorV2(
                                             overflow = TextOverflow.Ellipsis,
                                         )
                                     },
-                                    modifier = Modifier.weight(1f),
+                                    modifier = Modifier.weight(1f).testTag("composer-term-$index"),
                                 )
                             }
                             IconButton(
@@ -3902,17 +3934,24 @@ private fun GuidedExpressionEditorV2(
                 listOf("+" to "+", "-" to "−", "x" to "×").forEach { (operator, label) ->
                     DropdownMenuItem(
                         text = { Text(label) },
-                        onClick = { nextOperator = operator; operatorMenu = false },
+                        onClick = {
+                            nextOperator = operator
+                            operatorMenu = false
+                            if (editingIndex != null) editSelected(operator = operator)
+                        },
                     )
                 }
             }
         }
         OutlinedTextField(
             value = countText,
-            onValueChange = { countText = it.take(35) },
+            onValueChange = {
+                countText = it.take(35)
+                if (editingIndex != null) editSelected(amount = countText)
+            },
             singleLine = true,
             label = { Text("#") },
-            modifier = Modifier.width(88.dp),
+            modifier = Modifier.width(88.dp).testTag("composer-count"),
         )
         Box {
             IconButton(onClick = { countMenu = true }) {
@@ -3923,7 +3962,11 @@ private fun GuidedExpressionEditorV2(
                     modifiers.map { "{" + it.name + "}" }).distinct().forEach { option ->
                     DropdownMenuItem(
                         text = { Text(option) },
-                        onClick = { countText = option; countMenu = false },
+                        onClick = {
+                            countText = option
+                            countMenu = false
+                            if (editingIndex != null) editSelected(amount = option)
+                        },
                     )
                 }
             }
@@ -3935,17 +3978,33 @@ private fun GuidedExpressionEditorV2(
             DropdownMenu(expanded = sidesMenu, onDismissRequest = { sidesMenu = false }) {
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.constant_value)) },
-                    onClick = { constantMode = true; sidesMenu = false },
+                    onClick = {
+                        constantMode = true
+                        sidesMenu = false
+                        if (editingIndex != null) editSelected(dieSides = null)
+                    },
                 )
                 DiceExpression.supportedSides.sorted().forEach { option ->
                     DropdownMenuItem(
                         text = { Text("d" + option) },
-                        onClick = { sides = option; constantMode = false; sidesMenu = false },
+                        onClick = {
+                            sides = option
+                            constantMode = false
+                            sidesMenu = false
+                            if (editingIndex != null) editSelected(dieSides = option)
+                        },
                     )
                 }
             }
         }
         val item = if (constantMode) countText else countText + "d" + sides
+        if (editingIndex != null) {
+            Text(
+                stringResource(R.string.edit),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         IconButton(
             enabled = RollFormulaResolver.validateTemplate(item, character.level, modifiers),
             onClick = { appendTerm(item) },
