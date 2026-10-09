@@ -50,6 +50,7 @@ import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Tune
@@ -107,6 +108,7 @@ import com.keyserdsoze.dicethrower.GoogleConnectionFailure
 import com.keyserdsoze.dicethrower.R
 import com.keyserdsoze.dicethrower.data.CharacterImageAssetStore
 import com.keyserdsoze.dicethrower.data.CloudAccountState
+import com.keyserdsoze.dicethrower.data.AppDataValidator
 import com.keyserdsoze.dicethrower.data.DashboardDataOperations
 import com.keyserdsoze.dicethrower.data.LocalStore
 import com.keyserdsoze.dicethrower.data.sync.ConflictArea
@@ -288,6 +290,7 @@ fun DiceThrowerAppV2(
     var selectedRollId by rememberSaveable { mutableStateOf<String?>(null) }
     var rollReturnGroupId by rememberSaveable { mutableStateOf<String?>(null) }
     var editMode by rememberSaveable { mutableStateOf(false) }
+    var editingActiveRoll by rememberSaveable { mutableStateOf(false) }
     val stateHolder = rememberSaveableStateHolder()
 
     fun persist(updated: AppData) {
@@ -316,7 +319,11 @@ fun DiceThrowerAppV2(
     }
 
     BackHandler(enabled = route != RouteV2.CHARACTERS) {
-        navigateBack()
+        if (route == RouteV2.ROLL && editingActiveRoll) {
+            editingActiveRoll = false
+        } else {
+            navigateBack()
+        }
     }
 
     LaunchedEffect(dataRefreshVersion) {
@@ -372,6 +379,7 @@ fun DiceThrowerAppV2(
                     onOpenRoll = { rollId ->
                         selectedRollId = rollId
                         rollReturnGroupId = null
+                        editingActiveRoll = false
                         route = RouteV2.ROLL
                     },
                     onOpenGroup = { groupId ->
@@ -400,6 +408,7 @@ fun DiceThrowerAppV2(
                     onOpenRoll = { rollId ->
                         selectedRollId = rollId
                         rollReturnGroupId = group.id
+                        editingActiveRoll = false
                         route = RouteV2.ROLL
                     },
                     onDeleteGroup = {
@@ -417,21 +426,50 @@ fun DiceThrowerAppV2(
             if (character == null || roll == null) {
                 route = RouteV2.CHARACTER
             } else {
-                RollScreenV2(
-                    character = character,
-                    modifiers = data.modifiers.filter { it.characterId == character.id },
-                    diceStyles = data.diceStyles,
-                    roll = roll,
-                    settings = settings,
-                    onBack = ::navigateBack,
-                    onLogged = { log ->
-                        val logs = (data.logs + log).let { all ->
-                            if (settings.logRetention == 0) all
-                            else all.sortedByDescending { it.timestamp }.take(settings.logRetention)
-                        }
-                        persist(data.copy(logs = logs))
-                    },
-                )
+                val characterModifiers = data.modifiers.filter { it.characterId == character.id }
+                if (editingActiveRoll) {
+                    RollBuilderScreenV2(
+                        title = stringResource(R.string.edit_roll),
+                        character = character,
+                        modifiers = characterModifiers,
+                        groups = data.groups.filter { it.characterId == character.id }.sortedBy { it.order },
+                        existing = roll,
+                        onDismiss = { editingActiveRoll = false },
+                        onSave = { updated ->
+                            persist(updateRoll(data, character.id, roll, updated))
+                            editingActiveRoll = false
+                        },
+                    )
+                } else {
+                    RollScreenV2(
+                        character = character,
+                        modifiers = characterModifiers,
+                        diceStyles = data.diceStyles,
+                        roll = roll,
+                        settings = settings,
+                        onBack = ::navigateBack,
+                        onEditRoll = { editingActiveRoll = true },
+                        canChangeLevel = { proposed ->
+                            proposed in 1..9999 &&
+                                AppDataValidator.validate(data.withCharacterLevel(character.id, proposed)).isEmpty()
+                        },
+                        onLevelChanged = { newLevel ->
+                            if (newLevel in 1..9999) {
+                                val proposed = data.withCharacterLevel(character.id, newLevel)
+                                // Dynamic dice counts like {level}d6 can become invalid
+                                // above 100. Reject the change rather than crash in LocalStore.
+                                if (AppDataValidator.validate(proposed).isEmpty()) persist(proposed)
+                            }
+                        },
+                        onLogged = { log ->
+                            val logs = (data.logs + log).let { all ->
+                                if (settings.logRetention == 0) all
+                                else all.sortedByDescending { it.timestamp }.take(settings.logRetention)
+                            }
+                            persist(data.copy(logs = logs))
+                        },
+                    )
+                }
             }
         }
 
@@ -2103,6 +2141,9 @@ private fun RollScreenV2(
     roll: RollDefinition,
     settings: AppSettings,
     onBack: () -> Unit,
+    onEditRoll: () -> Unit,
+    canChangeLevel: (Int) -> Boolean,
+    onLevelChanged: (Int) -> Unit,
     onLogged: (RollLog) -> Unit,
 ) {
     val context = LocalContext.current
@@ -2143,10 +2184,12 @@ private fun RollScreenV2(
             appearances = previewAppearances,
         )
     }
-    var visualEvent by remember(roll.id, formula.expression) { mutableStateOf(previewEvent) }
-    var outcome by remember(roll.id, formula.expression) { mutableStateOf<DiceRollResult?>(null) }
-    var hasRolled by remember(roll.id) { mutableStateOf(false) }
-    var resultRevealed by remember(roll.id, formula.expression) { mutableStateOf(false) }
+    // Level changes can alter dice counts, modifiers and rules; never reuse a
+    // previous result or settled animation for a new level/formula.
+    var visualEvent by remember(roll.id, character.level, formula.expression) { mutableStateOf(previewEvent) }
+    var outcome by remember(roll.id, character.level, formula.expression) { mutableStateOf<DiceRollResult?>(null) }
+    var hasRolled by remember(roll.id, character.level, formula.expression) { mutableStateOf(false) }
+    var resultRevealed by remember(roll.id, character.level, formula.expression) { mutableStateOf(false) }
     var showStats by remember(roll.id) { mutableStateOf(false) }
 
     fun throwDice() {
@@ -2326,11 +2369,22 @@ private fun RollScreenV2(
                     .testTag("roll-stats-sheet-content"),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(
-                    stringResource(R.string.statistics),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Black,
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        stringResource(R.string.statistics),
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Black,
+                    )
+                    TextButton(onClick = onEditRoll) {
+                        Icon(Icons.Rounded.Edit, contentDescription = null)
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.edit_roll))
+                    }
+                }
                 Surface(
                     shape = RoundedCornerShape(16.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
@@ -2349,11 +2403,35 @@ private fun RollScreenV2(
                             )
                             Text(formula.expression, fontWeight = FontWeight.Bold)
                         }
-                        Text(
-                            "${stringResource(R.string.level)} ${character.level}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                "${stringResource(R.string.level)} ${character.level}",
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            IconButton(
+                                enabled = character.level > 1 && canChangeLevel(character.level - 1),
+                                onClick = { onLevelChanged(character.level - 1) },
+                            ) {
+                                Icon(
+                                    Icons.Rounded.Remove,
+                                    contentDescription = "${stringResource(R.string.level)} −",
+                                )
+                            }
+                            IconButton(
+                                enabled = character.level < 9999 && canChangeLevel(character.level + 1),
+                                onClick = { onLevelChanged(character.level + 1) },
+                            ) {
+                                Icon(
+                                    Icons.Rounded.Add,
+                                    contentDescription = "${stringResource(R.string.level)} +",
+                                )
+                            }
+                        }
                     }
                 }
                 outcome?.let { rolled ->
@@ -4086,6 +4164,15 @@ private fun dashboardEntries(
 ): List<DashboardEntry> =
     (groups.map { DashboardEntry.GroupEntry(it) } + ungroupedRolls.map { DashboardEntry.RollEntry(it) })
         .sortedWith(compareBy<DashboardEntry> { it.order }.thenBy { it.key })
+
+internal fun AppData.withCharacterLevel(characterId: String, requestedLevel: Int): AppData {
+    val nextLevel = requestedLevel.coerceIn(1, 9999)
+    return copy(
+        characters = characters.map { character ->
+            if (character.id == characterId) character.copy(level = nextLevel) else character
+        },
+    )
+}
 
 private fun updateRoll(
     data: AppData,
