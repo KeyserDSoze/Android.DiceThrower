@@ -3,10 +3,8 @@ package com.keyserdsoze.dicethrower.ui.v2
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
@@ -70,8 +68,9 @@ internal object EffectEditorDraft {
                 )),
             ),
             actions = listOf(
-                EffectAction(UUID.randomUUID().toString(), EffectActionType.ADD, target,
-                    EffectValueScope.TOTAL, "1"),
+                EffectAction(UUID.randomUUID().toString(),
+                    if (kind == EffectType.BONUS) EffectActionType.ADD else EffectActionType.SUBTRACT,
+                    target, EffectValueScope.TOTAL, "1"),
             ),
         )
     }
@@ -130,6 +129,7 @@ internal object EffectEditorDraft {
 internal fun EffectsEditorSectionV2(
     effects: List<RollEffect>,
     parts: List<RollSubgroup>,
+    variableNames: List<String>,
     onChange: (List<RollEffect>) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -242,12 +242,7 @@ internal fun EffectsEditorSectionV2(
                                             contentDescription = stringResource(R.string.delete))
                                     }
                                 }
-                                @Composable
-                                fun updateCondition(newValue: EffectCondition) {
-                                    // Kept separate from the parser: expressions can be edited
-                                    // incrementally and are validated before saving.
-                                }
-                                EffectConditionEditorV2(condition, parts) { changed ->
+                                EffectConditionEditorV2(condition, parts, variableNames) { changed ->
                                     replace(effect.copy(activationGroups = effect.activationGroups.map {
                                         if (it.id == group.id) it.copy(
                                             conditions = it.conditions.map { c ->
@@ -386,9 +381,10 @@ private fun actionLabel(action: EffectActionType) = stringResource(when (action)
 private fun EffectConditionEditorV2(
     condition: EffectCondition,
     parts: List<RollSubgroup>,
+    variableNames: List<String>,
     onChange: (EffectCondition) -> Unit,
 ) {
-    val availableVariables = listOf("level")
+    val availableVariables = variableNames
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             EffectChoice(condition.source, EffectValueSource.entries,
