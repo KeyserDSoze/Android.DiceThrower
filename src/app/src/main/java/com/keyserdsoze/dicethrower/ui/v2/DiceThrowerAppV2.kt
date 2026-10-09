@@ -125,6 +125,8 @@ import com.keyserdsoze.dicethrower.dice.EffectExecutionResult
 import com.keyserdsoze.dicethrower.dice.EffectRollSnapshot
 import com.keyserdsoze.dicethrower.dice.EffectSequenceExecutor
 import com.keyserdsoze.dicethrower.dice.EffectRuntimeHistory
+import com.keyserdsoze.dicethrower.dice.EffectsVisualTimeline
+import com.keyserdsoze.dicethrower.dice.EffectsVisualStage
 import com.keyserdsoze.dicethrower.dice.DiceComponent
 import com.keyserdsoze.dicethrower.dice.DiceExpression
 import com.keyserdsoze.dicethrower.dice.DiceRollResult
@@ -2232,6 +2234,13 @@ private fun RollScreenV2(
     var finalRollTotal by remember(roll.id, character.level, formula.expression, roll.effects) {
         mutableStateOf<Int?>(null)
     }
+    var visualStages by remember(roll.id, character.level, formula.expression, roll.effects) {
+        mutableStateOf<List<EffectsVisualStage>>(emptyList())
+    }
+    var visualStageIndex by remember(roll.id, character.level, formula.expression, roll.effects) {
+        mutableStateOf(0)
+    }
+    var visualSeed by remember(roll.id) { mutableStateOf(0L) }
     var hasRolled by remember(roll.id, character.level, formula.expression) { mutableStateOf(false) }
     var resultRevealed by remember(roll.id, character.level, formula.expression) { mutableStateOf(false) }
     var showStats by remember(roll.id) { mutableStateOf(false) }
@@ -2275,19 +2284,30 @@ private fun RollScreenV2(
                     }
                 }
         }
-        val appearances = DiceAppearanceResolver.resolve(
-            character = character,
-            styles = diceStyles,
-            appearance = roll.diceAppearance,
-            result = evaluation.visualResult,
-            subgroupIdByComponentIndex = subgroupIdByComponentIndex + extraComponentOwners,
-            random = appearanceRandom,
+        val timeline = EffectsVisualTimeline.build(
+            baseline = evaluation.visualResult,
+            baselineOwners = subgroupIdByComponentIndex + extraComponentOwners,
+            execution = execution,
+            effectTypes = roll.effects.associate { it.id to it.type },
+            animate = settings.animationsEnabled,
         )
+        visualStages = timeline
+        visualStageIndex = 0
+        visualSeed = System.nanoTime()
+        val firstStage = timeline.first()
         visualEvent = DiceRollVisualEvent(
-            id = System.nanoTime(),
-            result = evaluation.visualResult,
-            appearances = appearances,
+            id = visualSeed,
+            result = firstStage.result,
+            appearances = DiceAppearanceResolver.resolve(
+                character = character,
+                styles = diceStyles,
+                appearance = roll.diceAppearance,
+                result = firstStage.result,
+                subgroupIdByComponentIndex = firstStage.componentOwners,
+                random = Random(visualSeed),
+            ),
             dimmedComponentIndices = evaluation.dimmedComponentIndices,
+            effectAccentComponents = firstStage.accentByComponentIndex,
         )
         doubleEvaluation = evaluation
         effectsExecution = execution
@@ -2361,7 +2381,30 @@ private fun RollScreenV2(
                 fullBleed = true,
                 animateRoll = hasRolled && settings.animationsEnabled,
                 onSettled = { eventId ->
-                    if (hasRolled && eventId == visualEvent.id) resultRevealed = true
+                    if (hasRolled && eventId == visualEvent.id) {
+                        if (settings.animationsEnabled && visualStageIndex < visualStages.lastIndex) {
+                            val nextIndex = visualStageIndex + 1
+                            val stage = visualStages[nextIndex]
+                            visualStageIndex = nextIndex
+                            visualEvent = DiceRollVisualEvent(
+                                id = System.nanoTime(),
+                                result = stage.result,
+                                appearances = DiceAppearanceResolver.resolve(
+                                    character = character,
+                                    styles = diceStyles,
+                                    appearance = roll.diceAppearance,
+                                    result = stage.result,
+                                    subgroupIdByComponentIndex = stage.componentOwners,
+                                    random = Random(visualSeed),
+                                ),
+                                dimmedComponentIndices = doubleEvaluation?.dimmedComponentIndices.orEmpty(),
+                                effectAccentComponents = stage.accentByComponentIndex,
+                                persistentDiceCount = stage.persistentDiceCount,
+                            )
+                        } else {
+                            resultRevealed = true
+                        }
+                    }
                 },
                 modifier = Modifier.fillMaxSize(),
             )
