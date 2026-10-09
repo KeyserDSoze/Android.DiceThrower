@@ -157,6 +157,37 @@ object CharacterRevision {
                 canonical.field("detail", part.detail)
                 part.alternativeTotal?.let { canonical.field("alternativeTotal", it) }
                 part.alternativeDetail?.let { canonical.field("alternativeDetail", it) }
+                part.originalTotal?.let { canonical.field("originalTotal", it) }
+                part.originalDetail?.let { canonical.field("originalDetail", it) }
+            }
+            log.effectSteps.forEach { step ->
+                canonical.section("rollLogEffect")
+                canonical.field("effectId", step.effectId)
+                canonical.field("name", step.name)
+                canonical.field("type", step.type.name)
+                canonical.field("activated", step.activated)
+                step.conditions.forEach { condition ->
+                    canonical.section("rollLogEffectCondition")
+                    canonical.field("groupId", condition.groupId)
+                    canonical.field("conditionId", condition.conditionId)
+                    canonical.field("actual", condition.actual)
+                    canonical.field("threshold", condition.threshold)
+                    canonical.field("comparison", condition.comparison.name)
+                    canonical.field("passed", condition.passed)
+                    canonical.field("error", condition.error)
+                }
+                step.actions.forEach { action ->
+                    canonical.section("rollLogEffectAction")
+                    canonical.field("actionId", action.actionId)
+                    canonical.field("kind", action.kind.name)
+                    canonical.field("targetPartId", action.targetPartId)
+                    canonical.field("scope", action.scope.name)
+                    canonical.field("before", action.before)
+                    canonical.field("after", action.after)
+                    canonical.field("applied", action.applied)
+                    canonical.field("generatedDiceDetail", action.generatedDiceDetail)
+                    canonical.field("error", action.error)
+                }
             }
             if (log.doubleRollMode != com.keyserdsoze.dicethrower.model.DoubleRollMode.NORMAL) {
                 canonical.field("doubleRollMode", log.doubleRollMode.name)

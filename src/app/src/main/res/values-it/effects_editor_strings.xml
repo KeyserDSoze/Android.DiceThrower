@@ -38,4 +38,6 @@
     <string name="effects_dice_expression">Espressione dadi (vuota: ripeti Part)</string>
     <string name="effects_formula">Formula</string>
     <string name="effects_invalid">Controlla gli effetti: sono necessari nomi, Parts di destinazione e formule valide.</string>
+    <string name="effects_trace_triggered">Attivato</string>
+    <string name="effects_trace_skipped">Non attivato</string>
 </resources>

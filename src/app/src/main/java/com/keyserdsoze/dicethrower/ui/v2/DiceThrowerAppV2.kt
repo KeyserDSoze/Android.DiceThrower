@@ -121,6 +121,10 @@ import com.keyserdsoze.dicethrower.data.sync.SyncStatusKind
 import com.keyserdsoze.dicethrower.dice.DiceAppearanceResolver
 import com.keyserdsoze.dicethrower.dice.DoubleRollEngine
 import com.keyserdsoze.dicethrower.dice.DoubleRollEvaluation
+import com.keyserdsoze.dicethrower.dice.EffectExecutionResult
+import com.keyserdsoze.dicethrower.dice.EffectRollSnapshot
+import com.keyserdsoze.dicethrower.dice.EffectSequenceExecutor
+import com.keyserdsoze.dicethrower.dice.EffectRuntimeHistory
 import com.keyserdsoze.dicethrower.dice.DiceComponent
 import com.keyserdsoze.dicethrower.dice.DiceExpression
 import com.keyserdsoze.dicethrower.dice.DiceRollResult
@@ -2222,6 +2226,12 @@ private fun RollScreenV2(
     var doubleEvaluation by remember(roll.id, character.level, formula.expression) {
         mutableStateOf<DoubleRollEvaluation?>(null)
     }
+    var effectsExecution by remember(roll.id, character.level, formula.expression, roll.effects) {
+        mutableStateOf<EffectExecutionResult?>(null)
+    }
+    var finalRollTotal by remember(roll.id, character.level, formula.expression, roll.effects) {
+        mutableStateOf<Int?>(null)
+    }
     var hasRolled by remember(roll.id, character.level, formula.expression) { mutableStateOf(false) }
     var resultRevealed by remember(roll.id, character.level, formula.expression) { mutableStateOf(false) }
     var showStats by remember(roll.id) { mutableStateOf(false) }
@@ -2233,6 +2243,29 @@ private fun RollScreenV2(
             roll.subgroups.filter { it.includeInDoubleRoll }.map { it.id }.toSet()
         val evaluation = DoubleRollEngine.evaluate(formula, mode, selectedPartIds)
         val result = evaluation.result
+        // Logical effects consume only the selected double-roll candidates.
+        // The unselected dice remain visual alternatives, never trigger inputs.
+        val execution = if (roll.effects.isEmpty()) null else EffectSequenceExecutor.execute(
+            original = EffectRollSnapshot.fromDoubleRoll(
+                evaluation,
+                variables = buildMap {
+                    put("level", character.level)
+                    modifiers.filter { it.characterId == character.id }.forEach { modifier ->
+                        put(modifier.name, modifier.value)
+                    }
+                },
+            ),
+            effects = roll.effects,
+            resolvedPartExpressions = if (formula.subgroups.isEmpty()) {
+                mapOf("single" to formula.expression)
+            } else {
+                formula.subgroups.associate { it.id to it.expression }
+            },
+        )
+        val adjustedTotal = execution?.let {
+            runCatching { EffectRuntimeHistory.adjustedLegacyTotal(it, result.total) }
+                .getOrDefault(result.total)
+        } ?: result.total
         val extraComponentOwners = buildMap {
             var offset = parsedExpression.diceShape().size
             formula.subgroups.filter { it.id in selectedPartIds && mode != DoubleRollMode.NORMAL }
@@ -2257,6 +2290,8 @@ private fun RollScreenV2(
             dimmedComponentIndices = evaluation.dimmedComponentIndices,
         )
         doubleEvaluation = evaluation
+        effectsExecution = execution
+        finalRollTotal = adjustedTotal
         outcome = result
         hasRolled = true
         resultRevealed = false
@@ -2268,19 +2303,28 @@ private fun RollScreenV2(
                 rollDefinitionId = roll.id,
                 rollName = roll.name,
                 expression = formula.expression,
-                total = result.total,
+                total = adjustedTotal,
                 detail = result.detail(),
                 timestamp = System.currentTimeMillis(),
                 doubleRollMode = evaluation.mode,
                 comparisonTotal = evaluation.comparisonTotal,
                 alternativeComparisonTotal = evaluation.alternativeComparisonTotal,
-                parts = evaluation.parts.takeIf { it.size > 1 || evaluation.mode != DoubleRollMode.NORMAL }
+                effectSteps = execution?.let { EffectRuntimeHistory.steps(it, roll.effects) }.orEmpty(),
+                parts = evaluation.parts.takeIf { it.size > 1 || evaluation.mode != DoubleRollMode.NORMAL || execution != null }
                     ?.mapIndexed { index, part ->
                         RollLogPart(
                             name = part.subgroup.name.ifBlank { "${roll.name} ${index + 1}" },
                             expression = part.subgroup.expression,
-                            total = part.chosen.total,
+                            total = execution?.finalSnapshot?.parts?.get(part.subgroup.id)?.total ?: part.chosen.total,
                             detail = part.chosen.detail(),
+                            originalTotal = part.chosen.total.takeIf {
+                                execution?.finalSnapshot?.parts?.get(part.subgroup.id)?.total?.let { final -> final != it } == true
+                            },
+                            originalDetail = part.chosen.detail().takeIf {
+                                execution?.finalSnapshot?.parts?.get(part.subgroup.id)?.total?.let { final ->
+                                    final != part.chosen.total
+                                } == true
+                            },
                             alternativeTotal = part.alternative?.total,
                             alternativeDetail = part.alternative?.detail(),
                         )
@@ -2346,8 +2390,9 @@ private fun RollScreenV2(
                     RollResultsOverlayV2(
                         parts = doubleEvaluation?.parts?.map { ResolvedRollSubgroupResult(it.subgroup, it.chosen) }
                             ?: formula.subgroupResults(value),
-                        total = value.total,
-                        aboveAverage = value.total > value.expectedTotal(),
+                        total = finalRollTotal ?: value.total,
+                        partTotalsById = effectsExecution?.finalSnapshot?.parts?.mapValues { it.value.total }.orEmpty(),
+                        aboveAverage = (finalRollTotal ?: value.total) > value.expectedTotal(),
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .navigationBarsPadding()
@@ -2579,19 +2624,32 @@ private fun RollScreenV2(
                                         }
                                     }
                                 }
-                                Text(
-                                    grouped.result.total.toString(),
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.Black,
-                                )
+                                Column(horizontalAlignment = Alignment.End) {
+                                    val finalTotal = effectsExecution?.finalSnapshot
+                                        ?.parts?.get(grouped.subgroup.id)?.total ?: grouped.result.total
+                                    Text(
+                                        finalTotal.toString(),
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        fontWeight = FontWeight.Black,
+                                    )
+                                    if (finalTotal != grouped.result.total) {
+                                        Text(
+                                            "${grouped.result.total} → $finalTotal",
+                                            style = MaterialTheme.typography.labelSmall,
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 }
+                effectsExecution?.let { execution ->
+                    EffectsTraceV2(EffectRuntimeHistory.steps(execution, roll.effects))
+                }
                 // Individual parts already show their own roll breakdown above.
                 // A global total would misleadingly add unrelated checks and damage.
                 if (formula.subgroups.size <= 1 || outcome == null) {
-                    ResultContentV2(outcome)
+                    ResultContentV2(outcome, finalRollTotal)
                 }
             }
         }
@@ -2635,13 +2693,14 @@ internal fun RollResultsOverlayV2(
     total: Int,
     aboveAverage: Boolean,
     modifier: Modifier = Modifier,
+    partTotalsById: Map<String, Int> = emptyMap(),
 ) {
     Box(
         modifier = modifier.testTag("roll-results-overlay"),
         contentAlignment = Alignment.BottomCenter,
     ) {
         if (parts.size > 1) {
-            RollPartsReveal(parts)
+            RollPartsReveal(parts, partTotalsById)
         } else {
             RollTotalReveal(total = total, aboveAverage = aboveAverage)
         }
@@ -2649,7 +2708,10 @@ internal fun RollResultsOverlayV2(
 }
 
 @Composable
-private fun RollPartsReveal(parts: List<ResolvedRollSubgroupResult>) {
+private fun RollPartsReveal(
+    parts: List<ResolvedRollSubgroupResult>,
+    finalTotalsById: Map<String, Int> = emptyMap(),
+) {
     val scrollState = rememberScrollState()
     LaunchedEffect(parts) { scrollState.scrollTo(0) }
 
@@ -2681,14 +2743,24 @@ private fun RollPartsReveal(parts: List<ResolvedRollSubgroupResult>) {
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Text(
-                        part.result.total.toString(),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        softWrap = false,
-                    )
+                    Column(horizontalAlignment = Alignment.End) {
+                        val finalTotal = finalTotalsById[part.subgroup.id] ?: part.result.total
+                        Text(
+                            finalTotal.toString(),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            softWrap = false,
+                        )
+                        if (finalTotal != part.result.total) {
+                            Text(
+                                "${part.result.total} → $finalTotal",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -2728,7 +2800,7 @@ private fun RollTotalReveal(total: Int, aboveAverage: Boolean) {
 }
 
 @Composable
-private fun ResultContentV2(outcome: DiceRollResult?) {
+private fun ResultContentV2(outcome: DiceRollResult?, finalTotal: Int? = null) {
     if (outcome == null) {
         PremiumCard(Modifier.fillMaxWidth()) {
             Column(
@@ -2749,7 +2821,7 @@ private fun ResultContentV2(outcome: DiceRollResult?) {
         ) {
             Text(stringResource(R.string.total), color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
-                outcome.total.toString(),
+                (finalTotal ?: outcome.total).toString(),
                 style = MaterialTheme.typography.displayLarge,
                 fontWeight = FontWeight.Black,
                 color = MaterialTheme.colorScheme.primary,
@@ -3378,6 +3450,13 @@ private fun LogsScreenV2(
                                             Column(Modifier.weight(1f)) {
                                                 Text(part.name, fontWeight = FontWeight.Bold)
                                                 Text(part.detail, style = MaterialTheme.typography.bodySmall)
+                                                part.originalTotal?.let { initial ->
+                                                    Text(
+                                                        "$initial → ${part.total}",
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    )
+                                                }
                                             }
                                             Text(part.total.toString(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                                         }
@@ -3385,6 +3464,7 @@ private fun LogsScreenV2(
                                 } else if (log.detail.isNotBlank()) {
                                     Text(log.detail, style = MaterialTheme.typography.bodySmall)
                                 }
+                                EffectsTraceV2(log.effectSteps)
                                 Text(
                                     DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(log.timestamp)),
                                     style = MaterialTheme.typography.labelSmall,
