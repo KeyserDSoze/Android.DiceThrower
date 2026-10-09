@@ -3753,6 +3753,7 @@ private fun GuidedExpressionEditorV2(
             else -> value + nextOperator + term
         }
         if (RollFormulaResolver.validateTemplate(expression, character.level, modifiers)) {
+            selected = emptySet()
             onValueChange(expression)
         }
     }
@@ -3931,7 +3932,9 @@ private fun GuidedExpressionEditorV2(
                 Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null)
             }
             DropdownMenu(expanded = operatorMenu, onDismissRequest = { operatorMenu = false }) {
-                listOf("+" to "+", "-" to "−", "x" to "×").forEach { (operator, label) ->
+                (if (editingIndex != null) listOf("+" to "+", "-" to "−")
+                 else listOf("+" to "+", "-" to "−", "x" to "×"))
+                    .forEach { (operator, label) ->
                     DropdownMenuItem(
                         text = { Text(label) },
                         onClick = {
@@ -4013,7 +4016,7 @@ private fun GuidedExpressionEditorV2(
         }
     }
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-        TextButton(onClick = { onValueChange("") }) {
+        TextButton(onClick = { selected = emptySet(); onValueChange("") }) {
             Text(stringResource(R.string.clear_expression))
         }
     }
