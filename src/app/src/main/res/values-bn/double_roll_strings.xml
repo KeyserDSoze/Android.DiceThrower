@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">এই রোলে দ্বিগুণ নিক্ষেপ চালু করুন</string>
+    <string name="double_roll_part">এই অংশটি দ্বিগুণ নিক্ষেপে রাখুন</string>
+    <string name="directional_double_roll_swipes">সোয়াইপ (বামে: খারাপ, ডানে: ভালো, উপরে: সাধারণ)</string>
+    <string name="double_roll_best">দ্বিগুণ নিক্ষেপ: ভালো</string>
+    <string name="double_roll_worst">দ্বিগুণ নিক্ষেপ: খারাপ</string>
+    <string name="double_roll_selected">নির্বাচিত</string>
+    <string name="double_roll_alternative">অন্য ফলাফল</string>
+</resources>
