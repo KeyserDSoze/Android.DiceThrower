@@ -27,7 +27,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 object AppDataJsonCodec {
-    const val DATA_VERSION = 11
+    const val DATA_VERSION = 12
 
     fun encodeData(data: AppData): JSONObject = encodeData(data, includeLegacyImageUris = true)
 
@@ -99,7 +99,8 @@ object AppDataJsonCodec {
                                 .put("includeInDoubleRoll", subgroup.includeInDoubleRoll))
                         }
                     })
-                    .put("diceAppearance", encodeDiceAppearance(item.diceAppearance)))
+                    .put("diceAppearance", encodeDiceAppearance(item.diceAppearance))
+                    .put("effects", EffectsJsonCodec.encode(item.effects)))
             }
         })
         .put("logs", JSONArray().apply {
@@ -197,6 +198,7 @@ object AppDataJsonCodec {
                 enabled = item.optBoolean("enabled", true),
                 order = item.optInt("order"),
                 doubleRollEnabled = item.optBoolean("doubleRollEnabled", false),
+                effects = EffectsJsonCodec.decode(item.optJSONArray("effects")),
                 levelRules = item.optJSONArray("levelRules").mapObjects { rule ->
                     RollLevelRule(
                         id = rule.getString("id"),
