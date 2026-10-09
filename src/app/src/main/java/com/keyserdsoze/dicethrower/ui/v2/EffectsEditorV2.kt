@@ -54,12 +54,12 @@ import java.util.UUID
  * not change their targets or any stored expression.
  */
 internal object EffectEditorDraft {
-    fun initial(kind: EffectType, parts: List<RollSubgroup>, order: Int): RollEffect {
+    fun initial(kind: EffectType, parts: List<RollSubgroup>, order: Int, defaultName: String): RollEffect {
         require(parts.isNotEmpty())
         val target = parts.first().id
         return RollEffect(
             id = UUID.randomUUID().toString(),
-            name = if (kind == EffectType.BONUS) "Bonus" else "Malus",
+            name = defaultName,
             type = kind,
             order = order,
             activationGroups = listOf(
@@ -133,6 +133,8 @@ internal fun EffectsEditorSectionV2(
     onChange: (List<RollEffect>) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val defaultBonusName = stringResource(R.string.effects_bonus)
+    val defaultMalusName = stringResource(R.string.effects_malus)
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -297,12 +299,14 @@ internal fun EffectsEditorSectionV2(
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = {
-                onChange(effects + EffectEditorDraft.initial(EffectType.BONUS, parts, effects.size))
+                onChange(effects + EffectEditorDraft.initial(
+                    EffectType.BONUS, parts, effects.size, defaultBonusName))
             }) {
                 Text(stringResource(R.string.effects_add_bonus))
             }
             OutlinedButton(onClick = {
-                onChange(effects + EffectEditorDraft.initial(EffectType.MALUS, parts, effects.size))
+                onChange(effects + EffectEditorDraft.initial(
+                    EffectType.MALUS, parts, effects.size, defaultMalusName))
             }) {
                 Text(stringResource(R.string.effects_add_malus))
             }
