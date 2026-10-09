@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">Přidejte podmíněné bonusy nebo postihy. Podmínky ve skupině se spojují pomocí AND, skupiny pomocí OR.</string>
+    <string name="effects_formula_help">Vzorce: f(x)=floor, c(x)=ceil, r(x)=round (poloviny se zaokrouhlují od nuly). Použijte {parts:Name} pro součet části. Pro každou podmínku a akci zvolte pouze kostky, pouze modifikátory nebo celkem.</string>
+    <string name="effects_or_group_number">OR Skupina %1$d</string>
+    <string name="effects_and_condition">AND Podmínka %1$d</string>
+    <string name="effects_add_and">+ AND Podmínka</string>
+    <string name="effects_add_or">+ OR Skupina</string>
+    <string name="effects_actions">Akce (v pořadí)</string>
+    <string name="effects_add_action">+ Přidat Akce</string>
+    <string name="effects_add_bonus">+ Přidat Bonus</string>
+    <string name="effects_add_malus">+ Přidat Postih</string>
+    <string name="effects_heading">Efekty</string>
+    <string name="effects_bonus">Bonus</string>
+    <string name="effects_malus">Postih</string>
+    <string name="effects_name">Název efektu</string>
+    <string name="effects_enabled">Efekt povolen</string>
+    <string name="effects_stop_following">Po spuštění přeskočit všechny následující efekty</string>
+    <string name="effects_or_groups">Podmínky aktivace</string>
+    <string name="effects_action">Akce</string>
+    <string name="effects_scope">Rozsah hodnoty</string>
+    <string name="effects_source">Zdroj</string>
+    <string name="effects_target">Část</string>
+    <string name="effects_missing_part">Chybějící část</string>
+    <string name="effects_comparison">Porovnání</string>
+    <string name="effects_threshold">Vzorec prahu</string>
+    <string name="effects_scope_dice">Pouze kostky</string>
+    <string name="effects_scope_modifiers">Pouze modifikátory</string>
+    <string name="effects_scope_total">Celkem</string>
+    <string name="effects_source_part">Výsledek části</string>
+    <string name="effects_source_roll">Výsledek hodu</string>
+    <string name="effects_source_variable">Proměnná</string>
+    <string name="effects_action_add">Přičíst</string>
+    <string name="effects_action_subtract">Odečíst</string>
+    <string name="effects_action_multiply">Vynásobit</string>
+    <string name="effects_action_replace">Nahradit</string>
+    <string name="effects_action_reroll">Hodit znovu</string>
+    <string name="effects_action_roll_after">Další hod</string>
+    <string name="effects_dice_expression">Výraz kostek (prázdné: opakovat část)</string>
+    <string name="effects_formula">Vzorec</string>
+    <string name="effects_invalid">Zkontrolujte efekty: jsou nutné názvy, cílové části a platné vzorce.</string>
+    <string name="effects_trace_triggered">Spuštěno</string>
+    <string name="effects_trace_skipped">Nespuštěno</string>
+</resources>

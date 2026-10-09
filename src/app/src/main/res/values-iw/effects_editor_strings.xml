@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">הוסף כללי בונוס או קנס מותנים. התנאים בתוך קבוצה מחוברים באמצעות AND והקבוצות באמצעות OR.</string>
+    <string name="effects_formula_help">נוסחאות: f(x)=floor, c(x)=ceil, r(x)=round (חצאים מעוגלים הרחק מאפס). השתמש ב-{parts:Name} עבור סכום החלק. בחר קוביות בלבד, משנים בלבד או סך הכול לכל תנאי ופעולה.</string>
+    <string name="effects_or_group_number">OR קבוצה %1$d</string>
+    <string name="effects_and_condition">AND תנאי %1$d</string>
+    <string name="effects_add_and">+ AND תנאי</string>
+    <string name="effects_add_or">+ OR קבוצה</string>
+    <string name="effects_actions">פעולות (לפי הסדר)</string>
+    <string name="effects_add_action">+ הוסף פעולה</string>
+    <string name="effects_add_bonus">+ הוסף בונוס</string>
+    <string name="effects_add_malus">+ הוסף קנס</string>
+    <string name="effects_heading">השפעות</string>
+    <string name="effects_bonus">בונוס</string>
+    <string name="effects_malus">קנס</string>
+    <string name="effects_name">שם ההשפעה</string>
+    <string name="effects_enabled">ההשפעה פעילה</string>
+    <string name="effects_stop_following">בעת הפעלה, דלג על כל ההשפעות הבאות</string>
+    <string name="effects_or_groups">תנאי הפעלה</string>
+    <string name="effects_action">פעולה</string>
+    <string name="effects_scope">טווח ערך</string>
+    <string name="effects_source">מקור</string>
+    <string name="effects_target">חלק</string>
+    <string name="effects_missing_part">חלק חסר</string>
+    <string name="effects_comparison">השוואה</string>
+    <string name="effects_threshold">נוסחת סף</string>
+    <string name="effects_scope_dice">קוביות בלבד</string>
+    <string name="effects_scope_modifiers">משנים בלבד</string>
+    <string name="effects_scope_total">סך הכול</string>
+    <string name="effects_source_part">תוצאת החלק</string>
+    <string name="effects_source_roll">תוצאת ההטלה</string>
+    <string name="effects_source_variable">משתנה</string>
+    <string name="effects_action_add">חיבור</string>
+    <string name="effects_action_subtract">חיסור</string>
+    <string name="effects_action_multiply">כפל</string>
+    <string name="effects_action_replace">החלפה</string>
+    <string name="effects_action_reroll">הטלה מחדש</string>
+    <string name="effects_action_roll_after">הטלה נוספת</string>
+    <string name="effects_dice_expression">ביטוי קוביות (ריק: חזור על החלק)</string>
+    <string name="effects_formula">נוסחה</string>
+    <string name="effects_invalid">בדוק את ההשפעות: נדרשים שמות, חלקי יעד ונוסחאות תקינות.</string>
+    <string name="effects_trace_triggered">הופעל</string>
+    <string name="effects_trace_skipped">לא הופעל</string>
+</resources>

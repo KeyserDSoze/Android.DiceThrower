@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">Προσθέστε κανόνες μπόνους ή ποινής υπό συνθήκες. Οι συνθήκες μιας ομάδας συνδέονται με AND και οι ομάδες με OR.</string>
+    <string name="effects_formula_help">Τύποι: f(x)=floor, c(x)=ceil, r(x)=round (τα μισά στρογγυλοποιούνται μακριά από το μηδέν). Χρησιμοποιήστε {parts:Name} για το σύνολο μέρους. Επιλέξτε μόνο ζάρια, μόνο τροποποιητές ή σύνολο για κάθε συνθήκη και ενέργεια.</string>
+    <string name="effects_or_group_number">OR Ομάδα %1$d</string>
+    <string name="effects_and_condition">AND Συνθήκη %1$d</string>
+    <string name="effects_add_and">+ AND Συνθήκη</string>
+    <string name="effects_add_or">+ OR Ομάδα</string>
+    <string name="effects_actions">Ενέργειες (με τη σειρά)</string>
+    <string name="effects_add_action">+ Προσθήκη Ενέργεια</string>
+    <string name="effects_add_bonus">+ Προσθήκη Μπόνους</string>
+    <string name="effects_add_malus">+ Προσθήκη Ποινή</string>
+    <string name="effects_heading">Εφέ</string>
+    <string name="effects_bonus">Μπόνους</string>
+    <string name="effects_malus">Ποινή</string>
+    <string name="effects_name">Όνομα εφέ</string>
+    <string name="effects_enabled">Εφέ ενεργό</string>
+    <string name="effects_stop_following">Όταν ενεργοποιηθεί, παράλειψη όλων των επόμενων εφέ</string>
+    <string name="effects_or_groups">Συνθήκες ενεργοποίησης</string>
+    <string name="effects_action">Ενέργεια</string>
+    <string name="effects_scope">Πεδίο τιμής</string>
+    <string name="effects_source">Πηγή</string>
+    <string name="effects_target">Μέρος</string>
+    <string name="effects_missing_part">Λείπει μέρος</string>
+    <string name="effects_comparison">Σύγκριση</string>
+    <string name="effects_threshold">Τύπος ορίου</string>
+    <string name="effects_scope_dice">Μόνο ζάρια</string>
+    <string name="effects_scope_modifiers">Μόνο τροποποιητές</string>
+    <string name="effects_scope_total">Σύνολο</string>
+    <string name="effects_source_part">Αποτέλεσμα μέρους</string>
+    <string name="effects_source_roll">Αποτέλεσμα ρίψης</string>
+    <string name="effects_source_variable">Μεταβλητή</string>
+    <string name="effects_action_add">Πρόσθεση</string>
+    <string name="effects_action_subtract">Αφαίρεση</string>
+    <string name="effects_action_multiply">Πολλαπλασιασμός</string>
+    <string name="effects_action_replace">Αντικατάσταση</string>
+    <string name="effects_action_reroll">Επανάληψη ρίψης</string>
+    <string name="effects_action_roll_after">Επιπλέον ρίψη</string>
+    <string name="effects_dice_expression">Έκφραση ζαριών (κενό: επανάληψη μέρους)</string>
+    <string name="effects_formula">Τύπος</string>
+    <string name="effects_invalid">Ελέγξτε τα εφέ: απαιτούνται ονόματα, μέρη στόχοι και έγκυροι τύποι.</string>
+    <string name="effects_trace_triggered">Ενεργοποιήθηκε</string>
+    <string name="effects_trace_skipped">Δεν ενεργοποιήθηκε</string>
+</resources>

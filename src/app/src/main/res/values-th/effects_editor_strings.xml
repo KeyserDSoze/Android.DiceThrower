@@ -1,0 +1,43 @@
+<resources>
+    <string name="effects_help">เพิ่มกฎโบนัสหรือโทษตามเงื่อนไข เงื่อนไขในกลุ่มเชื่อมด้วย AND ส่วนกลุ่มเชื่อมด้วย OR</string>
+    <string name="effects_formula_help">สูตร: f(x)=floor, c(x)=ceil, r(x)=round (กรณีครึ่งหนึ่งจะปัดออกจากศูนย์) ใช้ {parts:Name} เพื่ออ้างอิงผลรวมของส่วน เลือกเฉพาะลูกเต๋า เฉพาะตัวปรับค่า หรือรวมสำหรับแต่ละเงื่อนไขและการกระทำ</string>
+    <string name="effects_or_group_number">OR กลุ่ม %1$d</string>
+    <string name="effects_and_condition">AND เงื่อนไข %1$d</string>
+    <string name="effects_add_and">+ AND เงื่อนไข</string>
+    <string name="effects_add_or">+ OR กลุ่ม</string>
+    <string name="effects_actions">การกระทำ (ตามลำดับ)</string>
+    <string name="effects_add_action">+ เพิ่ม การกระทำ</string>
+    <string name="effects_add_bonus">+ เพิ่ม โบนัส</string>
+    <string name="effects_add_malus">+ เพิ่ม โทษ</string>
+    <string name="effects_heading">เอฟเฟกต์</string>
+    <string name="effects_bonus">โบนัส</string>
+    <string name="effects_malus">โทษ</string>
+    <string name="effects_name">ชื่อเอฟเฟกต์</string>
+    <string name="effects_enabled">เปิดใช้เอฟเฟกต์</string>
+    <string name="effects_stop_following">เมื่อทำงานให้ข้ามเอฟเฟกต์ถัดไปทั้งหมด</string>
+    <string name="effects_or_groups">เงื่อนไขการทำงาน</string>
+    <string name="effects_action">การกระทำ</string>
+    <string name="effects_scope">ขอบเขตค่า</string>
+    <string name="effects_source">แหล่งที่มา</string>
+    <string name="effects_target">ส่วน</string>
+    <string name="effects_missing_part">ไม่พบส่วน</string>
+    <string name="effects_comparison">การเปรียบเทียบ</string>
+    <string name="effects_threshold">สูตรค่าเกณฑ์</string>
+    <string name="effects_scope_dice">เฉพาะลูกเต๋า</string>
+    <string name="effects_scope_modifiers">เฉพาะตัวปรับค่า</string>
+    <string name="effects_scope_total">รวม</string>
+    <string name="effects_source_part">ผลลัพธ์ของส่วน</string>
+    <string name="effects_source_roll">ผลลัพธ์การทอย</string>
+    <string name="effects_source_variable">ตัวแปร</string>
+    <string name="effects_action_add">บวก</string>
+    <string name="effects_action_subtract">ลบ</string>
+    <string name="effects_action_multiply">คูณ</string>
+    <string name="effects_action_replace">แทนที่</string>
+    <string name="effects_action_reroll">ทอยใหม่</string>
+    <string name="effects_action_roll_after">ทอยเพิ่มเติม</string>
+    <string name="effects_dice_expression">นิพจน์ลูกเต๋า (เว้นว่าง: ทำซ้ำส่วน)</string>
+    <string name="effects_formula">สูตร</string>
+    <string name="effects_invalid">ตรวจสอบเอฟเฟกต์: ต้องมีชื่อ ส่วนเป้าหมาย และสูตรที่ถูกต้อง</string>
+    <string name="effects_trace_triggered">ทำงานแล้ว</string>
+    <string name="effects_trace_skipped">ไม่ทำงาน</string>
+</resources>
