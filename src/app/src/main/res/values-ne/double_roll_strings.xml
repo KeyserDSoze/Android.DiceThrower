@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">दोहोरो रोल सक्षम गर्नुहोस्</string>
+    <string name="double_roll_part">यो भाग दोहोरो रोलमा समावेश गर्नुहोस्</string>
+    <string name="directional_double_roll_swipes">स्वाइप (बायाँ: खराब, दायाँ: राम्रो, माथि: सामान्य)</string>
+    <string name="double_roll_best">दोहोरो रोल: राम्रो</string>
+    <string name="double_roll_worst">दोहोरो रोल: खराब</string>
+    <string name="double_roll_selected">चयन गरिएको</string>
+    <string name="double_roll_alternative">अर्को परिणाम</string>
+</resources>
