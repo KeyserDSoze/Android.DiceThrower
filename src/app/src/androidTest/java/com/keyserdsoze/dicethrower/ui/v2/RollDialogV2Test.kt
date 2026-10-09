@@ -270,7 +270,7 @@ class RollDialogV2Test {
     }
 
     @Test
-    fun unifiedFormulaEditorImportsValidTextAndSupportsSubgroupReordering() {
+    fun rollPartTextEditKeepsIndependentPartsAfterReordering() {
         val character = CharacterProfile(id = "character", name = "Test", level = 3)
         val existing = RollDefinition(
             id = "combo",
@@ -298,13 +298,49 @@ class RollDialogV2Test {
         }
 
         composeRule.onAllNodesWithContentDescription("Move down")[0].performClick()
-        // No mode switch: text and guided parts share the same editor.
-        composeRule.onAllNodes(hasSetTextAction())[1].performTextReplacement("2*(1d20+1)")
+        // Roll name [0], first Part name [1], first Part expression [2].
+        composeRule.onAllNodes(hasSetTextAction())[2].performTextReplacement("2*(1d20+1)")
         composeRule.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Save"))
         composeRule.onNodeWithText("Save").performClick()
         composeRule.runOnIdle {
-            assertEquals("2*(1d20+1)", saved?.expression)
-            assertEquals("2*(1d20+1)", saved?.subgroups?.singleOrNull()?.expression)
+            assertEquals("(2*(1d20+1))+(1d20)", saved?.expression)
+            assertEquals(listOf("damage", "attack"), saved?.subgroups?.map { it.id })
+            assertEquals("2*(1d20+1)", saved?.subgroups?.firstOrNull()?.expression)
+        }
+    }
+
+    @Test
+    fun singlePartTextEditSavesCanonicalFormulaInsteadOfCrashing() {
+        val character = CharacterProfile(id = "character", name = "Test", level = 3)
+        val existing = RollDefinition(
+            id = "combo",
+            characterId = character.id,
+            name = "Combo",
+            expression = "(1d20)",
+            subgroups = listOf(RollSubgroup("part", expression = "1d20")),
+        )
+        var saved: RollDefinition? = null
+        composeRule.setContent {
+            DiceThrowerTheme(themeMode = ThemeMode.DARK) {
+                RollBuilderScreenV2(
+                    title = "Edit roll",
+                    character = character,
+                    modifiers = emptyList(),
+                    groups = emptyList(),
+                    existing = existing,
+                    onDismiss = {},
+                    onSave = { saved = it },
+                )
+            }
+        }
+
+        // There is no top-level editable formula: the Part field is the only editor.
+        composeRule.onAllNodes(hasSetTextAction())[2].performTextReplacement("1d20+3d6+20d10")
+        composeRule.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("Save"))
+        composeRule.onNodeWithText("Save").performClick()
+        composeRule.runOnIdle {
+            assertEquals("(1d20+3d6+20d10)", saved?.expression)
+            assertEquals("1d20+3d6+20d10", saved?.subgroups?.singleOrNull()?.expression)
         }
     }
 }
