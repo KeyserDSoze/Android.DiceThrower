@@ -117,6 +117,7 @@ class FormulaComposerTest {
         assertNull(FormulaComposer.replaceSimpleTerm(complex, 0, "5", 20, '+'))
         assertNull(FormulaComposer.replaceSimpleTerm(complex, 1, "", 6, '+'))
         assertNull(FormulaComposer.replaceSimpleTerm(complex, 1, "{missing", 6, '+'))
-        assertEquals("2*(1d20+1)+3d6", FormulaComposer.serialize(complex))
+        // The existing composer normalizes prefix multiplication to suffix form.
+        assertEquals("(1d20+1)x2+3d6", FormulaComposer.serialize(complex))
     }
 }
