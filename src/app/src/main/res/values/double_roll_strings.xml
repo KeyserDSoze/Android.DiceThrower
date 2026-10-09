@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">Enable double rolls for this roll</string>
+    <string name="double_roll_part">Include this Part in double rolls</string>
+    <string name="directional_double_roll_swipes">Directional swipes (left: worst, right: best, up: normal)</string>
+    <string name="double_roll_best">Double roll: best</string>
+    <string name="double_roll_worst">Double roll: worst</string>
+    <string name="double_roll_selected">Selected</string>
+    <string name="double_roll_alternative">Other result</string>
+</resources>
