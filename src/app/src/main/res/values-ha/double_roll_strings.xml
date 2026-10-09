@@ -1,0 +1,9 @@
+<resources>
+    <string name="double_roll_enable">Kunna jefa sau biyu</string>
+    <string name="double_roll_part">Haɗa wannan ɓangaren cikin jefa biyu</string>
+    <string name="directional_double_roll_swipes">Shafa (hagu: mafi muni, dama: mafi kyau, sama: na yau da kullum)</string>
+    <string name="double_roll_best">Jefa biyu: mafi kyau</string>
+    <string name="double_roll_worst">Jefa biyu: mafi muni</string>
+    <string name="double_roll_selected">An zaɓa</string>
+    <string name="double_roll_alternative">Wani sakamako</string>
+</resources>
