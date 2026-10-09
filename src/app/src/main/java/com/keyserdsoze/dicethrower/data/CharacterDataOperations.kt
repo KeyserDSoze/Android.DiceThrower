@@ -95,6 +95,33 @@ object CharacterDataOperations {
                     subgroups = roll.subgroups.map { subgroup ->
                         subgroup.copy(id = subgroupIdMap.getValue(subgroup.id))
                     },
+                    // Every copied Effect and its nested rules get independent IDs.
+                    // References to Parts MUST follow the copied subgroup ID map,
+                    // including tokens embedded in saved threshold/action formulas.
+                    effects = roll.effects.map { effect ->
+                        effect.copy(
+                            id = idFactory(),
+                            activationGroups = effect.activationGroups.map { group ->
+                                group.copy(
+                                    id = idFactory(),
+                                    conditions = group.conditions.map { condition ->
+                                        condition.copy(
+                                            id = idFactory(),
+                                            partId = condition.partId?.let(subgroupIdMap::getValue),
+                                            threshold = condition.threshold.remapEffectPartIds(subgroupIdMap),
+                                        )
+                                    },
+                                )
+                            },
+                            actions = effect.actions.map { action ->
+                                action.copy(
+                                    id = idFactory(),
+                                    targetPartId = action.targetPartId?.let(subgroupIdMap::getValue),
+                                    expression = action.expression.remapEffectPartIds(subgroupIdMap),
+                                )
+                            },
+                        )
+                    },
                 )
             }
 
@@ -108,6 +135,15 @@ object CharacterDataOperations {
             logs = data.logs,
         )
     }
+
+    private val effectPartToken = Regex("""\\{partId:([^{}]+)\\}""")
+
+    private fun String.remapEffectPartIds(ids: Map<String, String>): String =
+        effectPartToken.replace(this) { found ->
+            val previous = found.groupValues[1]
+            "{partId:${ids.getValue(previous)}}"
+        }
+
 
     private fun RollDiceAppearance.remapStyles(styleIdMap: Map<String, String>): RollDiceAppearance = copy(
         styleId = styleId?.let(styleIdMap::get),
