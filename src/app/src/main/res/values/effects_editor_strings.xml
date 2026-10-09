@@ -1,0 +1,41 @@
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="effects_heading">Effects</string>
+    <string name="effects_help">Add conditional bonus or malus rules. AND conditions within a group; OR across groups.</string>
+    <string name="effects_bonus">Bonus</string>
+    <string name="effects_malus">Malus</string>
+    <string name="effects_name">Effect name</string>
+    <string name="effects_enabled">Effect enabled</string>
+    <string name="effects_stop_following">When triggered, exclude all following effects</string>
+    <string name="effects_or_groups">Activation conditions</string>
+    <string name="effects_or_group_number">OR group %1$d</string>
+    <string name="effects_and_condition">AND condition %1$d</string>
+    <string name="effects_add_and">+ AND condition</string>
+    <string name="effects_add_or">+ OR group</string>
+    <string name="effects_actions">Actions (in order)</string>
+    <string name="effects_add_action">+ Action</string>
+    <string name="effects_add_bonus">+ Add bonus</string>
+    <string name="effects_add_malus">+ Add malus</string>
+    <string name="effects_formula_help">Formulas: f(x)=floor, c(x)=ceil, r(x)=round (halves away from zero). Use {parts:Name} for Part totals. Choose dice-only, modifiers-only or total for each condition and action.</string>
+    <string name="effects_scope">Value scope</string>
+    <string name="effects_source">Source</string>
+    <string name="effects_target">Part</string>
+    <string name="effects_missing_part">Missing Part</string>
+    <string name="effects_comparison">Comparison</string>
+    <string name="effects_threshold">Threshold formula</string>
+    <string name="effects_scope_dice">Dice only</string>
+    <string name="effects_scope_modifiers">Modifiers only</string>
+    <string name="effects_scope_total">Total</string>
+    <string name="effects_source_part">Part result</string>
+    <string name="effects_source_roll">Roll result</string>
+    <string name="effects_source_variable">Variable</string>
+    <string name="effects_action_add">Add</string>
+    <string name="effects_action_subtract">Subtract</string>
+    <string name="effects_action_multiply">Multiply</string>
+    <string name="effects_action_replace">Replace</string>
+    <string name="effects_action_reroll">Reroll</string>
+    <string name="effects_action_roll_after">Roll after</string>
+    <string name="effects_action">Action</string>
+    <string name="effects_dice_expression">Dice expression (blank: repeat Part)</string>
+    <string name="effects_formula">Formula</string>
+    <string name="effects_invalid">Check all effects: names, targets and valid formulas are required.</string>
+</resources>

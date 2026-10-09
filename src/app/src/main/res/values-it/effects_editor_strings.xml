@@ -1,0 +1,41 @@
+<resources>
+    <string name="effects_heading">Effetti</string>
+    <string name="effects_help">Aggiungi bonus o malus condizionati. Condizioni in AND nel gruppo; gruppi in OR.</string>
+    <string name="effects_bonus">Bonus</string>
+    <string name="effects_malus">Malus</string>
+    <string name="effects_name">Nome effetto</string>
+    <string name="effects_enabled">Effetto attivo</string>
+    <string name="effects_stop_following">Se si attiva, escludi tutti gli effetti successivi</string>
+    <string name="effects_or_groups">Condizioni di attivazione</string>
+    <string name="effects_or_group_number">Gruppo OR %1$d</string>
+    <string name="effects_and_condition">Condizione AND %1$d</string>
+    <string name="effects_add_and">+ Condizione AND</string>
+    <string name="effects_add_or">+ Gruppo OR</string>
+    <string name="effects_actions">Azioni (in ordine)</string>
+    <string name="effects_add_action">+ Azione</string>
+    <string name="effects_add_bonus">+ Aggiungi bonus</string>
+    <string name="effects_add_malus">+ Aggiungi malus</string>
+    <string name="effects_formula_help">Formule: f(x)=floor, c(x)=ceil, r(x)=arrotondamento (0,5 lontano da zero). Usa {parts:Nome} per i totali delle Parts. Scegli solo dadi, solo modificatori o totale per ogni condizione e azione.</string>
+    <string name="effects_scope">Ambito del valore</string>
+    <string name="effects_source">Origine</string>
+    <string name="effects_target">Part</string>
+    <string name="effects_missing_part">Part mancante</string>
+    <string name="effects_comparison">Confronto</string>
+    <string name="effects_threshold">Formula soglia</string>
+    <string name="effects_scope_dice">Solo dadi</string>
+    <string name="effects_scope_modifiers">Solo modificatori</string>
+    <string name="effects_scope_total">Totale</string>
+    <string name="effects_source_part">Risultato Part</string>
+    <string name="effects_source_roll">Risultato Roll</string>
+    <string name="effects_source_variable">Variabile</string>
+    <string name="effects_action_add">Aggiungi</string>
+    <string name="effects_action_subtract">Sottrai</string>
+    <string name="effects_action_multiply">Moltiplica</string>
+    <string name="effects_action_replace">Sostituisci</string>
+    <string name="effects_action_reroll">Ritira</string>
+    <string name="effects_action_roll_after">Tiro successivo</string>
+    <string name="effects_action">Azione</string>
+    <string name="effects_dice_expression">Espressione dadi (vuota: ripeti Part)</string>
+    <string name="effects_formula">Formula</string>
+    <string name="effects_invalid">Controlla gli effetti: sono necessari nomi, Parts di destinazione e formule valide.</string>
+</resources>
