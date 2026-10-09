@@ -2318,10 +2318,12 @@ private fun RollScreenV2(
                             total = execution?.finalSnapshot?.parts?.get(part.subgroup.id)?.total ?: part.chosen.total,
                             detail = part.chosen.detail(),
                             originalTotal = part.chosen.total.takeIf {
-                                it != execution?.finalSnapshot?.parts?.get(part.subgroup.id)?.total
+                                execution?.finalSnapshot?.parts?.get(part.subgroup.id)?.total?.let { final -> final != it } == true
                             },
                             originalDetail = part.chosen.detail().takeIf {
-                                part.chosen.total != execution?.finalSnapshot?.parts?.get(part.subgroup.id)?.total
+                                execution?.finalSnapshot?.parts?.get(part.subgroup.id)?.total?.let { final ->
+                                    final != part.chosen.total
+                                } == true
                             },
                             alternativeTotal = part.alternative?.total,
                             alternativeDetail = part.alternative?.detail(),
@@ -2678,13 +2680,14 @@ internal fun RollResultsOverlayV2(
     total: Int,
     aboveAverage: Boolean,
     modifier: Modifier = Modifier,
+    partTotalsById: Map<String, Int> = emptyMap(),
 ) {
     Box(
         modifier = modifier.testTag("roll-results-overlay"),
         contentAlignment = Alignment.BottomCenter,
     ) {
         if (parts.size > 1) {
-            RollPartsReveal(parts)
+            RollPartsReveal(parts, partTotalsById)
         } else {
             RollTotalReveal(total = total, aboveAverage = aboveAverage)
         }
@@ -2692,7 +2695,10 @@ internal fun RollResultsOverlayV2(
 }
 
 @Composable
-private fun RollPartsReveal(parts: List<ResolvedRollSubgroupResult>) {
+private fun RollPartsReveal(
+    parts: List<ResolvedRollSubgroupResult>,
+    finalTotalsById: Map<String, Int> = emptyMap(),
+) {
     val scrollState = rememberScrollState()
     LaunchedEffect(parts) { scrollState.scrollTo(0) }
 
@@ -2724,14 +2730,24 @@ private fun RollPartsReveal(parts: List<ResolvedRollSubgroupResult>) {
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Text(
-                        part.result.total.toString(),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        softWrap = false,
-                    )
+                    Column(horizontalAlignment = Alignment.End) {
+                        val finalTotal = finalTotalsById[part.subgroup.id] ?: part.result.total
+                        Text(
+                            finalTotal.toString(),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            softWrap = false,
+                        )
+                        if (finalTotal != part.result.total) {
+                            Text(
+                                "${part.result.total} → $finalTotal",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
             }
         }
