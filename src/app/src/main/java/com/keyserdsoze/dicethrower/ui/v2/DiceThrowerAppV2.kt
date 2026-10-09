@@ -1269,6 +1269,14 @@ internal fun CharacterEditContentV2(
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        if (entry is DashboardEntry.RollEntry && entry.roll.minimumLevel > 1) {
+                            Text(
+                                "${stringResource(R.string.from_level)} ${entry.roll.minimumLevel}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (character.level >= entry.roll.minimumLevel)
+                                    MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                            )
+                        }
                     }
                     IconButton(
                         enabled = index > 0,
@@ -1834,14 +1842,25 @@ internal fun GroupEditContentV2(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(3.dp),
                     ) {
-                        Text(
-                            roll.name,
+                        Column(
                             modifier = Modifier.weight(1f).clickable { detailedRollId = roll.id },
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                        ) {
+                            Text(
+                                roll.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            if (roll.minimumLevel > 1) {
+                                Text(
+                                    "${stringResource(R.string.from_level)} ${roll.minimumLevel}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (character.level >= roll.minimumLevel)
+                                        MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
                         Box {
                             IconButton(onClick = { moveMenu = true }) {
                                 Icon(Icons.Rounded.Tune, contentDescription = stringResource(R.string.group))
