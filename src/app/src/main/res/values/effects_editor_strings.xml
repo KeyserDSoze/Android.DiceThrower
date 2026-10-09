@@ -38,4 +38,6 @@
     <string name="effects_dice_expression">Dice expression (blank: repeat Part)</string>
     <string name="effects_formula">Formula</string>
     <string name="effects_invalid">Check all effects: names, targets and valid formulas are required.</string>
+    <string name="effects_trace_triggered">Triggered</string>
+    <string name="effects_trace_skipped">Not triggered</string>
 </resources>
