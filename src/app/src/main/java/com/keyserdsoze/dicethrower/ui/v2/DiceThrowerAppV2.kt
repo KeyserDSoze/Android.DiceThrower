@@ -2624,19 +2624,32 @@ private fun RollScreenV2(
                                         }
                                     }
                                 }
-                                Text(
-                                    grouped.result.total.toString(),
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.Black,
-                                )
+                                Column(horizontalAlignment = Alignment.End) {
+                                    val finalTotal = effectsExecution?.finalSnapshot
+                                        ?.parts?.get(grouped.subgroup.id)?.total ?: grouped.result.total
+                                    Text(
+                                        finalTotal.toString(),
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        fontWeight = FontWeight.Black,
+                                    )
+                                    if (finalTotal != grouped.result.total) {
+                                        Text(
+                                            "${grouped.result.total} → $finalTotal",
+                                            style = MaterialTheme.typography.labelSmall,
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 }
+                effectsExecution?.let { execution ->
+                    EffectsTraceV2(EffectRuntimeHistory.steps(execution, roll.effects))
+                }
                 // Individual parts already show their own roll breakdown above.
                 // A global total would misleadingly add unrelated checks and damage.
                 if (formula.subgroups.size <= 1 || outcome == null) {
-                    ResultContentV2(outcome)
+                    ResultContentV2(outcome, finalRollTotal)
                 }
             }
         }
@@ -2787,7 +2800,7 @@ private fun RollTotalReveal(total: Int, aboveAverage: Boolean) {
 }
 
 @Composable
-private fun ResultContentV2(outcome: DiceRollResult?) {
+private fun ResultContentV2(outcome: DiceRollResult?, finalTotal: Int? = null) {
     if (outcome == null) {
         PremiumCard(Modifier.fillMaxWidth()) {
             Column(
@@ -2808,7 +2821,7 @@ private fun ResultContentV2(outcome: DiceRollResult?) {
         ) {
             Text(stringResource(R.string.total), color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
-                outcome.total.toString(),
+                (finalTotal ?: outcome.total).toString(),
                 style = MaterialTheme.typography.displayLarge,
                 fontWeight = FontWeight.Black,
                 color = MaterialTheme.colorScheme.primary,
@@ -3437,6 +3450,13 @@ private fun LogsScreenV2(
                                             Column(Modifier.weight(1f)) {
                                                 Text(part.name, fontWeight = FontWeight.Bold)
                                                 Text(part.detail, style = MaterialTheme.typography.bodySmall)
+                                                part.originalTotal?.let { initial ->
+                                                    Text(
+                                                        "$initial → ${part.total}",
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    )
+                                                }
                                             }
                                             Text(part.total.toString(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                                         }
@@ -3444,6 +3464,7 @@ private fun LogsScreenV2(
                                 } else if (log.detail.isNotBlank()) {
                                     Text(log.detail, style = MaterialTheme.typography.bodySmall)
                                 }
+                                EffectsTraceV2(log.effectSteps)
                                 Text(
                                     DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(log.timestamp)),
                                     style = MaterialTheme.typography.labelSmall,
