@@ -19,17 +19,21 @@ data class EffectRollSnapshot(
     val variables: Map<String, Int> = emptyMap(),
 ) {
     companion object {
+        /** A saved support-only Part has no initial sample and consumes no RNG. */
+        private fun emptySupportPart(): DiceRollResult = DiceRollResult(
+            total = 0, components = emptyList(), constantTotal = 0,
+        )
         fun fromResolvedRoll(
             formula: ResolvedRollFormula,
             result: DiceRollResult,
             variables: Map<String, Int> = emptyMap(),
         ): EffectRollSnapshot = EffectRollSnapshot(
             roll = result,
-            partsById = if (formula.subgroups.isEmpty()) {
+            partsById = (if (formula.subgroups.isEmpty()) {
                 mapOf("single" to result)
             } else {
                 formula.subgroupResults(result).associate { it.subgroup.id to it.result }
-            },
+            }) + formula.supportSubgroups.associate { it.id to emptySupportPart() },
             variables = variables,
         )
 
@@ -40,9 +44,11 @@ data class EffectRollSnapshot(
         fun fromDoubleRoll(
             evaluation: DoubleRollEvaluation,
             variables: Map<String, Int> = emptyMap(),
+            supportSubgroups: List<ResolvedRollSubgroup> = emptyList(),
         ): EffectRollSnapshot = EffectRollSnapshot(
             roll = evaluation.result,
-            partsById = evaluation.parts.associate { it.subgroup.id to it.chosen },
+            partsById = evaluation.parts.associate { it.subgroup.id to it.chosen } +
+                supportSubgroups.associate { it.id to emptySupportPart() },
             variables = variables,
         )
     }
