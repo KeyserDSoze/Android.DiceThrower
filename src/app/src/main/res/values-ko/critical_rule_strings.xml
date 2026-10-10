@@ -1,0 +1,6 @@
+<resources>
+    <string name="effects_quick_critical">치명타 (빠른 설정)</string>
+    <string name="effects_critical_help">첫 번째 파트의 d20에서 20이 나오면 두 번째 파트의 주사위 값만 두 배로 늘립니다. 수정치는 유지됩니다.</string>
+    <string name="effects_when">조건 — 발동</string>
+    <string name="effects_then">결과 — 적용 대상</string>
+</resources>

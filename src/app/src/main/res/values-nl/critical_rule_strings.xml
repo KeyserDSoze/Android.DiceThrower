@@ -1,0 +1,6 @@
+<resources>
+    <string name="effects_quick_critical">Kritieke treffer (snelle instelling)</string>
+    <string name="effects_critical_help">Als het eerste onderdeel met een d20 een 20 gooit, verdubbel dan alleen de dobbelstenen van het tweede onderdeel. Modifiers blijven gelijk.</string>
+    <string name="effects_when">WANNEER — voorwaarde</string>
+    <string name="effects_then">DAN — toepassen op</string>
+</resources>
