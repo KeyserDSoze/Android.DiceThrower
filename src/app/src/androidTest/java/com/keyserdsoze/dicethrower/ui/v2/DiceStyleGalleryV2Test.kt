@@ -9,6 +9,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.assertDoesNotExist
+import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -40,7 +42,7 @@ class DiceStyleGalleryV2Test {
                 }
             }
         }
-        composeRule.onNodeWithText("Choose a dice look").assertExists()
+        composeRule.onNodeWithText("System dice styles").assertExists()
         composeRule.onNodeWithTag("dice-preset-emerald-aether").performScrollTo().performClick()
         composeRule.onNodeWithTag("dice-add-selected-preset").performScrollTo().performClick()
         composeRule.runOnIdle {
@@ -51,5 +53,26 @@ class DiceStyleGalleryV2Test {
             assertEquals(null, data.characters.last().defaultDiceStyleId)
             assertNotEquals("preview-preset", data.diceStyles.single().id)
         }
+    }
+
+    @Test
+    fun characterStyleSectionStartsCollapsedAndShowsCatalogOnlyWhenAdding() {
+        val character = CharacterProfile(id = "hero", name = "Hero")
+        var data by mutableStateOf(AppData(characters = listOf(character)))
+        composeRule.setContent {
+            MaterialTheme {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    CharacterDiceStyleSectionV2(
+                        character = character,
+                        data = data,
+                        onDataChanged = { data = it },
+                    )
+                }
+            }
+        }
+        composeRule.onNodeWithTag("dice-character-add-style").assertDoesNotExist()
+        composeRule.onNodeWithTag("dice-character-style-toggle").performClick()
+        composeRule.onNodeWithTag("dice-character-add-style").assertExists().performClick()
+        composeRule.onNodeWithText("System dice styles").assertExists()
     }
 }
