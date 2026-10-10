@@ -2400,7 +2400,8 @@ private fun RollScreenV2(
         if (hasRolled && !resultRevealed) return
         val mode = if (roll.doubleRollEnabled) requestedMode else DoubleRollMode.NORMAL
         val selectedPartIds = if (roll.subgroups.isEmpty()) setOf("single") else
-            roll.subgroups.filter { it.includeInDoubleRoll }.map { it.id }.toSet()
+            roll.subgroups.filter { it.includeInNormalRoll && it.includeInDoubleRoll }
+                .map { it.id }.toSet()
         val evaluation = DoubleRollEngine.evaluate(formula, mode, selectedPartIds)
         val result = evaluation.result
         // Logical effects consume only the selected double-roll candidates.
@@ -2408,6 +2409,7 @@ private fun RollScreenV2(
         val execution = if (roll.effects.isEmpty()) null else EffectSequenceExecutor.execute(
             original = EffectRollSnapshot.fromDoubleRoll(
                 evaluation,
+                supportSubgroups = formula.supportSubgroups,
                 variables = buildMap {
                     put("level", character.level)
                     modifiers.filter { it.characterId == character.id }.forEach { modifier ->
@@ -2419,7 +2421,7 @@ private fun RollScreenV2(
             resolvedPartExpressions = if (formula.subgroups.isEmpty()) {
                 mapOf("single" to formula.expression)
             } else {
-                formula.subgroups.associate { it.id to it.expression }
+                (formula.subgroups + formula.supportSubgroups).associate { it.id to it.expression }
             },
         )
         val adjustedTotal = execution?.let {
@@ -4025,7 +4027,7 @@ internal fun RollBuilderScreenV2(
     val expressionToSave = runCatching {
         RollFormulaResolver.canonicalExpression(subgroups)
     }.getOrDefault("")
-    val groupsValid = subgroups.isNotEmpty() && subgroups.all { subgroup ->
+    val groupsValid = subgroups.any { it.includeInNormalRoll } && subgroups.all { subgroup ->
         subgroup.expression.isNotBlank() &&
             RollFormulaResolver.validateTemplate(subgroup.expression, character.level, modifiers)
     }
@@ -4223,6 +4225,29 @@ internal fun RollBuilderScreenV2(
                             }
                         }
                         RollTriggerToggle(
+                            label = stringResource(R.string.part_in_normal_roll),
+                            checked = subgroup.includeInNormalRoll,
+                            onChecked = { selected ->
+                                // A Roll must have at least one Part in its initial throw.
+                                if (selected || subgroups.count { it.includeInNormalRoll } > 1) {
+                                    updateSubgroups(subgroups.map { part ->
+                                        if (part.id == subgroup.id) part.copy(
+                                            includeInNormalRoll = selected,
+                                            includeInDoubleRoll = if (selected) part.includeInDoubleRoll else false,
+                                        ) else part
+                                    })
+                                }
+                            },
+                        )
+                        if (!subgroup.includeInNormalRoll) {
+                            Text(
+                                stringResource(R.string.part_support_only_help),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (subgroup.includeInNormalRoll) {
+                        RollTriggerToggle(
                             label = stringResource(R.string.double_roll_part),
                             checked = subgroup.includeInDoubleRoll,
                             onChecked = { selected ->
@@ -4231,6 +4256,7 @@ internal fun RollBuilderScreenV2(
                                 })
                             },
                         )
+                        }
                         GuidedExpressionEditorV2(
                             value = subgroup.expression,
                             character = character,
