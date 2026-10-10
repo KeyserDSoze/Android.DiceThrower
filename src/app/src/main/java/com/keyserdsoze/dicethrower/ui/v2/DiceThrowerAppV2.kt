@@ -768,11 +768,6 @@ private fun DiceCatalogScreenV2(
     onDataChanged: (AppData) -> Unit,
     onBack: () -> Unit,
 ) {
-    val characters = data.characters.sortedBy { it.order }
-    val selected = characters.firstOrNull { it.id == selectedCharacterId }
-        ?: characters.firstOrNull()
-    var selectingCharacter by remember { mutableStateOf(false) }
-
     ArcaneBackground {
         Scaffold(
             containerColor = Color.Transparent,
@@ -799,36 +794,7 @@ private fun DiceCatalogScreenV2(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                if (selected == null) {
-                    Text(stringResource(R.string.no_characters))
-                } else {
-                    Box {
-                        OutlinedButton(onClick = { selectingCharacter = true }) {
-                            Text(selected.name)
-                            Spacer(Modifier.width(8.dp))
-                            Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null)
-                        }
-                        DropdownMenu(
-                            expanded = selectingCharacter,
-                            onDismissRequest = { selectingCharacter = false },
-                        ) {
-                            characters.forEach { character ->
-                                DropdownMenuItem(
-                                    text = { Text(character.name) },
-                                    onClick = {
-                                        selectingCharacter = false
-                                        onSelectCharacter(character.id)
-                                    },
-                                )
-                            }
-                        }
-                    }
-                    DiceStyleLibraryV2(
-                        character = selected,
-                        data = data,
-                        onDataChanged = onDataChanged,
-                    )
-                }
+                DiceStyleLibraryV2(data = data, onDataChanged = onDataChanged)
             }
         }
     }
@@ -1083,7 +1049,7 @@ internal fun CharacterEditContentV2(
     val groups = data.groups.filter { it.characterId == character.id }.sortedBy { it.order }
     val rolls = data.rolls.filter { it.characterId == character.id }
     val modifiers = data.modifiers.filter { it.characterId == character.id }.sortedBy { it.order }
-    val diceStyles = data.diceStyles.filter { it.characterId == character.id }.sortedBy { it.order }
+    val diceStyles = com.keyserdsoze.dicethrower.model.DiceStylePresets.availableStyles(data.diceStyles)
     val entries = dashboardEntries(groups, rolls.filter { it.groupId == null })
 
     val builderRoll = editingRollId?.let { id -> rolls.firstOrNull { it.id == id } }
@@ -1787,7 +1753,7 @@ internal fun GroupEditContentV2(
     val allCharacterRolls = data.rolls.filter { it.characterId == character.id }
     val groupRolls = allCharacterRolls.filter { it.groupId == group.id }.sortedBy { it.order }
     val modifiers = data.modifiers.filter { it.characterId == character.id }.sortedBy { it.order }
-    val diceStyles = data.diceStyles.filter { it.characterId == character.id }.sortedBy { it.order }
+    val diceStyles = com.keyserdsoze.dicethrower.model.DiceStylePresets.availableStyles(data.diceStyles)
 
     val builderRoll = editingRollId?.let { id -> allCharacterRolls.firstOrNull { it.id == id } }
     val detailedRoll = detailedRollId?.let { id -> groupRolls.firstOrNull { it.id == id } }

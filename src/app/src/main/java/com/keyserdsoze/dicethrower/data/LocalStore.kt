@@ -24,7 +24,7 @@ class LocalStore(context: Context) {
     fun loadData(): AppData {
         val raw = prefs.getString(KEY_DATA, null) ?: return AppData()
         val decoded = decodeStoredData(raw)
-        val portableImages = imageAssetStore.migrateLegacyImages(decoded)
+        val portableImages = SharedDiceStyleCatalog.migrateLegacy(imageAssetStore.migrateLegacyImages(decoded))
         val migrated = SyncMetadataManager.ensureMetadata(
             data = portableImages,
             writerId = installationWriterId(),
@@ -77,7 +77,7 @@ class LocalStore(context: Context) {
         val now = System.currentTimeMillis()
         val writerId = installationWriterId()
         val migrated = SyncMetadataManager.ensureMetadata(
-            data = data,
+            data = SharedDiceStyleCatalog.migrateLegacy(data),
             writerId = writerId,
             now = now,
         )
@@ -138,8 +138,17 @@ class LocalStore(context: Context) {
         }
         currentIds.forEach(pendingById::remove)
         val updated = pendingById.values.sortedBy { it.characterId }
-        if (updated != journal.pendingDeletions) {
-            syncJournalStore.save(journal.copy(pendingDeletions = updated))
+        val previousRevision = SharedDiceStyleCatalog.revision(previous.diceStyles.filter { it.characterId == null })
+        val currentRevision = SharedDiceStyleCatalog.revision(current.diceStyles.filter { it.characterId == null })
+        val priorCatalog = journal.diceCatalogMetadata
+        val catalog = if (previousRevision != currentRevision) SettingsSyncMetadata(
+            updatedAt = maxOf(now, (priorCatalog?.updatedAt ?: -1L) + 1L),
+            revision = currentRevision,
+            writerId = writerId,
+            baseRevision = priorCatalog?.baseRevision,
+        ) else priorCatalog
+        if (updated != journal.pendingDeletions || catalog != priorCatalog) {
+            syncJournalStore.save(journal.copy(pendingDeletions = updated, diceCatalogMetadata = catalog))
         }
     }
 

@@ -48,8 +48,8 @@ object CharacterDataOperations {
             id = newCharacterId,
             name = newName.trim(),
             order = data.characters.size,
-            defaultDiceStyleId = source.defaultDiceStyleId?.let(styleIdMap::get),
-            secondaryDiceStyleId = source.secondaryDiceStyleId?.let(styleIdMap::get),
+            defaultDiceStyleId = source.defaultDiceStyleId?.let { styleIdMap[it] ?: it },
+            secondaryDiceStyleId = source.secondaryDiceStyleId?.let { styleIdMap[it] ?: it },
         )
 
         val duplicatedStyles = data.diceStyles
@@ -147,10 +147,10 @@ object CharacterDataOperations {
 
 
     private fun RollDiceAppearance.remapStyles(styleIdMap: Map<String, String>): RollDiceAppearance = copy(
-        styleId = styleId?.let(styleIdMap::get),
-        subgroupStyleIds = subgroupStyleIds.mapValues { (_, styleId) -> styleIdMap.getValue(styleId) },
+        styleId = styleId?.let { styleIdMap[it] ?: it },
+        subgroupStyleIds = subgroupStyleIds.mapValues { (_, styleId) -> styleIdMap[styleId] ?: styleId },
         perDieStyleIds = perDieStyleIds.mapValues { (_, styleId) -> styleIdMap.getValue(styleId) },
-        randomStyleIds = randomStyleIds.map(styleIdMap::getValue),
+        randomStyleIds = randomStyleIds.map { styleIdMap[it] ?: it },
     )
 
     private fun RollDiceAppearance.remapSubgroups(subgroupIdMap: Map<String, String>): RollDiceAppearance = copy(

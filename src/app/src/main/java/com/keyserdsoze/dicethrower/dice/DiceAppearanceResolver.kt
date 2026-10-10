@@ -4,6 +4,7 @@ import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 import com.keyserdsoze.dicethrower.model.DiceMaterial
 import com.keyserdsoze.dicethrower.model.DiceStyle
+import com.keyserdsoze.dicethrower.model.DiceStylePresets
 import com.keyserdsoze.dicethrower.model.RollDiceAppearance
 import kotlin.random.Random
 
@@ -72,8 +73,9 @@ object DiceAppearanceResolver {
         /** Only components in logical candidate B receive this visual override. */
         secondaryCandidateComponentIndices: Set<Int> = emptySet(),
     ): List<ResolvedDiceAppearance> {
-        val ownedStyles = styles
-            .filter { it.characterId == character.id }
+        // Definitions are global; legacy character-owned styles remain readable during migration.
+        val ownedStyles = DiceStylePresets.availableStyles(styles)
+            .filter { it.characterId == null || it.characterId == character.id }
             .sortedBy { it.order }
         val stylesById = ownedStyles.associateBy { it.id }
         val defaultStyle = character.defaultDiceStyleId?.let(stylesById::get)

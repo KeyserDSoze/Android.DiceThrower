@@ -2,9 +2,10 @@ package com.keyserdsoze.dicethrower.data.cloud
 
 import com.keyserdsoze.dicethrower.data.PortableCharacterImageAsset
 import com.keyserdsoze.dicethrower.model.AppData
+import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.RollButtonPosition
 
-const val CLOUD_SCHEMA_VERSION = 1
+const val CLOUD_SCHEMA_VERSION = 2
 const val DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata"
 
 data class CloudCharacterMetadata(
@@ -22,6 +23,7 @@ data class CloudManifest(
     val characters: List<CloudCharacterMetadata>,
     val tombstones: List<CloudCharacterTombstone> = emptyList(),
     val settings: CloudSettingsDocument? = null,
+    val diceCatalog: CloudDiceCatalogDocument? = null,
 )
 
 data class CloudCharacterTombstone(
@@ -46,6 +48,11 @@ data class CloudRoamingSettings(
 data class CloudSettingsDocument(
     val metadata: CloudSettingsMetadata,
     val values: CloudRoamingSettings,
+)
+
+data class CloudDiceCatalogDocument(
+    val metadata: CloudSettingsMetadata,
+    val styles: List<DiceStyle>,
 )
 
 data class CloudCharacterDocument(

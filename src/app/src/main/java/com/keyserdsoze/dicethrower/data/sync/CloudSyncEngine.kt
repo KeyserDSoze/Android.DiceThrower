@@ -1,6 +1,9 @@
 package com.keyserdsoze.dicethrower.data.sync
 
 import com.keyserdsoze.dicethrower.data.SyncChangeState
+import com.keyserdsoze.dicethrower.data.SharedDiceStyleCatalog
+import com.keyserdsoze.dicethrower.data.cloud.CloudDiceCatalogDocument
+import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.data.SyncMetadataManager
 import com.keyserdsoze.dicethrower.data.cloud.CLOUD_SCHEMA_VERSION
 import com.keyserdsoze.dicethrower.data.cloud.CloudAuthorizationException
@@ -82,6 +85,18 @@ class CloudSyncEngine(
         resolutions: Map<String, SyncConflictResolution>,
     ): SyncRunResult {
         val manifest = remote.readManifest()
+        val catalogResult = reconcileDiceCatalog(
+            snapshot, manifest?.diceCatalog, conflictPolicy, resolutions[CATALOG_CONFLICT_KEY],
+        )
+        if (catalogResult.conflict != null) {
+            // No partial remote/local writes while the shared catalog is diverged.
+            return SyncRunResult(status = SyncStatus(
+                kind = SyncStatusKind.CONFLICT,
+                pendingCount = pendingCount(snapshot),
+                conflicts = listOf(catalogResult.conflict),
+                lastSuccessfulSyncAt = snapshot.journal.lastSuccessfulSyncAt,
+            ))
+        }
         val remoteById = remote.listCharacters().associateByTo(linkedMapOf()) { it.characterId }
         val remoteAssetIds = remote.listAssets().mapTo(mutableSetOf()) { it.assetId }
         val tombstones = manifest?.tombstones.orEmpty().associateByTo(linkedMapOf()) { it.characterId }
@@ -97,7 +112,7 @@ class CloudSyncEngine(
         val resolvedDeletions = mutableListOf<PendingCharacterDeletion>()
         val downloadedAssets = linkedMapOf<String, com.keyserdsoze.dicethrower.data.PortableCharacterImageAsset>()
         val conflicts = mutableListOf<SyncConflict>()
-        var autoResolvedCount = 0
+        var autoResolvedCount = catalogResult.autoResolvedCount
 
         for (characterId in allIds) {
             val localMetadata = localById[characterId]
@@ -341,10 +356,12 @@ class CloudSyncEngine(
         val desiredCharacters = remoteById.values.sortedBy { it.characterId }
         val desiredTombstones = tombstones.values.sortedBy { it.characterId }
         val desiredSettings = settingsResult.remote
+        val desiredCatalog = catalogResult.remote
         val remoteDirty = manifest == null ||
             manifest.characters.sortedBy { it.characterId } != desiredCharacters ||
             manifest.tombstones.sortedBy { it.characterId } != desiredTombstones ||
-            manifest.settings != desiredSettings
+            manifest.settings != desiredSettings ||
+            manifest.diceCatalog != desiredCatalog
         if (remoteDirty) {
             remote.putManifest(
                 CloudManifest(
@@ -354,6 +371,7 @@ class CloudSyncEngine(
                     characters = desiredCharacters,
                     tombstones = desiredTombstones,
                     settings = desiredSettings,
+                    diceCatalog = desiredCatalog,
                 ),
             )
         }
@@ -366,6 +384,7 @@ class CloudSyncEngine(
                 resolvedDeletions = resolvedDeletions,
                 settings = settingsResult.commit,
                 successfulAt = completedAt,
+                catalog = catalogResult.commit,
             ),
         )
         val finalPending = pendingCount(commit.snapshot)
@@ -446,6 +465,63 @@ class CloudSyncEngine(
         originalBaseRevision = originalBase,
         allowDescendantBaseAdvance = advanceDescendant,
     )
+
+    private fun reconcileDiceCatalog(
+        snapshot: LocalSyncSnapshot,
+        remoteCatalog: CloudDiceCatalogDocument?,
+        conflictPolicy: ConflictPolicy,
+        explicitResolution: SyncConflictResolution?,
+    ): DiceCatalogResult {
+        val localStyles = snapshot.data.diceStyles.filter { it.characterId == null }
+        val meta = requireNotNull(snapshot.journal.diceCatalogMetadata)
+        val localCatalog = CloudDiceCatalogDocument(meta.toCloud(), localStyles)
+        fun synced(remote: CloudDiceCatalogDocument, replacement: List<DiceStyle>? = null,
+            advance: Boolean = false): DiceCatalogResult = DiceCatalogResult(
+            remote, DiceCatalogSyncCommit(
+                expectedRevision = meta.revision,
+                replacement = replacement,
+                metadataAfter = if (replacement == null)
+                    meta.copy(baseRevision = remote.metadata.revision)
+                else SettingsSyncMetadata(remote.metadata.updatedAt, remote.metadata.revision,
+                    remote.metadata.writerId, remote.metadata.revision),
+                originalBaseRevision = meta.baseRevision,
+                allowDescendantBaseAdvance = advance,
+            ),
+        )
+        if (remoteCatalog == null) return synced(localCatalog, advance = true)
+        if (SharedDiceStyleCatalog.revision(remoteCatalog.styles) != remoteCatalog.metadata.revision) {
+            throw CloudProtocolException("Remote dice catalog hash mismatch")
+        }
+        val change = if (localStyles.isEmpty() && meta.baseRevision == null &&
+            remoteCatalog.styles.isNotEmpty()) SyncChangeState.REMOTE_ONLY
+            else SyncMetadataManager.classify(meta.revision, remoteCatalog.metadata.revision, meta.baseRevision)
+        return when (change) {
+            SyncChangeState.SAME -> synced(remoteCatalog)
+            SyncChangeState.LOCAL_ONLY -> synced(localCatalog, advance = true)
+            SyncChangeState.REMOTE_ONLY -> synced(remoteCatalog, replacement = remoteCatalog.styles)
+            SyncChangeState.CONFLICT -> {
+                val choice = explicitResolution ?: latestResolution(conflictPolicy,
+                    meta.updatedAt, meta.revision, meta.writerId,
+                    remoteCatalog.metadata.updatedAt, remoteCatalog.metadata.revision,
+                    remoteCatalog.metadata.writerId)
+                val result = when (choice) {
+                    SyncConflictResolution.KEEP_LOCAL -> synced(localCatalog, advance = true)
+                    SyncConflictResolution.USE_REMOTE -> synced(remoteCatalog, replacement = remoteCatalog.styles)
+                    null -> DiceCatalogResult(remoteCatalog, null, conflict = SyncConflict(
+                        kind = SyncConflictKind.DICE_CATALOG_DIVERGED,
+                        localRevision = meta.revision,
+                        remoteRevision = remoteCatalog.metadata.revision,
+                        localUpdatedAt = meta.updatedAt,
+                        remoteUpdatedAt = remoteCatalog.metadata.updatedAt,
+                        localWriterId = meta.writerId,
+                        remoteWriterId = remoteCatalog.metadata.writerId,
+                        changedAreas = listOf(ConflictArea.DICE_STYLES),
+                    ))
+                }
+                result.copy(autoResolvedCount = if (choice != null && explicitResolution == null) 1 else 0)
+            }
+        }
+    }
 
     private fun reconcileSettings(
         snapshot: LocalSyncSnapshot,
@@ -629,7 +705,8 @@ class CloudSyncEngine(
     private fun pendingCount(snapshot: LocalSyncSnapshot): Int =
         snapshot.data.characterSyncMetadata.count { it.baseRevision != it.revision } +
             snapshot.journal.pendingDeletions.size +
-            if (snapshot.journal.settingsMetadata?.let { it.baseRevision != it.revision } != false) 1 else 0
+            (if (snapshot.journal.settingsMetadata?.let { it.baseRevision != it.revision } != false) 1 else 0) +
+            (if (snapshot.journal.diceCatalogMetadata?.let { it.baseRevision != it.revision } != false) 1 else 0)
 
     private fun errorKind(error: Exception): SyncErrorKind = when (error) {
         is CloudAuthorizationException -> SyncErrorKind.AUTHORIZATION
@@ -643,6 +720,13 @@ class CloudSyncEngine(
     private fun RoamingSettings.toCloud() = CloudRoamingSettings(showRollButton, rollButtonPosition, logRetention)
     private fun CloudRoamingSettings.toLocal() = RoamingSettings(showRollButton, rollButtonPosition, logRetention)
 
+    private data class DiceCatalogResult(
+        val remote: CloudDiceCatalogDocument,
+        val commit: DiceCatalogSyncCommit?,
+        val autoResolvedCount: Int = 0,
+        val conflict: SyncConflict? = null,
+    )
+
     private data class SettingsResult(
         val remote: CloudSettingsDocument,
         val commit: SettingsSyncCommit?,
@@ -651,6 +735,7 @@ class CloudSyncEngine(
 
     companion object {
         const val SETTINGS_CONFLICT_KEY = "__settings__"
+        const val CATALOG_CONFLICT_KEY = "__dice_catalog__"
 
         internal fun compareConflictVersions(
             localUpdatedAt: Long,

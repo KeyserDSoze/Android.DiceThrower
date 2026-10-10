@@ -252,7 +252,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun resolveConflict(conflict: SyncConflict, resolution: SyncConflictResolution) {
-        val key = conflict.characterId ?: CloudSyncEngine.SETTINGS_CONFLICT_KEY
+        val key = conflict.characterId ?: if (
+            conflict.kind == com.keyserdsoze.dicethrower.data.sync.SyncConflictKind.DICE_CATALOG_DIVERGED
+        ) CloudSyncEngine.CATALOG_CONFLICT_KEY else CloudSyncEngine.SETTINGS_CONFLICT_KEY
         syncNow(mapOf(key to resolution))
     }
 

@@ -1,6 +1,8 @@
 package com.keyserdsoze.dicethrower.data.sync
 
 import com.keyserdsoze.dicethrower.data.CharacterImageAssets
+import com.keyserdsoze.dicethrower.data.SharedDiceStyleCatalog
+import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.data.PortableCharacterImageAsset
 import com.keyserdsoze.dicethrower.data.SyncMetadataManager
 import com.keyserdsoze.dicethrower.data.cloud.CloudAssetDocument
@@ -35,6 +37,39 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CloudSyncEngineTest {
+
+    @Test
+    fun sharedCatalogEditsDownloadAndConcurrentEditsNeedExplicitResolution() = runBlocking {
+        fun style(name: String) = DiceStyle(
+            id = "shared", characterId = null, name = name,
+            primaryColorArgb = 0xFF224466.toInt(),
+            secondaryColorArgb = 0xFFEEDD88.toInt(),
+        )
+        val remote = FakeRemote()
+        val deviceA = FakeLocal("device-a", AppData(diceStyles = listOf(style("Initial"))))
+        val deviceB = FakeLocal("device-b", AppData())
+        val engineA = engine(deviceA, remote, 100L)
+        val engineB = engine(deviceB, remote, 200L)
+
+        assertEquals(SyncStatusKind.SYNCED, engineA.sync().status.kind)
+        assertEquals(SyncStatusKind.SYNCED, engineB.sync().status.kind)
+        assertEquals("Initial", deviceB.data.diceStyles.single().name)
+
+        deviceA.data = SharedDiceStyleCatalog.edit(deviceA.data, style("Blue"))
+        deviceB.data = SharedDiceStyleCatalog.edit(deviceB.data, style("Red"))
+        assertEquals(SyncStatusKind.SYNCED, engineA.sync().status.kind)
+        val conflict = engineB.sync()
+        assertEquals(SyncStatusKind.CONFLICT, conflict.status.kind)
+        assertEquals(SyncConflictKind.DICE_CATALOG_DIVERGED, conflict.status.conflicts.single().kind)
+        assertEquals("Red", deviceB.data.diceStyles.single().name)
+
+        val resolved = engineB.sync(resolutions = mapOf(
+            CloudSyncEngine.CATALOG_CONFLICT_KEY to SyncConflictResolution.USE_REMOTE,
+        ))
+        assertEquals(SyncStatusKind.SYNCED, resolved.status.kind)
+        assertEquals("Blue", deviceB.data.diceStyles.single().name)
+    }
+
     @Test
     fun deviceAUploadIsDownloadedByDeviceBWithoutDuplicateTransfers() = runBlocking {
         val remote = FakeRemote()
@@ -429,6 +464,12 @@ class CloudSyncEngineTest {
                     settingsMetadata = SettingsSyncMetadata(now, roaming.revision(), writerId),
                 )
             }
+            val revision = SharedDiceStyleCatalog.revision(data.diceStyles.filter { it.characterId == null })
+            val prior = journal.diceCatalogMetadata
+            if (prior == null || prior.revision != revision) {
+                journal = journal.copy(diceCatalogMetadata =
+                    SettingsSyncMetadata(now, revision, writerId, prior?.baseRevision))
+            }
             return LocalSyncSnapshot(data, settings, journal, writerId)
         }
 
@@ -450,6 +491,16 @@ class CloudSyncEngineTest {
                     else -> data
                 }
                 dataChanged = true
+            }
+            plan.catalog?.let { change ->
+                if (journal.diceCatalogMetadata?.revision == change.expectedRevision) {
+                    change.replacement?.let { newStyles ->
+                        data = data.copy(diceStyles =
+                            data.diceStyles.filter { it.characterId != null } + newStyles)
+                        dataChanged = true
+                    }
+                    journal = journal.copy(diceCatalogMetadata = change.metadataAfter)
+                }
             }
             plan.downloadedAssets.forEach { assets[it.ref.assetId] = it }
             var settingsChanged = false
@@ -533,7 +584,7 @@ class CloudSyncEngineTest {
                 groups = clean.groups + incoming.groups,
                 rolls = clean.rolls + incoming.rolls,
                 logs = clean.logs + incoming.logs,
-                diceStyles = clean.diceStyles + incoming.diceStyles,
+                diceStyles = clean.diceStyles + incoming.diceStyles.filter { it.characterId == id },
                 characterSyncMetadata = clean.characterSyncMetadata +
                     incoming.characterSyncMetadata.single().copy(baseRevision = base),
             )

@@ -2,6 +2,9 @@ package com.keyserdsoze.dicethrower.data.sync
 
 import com.keyserdsoze.dicethrower.data.AppDataValidator
 import com.keyserdsoze.dicethrower.data.LocalStore
+import com.keyserdsoze.dicethrower.data.SharedDiceStyleCatalog
+import com.keyserdsoze.dicethrower.data.SyncMetadataManager
+import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.data.PortableCharacterImageAsset
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.AppSettings
@@ -32,12 +35,21 @@ data class SettingsSyncCommit(
     val allowDescendantBaseAdvance: Boolean = false,
 )
 
+data class DiceCatalogSyncCommit(
+    val expectedRevision: String,
+    val replacement: List<DiceStyle>? = null,
+    val metadataAfter: SettingsSyncMetadata,
+    val originalBaseRevision: String? = null,
+    val allowDescendantBaseAdvance: Boolean = false,
+)
+
 data class LocalSyncCommitPlan(
     val characters: List<CharacterSyncCommit>,
     val downloadedAssets: List<PortableCharacterImageAsset>,
     val resolvedDeletions: List<PendingCharacterDeletion>,
     val settings: SettingsSyncCommit?,
     val successfulAt: Long,
+    val catalog: DiceCatalogSyncCommit? = null,
 )
 
 data class LocalSyncCommitResult(
@@ -71,6 +83,17 @@ class AndroidSyncLocalGateway(private val store: LocalStore) : SyncLocalGateway 
                     baseRevision = currentMetadata?.baseRevision,
                 ),
             )
+            store.saveSyncJournal(journal)
+        }
+        val catalogRevision = SharedDiceStyleCatalog.revision(data.diceStyles.filter { it.characterId == null })
+        val currentCatalog = journal.diceCatalogMetadata
+        if (currentCatalog == null || currentCatalog.revision != catalogRevision) {
+            journal = journal.copy(diceCatalogMetadata = SettingsSyncMetadata(
+                updatedAt = maxOf(now, (currentCatalog?.updatedAt ?: -1L) + 1L),
+                revision = catalogRevision,
+                writerId = writerId,
+                baseRevision = currentCatalog?.baseRevision,
+            ))
             store.saveSyncJournal(journal)
         }
         return LocalSyncSnapshot(data, settings, journal, writerId)
@@ -127,13 +150,35 @@ class AndroidSyncLocalGateway(private val store: LocalStore) : SyncLocalGateway 
             dataChanged = true
         }
 
+        var journal = store.loadSyncJournal()
+        plan.catalog?.let { change ->
+            val current = journal.diceCatalogMetadata
+            if (current?.revision == change.expectedRevision) {
+                change.replacement?.let { replacement ->
+                    data = data.copy(diceStyles =
+                        data.diceStyles.filter { it.characterId != null } + replacement)
+                    dataChanged = true
+                }
+                journal = journal.copy(diceCatalogMetadata = change.metadataAfter)
+            } else if (change.allowDescendantBaseAdvance && current != null &&
+                current.writerId == writerId && current.baseRevision == change.originalBaseRevision) {
+                journal = journal.copy(diceCatalogMetadata =
+                    current.copy(baseRevision = change.metadataAfter.baseRevision))
+            }
+        }
+        if (plan.catalog != null) {
+            val repaired = SharedDiceStyleCatalog.repairDanglingReferences(data)
+            if (repaired != data) {
+                data = SyncMetadataManager.reconcileLocalEdit(data, repaired, writerId, plan.successfulAt)
+                dataChanged = true
+            }
+        }
         if (dataChanged) {
             AppDataValidator.requireValid(data)
             store.applySyncedData(data, plan.downloadedAssets)
         }
 
         var settings = store.loadSettings()
-        var journal = store.loadSyncJournal()
         var settingsChanged = false
         var settingsSkipped = false
         plan.settings?.let { change ->
@@ -195,7 +240,7 @@ class AndroidSyncLocalGateway(private val store: LocalStore) : SyncLocalGateway 
             groups = clean.groups + replacement.groups,
             rolls = clean.rolls + replacement.rolls,
             logs = clean.logs + replacement.logs,
-            diceStyles = clean.diceStyles + replacement.diceStyles,
+            diceStyles = clean.diceStyles + replacement.diceStyles.filter { it.characterId == character.id },
             characterSyncMetadata = clean.characterSyncMetadata + metadata,
         )
     }

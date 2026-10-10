@@ -55,7 +55,8 @@ enum class DiceAppearanceMode {
 
 data class DiceStyle(
     val id: String,
-    val characterId: String,
+    /** Null for a reusable catalog style; a non-null ID belongs to legacy per-character data. */
+    val characterId: String?,
     val name: String,
     val material: DiceMaterial = DiceMaterial.GLOSSY_RESIN,
     val primaryColorArgb: Int,
@@ -87,7 +88,7 @@ data class CharacterProfile(
     val level: Int = 1,
     val order: Int = 0,
     val defaultDiceStyleId: String? = null,
-    /** Optional character-owned style for BEST/WORST candidate B; null = contrasting auto preset. */
+    /** Optional shared or built-in style for BEST/WORST candidate B; null = contrasting auto preset. */
     val secondaryDiceStyleId: String? = null,
     val diceTableTheme: DiceTableTheme = DiceTableTheme.ARCANE,
     val diceTableImage: CharacterImageRef? = null,

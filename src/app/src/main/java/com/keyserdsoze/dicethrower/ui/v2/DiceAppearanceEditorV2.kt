@@ -37,6 +37,7 @@ import com.keyserdsoze.dicethrower.dice.ResolvedRollSubgroup
 import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 import com.keyserdsoze.dicethrower.model.DiceStyle
+import com.keyserdsoze.dicethrower.model.DiceStylePresets
 import com.keyserdsoze.dicethrower.model.RollDiceAppearance
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,7 +50,8 @@ internal fun DiceAppearanceEditorV2(
     appearance: RollDiceAppearance,
     onAppearanceChanged: (RollDiceAppearance) -> Unit,
 ) {
-    val styles = diceStyles.filter { it.characterId == character.id }.sortedBy { it.order }
+    val styles = DiceStylePresets.availableStyles(diceStyles)
+        .filter { it.characterId == null || it.characterId == character.id }
     val slots = remember(resolvedExpression) {
         resolvedExpression?.let { expression ->
             runCatching { DiceAppearanceResolver.slotsFor(DiceExpression.parse(expression)) }.getOrDefault(emptyList())
@@ -254,11 +256,11 @@ private fun AppearanceStylePicker(
     onSelected: (String?) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val selectedName = styles.firstOrNull { it.id == selectedStyleId }?.name
+    val selectedName = styles.firstOrNull { it.id == selectedStyleId }?.let { appearanceStyleName(it) }
         ?: if (allowCharacterDefault) {
             stringResource(R.string.appearance_character_default)
         } else {
-            styles.firstOrNull()?.name ?: stringResource(R.string.appearance_character_default)
+            styles.firstOrNull()?.let { appearanceStyleName(it) } ?: stringResource(R.string.appearance_character_default)
         }
 
     Box {
@@ -282,7 +284,7 @@ private fun AppearanceStylePicker(
                     " · ${stringResource(R.string.default_style)}"
                 } else ""
                 DropdownMenuItem(
-                    text = { Text(style.name + suffix) },
+                    text = { Text(appearanceStyleName(style) + suffix) },
                     onClick = {
                         expanded = false
                         onSelected(style.id)
@@ -293,6 +295,13 @@ private fun AppearanceStylePicker(
     }
 }
 
+@Composable
+private fun appearanceStyleName(style: DiceStyle): String =
+    if (style.id.startsWith(DiceStylePresets.ID_PREFIX)) {
+        DiceStylePresets.find(style.id.removePrefix(DiceStylePresets.ID_PREFIX))
+            ?.let { dicePresetName(it) } ?: style.name
+    } else style.name
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RandomStylePool(
@@ -302,15 +311,13 @@ private fun RandomStylePool(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(stringResource(R.string.random_style_pool), fontWeight = FontWeight.SemiBold)
-        Text(
-            stringResource(R.string.random_style_pool_help),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
         FilterChip(
             selected = selectedStyleIds.isEmpty(),
             onClick = { onSelectedStyleIdsChanged(emptyList()) },
-            label = { Text(stringResource(R.string.all_character_styles)) },
+            label = {
+                Text(stringResource(R.string.dice_catalog_system_title) + " + " +
+                    stringResource(R.string.dice_catalog_custom_title))
+            },
         )
         styles.forEach { style ->
             FilterChip(
@@ -325,7 +332,7 @@ private fun RandomStylePool(
                     }
                     onSelectedStyleIdsChanged(updated)
                 },
-                label = { Text(style.name) },
+                label = { Text(appearanceStyleName(style)) },
             )
         }
     }

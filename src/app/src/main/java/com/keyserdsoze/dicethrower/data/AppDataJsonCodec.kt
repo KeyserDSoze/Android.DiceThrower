@@ -27,7 +27,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 object AppDataJsonCodec {
-    const val DATA_VERSION = 15
+    const val DATA_VERSION = 16
 
     fun encodeData(data: AppData): JSONObject = encodeData(data, includeLegacyImageUris = true)
 
@@ -141,7 +141,7 @@ object AppDataJsonCodec {
             data.diceStyles.forEach { style ->
                 put(JSONObject()
                     .put("id", style.id)
-                    .put("characterId", style.characterId)
+                    .put("characterId", style.characterId ?: JSONObject.NULL)
                     .put("name", style.name)
                     .put("material", style.material.name)
                     .put("primaryColorArgb", style.primaryColorArgb)
@@ -299,7 +299,7 @@ object AppDataJsonCodec {
         diceStyles = json.optJSONArray("diceStyles").mapObjects { item ->
             DiceStyle(
                 id = item.getString("id"),
-                characterId = item.getString("characterId"),
+                characterId = item.optNullableString("characterId"),
                 name = item.getString("name"),
                 material = enumValueOrDefault(item.optString("material"), DiceMaterial.GLOSSY_RESIN),
                 primaryColorArgb = item.optInt("primaryColorArgb", DEFAULT_PRIMARY_COLOR_ARGB),

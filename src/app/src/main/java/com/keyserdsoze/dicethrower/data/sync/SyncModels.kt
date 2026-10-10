@@ -51,6 +51,7 @@ data class LocalSyncJournal(
     val pendingDeletions: List<PendingCharacterDeletion> = emptyList(),
     val settingsMetadata: SettingsSyncMetadata? = null,
     val lastSuccessfulSyncAt: Long? = null,
+    val diceCatalogMetadata: SettingsSyncMetadata? = null,
 )
 
 enum class SyncStatusKind {
@@ -68,6 +69,7 @@ enum class SyncConflictKind {
     LOCAL_DELETE_REMOTE_EDIT,
     REMOTE_MISSING_WITHOUT_TOMBSTONE,
     SETTINGS_DIVERGED,
+    DICE_CATALOG_DIVERGED,
 }
 
 enum class SyncConflictResolution {

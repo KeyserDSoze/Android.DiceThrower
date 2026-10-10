@@ -2,7 +2,9 @@ package com.keyserdsoze.dicethrower.data.cloud
 
 import com.keyserdsoze.dicethrower.data.AppDataJsonCodec
 import com.keyserdsoze.dicethrower.data.AppDataValidator
+import com.keyserdsoze.dicethrower.data.SharedDiceStyleCatalog
 import com.keyserdsoze.dicethrower.model.AppData
+import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.RollButtonPosition
 import org.json.JSONArray
 import org.json.JSONObject
@@ -21,7 +23,7 @@ object CloudDocumentCodec {
             groups = data.groups.filter { it.characterId == characterId },
             rolls = data.rolls.filter { it.characterId == characterId },
             logs = data.logs.filter { it.characterId == characterId },
-            diceStyles = data.diceStyles.filter { it.characterId == characterId },
+            diceStyles = data.diceStyles.filter { it.characterId == characterId || it.characterId == null },
             characterSyncMetadata = listOf(sync),
         )
         AppDataValidator.requireValid(slice)
@@ -85,6 +87,7 @@ object CloudDocumentCodec {
                 }
             })
             .put("settings", manifest.settings?.let(::encodeSettings) ?: JSONObject.NULL)
+            .put("diceCatalog", manifest.diceCatalog?.let(::encodeCatalog) ?: JSONObject.NULL)
             .toString()
             .toByteArray(Charsets.UTF_8)
     }
@@ -116,7 +119,43 @@ object CloudDocumentCodec {
             characters = characters,
             tombstones = tombstones,
             settings = root.optJSONObject("settings")?.let(::decodeSettings),
+            diceCatalog = root.optJSONObject("diceCatalog")?.let(::decodeCatalog),
         ).also(::validateManifestExtras)
+    }
+
+    private fun encodeCatalog(document: CloudDiceCatalogDocument): JSONObject {
+        validateCatalog(document)
+        return JSONObject()
+            .put("metadata", JSONObject()
+                .put("updatedAt", document.metadata.updatedAt)
+                .put("revision", document.metadata.revision)
+                .put("writerId", document.metadata.writerId))
+            .put("styles", AppDataJsonCodec.encodeData(AppData(diceStyles = document.styles)).getJSONArray("diceStyles"))
+    }
+
+    private fun decodeCatalog(json: JSONObject): CloudDiceCatalogDocument {
+        val meta = json.getJSONObject("metadata")
+        val items = json.getJSONArray("styles")
+        val data = AppDataJsonCodec.decodeData(JSONObject().put("version", AppDataJsonCodec.DATA_VERSION)
+            .put("diceStyles", items))
+        return CloudDiceCatalogDocument(
+            metadata = CloudSettingsMetadata(
+                updatedAt = meta.getLong("updatedAt"),
+                revision = meta.getString("revision"),
+                writerId = meta.getString("writerId"),
+            ),
+            styles = data.diceStyles,
+        ).also(::validateCatalog)
+    }
+
+    private fun validateCatalog(document: CloudDiceCatalogDocument) {
+        require(document.metadata.updatedAt >= 0L && document.metadata.writerId.isNotBlank())
+        require(document.styles.all { it.characterId == null && it.name.isNotBlank() })
+        require(document.styles.distinctBy { it.id }.size == document.styles.size)
+        require(SharedDiceStyleCatalog.revision(document.styles) == document.metadata.revision) {
+            "Cloud dice catalog revision does not match styles"
+        }
+        AppDataValidator.requireValid(AppData(diceStyles = document.styles))
     }
 
     private fun encodeSettings(document: CloudSettingsDocument): JSONObject {
@@ -164,6 +203,7 @@ object CloudDocumentCodec {
             require(tombstone.baseRevision.matches(Regex("[0-9a-f]{64}"))) { "Invalid cloud tombstone base revision" }
         }
         manifest.settings?.let(::validateSettings)
+        manifest.diceCatalog?.let(::validateCatalog)
     }
 
     private fun validateSettings(document: CloudSettingsDocument) {
@@ -224,7 +264,7 @@ object CloudDocumentCodec {
     }
 
     private fun requireSupportedSchema(actual: Int) {
-        if (actual != CLOUD_SCHEMA_VERSION) {
+        if (actual !in 1..CLOUD_SCHEMA_VERSION) {
             throw CloudSchemaMismatchException(CLOUD_SCHEMA_VERSION, actual)
         }
     }

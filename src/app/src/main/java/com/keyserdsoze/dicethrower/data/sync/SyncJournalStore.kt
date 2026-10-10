@@ -43,6 +43,13 @@ internal class SyncJournalFileStore(private val file: File) {
                     .put("deletedRevision", deletion.deletedRevision))
             }
         })
+        .put("diceCatalogMetadata", journal.diceCatalogMetadata?.let { metadata ->
+            JSONObject()
+                .put("updatedAt", metadata.updatedAt)
+                .put("revision", metadata.revision)
+                .put("writerId", metadata.writerId)
+                .put("baseRevision", metadata.baseRevision ?: JSONObject.NULL)
+        } ?: JSONObject.NULL)
         .put("settingsMetadata", journal.settingsMetadata?.let { metadata ->
             JSONObject()
                 .put("updatedAt", metadata.updatedAt)
@@ -75,7 +82,15 @@ internal class SyncJournalFileStore(private val file: File) {
         }
         val lastSuccess = if (json.isNull("lastSuccessfulSyncAt")) null else json.getLong("lastSuccessfulSyncAt")
         require(lastSuccess == null || lastSuccess >= 0L) { "Invalid last sync timestamp" }
-        return LocalSyncJournal(pending, settings, lastSuccess)
+        val catalog = json.optJSONObject("diceCatalogMetadata")?.let { item ->
+            SettingsSyncMetadata(
+                updatedAt = item.getLong("updatedAt"),
+                revision = item.getString("revision"),
+                writerId = item.getString("writerId"),
+                baseRevision = if (item.isNull("baseRevision")) null else item.getString("baseRevision"),
+            ).also(::validateSettingsMetadata)
+        }
+        return LocalSyncJournal(pending, settings, lastSuccess, catalog)
     }
 
     private fun validateDeletion(deletion: PendingCharacterDeletion) {
