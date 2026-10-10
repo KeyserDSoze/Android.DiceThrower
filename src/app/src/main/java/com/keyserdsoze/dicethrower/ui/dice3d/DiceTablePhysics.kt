@@ -20,6 +20,8 @@ internal class DiceTablePhysics(
     private val halfWidth: Float = DiceTableViewport.HALF_WIDTH,
     private val halfHeight: Float = DiceTableViewport.HALF_HEIGHT,
     private val laneByDieIndex: Map<Int, Int> = emptyMap(),
+    /** Visual-only effect dice fly in from opposite table edges. */
+    private val spawnFromEdge: Boolean = false,
 ) {
     private data class Body(
         var x: Float,
@@ -60,7 +62,9 @@ internal class DiceTablePhysics(
             (0 until index).count { laneByDieIndex[it] == lane }
         val column = groupIndex % columns
         val row = groupIndex / columns
-        val x = (column - (columns - 1) / 2f) * radius * 2.35f
+        val x = if (spawnFromEdge && lane == null)
+            (if (index % 2 == 0) -1f else 1f) * (halfWidth - radius) * 0.88f
+            else (column - (columns - 1) / 2f) * radius * 2.35f
         val y = if (lane == null) -1.65f + row * radius * 1.45f
             else (if (lane == 0) 2.15f else -2.15f) +
                 (row - 1) * radius * 0.35f
@@ -69,7 +73,9 @@ internal class DiceTablePhysics(
         Body(
             x = x,
             y = y.coerceIn(laneBounds(lane).first, laneBounds(lane).second),
-            vx = cos(launchAngle) * speed + (random.nextFloat() - 0.5f) * 2.4f,
+            vx = if (spawnFromEdge && lane == null)
+                (if (x < 0f) 1f else -1f) * speed * 0.88f
+                else cos(launchAngle) * speed + (random.nextFloat() - 0.5f) * 2.4f,
             vy = (if (lane == 1) -1f else 1f) * (sin(launchAngle) * speed + 1.1f),
             angleX = random.nextFloat() * 360f,
             angleY = random.nextFloat() * 360f,

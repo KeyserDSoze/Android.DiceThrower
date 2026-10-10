@@ -9,6 +9,21 @@ import kotlin.math.sqrt
 
 class DiceTablePhysicsTest {
     @Test
+    fun generatedEffectDiceEnterFromEdgesWithoutChangingLogicalValues() {
+        val physics = DiceTablePhysics(count = 2, seed = 813L, spawnFromEdge = true)
+        val starting = physics.states()
+        assertTrue(starting[0].x < -1.5f)
+        assertTrue(starting[1].x > 1.5f)
+        repeat(200) { physics.step(1f / 60f) }
+        assertTrue(physics.isSettled)
+        physics.states().forEach { state ->
+            assertTrue(state.x in -DiceTableViewport.HALF_WIDTH..DiceTableViewport.HALF_WIDTH)
+            assertTrue(state.y in -DiceTableViewport.HALF_HEIGHT..DiceTableViewport.HALF_HEIGHT)
+        }
+    }
+
+
+    @Test
     fun twoCandidatesStayInSeparateTableHalfLanesDuringAndAfterPhysics() {
         val physics = DiceTablePhysics(
             count = 6, seed = 993L,

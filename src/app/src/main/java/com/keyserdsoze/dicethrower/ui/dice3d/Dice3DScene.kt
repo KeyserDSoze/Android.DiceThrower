@@ -353,6 +353,8 @@ private class DiceSceneRenderer(
                 .mapIndexedNotNull { index, die ->
                     die.candidateGroup?.let { index to it }
                 }.toMap(),
+            spawnFromEdge = event.visualSettings.actionCues &&
+                event.effectAccentComponents.isNotEmpty(),
         ) else null
         lastFrameAt = SystemClock.elapsedRealtimeNanos()
         settledReported = false

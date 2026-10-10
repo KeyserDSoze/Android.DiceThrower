@@ -86,6 +86,18 @@ internal fun CinematicEffectOverlayV2(
                 val inner = Offset(center.x + cos(a) * r * 0.91f, center.y + sin(a) * r * 0.91f)
                 drawLine(tint.copy(alpha = 0.58f * strength), inner, outer, 1.3.dp.toPx())
             }
+            // A malus briefly fractures the illuminated rune instead of
+            // using the bonus' clean luminous halo.
+            if (type == EffectType.MALUS) repeat(6) { i ->
+                val a = (i + 0.18f) * PI.toFloat() / 3f
+                val mid = Offset(center.x + cos(a) * r * 0.64f,
+                    center.y + sin(a) * r * 0.64f)
+                val kink = Offset(center.x + cos(a + 0.18f) * r * 0.81f,
+                    center.y + sin(a + 0.18f) * r * 0.81f)
+                val end = Offset(center.x + cos(a) * r, center.y + sin(a) * r)
+                drawLine(tint.copy(alpha = 0.55f * strength), mid, kink, 1.9.dp.toPx())
+                drawLine(tint.copy(alpha = 0.55f * strength), kink, end, 1.3.dp.toPx())
+            }
         }
         if (particles) {
             val count = if (action == EffectActionType.REROLL || action == EffectActionType.ROLL_AFTER) 22 else 14
@@ -96,11 +108,18 @@ internal fun CinematicEffectOverlayV2(
                 }
                 val distance = maxRadius * (0.10f + (i % 5) * 0.08f + t * 0.75f)
                 val fall = if (type == EffectType.MALUS) t * maxRadius * 0.38f else -t * maxRadius * 0.17f
+                val point = Offset(center.x + cos(angle) * distance,
+                    center.y + sin(angle) * distance + fall)
+                if (type == EffectType.BONUS) {
+                    val tail = Offset(center.x + cos(angle) * (distance - r * 0.13f),
+                        center.y + sin(angle) * (distance - r * 0.13f) + fall + r * 0.05f)
+                    drawLine(tint.copy(alpha = 0.37f * strength),
+                        tail, point, 1.4.dp.toPx())
+                }
                 drawCircle(
                     color = tint.copy(alpha = (0.40f + (i % 3) * 0.16f) * strength),
                     radius = (1.2f + i % 4).dp.toPx(),
-                    center = Offset(center.x + cos(angle) * distance,
-                        center.y + sin(angle) * distance + fall),
+                    center = point,
                 )
             }
         }

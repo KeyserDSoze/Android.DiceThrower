@@ -2983,7 +2983,8 @@ private fun animatedRollValue(original: Int, final: Int, enabled: Boolean): Int 
             value.snapTo(final.toFloat())
         }
     }
-    return if (enabled && value.isRunning) value.value.toInt() else final
+    // Show the original value from the first frame, not a flash of the final total.
+    return if (enabled && original != final) value.value.toInt() else final
 }
 
 @Composable
