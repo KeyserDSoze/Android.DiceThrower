@@ -1,0 +1,5 @@
+<resources>
+    <string name="effects_show_advanced">Options avancées</string>
+    <string name="effects_show_guided">Règle simple</string>
+    <string name="effects_guided_tip">Dans SI, choisissez la partie source ; dans ALORS, la partie à modifier. Dés seuls préserve les modificateurs. Mode avancé pour plusieurs conditions ou actions.</string>
+</resources>

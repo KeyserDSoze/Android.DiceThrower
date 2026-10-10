@@ -1,0 +1,5 @@
+<resources>
+    <string name="effects_show_advanced">אפשרויות מתקדמות</string>
+    <string name="effects_show_guided">כלל פשוט</string>
+    <string name="effects_guided_tip">בחרו את החלק המפעיל בתנאי ואת החלק המושפע בתוצאה. קוביות בלבד אינו משנה מתאמים. לכללים מורכבים השתמשו במתקדם.</string>
+</resources>

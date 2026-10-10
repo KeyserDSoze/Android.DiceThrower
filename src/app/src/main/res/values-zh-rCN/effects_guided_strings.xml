@@ -1,0 +1,5 @@
+<resources>
+    <string name="effects_show_advanced">高级选项</string>
+    <string name="effects_show_guided">简单规则</string>
+    <string name="effects_guided_tip">在“当”中选择触发部分，在“则”中选择目标部分。“仅骰子”不会改变调整值。多个条件或操作请使用高级选项。</string>
+</resources>

@@ -53,6 +53,29 @@ import java.util.UUID
  * Saved Effects contain immutable {partId:...} references, so Part renames do
  * not change their targets or any stored expression.
  */
+/**
+ * Only one plain Part condition and one arithmetic action are expressible in
+ * the short form. Existing complex rules must always be shown in Advanced
+ * mode to prevent any accidental rewriting or dropped AND/OR/action clauses.
+ */
+internal fun isGuidedEffectRule(effect: RollEffect, parts: List<RollSubgroup>): Boolean {
+    if (effect.activationGroups.size != 1 ||
+        effect.activationGroups.single().conditions.size != 1 ||
+        effect.actions.size != 1) return false
+    val condition = effect.activationGroups.single().conditions.single()
+    val action = effect.actions.single()
+    val ids = parts.map { it.id }.toSet()
+    return condition.source == EffectValueSource.PART &&
+        condition.partId in ids &&
+        condition.threshold.trim().toDoubleOrNull() != null &&
+        action.targetPartId in ids &&
+        action.kind in setOf(
+            EffectActionType.ADD, EffectActionType.SUBTRACT,
+            EffectActionType.MULTIPLY, EffectActionType.REPLACE,
+        ) &&
+        action.expression.trim().toDoubleOrNull() != null
+}
+
 internal object EffectEditorDraft {
     fun initial(kind: EffectType, parts: List<RollSubgroup>, order: Int, defaultName: String): RollEffect {
         require(parts.isNotEmpty())
@@ -252,6 +275,20 @@ internal fun EffectsEditorSectionV2(
                         checked = effect.enabled,
                         onChecked = { replace(effect.copy(enabled = it)) },
                     )
+                    val guided = isGuidedEffectRule(effect, parts)
+                    var advanced by remember(effect.id) { mutableStateOf(!guided) }
+                    if (guided && !advanced) {
+                        GuidedEffectRuleEditorV2(effect, parts, onChange = ::replace)
+                    }
+                    TextButton(
+                        enabled = guided,
+                        onClick = { advanced = !advanced },
+                    ) {
+                        Text(stringResource(
+                            if (advanced) R.string.effects_show_guided else R.string.effects_show_advanced,
+                        ))
+                    }
+                    if (!guided || advanced) {
                     ToggleEffectOption(
                         text = stringResource(R.string.effects_stop_following),
                         checked = effect.stopFollowingEffects,
@@ -346,6 +383,7 @@ internal fun EffectsEditorSectionV2(
                         Icon(Icons.Rounded.Add, contentDescription = null)
                         Text(stringResource(R.string.effects_add_action))
                     }
+                    } // Advanced settings and multi-group rules
                 }
             }
         }
@@ -367,6 +405,84 @@ internal fun EffectsEditorSectionV2(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
+}
+
+@Composable
+private fun GuidedEffectRuleEditorV2(
+    effect: RollEffect,
+    parts: List<RollSubgroup>,
+    onChange: (RollEffect) -> Unit,
+) {
+    val group = effect.activationGroups.single()
+    val condition = group.conditions.single()
+    val action = effect.actions.single()
+    fun changeCondition(next: EffectCondition) =
+        onChange(effect.copy(activationGroups = listOf(group.copy(conditions = listOf(next)))))
+    fun changeAction(next: EffectAction) =
+        onChange(effect.copy(actions = listOf(next)))
+    val partIds = parts.map { it.id }
+    val partLabel: @Composable (String) -> String = { id ->
+        parts.firstOrNull { it.id == id }?.name?.ifBlank {
+            stringResource(R.string.roll_subgroups)
+        } ?: stringResource(R.string.effects_missing_part)
+    }
+
+    Text(stringResource(R.string.effects_when), style = MaterialTheme.typography.titleSmall)
+    EffectChoice(
+        condition.partId ?: parts.first().id,
+        partIds,
+        stringResource(R.string.effects_source_part),
+        partLabel,
+    ) { id -> changeCondition(condition.copy(partId = id)) }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        EffectChoice(condition.scope, EffectValueScope.entries,
+            stringResource(R.string.effects_scope), { scopeLabel(it) }) { scope ->
+            changeCondition(condition.copy(scope = scope))
+        }
+        EffectChoice(condition.comparison, EffectComparison.entries,
+            stringResource(R.string.effects_comparison), { comparisonSymbol(it) }) { comparison ->
+            changeCondition(condition.copy(comparison = comparison))
+        }
+    }
+    OutlinedTextField(
+        value = condition.threshold,
+        onValueChange = { changeCondition(condition.copy(threshold = it)) },
+        label = { Text(stringResource(R.string.effects_threshold)) },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+    )
+
+    Text(stringResource(R.string.effects_then), style = MaterialTheme.typography.titleSmall)
+    EffectChoice(
+        action.targetPartId ?: parts.first().id,
+        partIds,
+        stringResource(R.string.effects_target),
+        partLabel,
+    ) { id -> changeAction(action.copy(targetPartId = id)) }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        EffectChoice(action.kind, listOf(
+            EffectActionType.ADD, EffectActionType.SUBTRACT,
+            EffectActionType.MULTIPLY, EffectActionType.REPLACE,
+        ), stringResource(R.string.effects_action), { actionLabel(it) }) { kind ->
+            changeAction(action.copy(kind = kind))
+        }
+        EffectChoice(action.scope, EffectValueScope.entries,
+            stringResource(R.string.effects_scope), { scopeLabel(it) }) { scope ->
+            changeAction(action.copy(scope = scope))
+        }
+    }
+    OutlinedTextField(
+        value = action.expression,
+        onValueChange = { changeAction(action.copy(expression = it)) },
+        label = { Text(stringResource(R.string.effects_formula)) },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    Text(
+        stringResource(R.string.effects_guided_tip),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = MaterialTheme.typography.bodySmall,
+    )
 }
 
 private fun moveEffect(effects: List<RollEffect>, index: Int, offset: Int): List<RollEffect> =

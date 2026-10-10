@@ -1,0 +1,5 @@
+<resources>
+    <string name="effects_show_advanced">Расширенные параметры</string>
+    <string name="effects_show_guided">Простое правило</string>
+    <string name="effects_guided_tip">В КОГДА выберите часть-условие, в ТОГДА — целевую часть. Только кубики не затрагивает модификаторы. Сложные условия доступны в расширенном режиме.</string>
+</resources>
