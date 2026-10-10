@@ -1,0 +1,13 @@
+<resources>
+    <string name="dice_presets_add">Dobbelsteenpreset toevoegen</string>
+    <string name="dice_preset_arcane_blue">Arcaan Blauw</string>
+    <string name="dice_preset_inferno_forged">Hels Smeedwerk</string>
+    <string name="dice_preset_emerald_aether">Smaragden Ether</string>
+    <string name="dice_preset_violet_star">Violette Ster</string>
+    <string name="dice_preset_obsidian_rune">Obsidiaanrune</string>
+    <string name="dice_preset_lunar_frost">Maanvorst</string>
+    <string name="dice_preset_sunlit_brass">Zonnemessing</string>
+    <string name="dice_preset_celestial_pearl">Hemelse Parel</string>
+    <string name="dice_preset_deep_ocean">Diepe Oceaan</string>
+    <string name="dice_preset_ancient_copper">Antiek Koper</string>
+</resources>

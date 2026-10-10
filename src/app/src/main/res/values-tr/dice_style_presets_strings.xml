@@ -1,0 +1,13 @@
+<resources>
+    <string name="dice_presets_add">Hazır zar stili ekle</string>
+    <string name="dice_preset_arcane_blue">Büyülü Mavi</string>
+    <string name="dice_preset_inferno_forged">Cehennem Ocağı</string>
+    <string name="dice_preset_emerald_aether">Zümrüt Esir</string>
+    <string name="dice_preset_violet_star">Mor Yıldız</string>
+    <string name="dice_preset_obsidian_rune">Obsidyen Rünü</string>
+    <string name="dice_preset_lunar_frost">Ay Donu</string>
+    <string name="dice_preset_sunlit_brass">Güneş Pirinci</string>
+    <string name="dice_preset_celestial_pearl">Göksel İnci</string>
+    <string name="dice_preset_deep_ocean">Derin Okyanus</string>
+    <string name="dice_preset_ancient_copper">Antik Bakır</string>
+</resources>

@@ -1,0 +1,13 @@
+<resources>
+    <string name="dice_presets_add">添加骰子预设</string>
+    <string name="dice_preset_arcane_blue">奥术蓝</string>
+    <string name="dice_preset_inferno_forged">地狱锻造</string>
+    <string name="dice_preset_emerald_aether">翡翠以太</string>
+    <string name="dice_preset_violet_star">紫色星辰</string>
+    <string name="dice_preset_obsidian_rune">黑曜石符文</string>
+    <string name="dice_preset_lunar_frost">月光冰霜</string>
+    <string name="dice_preset_sunlit_brass">日光黄铜</string>
+    <string name="dice_preset_celestial_pearl">天界珍珠</string>
+    <string name="dice_preset_deep_ocean">深海</string>
+    <string name="dice_preset_ancient_copper">古铜</string>
+</resources>

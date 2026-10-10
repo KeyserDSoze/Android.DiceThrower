@@ -1,0 +1,13 @@
+<resources>
+    <string name="dice_presets_add">Adicionar dado predefinido</string>
+    <string name="dice_preset_arcane_blue">Azul Arcano</string>
+    <string name="dice_preset_inferno_forged">Forja Infernal</string>
+    <string name="dice_preset_emerald_aether">Éter Esmeralda</string>
+    <string name="dice_preset_violet_star">Estrela Violeta</string>
+    <string name="dice_preset_obsidian_rune">Runa de Obsidiana</string>
+    <string name="dice_preset_lunar_frost">Gelo Lunar</string>
+    <string name="dice_preset_sunlit_brass">Latão Solar</string>
+    <string name="dice_preset_celestial_pearl">Pérola Celestial</string>
+    <string name="dice_preset_deep_ocean">Oceano Profundo</string>
+    <string name="dice_preset_ancient_copper">Cobre Antigo</string>
+</resources>

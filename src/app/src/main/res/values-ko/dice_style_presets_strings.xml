@@ -1,0 +1,13 @@
+<resources>
+    <string name="dice_presets_add">주사위 프리셋 추가</string>
+    <string name="dice_preset_arcane_blue">신비한 파랑</string>
+    <string name="dice_preset_inferno_forged">지옥의 대장간</string>
+    <string name="dice_preset_emerald_aether">에메랄드 에테르</string>
+    <string name="dice_preset_violet_star">보라색 별</string>
+    <string name="dice_preset_obsidian_rune">흑요석 룬</string>
+    <string name="dice_preset_lunar_frost">달빛 서리</string>
+    <string name="dice_preset_sunlit_brass">태양의 황동</string>
+    <string name="dice_preset_celestial_pearl">천상의 진주</string>
+    <string name="dice_preset_deep_ocean">깊은 바다</string>
+    <string name="dice_preset_ancient_copper">고대 구리</string>
+</resources>

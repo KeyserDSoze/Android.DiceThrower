@@ -1,0 +1,13 @@
+<resources>
+    <string name="dice_presets_add">Ajouter un dé prédéfini</string>
+    <string name="dice_preset_arcane_blue">Bleu arcanique</string>
+    <string name="dice_preset_inferno_forged">Forge infernale</string>
+    <string name="dice_preset_emerald_aether">Éther émeraude</string>
+    <string name="dice_preset_violet_star">Étoile violette</string>
+    <string name="dice_preset_obsidian_rune">Rune d’obsidienne</string>
+    <string name="dice_preset_lunar_frost">Givre lunaire</string>
+    <string name="dice_preset_sunlit_brass">Laiton solaire</string>
+    <string name="dice_preset_celestial_pearl">Perle céleste</string>
+    <string name="dice_preset_deep_ocean">Océan profond</string>
+    <string name="dice_preset_ancient_copper">Cuivre ancien</string>
+</resources>
