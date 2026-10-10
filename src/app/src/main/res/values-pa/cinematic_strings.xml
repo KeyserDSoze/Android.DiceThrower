@@ -16,4 +16,5 @@
     <string name="cinematic_chosen">ਚੁਣਿਆ</string>
     <string name="cinematic_unselected">ਨਹੀਂ ਚੁਣਿਆ</string>
     <string name="cinematic_camera">ਹਲਕਾ ਕੈਮਰਾ ਝਟਕਾ</string>
+    <string name="secondary_dice_style_auto">ਆਟੋਮੈਟਿਕ ਕੰਟਰਾਸਟ</string>
 </resources>

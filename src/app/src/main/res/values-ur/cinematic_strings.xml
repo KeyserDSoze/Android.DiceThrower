@@ -16,4 +16,5 @@
     <string name="cinematic_chosen">منتخب</string>
     <string name="cinematic_unselected">غیر منتخب</string>
     <string name="cinematic_camera">ہلکی کیمرا لرزش</string>
+    <string name="secondary_dice_style_auto">خودکار تضاد</string>
 </resources>

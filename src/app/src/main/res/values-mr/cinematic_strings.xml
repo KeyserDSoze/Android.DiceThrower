@@ -16,4 +16,5 @@
     <string name="cinematic_chosen">निवडलेले</string>
     <string name="cinematic_unselected">न निवडलेले</string>
     <string name="cinematic_camera">सौम्य कॅमेरा कंपन</string>
+    <string name="secondary_dice_style_auto">स्वयंचलित कॉन्ट्रास्ट</string>
 </resources>
