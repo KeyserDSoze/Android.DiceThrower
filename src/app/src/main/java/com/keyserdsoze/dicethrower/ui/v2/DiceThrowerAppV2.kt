@@ -123,6 +123,7 @@ import com.keyserdsoze.dicethrower.data.sync.SyncStatusKind
 import com.keyserdsoze.dicethrower.dice.DiceAppearanceResolver
 import com.keyserdsoze.dicethrower.dice.DoubleRollEngine
 import com.keyserdsoze.dicethrower.dice.DoubleRollVisualPlanner
+import com.keyserdsoze.dicethrower.dice.DoubleRollVisualPlan
 import com.keyserdsoze.dicethrower.dice.DoubleRollEvaluation
 import com.keyserdsoze.dicethrower.dice.EffectExecutionResult
 import com.keyserdsoze.dicethrower.dice.EffectRollSnapshot
@@ -2279,6 +2280,7 @@ private fun RollScreenV2(
     var resultRevealed by remember(roll.id, character.level, formula.expression) { mutableStateOf(false) }
     var showStats by remember(roll.id) { mutableStateOf(false) }
     var lastThrowMode by remember(roll.id, character.level, formula.expression) { mutableStateOf(DoubleRollMode.NORMAL) }
+    var lastCandidatePlan by remember(roll.id, character.level, formula.expression) { mutableStateOf(DoubleRollVisualPlan()) }
     val cinematic = roll.visualEffects.withGlobalMotionEnabled(settings.animationsEnabled)
 
     fun throwDice(requestedMode: DoubleRollMode = DoubleRollMode.NORMAL) {
@@ -2333,6 +2335,7 @@ private fun RollScreenV2(
         visualStages = timeline
         visualStageIndex = 0
         lastThrowMode = evaluation.mode
+        lastCandidatePlan = candidatePlan
         visualSeed = System.nanoTime()
         val firstStage = timeline.first()
         visualEvent = DiceRollVisualEvent(
@@ -2460,6 +2463,78 @@ private fun RollScreenV2(
                 modifier = Modifier.fillMaxSize(),
             )
 
+            // Readable A/B lanes stay stable while both groups tumble.
+            // The chosen group is identified only after every 3D stage settles.
+            if (hasRolled && cinematic.groupLanes && lastCandidatePlan.isDoubleRoll) {
+                val winner = lastCandidatePlan.selectedGroup
+                listOf(0, 1).forEach { group ->
+                    val selected = resultRevealed && winner == group && cinematic.winnerSpotlight
+                    Surface(
+                        modifier = Modifier
+                            .align(if (group == 0) Alignment.TopStart else Alignment.BottomStart)
+                            .padding(start = 18.dp)
+                            .then(if (group == 0) Modifier.padding(top = maxHeight * 0.27f)
+                                else Modifier.padding(bottom = maxHeight * 0.27f)),
+                        shape = RoundedCornerShape(13.dp),
+                        color = Color(0xDB192132),
+                        contentColor = Color.White,
+                    ) {
+                        Text(
+                            (if (group == 0) stringResource(R.string.cinematic_candidate_first)
+                                else stringResource(R.string.cinematic_candidate_second)) +
+                                if (selected) "  ✦ ${stringResource(R.string.cinematic_chosen)}" else "",
+                            modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (selected) Color(0xFFB0FFDC)
+                                else if (group == 0) Color(0xFFB0E9FF) else Color(0xFFFFDDA6),
+                        )
+                    }
+                }
+            }
+
+            // Each triggered arithmetic action gets a brief cinematic replay
+            // of its recorded before/after values. The 3D outcome never changes.
+            val cinematicMoments = remember(effectsExecution, roll.effects) {
+                effectsExecution?.steps.orEmpty().flatMap { step ->
+                    val effect = roll.effects.firstOrNull { it.id == step.effectId }
+                    if (effect == null || !step.activation.activated) emptyList()
+                    else step.actions.mapNotNull { result ->
+                        val action = effect.actions.firstOrNull { it.id == result.actionId }
+                        if (action == null || !result.applied) null else CinematicActionMoment(
+                            effectId = effect.id, type = effect.type, action = action.kind,
+                            before = result.before, after = result.after,
+                        )
+                    }
+                }
+            }
+            if (resultRevealed && settings.animationsEnabled && !showStats) {
+                CinematicActionSequenceV2(
+                    rollSeed = visualSeed,
+                    moments = cinematicMoments,
+                    options = cinematic,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+            if (hasRolled && !resultRevealed && settings.animationsEnabled && !showStats) {
+                val stage = visualStages.getOrNull(visualStageIndex)
+                val effect = roll.effects.firstOrNull { it.id == stage?.effectId }
+                if (effect != null && stage != null) {
+                    CinematicEffectOverlayV2(
+                        key = "$visualSeed:${visualStageIndex}:${effect.id}",
+                        type = effect.type, action = stage.actionKind,
+                        particles = cinematic.particles, aura = cinematic.tableAura,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    if (cinematic.actionCues && stage.actionKind != null) {
+                        CinematicActionCueV2(
+                            action = stage.actionKind, type = effect.type,
+                            before = null, after = null,
+                            modifier = Modifier.align(Alignment.Center),
+                        )
+                    }
+                }
+            }
+
             // Keep the center clear: a compact accessible cue appears near
             // the top while additional pre-resolved dice enter the 3D scene.
             if (hasRolled && !showStats) {
@@ -2468,7 +2543,7 @@ private fun RollScreenV2(
                     effectsExecution?.steps?.firstOrNull { it.activation.activated }?.effectId
                 } else null
                 val activeEffect = roll.effects.firstOrNull { it.id == activeEffectId }
-                if (activeEffect != null) {
+                if (activeEffect != null && cinematic.badge) {
                     EffectsVisualCueV2(
                         effectName = activeEffect.name,
                         type = activeEffect.type,
