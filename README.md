@@ -201,3 +201,10 @@ MIT.
 ### Double-roll controls (development branch / #107)
 
 New Rolls enable optional double rolls with only the first Part selected initially. In the Roll editor each additional Part can be included or excluded. On the dice table use **left swipe for WORST**, **right swipe for BEST**, and **up swipe for NORMAL**; the directional shortcuts can be switched off in Settings. The bottom controls keep NORMAL at the far right, with colored BEST and WORST dice beside it. BEST/WORST compare the summed *complete* values of the participating Parts across the two candidate groups, while other Parts roll once; the result view keeps each Part separate and the statistics show both combinations, with the alternative dimmed.
+
+
+### Catalogo dadi condiviso (vNext)
+
+La schermata **Personalizza i dadi** gestisce gli stili personalizzati indipendentemente dai personaggi, anche quando non esistono personaggi. I dieci stili di sistema sono immutabili e utilizzabili direttamente; un preset può essere duplicato come nuovo stile personalizzato. Ogni personalizzazione salvata ha un ID stabile e può essere assegnata a più personaggi, al candidato B e alle singole Roll Parts senza copiarne la definizione. Una modifica ai colori/materiali si riflette su tutte le assegnazioni. Eliminando uno stile personalizzato vengono aggiornati atomicamente tutti i riferimenti al primo altro stile custom oppure al preset di sistema predefinito.
+
+I vecchi stili legati ai personaggi sono migrati senza cambiare ID; backup JSON v15 e successivi restano leggibili. La sincronizzazione opzionale salva una revisione/hash separata del catalogo in Drive appDataFolder; eventuali divergenze reali sono sottoposte alla policy di conflitto scelta. Il catalogo resta sempre disponibile offline e non influenza il RNG. Il QA visivo su dispositivo fisico rimane necessario prima della prossima release.
