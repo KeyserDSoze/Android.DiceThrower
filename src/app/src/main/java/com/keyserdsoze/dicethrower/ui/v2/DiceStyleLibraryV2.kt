@@ -282,7 +282,7 @@ internal fun DiceStyleLibraryV2(
                                         data = data,
                                         sourceId = style.id,
                                         newId = UUID.randomUUID().toString(),
-                                        newName = copyName,
+                                        name = copyName,
                                     ),
                                 )
                             },
