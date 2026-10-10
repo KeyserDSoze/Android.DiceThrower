@@ -34,9 +34,9 @@ jobs:
             fi
 
             if [[ "$old_pr" != "-" ]]; then
-              original_valid="$(gh api "repos/$repo/pulls/$old_pr" \
-                --jq --arg branch "$branch" --arg sha "$sha" \
-                '.state == "closed" and .merged_at == null and .head.ref == $branch and .head.sha == $sha')"
+              original_valid="$(gh api "repos/$repo/pulls/$old_pr" |
+                jq -r --arg branch "$branch" --arg sha "$sha" \
+                  '.state == "closed" and .merged_at == null and .head.ref == $branch and .head.sha == $sha')"
               successor_valid="$(gh api "repos/$repo/pulls/$successor_pr" --jq '.merged_at != null')"
               if [[ "$original_valid" != "true" || "$successor_valid" != "true" ]]; then
                 echo "Preserved $branch: original PR or merged replacement not verified"
