@@ -3751,6 +3751,7 @@ internal fun RollBuilderScreenV2(
     var groupId by remember(existing?.id, initialGroupId) { mutableStateOf(existing?.groupId ?: initialGroupId) }
     var groupMenu by remember(existing?.id) { mutableStateOf(false) }
     var doubleRollEnabled by remember(existing?.id) { mutableStateOf(existing?.doubleRollEnabled ?: true) }
+    var visualEffects by remember(existing?.id) { mutableStateOf(existing?.visualEffects ?: com.keyserdsoze.dicethrower.model.RollVisualEffectsSettings()) }
     var minimumLevelText by remember(existing?.id) { mutableStateOf((existing?.minimumLevel ?: 1).toString()) }
     var effects by remember(existing?.id) { mutableStateOf(existing?.effects.orEmpty()) }
     var subgroups by remember(existing?.id) {
@@ -3990,6 +3991,10 @@ internal fun RollBuilderScreenV2(
             }
 
         item {
+            RollVisualSettingsEditorV2(settings = visualEffects, onChange = { visualEffects = it })
+        }
+
+        item {
             EffectsEditorSectionV2(
                 effects = effects,
                 parts = subgroups,
@@ -4028,6 +4033,7 @@ internal fun RollBuilderScreenV2(
                             groupId = groupId,
                             subgroups = subgroups,
                             doubleRollEnabled = doubleRollEnabled,
+                            visualEffects = visualEffects,
                             minimumLevel = minimumLevel ?: 1,
                             effects = effectsToSave.orEmpty(),
                         )
