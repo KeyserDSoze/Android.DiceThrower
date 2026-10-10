@@ -110,11 +110,6 @@ internal fun DiceStyleLibraryV2(
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
-                Text(
-                    text = stringResource(R.string.dice_styles_help),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
             IconButton(onClick = { creating = true }) {
                 Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.new_dice_style), tint = MaterialTheme.colorScheme.onBackground)
@@ -126,11 +121,6 @@ internal fun DiceStyleLibraryV2(
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            stringResource(R.string.dice_gallery_help),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         // A single 3D preview is cheaper than creating ten animated renderers.
         // Each palette remains independent of dice RNG and is only copied on demand.
@@ -198,18 +188,13 @@ internal fun DiceStyleLibraryV2(
         ) {
             Icon(Icons.Rounded.Add, contentDescription = null)
             Spacer(Modifier.width(8.dp))
-            Text(stringResource(R.string.dice_gallery_add))
+            Text(stringResource(R.string.duplicate) + " → " + stringResource(R.string.dice_catalog_custom_title))
         }
 
         Text(
             stringResource(R.string.dice_catalog_custom_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-        )
-        Text(
-            stringResource(R.string.dice_saved_styles_help),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (styles.isEmpty()) {
             PremiumCard(Modifier.fillMaxWidth()) {
