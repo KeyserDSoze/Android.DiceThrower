@@ -1,0 +1,80 @@
+name: Prune merged PR branches
+
+# The push trigger performs one initial historical cleanup after this workflow
+# reaches main. Future merged PRs are pruned automatically.
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/prune-merged-pr-branches.yml
+  pull_request:
+    types: [closed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: dicethrower-prune-merged-branches
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    # Ignore closed-unmerged PRs and fork PRs; no untrusted code is checked out.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.merged == true &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete only unchanged branches belonging to merged PRs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          default_branch="$(gh api "repos/$repo" --jq '.default_branch')"
+          deleted=0
+          skipped=0
+
+          # Never remove a branch that is currently referenced by an open PR.
+          open_heads="$(gh api --paginate "repos/$repo/pulls?state=open&per_page=100" |
+            jq -r --arg repo "$repo" '.[] | select(.head.repo.full_name == $repo) | .head.ref')"
+
+          # The head SHA must still equal the SHA originally merged. In particular,
+          # do not delete a reused branch with additional or unmerged changes.
+          while IFS=$'\t' read -r branch merged_head_sha pr_number; do
+            [[ -n "$branch" ]] || continue
+            if [[ "$branch" == "$default_branch" || "$branch" == "main" ]]; then
+              skipped=$((skipped + 1))
+              continue
+            fi
+            if ! [[ "$branch" =~ ^[a-zA-Z0-9][a-zA-Z0-9._/-]*$ ]]; then
+              echo "Skipping invalid branch name for PR #$pr_number"
+              skipped=$((skipped + 1))
+              continue
+            fi
+            if grep -Fqx -- "$branch" <<< "$open_heads"; then
+              echo "Preserving $branch: referenced by an open PR"
+              skipped=$((skipped + 1))
+              continue
+            fi
+            current_sha="$(gh api "repos/$repo/git/ref/heads/$branch" --jq '.object.sha' 2>/dev/null || true)"
+            if [[ "$current_sha" != "$merged_head_sha" ]]; then
+              echo "Preserving $branch: missing or changed since merged PR #$pr_number"
+              skipped=$((skipped + 1))
+              continue
+            fi
+            echo "Deleting $branch (merged PR #$pr_number, head SHA unchanged)"
+            gh api --method DELETE "repos/$repo/git/refs/heads/$branch"
+            deleted=$((deleted + 1))
+          done < <(
+            gh api --paginate "repos/$repo/pulls?state=closed&per_page=100" |
+              jq -r --arg repo "$repo" '.[] |
+                select(.merged_at != null and .head.repo.full_name == $repo) |
+                [.head.ref, .head.sha, (.number | tostring)] | @tsv'
+          )
+          echo "Pruned $deleted merged branches; preserved $skipped changed/missing/open branches."
