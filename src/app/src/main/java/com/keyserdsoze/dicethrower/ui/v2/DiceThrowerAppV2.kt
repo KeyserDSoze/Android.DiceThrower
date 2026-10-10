@@ -123,7 +123,6 @@ import com.keyserdsoze.dicethrower.data.sync.SyncStatusKind
 import com.keyserdsoze.dicethrower.dice.DiceAppearanceResolver
 import com.keyserdsoze.dicethrower.dice.DoubleRollEngine
 import com.keyserdsoze.dicethrower.dice.DoubleRollVisualPlanner
-import com.keyserdsoze.dicethrower.dice.DoubleRollVisualPlan
 import com.keyserdsoze.dicethrower.dice.DoubleRollEvaluation
 import com.keyserdsoze.dicethrower.dice.EffectExecutionResult
 import com.keyserdsoze.dicethrower.dice.EffectRollSnapshot
@@ -2280,7 +2279,6 @@ private fun RollScreenV2(
     var resultRevealed by remember(roll.id, character.level, formula.expression) { mutableStateOf(false) }
     var showStats by remember(roll.id) { mutableStateOf(false) }
     var lastThrowMode by remember(roll.id, character.level, formula.expression) { mutableStateOf(DoubleRollMode.NORMAL) }
-    var lastCandidatePlan by remember(roll.id, character.level, formula.expression) { mutableStateOf(DoubleRollVisualPlan()) }
     val cinematic = roll.visualEffects.withGlobalMotionEnabled(settings.animationsEnabled)
 
     fun throwDice(requestedMode: DoubleRollMode = DoubleRollMode.NORMAL) {
@@ -2347,7 +2345,6 @@ private fun RollScreenV2(
         visualStages = timeline
         visualStageIndex = 0
         lastThrowMode = evaluation.mode
-        lastCandidatePlan = candidatePlan
         visualSeed = System.nanoTime()
         val firstStage = timeline.first()
         visualEvent = DiceRollVisualEvent(
@@ -2474,35 +2471,6 @@ private fun RollScreenV2(
                 },
                 modifier = Modifier.fillMaxSize(),
             )
-
-            // Readable A/B lanes stay stable while both groups tumble.
-            // The chosen group is identified only after every 3D stage settles.
-            if (hasRolled && cinematic.groupLanes && lastCandidatePlan.isDoubleRoll) {
-                val winner = lastCandidatePlan.selectedGroup
-                listOf(0, 1).forEach { group ->
-                    val selected = resultRevealed && winner == group && cinematic.winnerSpotlight
-                    Surface(
-                        modifier = Modifier
-                            .align(if (group == 0) Alignment.TopStart else Alignment.BottomStart)
-                            .padding(start = 18.dp)
-                            .then(if (group == 0) Modifier.padding(top = maxHeight * 0.27f)
-                                else Modifier.padding(bottom = maxHeight * 0.27f)),
-                        shape = RoundedCornerShape(13.dp),
-                        color = Color(0xDB192132),
-                        contentColor = Color.White,
-                    ) {
-                        Text(
-                            (if (group == 0) stringResource(R.string.cinematic_candidate_first)
-                                else stringResource(R.string.cinematic_candidate_second)) +
-                                if (selected) "  ✦ ${stringResource(R.string.cinematic_chosen)}" else "",
-                            modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (selected) Color(0xFFB0FFDC)
-                                else if (group == 0) Color(0xFFB0E9FF) else Color(0xFFFFDDA6),
-                        )
-                    }
-                }
-            }
 
             // Each triggered arithmetic action gets a brief cinematic replay
             // of its recorded before/after values. The 3D outcome never changes.
