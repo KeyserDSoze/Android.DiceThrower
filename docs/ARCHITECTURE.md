@@ -22,7 +22,7 @@
 
 `RollSubgroup`: stable id, optional name, parametric expression and additive/subtractive operator. Subgroups are builder/statistics metadata; the canonical `RollDefinition.expression` remains the portable mathematical representation and legacy rolls keep an empty subgroup list.
 
-`DiceStyle`: character-owned visual style with material, primary/secondary colors and stable ordering. Roll appearance policies reference style IDs and never participate in dice math. `CharacterProfile.diceTableTheme` selects the persisted per-character roll table and `diceTableImage` can override the felt with a portable custom image.
+`DiceStyle`: custom shared visual style (legacy records may retain a character owner until migration) with material, primary/secondary colors and stable ordering. Roll appearance policies reference style IDs and never participate in dice math. `CharacterProfile.diceTableTheme` selects the persisted per-character roll table and `diceTableImage` can override the felt with a portable custom image.
 
 `RollLevelRule`: id, kind, trigger, expression.
 
@@ -217,13 +217,13 @@ Appearance randomization uses a random source separate from the one passed to `D
 
 ## Dice gallery and Roll builder UX (#156)
 
-The character-scoped dice customizer provides a lightweight two-column preset palette gallery. Only the **selected** preset gets a 3D renderer instance to avoid creating ten live preview surfaces; choices show two color circles and a material name. Selecting a preset is non-mutating. An explicit Add button copies it into the existing per-character DiceStyle store with a fresh ID. Saved style previews are expanded one at a time, and all existing editor/backup/Drive semantics remain untouched. The double-roll control is in the primary Roll identity card, before group selection; settings and logical semantics are unchanged.
+The home dice customizer displays the ten immutable presets in a padded one-column gallery, with a single enlarged 3D preview and separate reusable custom styles. Creating or duplicating a custom style changes only the global catalog; character/Part assignments happen in their respective editors.
 
 ## Immutable dice appearance presets (EPIC #138, slice #141)
 
-`DiceStylePresets` is a pure-domain, immutable catalog of ten material/color palettes with stable keys. Presets are *definitions*, not persisted records. Adding a preset creates a fresh character-owned `DiceStyle` via `DiceStyleDataOperations.createStyle`, with an owned ID, localized saved name and existing reference-safe storage/backup/Drive lifecycle. The home character list now links to a Dice Customization hub, which selects a character and reuses the existing editing surface. No graphics can affect `DiceExpression.evaluate` or physics-to-RNG coupling.
+`DiceStylePresets` is a pure-domain catalog of ten immutable palette/material definitions with stable `preset:<key>` IDs. System styles can be assigned directly to any character or Roll Part; copying a system preset into a custom uses `SharedDiceStyleCatalog.create` and produces a new globally shared ID.
 
-**Not global user-style sharing yet:** the catalog management hub currently works on a selected character; cross-character copies are value based. Future #138 subissues will establish shared user-created style identity and its offline-first sync/conflict model before changing persisted owner semantics. Do not silently reinterpret existing character style IDs as global.
+**Global custom style sharing:** `SharedDiceStyleCatalog` holds global user-created styles and their CRUD operations. Character and Roll assignments reference IDs, not copies. Legacy character-owned records are migrated on load/restore without modifying IDs; deleting a global style in use atomically reassigns all references.
 
 ## Combined candidate/Part styling (#146)
 
@@ -231,7 +231,7 @@ The appearance resolver first derives an individual Part/per-die style, then han
 
 ## Dice style editor
 
-Character Edit mode exposes the character-owned `DiceStyle` collection without coupling the OpenGL renderer to persistence. `DiceStyleDataOperations` owns reference-safe create/update/duplicate/reorder/default/delete operations, while Compose edits domain values and persists the returned `AppData` through the existing screen boundary.
+Character Edit mode uses a closed-by-default style accordion for default and candidate B assignments. Home Customize dice edits global custom definitions; Roll Parts select immutable system presets or the same shared custom IDs. Rendering and numerical RNG stay separate.
 
 The editor's d20 preview creates a visual-only `DiceRollVisualEvent` from the unsaved style values; it does not invoke `DiceExpression` and therefore cannot roll or consume numerical RNG. Deleting an in-use style requires explicit confirmation and then reuses the same cleanup rules as storage-level deletion so default and roll references remain valid.
 
