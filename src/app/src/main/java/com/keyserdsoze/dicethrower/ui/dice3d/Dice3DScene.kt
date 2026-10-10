@@ -415,10 +415,15 @@ private class DiceSceneRenderer(
         val states = if (persistentStates.isNotEmpty()) {
             persistentStates + (physics?.states() ?: emptyList())
         } else physics?.states() ?: staticStates(count, dieScale).mapIndexed { index, state ->
-            when (dice[index].candidateGroup) {
-                0 -> state.copy(y = 2.0f + state.y * 0.35f)
-                1 -> state.copy(y = -2.0f + state.y * 0.35f)
-                else -> state
+            val lane = dice[index].candidateGroup
+            if (lane == null) state else {
+                val (minY, maxY) = CandidateLaneLayout.bounds(
+                    lane, dieScale, DiceTableViewport.HALF_HEIGHT,
+                )
+                state.copy(
+                    y = (CandidateLaneLayout.staticCenter(lane) + state.y * 0.40f)
+                        .coerceIn(minY, maxY),
+                )
             }
         }
         val settleProgress = if (animateRoll) physics?.settleProgress ?: 1f else 1f
