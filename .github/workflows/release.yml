@@ -206,8 +206,8 @@ jobs:
           VERSION: ${{ needs.release.outputs.version }}
         run: |
           mkdir -p distribution/whatsnew
-          printf 'Dice Thrower %s: new cinematic double rolls with clearly separated A/B dice, winner glow after settling, magical Bonus/Malus animations, and eight per-Roll visual controls. Includes accessibility and physics fixes.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
-          printf 'Dice Thrower %s: doppio tiro cinematografico con dadi A/B separati, dadi scelti evidenziati a fine lancio, nuove animazioni Bonus/Malus e otto impostazioni visive per tiro. Include fix accessibilità e fisica.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
+          printf 'Dice Thrower %s: improved BEST/WORST throws with distinct-looking A/B dice, a selectable second dice style per character, a compact roll area and clearer winner highlighting. Includes accessibility and physics fixes.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
+          printf 'Dice Thrower %s: tiri BEST/WORST migliorati con dadi A/B di aspetto differente, stile del secondo tiro selezionabile per personaggio, dadi più vicini al centro ed evidenziazione più chiara del risultato. Include fix accessibilità e fisica.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
 
       - name: Upload to Google Play Internal testing
         uses: r0adkll/upload-google-play@v1.1.5
