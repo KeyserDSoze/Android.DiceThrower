@@ -9,6 +9,23 @@ import kotlin.math.sqrt
 
 class DiceTablePhysicsTest {
     @Test
+    fun twoCandidatesStayInSeparateTableHalfLanesDuringAndAfterPhysics() {
+        val physics = DiceTablePhysics(
+            count = 6, seed = 993L,
+            laneByDieIndex = (0..2).associateWith { 0 } + (3..5).associateWith { 1 },
+        )
+        repeat(230) {
+            physics.step(1f / 60f)
+            physics.states().forEachIndexed { index, state ->
+                if (index < 3) assertTrue("A must remain above center", state.y > 0f)
+                else assertTrue("B must remain below center", state.y < 0f)
+            }
+        }
+        assertTrue(physics.isSettled)
+    }
+
+
+    @Test
     fun simulationIsDeterministicAndKeepsDiceInsideTable() {
         val first = DiceTablePhysics(count = 8, seed = 42L)
         val second = DiceTablePhysics(count = 8, seed = 42L)
