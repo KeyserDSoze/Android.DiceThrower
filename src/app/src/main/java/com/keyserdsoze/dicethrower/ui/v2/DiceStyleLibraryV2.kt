@@ -97,7 +97,6 @@ internal fun DiceStyleLibraryV2(
     var copyingFromCharacter by remember(character.id) { mutableStateOf(false) }
     var selectedPresetKey by remember(character.id) { mutableStateOf(DiceStylePresets.all.first().key) }
     var previewSavedStyleId by remember(character.id) { mutableStateOf<String?>(null) }
-    var secondaryStyleMenu by remember(character.id) { mutableStateOf(false) }
     val copySuffix = stringResource(R.string.copy_suffix)
     val sourceCharacters = data.characters
         .filter { it.id != character.id }
@@ -223,52 +222,6 @@ internal fun DiceStyleLibraryV2(
             )
         }
 
-        // Candidate B's material/color is selected per character, independently
-        // from the Roll's normal appearance overrides. The automatic look needs
-        // no persisted DiceStyle object for newly created characters.
-        PremiumCard(Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(
-                    text = "${stringResource(R.string.dice_styles)} · ${stringResource(R.string.cinematic_candidate_second)}",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Box {
-                    OutlinedButton(onClick = { secondaryStyleMenu = true }) {
-                        Text(styles.firstOrNull { it.id == character.secondaryDiceStyleId }?.name
-                            ?: stringResource(R.string.secondary_dice_style_auto))
-                        Spacer(Modifier.width(8.dp))
-                        Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null)
-                    }
-                    DropdownMenu(
-                        expanded = secondaryStyleMenu,
-                        onDismissRequest = { secondaryStyleMenu = false },
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.secondary_dice_style_auto)) },
-                            onClick = {
-                                secondaryStyleMenu = false
-                                onDataChanged(data.copy(characters = data.characters.map {
-                                    if (it.id == character.id) it.copy(secondaryDiceStyleId = null) else it
-                                }))
-                            },
-                        )
-                        styles.forEach { style ->
-                            DropdownMenuItem(
-                                text = { Text(style.name) },
-                                onClick = {
-                                    secondaryStyleMenu = false
-                                    onDataChanged(data.copy(characters = data.characters.map {
-                                        if (it.id == character.id) it.copy(secondaryDiceStyleId = style.id) else it
-                                    }))
-                                },
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
         Text(
             stringResource(R.string.dice_catalog_custom_title),
             style = MaterialTheme.typography.titleMedium,
@@ -290,7 +243,6 @@ internal fun DiceStyleLibraryV2(
         }
 
         styles.forEachIndexed { index, style ->
-            val isDefault = character.defaultDiceStyleId == style.id
             PremiumCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth().padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -306,24 +258,7 @@ internal fun DiceStyleLibraryV2(
                         }
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(style.name, fontWeight = FontWeight.Bold)
-                                if (isDefault) {
-                                    Spacer(Modifier.width(8.dp))
-                                    Surface(
-                                        shape = RoundedCornerShape(999.dp),
-                                        color = MaterialTheme.colorScheme.primaryContainer,
-                                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    ) {
-                                        Text(
-                                            text = stringResource(R.string.default_style),
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            fontWeight = FontWeight.Bold,
-                                        )
-                                    }
-                                }
-                            }
+                            Text(style.name, fontWeight = FontWeight.Bold)
                             Text(
                                 text = materialLabel(style.material),
                                 style = MaterialTheme.typography.bodySmall,
@@ -360,17 +295,6 @@ internal fun DiceStyleLibraryV2(
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        IconButton(
-                            enabled = !isDefault,
-                            onClick = {
-                                onDataChanged(DiceStyleDataOperations.setDefaultStyle(data, character.id, style.id))
-                            },
-                        ) {
-                            Icon(
-                                imageVector = if (isDefault) Icons.Rounded.Star else Icons.Rounded.StarBorder,
-                                contentDescription = stringResource(R.string.set_default_style),
-                            )
-                        }
                         IconButton(
                             onClick = {
                                 val copyName = nextCopyName(styles.map { it.name }, style.name, copySuffix)
