@@ -2394,7 +2394,7 @@ private fun RollScreenV2(
     var resultRevealed by remember(roll.id, character.level, formula.expression) { mutableStateOf(false) }
     var showStats by remember(roll.id) { mutableStateOf(false) }
     var lastThrowMode by remember(roll.id, character.level, formula.expression) { mutableStateOf(DoubleRollMode.NORMAL) }
-    val cinematic = settings.visualEffects.withGlobalMotionEnabled(settings.animationsEnabled)
+    val cinematic = settings.effectiveVisualEffects()
 
     fun throwDice(requestedMode: DoubleRollMode = DoubleRollMode.NORMAL) {
         if (hasRolled && !resultRevealed) return
