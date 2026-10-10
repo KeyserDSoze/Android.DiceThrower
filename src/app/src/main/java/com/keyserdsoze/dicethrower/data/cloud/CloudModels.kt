@@ -5,7 +5,7 @@ import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.RollButtonPosition
 
-const val CLOUD_SCHEMA_VERSION = 1
+const val CLOUD_SCHEMA_VERSION = 2
 const val DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata"
 
 data class CloudCharacterMetadata(
