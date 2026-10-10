@@ -3990,6 +3990,7 @@ private fun GroupDialogV2(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun RollBuilderScreenV2(
     title: String,
