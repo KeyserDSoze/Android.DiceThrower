@@ -1,6 +1,8 @@
 package com.keyserdsoze.dicethrower.data.sync
 
 import com.keyserdsoze.dicethrower.data.CharacterImageAssets
+import com.keyserdsoze.dicethrower.data.SharedDiceStyleCatalog
+import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.data.PortableCharacterImageAsset
 import com.keyserdsoze.dicethrower.data.SyncMetadataManager
 import com.keyserdsoze.dicethrower.data.cloud.CloudAssetDocument
@@ -429,6 +431,12 @@ class CloudSyncEngineTest {
                     settingsMetadata = SettingsSyncMetadata(now, roaming.revision(), writerId),
                 )
             }
+            val revision = SharedDiceStyleCatalog.revision(data.diceStyles.filter { it.characterId == null })
+            val prior = journal.diceCatalogMetadata
+            if (prior == null || prior.revision != revision) {
+                journal = journal.copy(diceCatalogMetadata =
+                    SettingsSyncMetadata(now, revision, writerId, prior?.baseRevision))
+            }
             return LocalSyncSnapshot(data, settings, journal, writerId)
         }
 
@@ -450,6 +458,16 @@ class CloudSyncEngineTest {
                     else -> data
                 }
                 dataChanged = true
+            }
+            plan.catalog?.let { change ->
+                if (journal.diceCatalogMetadata?.revision == change.expectedRevision) {
+                    change.replacement?.let { newStyles ->
+                        data = data.copy(diceStyles =
+                            data.diceStyles.filter { it.characterId != null } + newStyles)
+                        dataChanged = true
+                    }
+                    journal = journal.copy(diceCatalogMetadata = change.metadataAfter)
+                }
             }
             plan.downloadedAssets.forEach { assets[it.ref.assetId] = it }
             var settingsChanged = false
@@ -533,7 +551,7 @@ class CloudSyncEngineTest {
                 groups = clean.groups + incoming.groups,
                 rolls = clean.rolls + incoming.rolls,
                 logs = clean.logs + incoming.logs,
-                diceStyles = clean.diceStyles + incoming.diceStyles,
+                diceStyles = clean.diceStyles + incoming.diceStyles.filter { it.characterId == id },
                 characterSyncMetadata = clean.characterSyncMetadata +
                     incoming.characterSyncMetadata.single().copy(baseRevision = base),
             )
