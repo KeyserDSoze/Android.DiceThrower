@@ -39,10 +39,10 @@ class RollVisualSettingsPersistenceTest {
         val allOff = RollVisualEffectsSettings.preset(RollVisualProfile.OFF)
         assertTrue(listOf(allOff.badge, allOff.groupLanes, allOff.winnerSpotlight,
             allOff.tableAura, allOff.particles, allOff.actionCues,
-            allOff.resultTransitions).none { it })
+            allOff.resultTransitions, allOff.cameraImpact).none { it })
         val subtle = RollVisualEffectsSettings.preset(RollVisualProfile.SUBTLE)
         assertTrue(subtle.badge && subtle.groupLanes && subtle.winnerSpotlight)
-        assertFalse(subtle.particles || subtle.tableAura || subtle.resultTransitions)
+        assertFalse(subtle.particles || subtle.tableAura || subtle.resultTransitions || subtle.cameraImpact)
         val custom = subtle.custom { copy(badge = false, actionCues = false,
             tableAura = true, particles = true, resultTransitions = true) }
         assertEquals(RollVisualProfile.CUSTOM, custom.profile)
@@ -67,7 +67,7 @@ class RollVisualSettingsPersistenceTest {
     fun globalAnimationsOffPreservesPreferencesButDisablesAnimatedAccents() {
         val custom = RollVisualEffectsSettings.preset(RollVisualProfile.BALANCED)
         val reduced = custom.withGlobalMotionEnabled(false)
-        assertFalse(reduced.tableAura || reduced.particles ||
+        assertFalse(reduced.cameraImpact || reduced.tableAura || reduced.particles ||
             reduced.actionCues || reduced.resultTransitions)
         assertTrue(reduced.groupLanes && reduced.winnerSpotlight && reduced.badge)
         assertEquals(custom, custom.withGlobalMotionEnabled(true))
