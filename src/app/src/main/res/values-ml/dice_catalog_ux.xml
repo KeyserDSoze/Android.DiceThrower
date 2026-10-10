@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">സിസ്റ്റം ഡൈസ് ശൈലികൾ</string>
+    <string name="dice_catalog_custom_title">ഇഷ്‌ടാനുസൃത ഡൈസ് ശൈലികൾ</string>
+    <string name="dice_character_styles_summary">ഡിഫോൾട്ട്: %1$s · സേവ് ചെയ്ത %2$d ശൈലികൾ</string>
+    <string name="dice_character_styles_add">ഡൈസ് ശൈലി ചേർക്കുക</string>
+    <string name="dice_character_style_system_default">സിസ്റ്റം ഡിഫോൾട്ട്</string>
+</resources>
