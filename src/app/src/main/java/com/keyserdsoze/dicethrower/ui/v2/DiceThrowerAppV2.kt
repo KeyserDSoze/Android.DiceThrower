@@ -2357,6 +2357,8 @@ private fun RollScreenV2(
                 result = firstStage.result,
                 subgroupIdByComponentIndex = firstStage.componentOwners,
                 random = Random(visualSeed),
+                secondaryCandidateComponentIndices = candidatePlan.groups
+                    .filterValues { it == 1 }.keys.takeIf { firstStage.retainsBaseline }.orEmpty(),
             ),
             dimmedComponentIndices = (if (firstStage.retainsBaseline) evaluation.dimmedComponentIndices else emptySet()) + firstStage.rerolledComponentIndices,
             effectAccentComponents = firstStage.accentByComponentIndex,
@@ -2452,6 +2454,9 @@ private fun RollScreenV2(
                                     result = stage.result,
                                     subgroupIdByComponentIndex = stage.componentOwners,
                                     random = Random(visualSeed),
+                                    secondaryCandidateComponentIndices = if (stage.retainsBaseline)
+                                        visualEvent.candidateGroupByComponent.filterValues { it == 1 }.keys
+                                        else emptySet(),
                                 ),
                                 dimmedComponentIndices =
                                     (if (stage.retainsBaseline) doubleEvaluation?.dimmedComponentIndices.orEmpty()
