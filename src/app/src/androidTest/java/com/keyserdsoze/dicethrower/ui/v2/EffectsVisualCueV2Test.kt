@@ -1,6 +1,7 @@
 package com.keyserdsoze.dicethrower.ui.v2
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import com.keyserdsoze.dicethrower.model.EffectType
@@ -22,6 +23,7 @@ class EffectsVisualCueV2Test {
         }
         composeRule.onNodeWithTag("effects-visual-cue").assertExists()
         composeRule.onNodeWithText("Power hit").assertExists()
+        composeRule.onNodeWithContentDescription("Bonus").assertExists()
     }
 
     @Test
@@ -34,5 +36,6 @@ class EffectsVisualCueV2Test {
         }
         composeRule.onNodeWithTag("effects-visual-cue").assertExists()
         composeRule.onNodeWithText("Weakened").assertExists()
+        composeRule.onNodeWithContentDescription("Malus").assertExists()
     }
 }
