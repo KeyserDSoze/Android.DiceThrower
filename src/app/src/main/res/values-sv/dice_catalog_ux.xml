@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">Systemets tärningsstilar</string>
+    <string name="dice_catalog_custom_title">Anpassade tärningsstilar</string>
+    <string name="dice_character_styles_summary">Standard: %1$s · %2$d sparade stilar</string>
+    <string name="dice_character_styles_add">Lägg till tärningsstil</string>
+    <string name="dice_character_style_system_default">Systemstandard</string>
+</resources>
