@@ -82,7 +82,7 @@ object SharedDiceStyleCatalog {
                     styleId = appearance.styleId?.replaceDeleted(),
                     subgroupStyleIds = appearance.subgroupStyleIds.mapValues { it.value.replaceDeleted() },
                     perDieStyleIds = appearance.perDieStyleIds.mapValues { it.value.replaceDeleted() },
-                    randomStyleIds = appearance.randomStyleIds.map(String::replaceDeleted).distinct(),
+                    randomStyleIds = appearance.randomStyleIds.map { it.replaceDeleted() }.distinct(),
                 ))
             },
         )
