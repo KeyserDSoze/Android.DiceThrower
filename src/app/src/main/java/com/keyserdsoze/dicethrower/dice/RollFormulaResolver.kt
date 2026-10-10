@@ -79,12 +79,17 @@ object RollFormulaResolver {
                 expression = resolveExpression(subgroup.expression, variables),
             )
         }
+        val activeSubgroups = if (roll.subgroups.isEmpty()) emptyList() else
+            resolvedSubgroups.filterIndexed { index, _ -> roll.subgroups[index].includeInNormalRoll }
+        val supportSubgroups = if (roll.subgroups.isEmpty()) emptyList() else
+            resolvedSubgroups.filterIndexed { index, _ -> !roll.subgroups[index].includeInNormalRoll }
         val baseExpression = if (resolvedSubgroups.isEmpty()) {
             resolveExpression(roll.expression, variables)
         } else {
             canonicalExpression(
-                resolvedSubgroups.map { subgroup ->
-                    RollSubgroup(subgroup.id, subgroup.name, subgroup.expression, subgroup.operator)
+                roll.subgroups.filter { it.includeInNormalRoll }.map { subgroup ->
+                    val expression = resolvedSubgroups.first { it.id == subgroup.id }.expression
+                    subgroup.copy(expression = expression)
                 },
             )
         }
@@ -114,13 +119,15 @@ object RollFormulaResolver {
         return ResolvedRollFormula(
             expression = parsed.source,
             appliedRules = appliedRules,
-            subgroups = resolvedSubgroups,
+            subgroups = activeSubgroups,
+            supportSubgroups = supportSubgroups,
         )
     }
 
     fun canonicalExpression(subgroups: List<RollSubgroup>): String {
-        require(subgroups.isNotEmpty()) { "At least one roll subgroup is required" }
-        return subgroups.mapIndexed { index, subgroup ->
+        val normalParts = subgroups.filter { it.includeInNormalRoll }
+        require(normalParts.isNotEmpty()) { "At least one Roll Part must be included in the initial throw" }
+        return normalParts.mapIndexed { index, subgroup ->
             require(subgroup.expression.isNotBlank()) { "Roll subgroup expression cannot be blank" }
             val wrapped = "(${subgroup.expression.trim()})"
             when {
