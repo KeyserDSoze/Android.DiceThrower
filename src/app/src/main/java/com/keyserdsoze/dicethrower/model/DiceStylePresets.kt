@@ -35,5 +35,14 @@ object DiceStylePresets {
         DiceStylePreset("ancient-copper", DiceMaterial.METAL, 0xFF9C553A.toInt(), 0xFFF5D0A0.toInt()),
     )
 
+    const val ID_PREFIX = "preset:"
+    val fallbackId: String get() = ID_PREFIX + all.first().key
+    fun styleId(key: String): String = ID_PREFIX + key
     fun find(key: String): DiceStylePreset? = all.firstOrNull { it.key == key }
+    fun styleById(id: String): DiceStyle? = find(id.removePrefix(ID_PREFIX))
+        ?.takeIf { id.startsWith(ID_PREFIX) }
+        ?.let { it.instantiate("", id, it.key).copy(characterId = null) }
+    fun availableStyles(custom: List<DiceStyle>): List<DiceStyle> =
+        all.map { styleById(styleId(it.key))!! } + custom
+
 }
