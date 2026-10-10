@@ -206,8 +206,8 @@ jobs:
           VERSION: ${{ needs.release.outputs.version }}
         run: |
           mkdir -p distribution/whatsnew
-          printf 'Dice Thrower %s: roll animations and cinematic effect presets are now global in Settings, applying to every roll. Fixed Edit Roll screen colors and background in light/dark themes, including editing from the dice table.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
-          printf 'Dice Thrower %s: animazioni ed effetti cinematografici ora nelle Impostazioni globali per tutti i tiri. Corretti sfondo e leggibilità della schermata Modifica Roll nei temi chiaro/scuro, anche dal tavolo.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
+          printf 'Dice Thrower %s: conditional bonus/malus can reroll a Part or add dice from a support-only Part. Clearer Effect actions, redesigned dice preset gallery, and double-roll configuration at the top of Edit Roll.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
+          printf 'Dice Thrower %s: bonus/malus possono ritirare una Part o aggiungere dadi da Parts usate solo dagli effetti. Azioni più chiare, nuova galleria dadi e opzione doppio tiro in alto in Modifica Roll.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
 
       - name: Upload to Google Play Internal testing
         uses: r0adkll/upload-google-play@v1.1.5
