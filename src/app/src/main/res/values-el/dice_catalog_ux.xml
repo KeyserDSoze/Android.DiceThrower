@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">Στυλ ζαριών συστήματος</string>
+    <string name="dice_catalog_custom_title">Προσαρμοσμένα στυλ ζαριών</string>
+    <string name="dice_character_styles_summary">Προεπιλογή: %1$s · %2$d αποθηκευμένα στυλ</string>
+    <string name="dice_character_styles_add">Προσθήκη στυλ ζαριού</string>
+    <string name="dice_character_style_system_default">Προεπιλογή συστήματος</string>
+</resources>

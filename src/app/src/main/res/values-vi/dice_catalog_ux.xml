@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">Kiểu xúc xắc hệ thống</string>
+    <string name="dice_catalog_custom_title">Kiểu xúc xắc tùy chỉnh</string>
+    <string name="dice_character_styles_summary">Mặc định: %1$s · %2$d kiểu đã lưu</string>
+    <string name="dice_character_styles_add">Thêm kiểu xúc xắc</string>
+    <string name="dice_character_style_system_default">Mặc định hệ thống</string>
+</resources>

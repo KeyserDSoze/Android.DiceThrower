@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">ಸಿಸ್ಟಮ್ ದಾಳದ ಶೈಲಿಗಳು</string>
+    <string name="dice_catalog_custom_title">ಕಸ್ಟಮ್ ದಾಳದ ಶೈಲಿಗಳು</string>
+    <string name="dice_character_styles_summary">ಡೀಫಾಲ್ಟ್: %1$s · ಉಳಿಸಿದ %2$d ಶೈಲಿಗಳು</string>
+    <string name="dice_character_styles_add">ದಾಳದ ಶೈಲಿ ಸೇರಿಸಿ</string>
+    <string name="dice_character_style_system_default">ಸಿಸ್ಟಮ್ ಡೀಫಾಲ್ಟ್</string>
+</resources>

@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">Mitindo ya kete ya mfumo</string>
+    <string name="dice_catalog_custom_title">Mitindo maalumu ya kete</string>
+    <string name="dice_character_styles_summary">Chaguo-msingi: %1$s · mitindo %2$d iliyohifadhiwa</string>
+    <string name="dice_character_styles_add">Ongeza mtindo wa kete</string>
+    <string name="dice_character_style_system_default">Chaguo-msingi la mfumo</string>
+</resources>

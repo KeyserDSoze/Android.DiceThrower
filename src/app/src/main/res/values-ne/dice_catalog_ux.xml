@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">प्रणालीका पासा शैलीहरू</string>
+    <string name="dice_catalog_custom_title">आफ्नै पासा शैलीहरू</string>
+    <string name="dice_character_styles_summary">पूर्वनिर्धारित: %1$s · सुरक्षित %2$d शैलीहरू</string>
+    <string name="dice_character_styles_add">पासा शैली थप्नुहोस्</string>
+    <string name="dice_character_style_system_default">प्रणाली पूर्वनिर्धारित</string>
+</resources>

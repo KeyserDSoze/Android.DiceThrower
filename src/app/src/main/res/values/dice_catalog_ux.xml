@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">System dice styles</string>
+    <string name="dice_catalog_custom_title">Custom dice styles</string>
+    <string name="dice_character_styles_summary">Default: %1$s · %2$d saved styles</string>
+    <string name="dice_character_styles_add">Add dice style</string>
+    <string name="dice_character_style_system_default">System default</string>
+</resources>

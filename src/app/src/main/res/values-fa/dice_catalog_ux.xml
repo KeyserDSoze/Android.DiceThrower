@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">سبک‌های تاس سیستم</string>
+    <string name="dice_catalog_custom_title">سبک‌های تاس سفارشی</string>
+    <string name="dice_character_styles_summary">پیش‌فرض: %1$s · %2$d سبک ذخیره‌شده</string>
+    <string name="dice_character_styles_add">افزودن سبک تاس</string>
+    <string name="dice_character_style_system_default">پیش‌فرض سیستم</string>
+</resources>

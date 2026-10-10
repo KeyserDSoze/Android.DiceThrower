@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">સિસ્ટમ પાસાની શૈલીઓ</string>
+    <string name="dice_catalog_custom_title">કસ્ટમ પાસાની શૈલીઓ</string>
+    <string name="dice_character_styles_summary">ડિફૉલ્ટ: %1$s · સાચવેલી %2$d શૈલીઓ</string>
+    <string name="dice_character_styles_add">પાસાની શૈલી ઉમેરો</string>
+    <string name="dice_character_style_system_default">સિસ્ટમ ડિફૉલ્ટ</string>
+</resources>

@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">سسٹم ڈائس اسٹائلز</string>
+    <string name="dice_catalog_custom_title">حسب ضرورت ڈائس اسٹائلز</string>
+    <string name="dice_character_styles_summary">ڈیفالٹ: %1$s · %2$d محفوظ اسٹائلز</string>
+    <string name="dice_character_styles_add">ڈائس اسٹائل شامل کریں</string>
+    <string name="dice_character_style_system_default">سسٹم ڈیفالٹ</string>
+</resources>

@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">সিস্টেমের পাশার স্টাইল</string>
+    <string name="dice_catalog_custom_title">কাস্টম পাশার স্টাইল</string>
+    <string name="dice_character_styles_summary">ডিফল্ট: %1$s · %2$dটি সংরক্ষিত স্টাইল</string>
+    <string name="dice_character_styles_add">পাশার স্টাইল যোগ করুন</string>
+    <string name="dice_character_style_system_default">সিস্টেম ডিফল্ট</string>
+</resources>

@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">Системные стили кубиков</string>
+    <string name="dice_catalog_custom_title">Пользовательские стили кубиков</string>
+    <string name="dice_character_styles_summary">По умолчанию: %1$s · сохранено стилей: %2$d</string>
+    <string name="dice_character_styles_add">Добавить стиль кубика</string>
+    <string name="dice_character_style_system_default">Системный стиль по умолчанию</string>
+</resources>

@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">စနစ်အန်စာတုံး ပုံစံများ</string>
+    <string name="dice_catalog_custom_title">စိတ်ကြိုက်အန်စာတုံး ပုံစံများ</string>
+    <string name="dice_character_styles_summary">မူလ: %1$s · သိမ်းထားသောပုံစံ %2$d</string>
+    <string name="dice_character_styles_add">အန်စာတုံးပုံစံ ထည့်ရန်</string>
+    <string name="dice_character_style_system_default">စနစ်မူလ</string>
+</resources>

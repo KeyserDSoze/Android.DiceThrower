@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">Sistem zar stilleri</string>
+    <string name="dice_catalog_custom_title">Özel zar stilleri</string>
+    <string name="dice_character_styles_summary">Varsayılan: %1$s · %2$d kayıtlı stil</string>
+    <string name="dice_character_styles_add">Zar stili ekle</string>
+    <string name="dice_character_style_system_default">Sistem varsayılanı</string>
+</resources>

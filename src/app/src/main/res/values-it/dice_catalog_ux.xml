@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">Stili di sistema</string>
+    <string name="dice_catalog_custom_title">Stili personalizzati</string>
+    <string name="dice_character_styles_summary">Predefinito: %1$s · %2$d stili salvati</string>
+    <string name="dice_character_styles_add">Aggiungi stile dado</string>
+    <string name="dice_character_style_system_default">Predefinito di sistema</string>
+</resources>

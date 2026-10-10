@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">सिस्टम पासा शैलियाँ</string>
+    <string name="dice_catalog_custom_title">कस्टम पासा शैलियाँ</string>
+    <string name="dice_character_styles_summary">डिफ़ॉल्ट: %1$s · %2$d सहेजी गई शैलियाँ</string>
+    <string name="dice_character_styles_add">पासे की शैली जोड़ें</string>
+    <string name="dice_character_style_system_default">सिस्टम डिफ़ॉल्ट</string>
+</resources>

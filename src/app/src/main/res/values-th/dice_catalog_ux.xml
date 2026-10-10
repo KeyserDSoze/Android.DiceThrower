@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">รูปแบบลูกเต๋าของระบบ</string>
+    <string name="dice_catalog_custom_title">รูปแบบลูกเต๋าแบบกำหนดเอง</string>
+    <string name="dice_character_styles_summary">ค่าเริ่มต้น: %1$s · บันทึกแล้ว %2$d รูปแบบ</string>
+    <string name="dice_character_styles_add">เพิ่มรูปแบบลูกเต๋า</string>
+    <string name="dice_character_style_system_default">ค่าเริ่มต้นของระบบ</string>
+</resources>

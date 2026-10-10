@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">Styles de dés du système</string>
+    <string name="dice_catalog_custom_title">Styles de dés personnalisés</string>
+    <string name="dice_character_styles_summary">Par défaut : %1$s · %2$d styles enregistrés</string>
+    <string name="dice_character_styles_add">Ajouter un style de dé</string>
+    <string name="dice_character_style_system_default">Style système par défaut</string>
+</resources>

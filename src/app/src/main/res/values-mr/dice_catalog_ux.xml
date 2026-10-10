@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">सिस्टम फासे शैली</string>
+    <string name="dice_catalog_custom_title">सानुकूल फासे शैली</string>
+    <string name="dice_character_styles_summary">डीफॉल्ट: %1$s · जतन केलेल्या शैली %2$d</string>
+    <string name="dice_character_styles_add">फासे शैली जोडा</string>
+    <string name="dice_character_style_system_default">सिस्टम डीफॉल्ट</string>
+</resources>
