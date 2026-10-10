@@ -46,6 +46,7 @@ object AppDataJsonCodec {
                     .put("level", item.level)
                     .put("order", item.order)
                     .put("defaultDiceStyleId", item.defaultDiceStyleId ?: JSONObject.NULL)
+                    .put("secondaryDiceStyleId", item.secondaryDiceStyleId ?: JSONObject.NULL)
                     .put("diceTableTheme", item.diceTableTheme.name)
                     .put("diceTableImage", item.diceTableImage?.let(::encodeCharacterImage) ?: JSONObject.NULL))
             }
@@ -200,6 +201,7 @@ object AppDataJsonCodec {
                 level = item.optInt("level", 1).coerceAtLeast(1),
                 order = item.optInt("order"),
                 defaultDiceStyleId = item.optNullableString("defaultDiceStyleId"),
+                secondaryDiceStyleId = item.optNullableString("secondaryDiceStyleId"),
                 diceTableTheme = enumValueOrDefault(
                     item.optString("diceTableTheme"),
                     DiceTableTheme.ARCANE,
