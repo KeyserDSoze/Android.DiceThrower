@@ -103,6 +103,8 @@ object CharacterRevision {
                 canonical.field("expression", subgroup.expression)
                 canonical.field("operator", subgroup.operator.name)
                 if (subgroup.includeInDoubleRoll) canonical.field("includeInDoubleRoll", true)
+                // Preserve old character hashes for the default included state.
+                if (!subgroup.includeInNormalRoll) canonical.field("includeInNormalRoll", false)
             }
             roll.effects.sortedWith(compareBy({ it.order }, { it.id })).forEach { effect ->
                 canonical.section("effect")

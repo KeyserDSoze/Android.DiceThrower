@@ -1,0 +1,4 @@
+<resources>
+    <string name="part_in_normal_roll">Bu bölümü normal atışa dahil et</string>
+    <string name="part_support_only_help">Kapalı: bölüm yapılandırılmış kalır ancak zarları başlangıçta atılmaz. Etkinleşen bonus veya ceza daha sonra atabilir.</string>
+</resources>

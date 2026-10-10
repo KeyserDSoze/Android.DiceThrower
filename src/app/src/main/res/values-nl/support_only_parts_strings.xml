@@ -1,0 +1,4 @@
+<resources>
+    <string name="part_in_normal_roll">Dit onderdeel normaal gooien</string>
+    <string name="part_support_only_help">Uit: dit onderdeel blijft ingesteld, maar de dobbelstenen worden aanvankelijk niet gegooid. Een geactiveerde bonus of malus kan ze later gooien.</string>
+</resources>

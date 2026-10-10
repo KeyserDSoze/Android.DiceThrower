@@ -1,0 +1,4 @@
+<resources>
+    <string name="part_in_normal_roll">Lançar esta parte normalmente</string>
+    <string name="part_support_only_help">Desligado: esta parte fica configurada, mas os dados não são lançados no início. Um bónus ou penalidade pode lançá-los depois.</string>
+</resources>

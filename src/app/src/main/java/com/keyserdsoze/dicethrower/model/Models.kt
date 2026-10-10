@@ -114,6 +114,8 @@ data class RollSubgroup(
     val expression: String,
     val operator: RollSubgroupOperator = RollSubgroupOperator.ADD,
     val includeInDoubleRoll: Boolean = false,
+    /** False: saved expression is sampled only if an Effect explicitly needs it. */
+    val includeInNormalRoll: Boolean = true,
 )
 
 data class RollGroup(

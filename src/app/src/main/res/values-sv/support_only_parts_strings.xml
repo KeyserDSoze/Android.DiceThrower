@@ -1,0 +1,4 @@
+<resources>
+    <string name="part_in_normal_roll">Slå den här delen normalt</string>
+    <string name="part_support_only_help">Av: delen behålls men tärningarna kastas inte från början. En aktiverad bonus eller malus kan kasta dem senare.</string>
+</resources>
