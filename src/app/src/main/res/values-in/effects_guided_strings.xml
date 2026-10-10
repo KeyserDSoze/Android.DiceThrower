@@ -1,0 +1,5 @@
+<resources>
+    <string name="effects_show_advanced">Opsi lanjutan</string>
+    <string name="effects_show_guided">Aturan sederhana</string>
+    <string name="effects_guided_tip">Pilih bagian pemicu di JIKA dan bagian tujuan di MAKA. Hanya dadu tidak mengubah pengubah. Gunakan Lanjutan untuk beberapa kondisi.</string>
+</resources>
