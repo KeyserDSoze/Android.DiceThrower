@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">Salon ƙwallon lido na tsarin</string>
+    <string name="dice_catalog_custom_title">Salon ƙwallon lido na musamman</string>
+    <string name="dice_character_styles_summary">Na asali: %1$s · an ajiye salo %2$d</string>
+    <string name="dice_character_styles_add">Ƙara salon ƙwallon lido</string>
+    <string name="dice_character_style_system_default">Na asalin tsarin</string>
+</resources>
