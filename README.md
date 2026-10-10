@@ -50,6 +50,8 @@ Dalla **lista dei personaggi → Personalizza i dadi** puoi aprire un punto unic
 
 Questa prima implementazione conserva gli stili associati a ciascun personaggio, così come il backup e la sincronizzazione esistenti. La **libreria condivisa di stili utente con ID globali e assegnazioni A/B avanzate** è uno sviluppo distinto tracciato dalla [EPIC #138](https://github.com/KeyserDSoze/Android.DiceThrower/issues/138), non ancora completato. Le grafiche non influiscono sull'estrazione dei numeri.
 
+Nel doppio tiro con più Parts, quando è attiva l'assegnazione di stili a ogni Part, il candidato B **conserva la palette specifica della Part** e la combina con l'accento/materiale del secondo tiro. Non trasforma più tutti i dadi B in un'unica grafica identica: si distinguono sia la Part sia il gruppo A/B. La scelta resta esclusivamente grafica e non cambia i valori estratti.
+
 ## Esperienza cinematica del Roll
 
 In **Modifica Roll → Effetti visivi del tiro** puoi scegliere un profilo specifico per ogni tiro: **Bilanciato** (default consigliato), **Discreto** oppure **Spento**. Puoi poi personalizzare separatamente badge del nome effetto, due aree alto/basso per i candidati del doppio tiro, glow del candidato scelto, aura runica, particelle (scintille per Bonus, cenere per Malus), effetti per tipo di azione, animazione numerica dei risultati e lieve impatto della camera. Modificare un interruttore crea un profilo Personalizzato. La preferenza globale per le animazioni ha precedenza e non viene sovrascritta.

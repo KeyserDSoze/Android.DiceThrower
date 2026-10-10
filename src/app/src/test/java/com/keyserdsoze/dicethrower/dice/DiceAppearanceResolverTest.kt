@@ -45,6 +45,63 @@ class DiceAppearanceResolverTest {
     )
 
     @Test
+    fun distinctPartPalettesSurviveInsideCandidateBInsteadOfBeingReplacedByOneColor() {
+        // Components are logical (Part attack A, Part damage A, attack B, damage B).
+        val fourParts = DiceRollResult(
+            total = 14,
+            components = List(4) { DiceComponent(1, 6, 1, listOf(it + 2)) },
+            constantTotal = 0,
+        )
+        val appearance = RollDiceAppearance(
+            mode = DiceAppearanceMode.PER_DIE,
+            subgroupStyleIds = mapOf("attack" to "blue", "damage" to "steel"),
+        )
+        val mapping = mapOf(0 to "attack", 1 to "damage", 2 to "attack", 3 to "damage")
+        val resolved = DiceAppearanceResolver.resolve(
+            character = character.copy(secondaryDiceStyleId = "steel"),
+            styles = listOf(blue, steel),
+            appearance = appearance,
+            result = fourParts,
+            subgroupIdByComponentIndex = mapping,
+            secondaryCandidateComponentIndices = setOf(2, 3),
+            random = Random(12),
+        )
+        assertEquals(listOf("blue", "steel", "blue", "steel"), resolved.map { it.sourceStyleId })
+        assertEquals(blue.primaryColorArgb, resolved[0].primaryColorArgb)
+        assertEquals(steel.primaryColorArgb, resolved[1].primaryColorArgb)
+        assertNotEquals(resolved[2].primaryColorArgb, resolved[3].primaryColorArgb)
+        assertNotEquals(resolved[0].primaryColorArgb, resolved[2].primaryColorArgb)
+        assertEquals(steel.material, resolved[2].material)
+        assertEquals(steel.material, resolved[3].material)
+        assertEquals(steel.secondaryColorArgb, resolved[2].secondaryColorArgb)
+    }
+
+    @Test
+    fun automaticCandidateBAlsoPreservesDifferentPartPalettes() {
+        val twoB = DiceRollResult(
+            total = 9,
+            components = List(2) { DiceComponent(1, 6, 1, listOf(4 + it)) },
+            constantTotal = 0,
+        )
+        val mapped = mapOf(0 to "attack", 1 to "damage")
+        val result = DiceAppearanceResolver.resolve(
+            character = character,
+            styles = listOf(blue, steel),
+            appearance = RollDiceAppearance(
+                mode = DiceAppearanceMode.PER_DIE,
+                subgroupStyleIds = mapOf("attack" to "blue", "damage" to "steel"),
+            ),
+            result = twoB,
+            subgroupIdByComponentIndex = mapped,
+            secondaryCandidateComponentIndices = setOf(0, 1),
+            random = Random(2),
+        )
+        assertEquals(listOf("blue", "steel"), result.map { it.sourceStyleId })
+        assertNotEquals(result[0].primaryColorArgb, result[1].primaryColorArgb)
+        assertTrue(result.all { it.material != DiceMaterial.GLOSSY_RESIN })
+    }
+
+    @Test
     fun automaticSecondCandidateHasDifferentMaterialAndColorWithoutStoredStyles() {
         val freshCharacter = CharacterProfile(id = "character", name = "New hero")
         val resolved = DiceAppearanceResolver.resolve(

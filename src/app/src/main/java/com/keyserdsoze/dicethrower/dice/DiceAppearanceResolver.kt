@@ -104,14 +104,51 @@ object DiceAppearanceResolver {
                         DiceAppearanceMode.RANDOM_PER_DIE -> randomPool().randomOrNull(random) ?: defaultStyle
                     }
                     val primary = style.toResolved(slot, componentIndex, dieIndex)
-                    add(if (componentIndex in secondaryCandidateComponentIndices) {
-                        resolveStyle(character.secondaryDiceStyleId)
+                    if (componentIndex !in secondaryCandidateComponentIndices) {
+                        add(primary)
+                    } else {
+                        // Candidate identity and Part identity are independent visual axes.
+                        // A full replacement here used to erase different Part styles in B.
+                        val candidateB = resolveStyle(character.secondaryDiceStyleId)
                             ?.toResolved(slot, componentIndex, dieIndex)
-                            ?: contrastingAlternative(primary)
-                    } else primary)
+                            ?: contrastingAlternative(defaultStyle.toResolved(slot, componentIndex, dieIndex))
+                        val subgroupStyle = subgroupIdByComponentIndex[componentIndex]
+                            ?.let(appearance.subgroupStyleIds::get)
+                            ?.let(stylesById::get)
+                        val specificStyle = appearance.mode == DiceAppearanceMode.PER_DIE &&
+                            (resolveStyle(appearance.perDieStyleIds[slot]) != null || subgroupStyle != null)
+                        add(if (specificStyle || appearance.mode == DiceAppearanceMode.RANDOM_PER_DIE) {
+                            mergePartAndCandidateStyle(primary, candidateB)
+                        } else candidateB)
+                    }
                 }
             }
         }
+    }
+
+    /**
+     * Preserve a Part-specific palette while tinting it toward the B look.
+     * Every RGB channel is a deterministic mixture of the Part's color and
+     * the candidate's color: unlike a fixed B replacement, distinct Part
+     * colors remain distinct within a B throw. The B material/secondary
+     * accent keeps candidate identity legible in 3D.
+     */
+    private fun mergePartAndCandidateStyle(
+        part: ResolvedDiceAppearance,
+        candidateB: ResolvedDiceAppearance,
+    ): ResolvedDiceAppearance {
+        fun mix(a: Int, b: Int): Int {
+            fun channel(shift: Int): Int =
+                (((a ushr shift) and 0xFF) * 3 + ((b ushr shift) and 0xFF) * 2) / 5
+            return (0xFF shl 24) or
+                (channel(16) shl 16) or (channel(8) shl 8) or channel(0)
+        }
+        return part.copy(
+            // Keep the user-selected Part style as the source identity.
+            material = candidateB.material,
+            primaryColorArgb = mix(part.primaryColorArgb, candidateB.primaryColorArgb),
+            secondaryColorArgb = candidateB.secondaryColorArgb,
+        )
     }
 
     /**
