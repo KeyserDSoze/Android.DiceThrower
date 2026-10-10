@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">Gaya dadu sistem</string>
+    <string name="dice_catalog_custom_title">Gaya dadu khusus</string>
+    <string name="dice_character_styles_summary">Bawaan: %1$s · %2$d gaya tersimpan</string>
+    <string name="dice_character_styles_add">Tambahkan gaya dadu</string>
+    <string name="dice_character_style_system_default">Bawaan sistem</string>
+</resources>
