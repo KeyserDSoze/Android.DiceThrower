@@ -6,6 +6,7 @@ import com.keyserdsoze.dicethrower.model.DiceMaterial
 import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.RollDiceAppearance
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -42,6 +43,43 @@ class DiceAppearanceResolverTest {
         ),
         constantTotal = 0,
     )
+
+    @Test
+    fun automaticSecondCandidateHasDifferentMaterialAndColorWithoutStoredStyles() {
+        val freshCharacter = CharacterProfile(id = "character", name = "New hero")
+        val resolved = DiceAppearanceResolver.resolve(
+            character = freshCharacter,
+            styles = emptyList(),
+            appearance = RollDiceAppearance(),
+            result = result,
+            secondaryCandidateComponentIndices = setOf(1),
+            random = Random(7),
+        )
+        val a = resolved.first()
+        val b = resolved.last()
+        assertEquals(DiceAppearanceResolver.defaultPrimaryColorArgb, a.primaryColorArgb)
+        assertNotEquals(a.primaryColorArgb, b.primaryColorArgb)
+        assertNotEquals(a.material, b.material)
+        assertEquals(null, b.sourceStyleId)
+        assertEquals(a.sourceStyleId, resolved[1].sourceStyleId)
+    }
+
+    @Test
+    fun secondCandidateUsesCharacterChosenStyleButLeavesOthersUnchanged() {
+        val resolved = DiceAppearanceResolver.resolve(
+            character = character.copy(secondaryDiceStyleId = "steel"),
+            styles = listOf(blue, steel),
+            appearance = RollDiceAppearance(
+                mode = DiceAppearanceMode.PER_DIE,
+                perDieStyleIds = mapOf("0:0" to "steel"),
+            ),
+            result = result,
+            secondaryCandidateComponentIndices = setOf(1),
+            random = Random(4),
+        )
+        assertEquals(listOf("steel", "blue", "blue", "steel"), resolved.map { it.sourceStyleId })
+        assertEquals(listOf("0:0", "0:1", "0:2", "1:0"), resolved.map { it.slotKey })
+    }
 
     @Test
     fun characterDefaultAppliesToEveryDie() {
