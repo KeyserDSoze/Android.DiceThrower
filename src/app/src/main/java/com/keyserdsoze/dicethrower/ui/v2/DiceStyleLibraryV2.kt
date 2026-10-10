@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Casino
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
@@ -126,7 +127,7 @@ internal fun DiceStyleLibraryV2(
         }
 
         Text(
-            stringResource(R.string.dice_gallery_title),
+            stringResource(R.string.dice_catalog_system_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -150,35 +151,42 @@ internal fun DiceStyleLibraryV2(
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
         )
-        DiceStylePresets.all.chunked(2).forEach { pair ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+        DiceStylePresets.all.forEach { preset ->
+            val presetName = dicePresetName(preset)
+            val isSelected = preset.key == selectedPresetKey
+            Surface(
+                modifier = Modifier.fillMaxWidth().testTag("dice-preset-" + preset.key),
+                onClick = { selectedPresetKey = preset.key },
+                shape = RoundedCornerShape(16.dp),
+                color = if (isSelected) MaterialTheme.colorScheme.secondaryContainer
+                    else MaterialTheme.colorScheme.surface,
+                border = androidx.compose.foundation.BorderStroke(
+                    if (isSelected) 2.dp else 1.dp,
+                    if (isSelected) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.outlineVariant,
+                ),
             ) {
-                pair.forEach { preset ->
-                    val presetName = dicePresetName(preset)
-                    FilterChip(
-                        selected = preset.key == selectedPresetKey,
-                        onClick = { selectedPresetKey = preset.key },
-                        modifier = Modifier.weight(1f).testTag("dice-preset-" + preset.key),
-                        label = {
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(4.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                            ) {
-                                DiceStyleSwatch(preset.instantiate(character.id, preset.key, presetName))
-                                Text(presetName, maxLines = 2, style = MaterialTheme.typography.labelMedium)
-                                Text(
-                                    materialLabel(preset.material),
-                                    maxLines = 1,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        },
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Icon(
+                        Icons.Rounded.Casino,
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp),
+                        tint = Color(preset.primaryColorArgb),
                     )
+                    DiceStyleSwatch(preset.instantiate(character.id, preset.key, presetName))
+                    Column(Modifier.weight(1f)) {
+                        Text(presetName, fontWeight = FontWeight.Bold)
+                        Text(
+                            materialLabel(preset.material),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-                if (pair.size == 1) Spacer(Modifier.weight(1f))
             }
         }
         Button(
@@ -262,7 +270,7 @@ internal fun DiceStyleLibraryV2(
         }
 
         Text(
-            stringResource(R.string.dice_saved_styles_title),
+            stringResource(R.string.dice_catalog_custom_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
         )
