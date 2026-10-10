@@ -1,0 +1,6 @@
+<resources>
+    <string name="effects_quick_critical">ضربة حرجة (إعداد سريع)</string>
+    <string name="effects_critical_help">إذا أظهر نرد d20 في الجزء الأول الرقم 20، فاضرب نرد الجزء الثاني في اثنين فقط. تبقى المعدلات كما هي.</string>
+    <string name="effects_when">عندما — الشرط</string>
+    <string name="effects_then">إذًا — طبّق على</string>
+</resources>

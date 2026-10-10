@@ -1,0 +1,6 @@
+<resources>
+    <string name="effects_quick_critical">Critical hit (quick setup)</string>
+    <string name="effects_critical_help">If the first Part has a single d20 and rolls 20, double only the dice of the second Part. Modifiers do not change. Edit both Parts and values below.</string>
+    <string name="effects_when">WHEN — condition</string>
+    <string name="effects_then">THEN — apply to</string>
+</resources>

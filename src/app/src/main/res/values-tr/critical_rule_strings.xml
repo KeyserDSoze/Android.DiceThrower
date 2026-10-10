@@ -1,0 +1,6 @@
+<resources>
+    <string name="effects_quick_critical">Kritik vuruş (hızlı kurulum)</string>
+    <string name="effects_critical_help">İlk bölüm bir d20 ile 20 atarsa yalnızca ikinci bölümün zarlarını iki katına çıkar. Değiştiriciler aynı kalır.</string>
+    <string name="effects_when">EĞER — koşul</string>
+    <string name="effects_then">O ZAMAN — uygula</string>
+</resources>

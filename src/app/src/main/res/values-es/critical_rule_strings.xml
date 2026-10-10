@@ -1,0 +1,6 @@
+<resources>
+    <string name="effects_quick_critical">Golpe crítico (configuración rápida)</string>
+    <string name="effects_critical_help">Si la primera parte con un d20 obtiene un 20, duplica solo los dados de la segunda parte. Los modificadores no cambian.</string>
+    <string name="effects_when">CUANDO — condición</string>
+    <string name="effects_then">ENTONCES — aplicar a</string>
+</resources>

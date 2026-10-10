@@ -4,6 +4,12 @@ import com.keyserdsoze.dicethrower.data.AppDataJsonCodec
 import com.keyserdsoze.dicethrower.data.AppDataValidator
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.CharacterProfile
+import com.keyserdsoze.dicethrower.dice.DiceComponent
+import com.keyserdsoze.dicethrower.dice.DiceRollResult
+import com.keyserdsoze.dicethrower.dice.EffectRollSnapshot
+import com.keyserdsoze.dicethrower.dice.EffectSequenceExecutor
+import com.keyserdsoze.dicethrower.model.EffectComparison
+import com.keyserdsoze.dicethrower.model.EffectValueScope
 import com.keyserdsoze.dicethrower.model.EffectActionType
 import com.keyserdsoze.dicethrower.model.EffectCondition
 import com.keyserdsoze.dicethrower.model.EffectType
@@ -20,6 +26,60 @@ class EffectEditorDraftTest {
         RollSubgroup("attack-1", "Attack", "1d20+2"),
         RollSubgroup("damage-2", "Damage", "2d6+3"),
     )
+
+    @Test
+    fun criticalHitTemplateConnectsTwoDistinctPartsAndMultipliesOnlyDamageDice() {
+        val critical = EffectEditorDraft.criticalHit(parts, 0, "Critical hit")
+        val trigger = critical.activationGroups.single().conditions.single()
+        val action = critical.actions.single()
+        assertEquals("attack-1", trigger.partId)
+        assertEquals(EffectValueScope.DICE_ONLY, trigger.scope)
+        assertEquals(EffectComparison.EQUAL, trigger.comparison)
+        assertEquals("20", trigger.threshold)
+        assertEquals("damage-2", action.targetPartId)
+        assertEquals(EffectActionType.MULTIPLY, action.kind)
+        assertEquals(EffectValueScope.DICE_ONLY, action.scope)
+        assertEquals("2", action.expression)
+        val saved = EffectEditorDraft.canonicalize(listOf(critical), parts, 5, emptyList())
+        val roll = RollDefinition(
+            id = "critical-roll", characterId = "hero", name = "Critical attack",
+            expression = "(1d20+2)+(2d6+3)",
+            subgroups = parts,
+            effects = saved,
+        )
+        val data = AppData(characters = listOf(CharacterProfile("hero", "Hero")), rolls = listOf(roll))
+        assertTrue(AppDataValidator.validate(data).isEmpty())
+        assertEquals(data, AppDataJsonCodec.decodeData(AppDataJsonCodec.encodeData(data)))
+
+        fun run(attackFace: Int): Pair<Int, Int> {
+            val attack = DiceRollResult(
+                attackFace + 5, listOf(DiceComponent(1, 20, 1, listOf(attackFace))), 5,
+            )
+            val damage = DiceRollResult(
+                11, listOf(DiceComponent(2, 6, 1, listOf(3, 4))), 4,
+            )
+            val result = EffectSequenceExecutor.execute(
+                EffectRollSnapshot(null, mapOf("attack-1" to attack, "damage-2" to damage)),
+                saved, mapOf("attack-1" to "1d20+5", "damage-2" to "2d6+4"),
+            )
+            assertTrue(result.steps.single().activation.activated == (attackFace == 20))
+            assertEquals(attackFace + 5, result.finalSnapshot.parts.getValue("attack-1").total)
+            assertEquals(4, result.finalSnapshot.parts.getValue("damage-2").modifiers)
+            return result.finalSnapshot.parts.getValue("damage-2").let { it.dice to it.total }
+        }
+        assertEquals(14 to 18, run(20))
+        assertEquals(7 to 11, run(19)) // Total attack=24 does not count as a natural 20.
+    }
+
+    @Test
+    fun criticalTemplateRequiresTwoPartsAndKeepsReferencesStableAcrossRenames() {
+        assertTrue(runCatching {
+            EffectEditorDraft.criticalHit(parts.take(1), 0, "Critical")
+        }.isFailure)
+        val rule = EffectEditorDraft.criticalHit(parts, 0, "Critical")
+        val renamed = parts.map { it.copy(name = "Renamed " + it.name) }
+        assertEquals(rule, EffectEditorDraft.canonicalize(listOf(rule), renamed, 5, emptyList()).single())
+    }
 
     @Test
     fun bonusAndMalusDefaultsStartValidAndTargetStableFirstPart() {

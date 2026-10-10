@@ -1,0 +1,6 @@
+<resources>
+    <string name="effects_quick_critical">Coup critique (configuration rapide)</string>
+    <string name="effects_critical_help">Si la première partie avec un d20 obtient 20, double uniquement les dés de la deuxième partie. Les modificateurs restent inchangés.</string>
+    <string name="effects_when">SI — condition</string>
+    <string name="effects_then">ALORS — appliquer à</string>
+</resources>
