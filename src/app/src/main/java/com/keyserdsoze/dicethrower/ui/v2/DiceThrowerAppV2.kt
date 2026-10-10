@@ -2313,21 +2313,33 @@ private fun RollScreenV2(
             runCatching { EffectRuntimeHistory.adjustedLegacyTotal(it, result.total) }
                 .getOrDefault(result.total)
         } ?: result.total
+        // Legacy single-expression Rolls have no stored Part rows, but the
+        // logical double-roll engine still compares the canonical "single" Part.
+        // Give both candidate sets explicit ownership so A/B lanes and the
+        // post-settle verdict work after restoring older backups as well.
+        val baseComponentCount = parsedExpression.diceShape().size
+        val baselineOwners = if (formula.subgroups.isEmpty()) {
+            (0 until baseComponentCount).associateWith { "single" }
+        } else subgroupIdByComponentIndex
         val extraComponentOwners = buildMap {
-            var offset = parsedExpression.diceShape().size
-            formula.subgroups.filter { it.id in selectedPartIds && mode != DoubleRollMode.NORMAL }
-                .forEach { part ->
-                    repeat(DiceExpression.parse(part.expression).diceShape().size) {
-                        put(offset++, part.id)
+            var offset = baseComponentCount
+            if (mode != DoubleRollMode.NORMAL && formula.subgroups.isEmpty()) {
+                repeat(baseComponentCount) { put(offset++, "single") }
+            } else {
+                formula.subgroups.filter { it.id in selectedPartIds && mode != DoubleRollMode.NORMAL }
+                    .forEach { part ->
+                        repeat(DiceExpression.parse(part.expression).diceShape().size) {
+                            put(offset++, part.id)
+                        }
                     }
-                }
+            }
         }
         val candidatePlan = DoubleRollVisualPlanner.plan(
-            evaluation, subgroupIdByComponentIndex, extraComponentOwners, selectedPartIds,
+            evaluation, baselineOwners, extraComponentOwners, selectedPartIds,
         )
         val timeline = EffectsVisualTimeline.build(
             baseline = evaluation.visualResult,
-            baselineOwners = subgroupIdByComponentIndex + extraComponentOwners,
+            baselineOwners = baselineOwners + extraComponentOwners,
             execution = execution,
             effectTypes = roll.effects.associate { it.id to it.type },
             animate = settings.animationsEnabled,
