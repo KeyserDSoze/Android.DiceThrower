@@ -98,6 +98,18 @@ class SharedDiceStyleCatalogTest {
             .diceStyles.single().characterId)
     }
 
+    @Test fun remoteCatalogDeletionRepairsStaleCharacterAndPartReferences() {
+        val before = usedByTwoCharacters()
+        val remoteRemovedStyle = before.copy(diceStyles = emptyList())
+        val repaired = SharedDiceStyleCatalog.repairDanglingReferences(remoteRemovedStyle)
+        assertEquals(DiceStylePresets.fallbackId, repaired.characters[0].defaultDiceStyleId)
+        assertEquals(DiceStylePresets.fallbackId, repaired.characters[1].defaultDiceStyleId)
+        assertEquals(DiceStylePresets.fallbackId, repaired.rolls[0].diceAppearance.styleId)
+        assertEquals(DiceStylePresets.fallbackId, repaired.rolls[1].diceAppearance.perDieStyleIds["0:0"])
+        assertTrue(AppDataValidator.validate(repaired).isEmpty())
+        assertEquals(repaired, SharedDiceStyleCatalog.repairDanglingReferences(repaired))
+    }
+
     @Test fun catalogRevisionIndependentOfSortOrderButTracksContents() {
         val a = style("a"); val b = style("b")
         assertEquals(SharedDiceStyleCatalog.revision(listOf(a, b)),
