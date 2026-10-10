@@ -2522,7 +2522,17 @@ private fun RollScreenV2(
                             alternativeTotal = part.alternative?.total,
                             alternativeDetail = part.alternative?.detail(),
                         )
-                    }.orEmpty(),
+                    }.orEmpty() + EffectRuntimeHistory.supportPartResults(
+                        execution, formula.supportSubgroups,
+                    ).map { support ->
+                        RollLogPart(
+                            name = support.subgroup.name.ifBlank { roll.name },
+                            expression = support.subgroup.expression,
+                            total = execution?.finalSnapshot?.parts?.get(support.subgroup.id)?.total
+                                ?: support.result.total,
+                            detail = support.result.detail(),
+                        )
+                    },
             ),
         )
     }
@@ -2694,8 +2704,11 @@ private fun RollScreenV2(
                     // Keep the center of the table free for the 3D dice. The result stack
                     // grows upwards from the footer, with a viewport bound on small screens.
                     RollResultsOverlayV2(
-                        parts = doubleEvaluation?.parts?.map { ResolvedRollSubgroupResult(it.subgroup, it.chosen) }
-                            ?: formula.subgroupResults(value),
+                        parts = (doubleEvaluation?.parts?.map { ResolvedRollSubgroupResult(it.subgroup, it.chosen) }
+                            ?: formula.subgroupResults(value)) +
+                            EffectRuntimeHistory.supportPartResults(
+                                effectsExecution, formula.supportSubgroups,
+                            ),
                         total = finalRollTotal ?: value.total,
                         originalTotal = value.total.takeIf { it != finalRollTotal },
                         animateValues = cinematic.resultTransitions && settings.animationsEnabled,
