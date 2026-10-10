@@ -70,6 +70,20 @@ object CharacterRevision {
             canonical.field("order", roll.order)
             // Keep the hash of all old Roll records stable when no gate is set.
             if (roll.minimumLevel != 1) canonical.field("minimumLevel", roll.minimumLevel)
+            // Legacy revision hashes must remain identical for the default
+            // profile, including saved default booleans in a new client.
+            val defaultVisualEffects = com.keyserdsoze.dicethrower.model.RollVisualEffectsSettings()
+            if (roll.visualEffects != defaultVisualEffects) {
+                canonical.section("rollVisualEffects")
+                canonical.field("profile", roll.visualEffects.profile.name)
+                canonical.field("badge", roll.visualEffects.badge)
+                canonical.field("groupLanes", roll.visualEffects.groupLanes)
+                canonical.field("winnerSpotlight", roll.visualEffects.winnerSpotlight)
+                canonical.field("tableAura", roll.visualEffects.tableAura)
+                canonical.field("particles", roll.visualEffects.particles)
+                canonical.field("actionCues", roll.visualEffects.actionCues)
+                canonical.field("resultTransitions", roll.visualEffects.resultTransitions)
+            }
             // Preserve legacy revision hashes when double-roll is disabled.
             if (roll.doubleRollEnabled) canonical.field("doubleRollEnabled", true)
             roll.levelRules.sortedBy { it.id }.forEach { rule ->
