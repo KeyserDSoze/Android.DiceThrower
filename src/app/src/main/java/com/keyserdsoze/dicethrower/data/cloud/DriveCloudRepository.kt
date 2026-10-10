@@ -238,10 +238,12 @@ class DriveCloudRepository(
 
     private fun requireProperty(file: DriveAppDataFile, name: String, expected: String) {
         val actual = requiredProperty(file, name)
-        if (name == PROP_SCHEMA && actual.toIntOrNull() != CLOUD_SCHEMA_VERSION) {
+        // Read legacy v1 appDataFolder files but write v2 to prevent older clients
+        // from silently dropping the newly introduced shared catalog metadata.
+        if (name == PROP_SCHEMA && actual.toIntOrNull() !in 1..CLOUD_SCHEMA_VERSION) {
             throw CloudSchemaMismatchException(CLOUD_SCHEMA_VERSION, actual.toIntOrNull() ?: -1)
         }
-        if (actual != expected) {
+        if (actual != expected && !(name == PROP_SCHEMA && actual == "1" && expected == "2")) {
             throw CloudProtocolException("Unexpected $name metadata for Drive file ${file.id}")
         }
     }
