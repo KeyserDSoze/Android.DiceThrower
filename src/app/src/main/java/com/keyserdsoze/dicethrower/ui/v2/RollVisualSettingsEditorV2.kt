@@ -18,7 +18,7 @@ import com.keyserdsoze.dicethrower.R
 import com.keyserdsoze.dicethrower.model.RollVisualEffectsSettings
 import com.keyserdsoze.dicethrower.model.RollVisualProfile
 
-/** Roll-local preferences: presets are fast starts, individual changes become CUSTOM. */
+/** App-wide visual preferences; presets are fast starts, individual changes become CUSTOM. */
 @Composable
 internal fun RollVisualSettingsEditorV2(
     settings: RollVisualEffectsSettings,
@@ -26,8 +26,10 @@ internal fun RollVisualSettingsEditorV2(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(stringResource(R.string.cinematic_heading), style = MaterialTheme.typography.titleMedium)
-        Text(stringResource(R.string.cinematic_help),
+        Text(stringResource(R.string.cinematic_global_heading),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface)
+        Text(stringResource(R.string.cinematic_global_help),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodySmall)
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -64,6 +66,7 @@ private fun VisualToggle(label: Int, checked: Boolean, onChecked: (Boolean) -> U
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(stringResource(label), modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.bodyMedium)
         Switch(checked = checked, onCheckedChange = onChecked)
     }
