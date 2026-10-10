@@ -140,6 +140,7 @@ import com.keyserdsoze.dicethrower.dice.RollFormulaResolver
 import com.keyserdsoze.dicethrower.dice.ResolvedRollSubgroupResult
 import com.keyserdsoze.dicethrower.dice.subgroupIdByComponentIndex
 import com.keyserdsoze.dicethrower.dice.subgroupResults
+import com.keyserdsoze.dicethrower.dice.effectPartExpressions
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.AppSettings
 import com.keyserdsoze.dicethrower.model.CharacterModifier
@@ -2421,12 +2422,7 @@ private fun RollScreenV2(
             resolvedPartExpressions = if (formula.subgroups.isEmpty()) {
                 mapOf("single" to formula.expression)
             } else {
-                (formula.subgroups + formula.supportSubgroups).associate { part ->
-                    val supportSubtraction = formula.supportSubgroups.any {
-                        it.id == part.id && it.operator == RollSubgroupOperator.SUBTRACT
-                    }
-                    part.id to if (supportSubtraction) "-(${part.expression})" else part.expression
-                }
+                formula.effectPartExpressions()
             },
         )
         val adjustedTotal = execution?.let {
