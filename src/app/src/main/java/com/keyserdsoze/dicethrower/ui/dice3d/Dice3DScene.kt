@@ -279,6 +279,7 @@ private class DiceSceneRenderer(
     private var winnerRevealed = false
     private var winnerRevealNanos = 0L
     private var visualSettings = RollVisualEffectsSettings()
+    private var effectImpactStartedNanos = 0L
     private var currentEventId = 0L
     private var lastFrameAt = SystemClock.elapsedRealtimeNanos()
     private var settledReported = false
@@ -314,6 +315,8 @@ private class DiceSceneRenderer(
         ) previousPositions.take(event.persistentDiceCount) else emptyList()
         val appearanceBySlot = event.appearances.associateBy { it.slotKey }
         visualSettings = event.visualSettings
+        effectImpactStartedNanos = if (animateRoll && visualSettings.cameraImpact &&
+            event.effectAccentComponents.isNotEmpty()) SystemClock.elapsedRealtimeNanos() else 0L
         winnerRevealed = false
         dice = buildList {
             event.result.components.forEachIndexed { componentIndex, component ->
@@ -418,7 +421,14 @@ private class DiceSceneRenderer(
         }
         val settleProgress = if (animateRoll) physics?.settleProgress ?: 1f else 1f
 
-        Matrix.setLookAtM(view, 0, 0f, -0.12f, cameraDistance, 0f, 0f, 0f, 0f, 1f, 0f)
+        val impactAge = if (effectImpactStartedNanos > 0L)
+            (now - effectImpactStartedNanos) / 1_000_000_000f else 10f
+        val impactStrength = if (animateRoll && visualSettings.cameraImpact)
+            (1f - impactAge / 0.48f).coerceIn(0f, 1f) * 0.045f else 0f
+        val impactX = sin(impactAge * 93f) * impactStrength
+        val impactY = sin(impactAge * 117f) * impactStrength * 0.62f
+        Matrix.setLookAtM(view, 0, impactX, -0.12f + impactY,
+            cameraDistance, 0f, 0f, 0f, 0f, 1f, 0f)
         GLES20.glUseProgram(program)
         GLES20.glEnableVertexAttribArray(positionHandle)
         GLES20.glEnableVertexAttribArray(normalHandle)
