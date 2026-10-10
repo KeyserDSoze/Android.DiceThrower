@@ -206,8 +206,8 @@ jobs:
           VERSION: ${{ needs.release.outputs.version }}
         run: |
           mkdir -p distribution/whatsnew
-          printf 'Dice Thrower %s: improved BEST/WORST throws with distinct-looking A/B dice, a selectable second dice style per character, a compact roll area and clearer winner highlighting. Includes accessibility and physics fixes.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
-          printf 'Dice Thrower %s: tiri BEST/WORST migliorati con dadi A/B di aspetto differente, stile del secondo tiro selezionabile per personaggio, dadi più vicini al centro ed evidenziazione più chiara del risultato. Include fix accessibilità e fisica.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
+          printf 'Dice Thrower %s: new Dice Customization hub with 10 premium presets, a quick critical-hit rule, simpler WHEN/THEN Bonus/Malus settings, and clearer individual Part dice styles in double rolls.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
+          printf 'Dice Thrower %s: nuova pagina Personalizza i dadi con 10 preset premium, regola rapida per i colpi critici, impostazioni Bonus/Malus più semplici con QUANDO/ALLORA e dadi delle Parts più riconoscibili nei doppi tiri.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
 
       - name: Upload to Google Play Internal testing
         uses: r0adkll/upload-google-play@v1.1.5
