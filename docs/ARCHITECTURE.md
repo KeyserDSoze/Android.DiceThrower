@@ -211,6 +211,10 @@ Appearance randomization uses a random source separate from the one passed to `D
 
 **Not global user-style sharing yet:** the catalog management hub currently works on a selected character; cross-character copies are value based. Future #138 subissues will establish shared user-created style identity and its offline-first sync/conflict model before changing persisted owner semantics. Do not silently reinterpret existing character style IDs as global.
 
+## Combined candidate/Part styling (#146)
+
+The appearance resolver first derives an individual Part/per-die style, then handles candidate B. When a Part-specific or RANDOM_PER_DIE identity exists, a deterministic per-channel mix keeps the Part primary color while applying B's material and secondary accent. Otherwise candidate B preserves the explicit character B style (or automatic contrasting fallback). No dice engine RNG or schema data is changed. Tests cover two Parts independently in A/B, fixed B and automatic B. Shared user-created global style IDs are still planned in #144.
+
 ## Dice style editor
 
 Character Edit mode exposes the character-owned `DiceStyle` collection without coupling the OpenGL renderer to persistence. `DiceStyleDataOperations` owns reference-safe create/update/duplicate/reorder/default/delete operations, while Compose edits domain values and persists the returned `AppData` through the existing screen boundary.
