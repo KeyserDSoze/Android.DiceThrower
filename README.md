@@ -64,6 +64,8 @@ I controlli cinematici globali sono salvati in **AppSettings** e inclusi in back
 
 L'editor degli effetti ora presenta un flusso semplice **QUANDO → ALLORA** per le regole comuni con una condizione e un'azione. La Part che attiva l'effetto e la Part modificata si scelgono separatamente, insieme ad ambito (solo dadi, modificatori o totale), operatore e valore. La sezione **Opzioni avanzate** rimane disponibile; le regole preesistenti con gruppi AND/OR, più azioni, variabili o formule complesse si aprono direttamente nella vista avanzata, senza perdere dati. Il confronto `Solo dadi` su una Part con più dadi è ancora la loro **somma**, non una condizione sulla singola faccia: il relativo rework è in #145.
 
+Nel modulo **Modifica Roll**, il comando Doppio tiro si trova nella scheda principale, prima del gruppo, con una spiegazione: i tiri BEST/WORST confrontano due esecuzioni delle Parts selezionate, mentre il tiro normale resta singolo. È una proprietà del Roll, non un'opzione nascosta vicino alla formula.
+
 ## Double Roll ed Effects (bonus/malus)
 
 Ogni Roll può abilitare il **doppio tiro Best/Worst**; alla creazione la prima Roll Part è selezionata per il confronto, mentre le altre sono opzionali e si attivano individualmente. Quando più Parts sono selezionate, il confronto migliore/peggiore usa **la loro somma per scegliere il gruppo vincente**, ma i risultati delle singole Parts rimangono visibili e distinti. Swipe a destra = Best, swipe a sinistra = Worst, swipe verso l'alto = tiro normale. I relativi pulsanti del footer permettono di scegliere esplicitamente la modalità anche senza gesture; il normale pulsante del dado resta all'estremità destra. I dadi non selezionati per il risultato rimangono consultabili e sono visivamente attenuati.
