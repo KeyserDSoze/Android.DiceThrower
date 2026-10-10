@@ -17,6 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.stringResource
+import com.keyserdsoze.dicethrower.R
 import androidx.compose.ui.unit.dp
 import com.keyserdsoze.dicethrower.model.EffectType
 
@@ -55,8 +59,17 @@ internal fun EffectsVisualCueV2(
             modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(if (type == EffectType.BONUS) "✦" else "◆", color = tint,
-                style = MaterialTheme.typography.titleMedium)
+            // Compact on screen, but explicitly identifies the effect type
+            // to TalkBack instead of depending on symbol shape or color.
+            val typeLabel = stringResource(
+                if (type == EffectType.BONUS) R.string.effects_bonus else R.string.effects_malus,
+            )
+            Text(
+                if (type == EffectType.BONUS) "✦" else "◆",
+                modifier = Modifier.semantics { contentDescription = typeLabel },
+                color = tint,
+                style = MaterialTheme.typography.titleMedium,
+            )
             Text(
                 effectName,
                 color = Color.White,
