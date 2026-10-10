@@ -16,6 +16,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.keyserdsoze.dicethrower.dice.DiceRollVisualEvent
 import com.keyserdsoze.dicethrower.model.EffectType
 import com.keyserdsoze.dicethrower.model.DiceTableTheme
+import com.keyserdsoze.dicethrower.model.RollVisualEffectsSettings
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -38,6 +39,7 @@ fun Dice3DScene(
     tableImageKey: String? = null,
     fullBleed: Boolean = false,
     animateRoll: Boolean = true,
+    winnerRevealed: Boolean = false,
     onSettled: (Long) -> Unit = {},
 ) {
     val sceneModifier = if (fullBleed) modifier else modifier.clip(RoundedCornerShape(24.dp))
@@ -47,11 +49,13 @@ fun Dice3DScene(
             DiceGLView(context).also {
                 it.onSettled = onSettled
                 it.setScene(event, tableTheme, tableImage, tableImageKey, animateRoll)
+                it.setWinnerRevealed(winnerRevealed)
             }
         },
         update = { view ->
             view.onSettled = onSettled
             view.setScene(event, tableTheme, tableImage, tableImageKey, animateRoll)
+            view.setWinnerRevealed(winnerRevealed)
         },
     )
 }
@@ -89,6 +93,10 @@ private class DiceGLView(context: Context) : GLSurfaceView(context) {
         queueEvent { diceRenderer.setEvent(event, tableTheme, tableImage, animateRoll) }
     }
 
+    fun setWinnerRevealed(revealed: Boolean) {
+        queueEvent { diceRenderer.setWinnerRevealed(revealed) }
+    }
+
     override fun onDetachedFromWindow() {
         onPause()
         super.onDetachedFromWindow()
@@ -102,6 +110,8 @@ private data class VisualDie(
     val renderStyle: DiceRenderStyle,
     val dimmed: Boolean = false,
     val effectAccent: EffectType? = null,
+    val candidateGroup: Int? = null,
+    val chosenCandidate: Boolean = false,
 )
 
 private data class GpuMesh(
@@ -265,6 +275,9 @@ private class DiceSceneRenderer(
     private var tableTheme = DiceTableTheme.ARCANE
     private var physics: DiceTablePhysics? = null
     private var animateRoll = true
+    private var winnerRevealed = false
+    private var winnerRevealNanos = 0L
+    private var visualSettings = RollVisualEffectsSettings()
     private var currentEventId = 0L
     private var lastFrameAt = SystemClock.elapsedRealtimeNanos()
     private var settledReported = false
@@ -281,6 +294,11 @@ private class DiceSceneRenderer(
     private val tableNormals = FloatArray(18) { index -> if (index % 3 == 2) 1f else 0f }.toFloatBuffer()
     private var tableTextureCoordinates = tableTextureCoordinatesFor(null, viewportAspect).toFloatBuffer()
 
+    fun setWinnerRevealed(revealed: Boolean) {
+        if (revealed && !winnerRevealed) winnerRevealNanos = SystemClock.elapsedRealtimeNanos()
+        winnerRevealed = revealed
+    }
+
     fun setEvent(
         event: DiceRollVisualEvent,
         tableTheme: DiceTableTheme,
@@ -294,6 +312,8 @@ private class DiceSceneRenderer(
             previousPositions.size >= event.persistentDiceCount
         ) previousPositions.take(event.persistentDiceCount) else emptyList()
         val appearanceBySlot = event.appearances.associateBy { it.slotKey }
+        visualSettings = event.visualSettings
+        winnerRevealed = false
         dice = buildList {
             event.result.components.forEachIndexed { componentIndex, component ->
                 component.rolls.forEachIndexed { index, value ->
@@ -307,6 +327,9 @@ private class DiceSceneRenderer(
                                 renderStyle = DiceRenderStyleFactory.create(appearanceBySlot[slotKey]),
                                 dimmed = componentIndex in event.dimmedComponentIndices,
                                 effectAccent = event.effectAccentComponents[componentIndex],
+                                candidateGroup = event.candidateGroupByComponent[componentIndex]
+                                    .takeIf { event.visualSettings.groupLanes },
+                                chosenCandidate = componentIndex in event.chosenCandidateComponents,
                             ),
                         )
                     }
@@ -322,6 +345,10 @@ private class DiceSceneRenderer(
         currentEventId = event.id
         physics = if (animateRoll) DiceTablePhysics(
             dice.size - persistentStates.size, event.id,
+            laneByDieIndex = dice.drop(persistentStates.size)
+                .mapIndexedNotNull { index, die ->
+                    die.candidateGroup?.let { index to it }
+                }.toMap(),
         ) else null
         lastFrameAt = SystemClock.elapsedRealtimeNanos()
         settledReported = false
@@ -381,7 +408,13 @@ private class DiceSceneRenderer(
         }
         val states = if (persistentStates.isNotEmpty()) {
             persistentStates + (physics?.states() ?: emptyList())
-        } else physics?.states() ?: staticStates(count, dieScale)
+        } else physics?.states() ?: staticStates(count, dieScale).mapIndexed { index, state ->
+            when (dice[index].candidateGroup) {
+                0 -> state.copy(y = 2.0f + state.y * 0.35f)
+                1 -> state.copy(y = -2.0f + state.y * 0.35f)
+                else -> state
+            }
+        }
         val settleProgress = if (animateRoll) physics?.settleProgress ?: 1f else 1f
 
         Matrix.setLookAtM(view, 0, 0f, -0.12f, cameraDistance, 0f, 0f, 0f, 0f, 1f, 0f)
@@ -443,7 +476,14 @@ private class DiceSceneRenderer(
 
             val style = die.renderStyle
             // The less favorable sampled candidate stays visible, but recedes visually.
-            val candidateBrightness = if (die.dimmed) 0.45f else 1f
+            val canSpotlight = winnerRevealed && visualSettings.winnerSpotlight
+            // Both candidates are full-brightness during physics. Only after
+            // all stages settle does the chosen set glow and the other dim.
+            val candidateBrightness = if (canSpotlight && die.dimmed) 0.42f else 1f
+            val selectedFlash = if (canSpotlight && die.chosenCandidate) {
+                val elapsed = ((now - winnerRevealNanos) / 1_000_000_000f).coerceAtLeast(0f)
+                (0.34f * (1f - elapsed / 1.0f).coerceIn(0f, 1f))
+            } else 0f
             // Accent is visual-only: green/cyan for bonuses and warm crimson
             // for maluses. No GPU path can change the sampled die value.
             val accentRgb = when (die.effectAccent) {
@@ -463,7 +503,9 @@ private class DiceSceneRenderer(
             val effectiveBlue = if (accentRgb == null) style.primary.blue * candidateBrightness
                 else toned(style.primary.blue, accentRgb[2], flash)
             GLES20.glUniform4f(
-                primaryColorHandle, effectiveRed, effectiveGreen, effectiveBlue, style.primary.alpha,
+                primaryColorHandle, (effectiveRed + selectedFlash * 0.9f).coerceAtMost(1f),
+                (effectiveGreen + selectedFlash * 0.72f).coerceAtMost(1f),
+                (effectiveBlue + selectedFlash * 0.32f).coerceAtMost(1f), style.primary.alpha,
             )
             GLES20.glUniform4f(
                 secondaryColorHandle,
@@ -484,7 +526,7 @@ private class DiceSceneRenderer(
             )
             GLES20.glUniform4f(
                 materialAccentHandle,
-                (style.lighting.rim + if (accentRgb != null) 0.25f else 0f).coerceAtMost(1f),
+                (style.lighting.rim + (if (accentRgb != null) 0.25f else 0f) + selectedFlash).coerceAtMost(1f),
                 (style.lighting.accentMix + if (accentRgb != null) 0.20f else 0f).coerceAtMost(1f),
                 (style.lighting.innerGlow + if (accentRgb != null) 0.35f else 0f).coerceAtMost(1f),
                 0f,
