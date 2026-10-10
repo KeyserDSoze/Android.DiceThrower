@@ -1,0 +1,6 @@
+<resources>
+    <string name="effects_quick_critical">गंभीर प्रहार (त्वरित सेटअप)</string>
+    <string name="effects_critical_help">यदि पहले भाग का d20 20 दिखाता है, तो केवल दूसरे भाग के पासे दोगुने करें। संशोधक अपरिवर्तित रहते हैं।</string>
+    <string name="effects_when">जब — शर्त</string>
+    <string name="effects_then">तब — लागू करें</string>
+</resources>

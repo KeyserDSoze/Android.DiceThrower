@@ -1,0 +1,6 @@
+<resources>
+    <string name="effects_quick_critical">クリティカルヒット（簡単設定）</string>
+    <string name="effects_critical_help">最初のパートのd20で20が出たら、2番目のパートのダイスだけを2倍にします。修正値は変わりません。</string>
+    <string name="effects_when">条件 — 発動</string>
+    <string name="effects_then">効果 — 対象</string>
+</resources>

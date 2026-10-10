@@ -75,6 +75,42 @@ internal object EffectEditorDraft {
         )
     }
 
+    /**
+     * A readable common template: Part A's natural die value (not its modifier)
+     * triggers ×2 on Part B's dice only, keeping the damage modifier untouched.
+     * The editor exposes both stable Part references for subsequent changes.
+     */
+    fun criticalHit(parts: List<RollSubgroup>, order: Int, defaultName: String): RollEffect {
+        require(parts.size >= 2) { "Critical hit needs a trigger Part and a target Part" }
+        return RollEffect(
+            id = UUID.randomUUID().toString(),
+            name = defaultName,
+            type = EffectType.BONUS,
+            order = order,
+            activationGroups = listOf(
+                EffectActivationGroup(UUID.randomUUID().toString(), listOf(
+                    EffectCondition(
+                        id = UUID.randomUUID().toString(),
+                        source = EffectValueSource.PART,
+                        partId = parts[0].id,
+                        scope = EffectValueScope.DICE_ONLY,
+                        comparison = EffectComparison.EQUAL,
+                        threshold = "20",
+                    ),
+                )),
+            ),
+            actions = listOf(
+                EffectAction(
+                    id = UUID.randomUUID().toString(),
+                    kind = EffectActionType.MULTIPLY,
+                    targetPartId = parts[1].id,
+                    scope = EffectValueScope.DICE_ONLY,
+                    expression = "2",
+                ),
+            ),
+        )
+    }
+
     fun canonicalize(
         effects: List<RollEffect>,
         parts: List<RollSubgroup>,
@@ -135,6 +171,7 @@ internal fun EffectsEditorSectionV2(
 ) {
     val defaultBonusName = stringResource(R.string.effects_bonus)
     val defaultMalusName = stringResource(R.string.effects_malus)
+    val criticalName = stringResource(R.string.effects_quick_critical)
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -142,6 +179,21 @@ internal fun EffectsEditorSectionV2(
         Text(stringResource(R.string.effects_heading), style = MaterialTheme.typography.titleLarge)
         Text(
             stringResource(R.string.effects_help),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        OutlinedButton(
+            enabled = parts.size >= 2,
+            onClick = {
+                onChange(effects + EffectEditorDraft.criticalHit(parts, effects.size, criticalName))
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(Icons.Rounded.Add, contentDescription = null)
+            Text(stringResource(R.string.effects_quick_critical))
+        }
+        Text(
+            stringResource(R.string.effects_critical_help),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -205,7 +257,7 @@ internal fun EffectsEditorSectionV2(
                         checked = effect.stopFollowingEffects,
                         onChecked = { replace(effect.copy(stopFollowingEffects = it)) },
                     )
-                    Text(stringResource(R.string.effects_or_groups),
+                    Text(stringResource(R.string.effects_when),
                         style = MaterialTheme.typography.titleSmall)
                     effect.activationGroups.forEachIndexed { groupIndex, group ->
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -274,7 +326,7 @@ internal fun EffectsEditorSectionV2(
                     }) {
                         Text(stringResource(R.string.effects_add_or))
                     }
-                    Text(stringResource(R.string.effects_actions),
+                    Text(stringResource(R.string.effects_then),
                         style = MaterialTheme.typography.titleSmall)
                     effect.actions.forEach { action ->
                         EffectActionEditorV2(action, parts, onRemove = {

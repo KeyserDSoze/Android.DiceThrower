@@ -1,0 +1,6 @@
+<resources>
+    <string name="effects_quick_critical">Критичний удар (швидке налаштування)</string>
+    <string name="effects_critical_help">Якщо перша частина з d20 отримала 20, подвойте лише кубики другої частини. Модифікатори не змінюються.</string>
+    <string name="effects_when">КОЛИ — умова</string>
+    <string name="effects_then">ТОДІ — застосувати до</string>
+</resources>

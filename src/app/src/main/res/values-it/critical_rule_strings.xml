@@ -1,0 +1,6 @@
+<resources>
+    <string name="effects_quick_critical">Colpo critico (configurazione rapida)</string>
+    <string name="effects_critical_help">Se la prima Part contiene un solo d20 e ottiene 20, raddoppia soltanto i dadi della seconda Part. I modificatori non cambiano. Modifica Parts e valori qui sotto.</string>
+    <string name="effects_when">QUANDO — condizione</string>
+    <string name="effects_then">ALLORA — applica a</string>
+</resources>

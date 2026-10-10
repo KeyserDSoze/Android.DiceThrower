@@ -201,6 +201,10 @@ Renderer material profiles map the domain-level `GLOSSY_RESIN`, `MATTE_RESIN`, `
 
 Appearance randomization uses a random source separate from the one passed to `DiceExpression.evaluate`, so choosing or randomizing a visual style cannot consume or alter dice-result RNG state.
 
+## Critical-hit quick template (#140 / EPIC #139)
+
+`EffectEditorDraft.criticalHit` creates a normal persisted `RollEffect` with stable IDs, `PART` trigger on the first subgroup (`DICE_ONLY == 20`) and a `MULTIPLY ×2` action on the second subgroup using `DICE_ONLY`. Modifiers remain unmodified and the execution path stays `EffectSequenceExecutor` → `EffectActionEngine`, never the renderer. No schema migration or separate effects executor is needed. The UI offers the template plus WHEN/THEN headings; existing advanced groups/actions remain editable and serializable. Limitation: `DICE_ONLY` is the dice subtotal of the Part, not a predicate on one die face within a multi-die Part.
+
 ## Dice style editor
 
 Character Edit mode exposes the character-owned `DiceStyle` collection without coupling the OpenGL renderer to persistence. `DiceStyleDataOperations` owns reference-safe create/update/duplicate/reorder/default/delete operations, while Compose edits domain values and persists the returned `AppData` through the existing screen boundary.

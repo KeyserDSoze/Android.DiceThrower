@@ -1,0 +1,6 @@
+<resources>
+    <string name="effects_quick_critical">Kritischer Treffer (Schnelleinstellung)</string>
+    <string name="effects_critical_help">Wenn der erste Teil mit einem d20 eine 20 würfelt, werden nur die Würfel des zweiten Teils verdoppelt. Modifikatoren bleiben gleich.</string>
+    <string name="effects_when">WENN — Bedingung</string>
+    <string name="effects_then">DANN — anwenden auf</string>
+</resources>
