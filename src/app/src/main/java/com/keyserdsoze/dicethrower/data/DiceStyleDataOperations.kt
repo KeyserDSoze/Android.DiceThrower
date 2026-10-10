@@ -158,7 +158,8 @@ object DiceStyleDataOperations {
             .filter { it.characterId == style.characterId && it.diceAppearance.references(styleId) }
             .mapTo(linkedSetOf()) { it.id }
         return DiceStyleUsage(
-            isCharacterDefault = character?.defaultDiceStyleId == styleId,
+            isCharacterDefault = character?.defaultDiceStyleId == styleId ||
+                character?.secondaryDiceStyleId == styleId,
             referencingRollIds = rollIds,
         )
     }
@@ -167,11 +168,10 @@ object DiceStyleDataOperations {
         val style = data.diceStyles.firstOrNull { it.id == styleId } ?: return data
 
         val updatedCharacters = data.characters.map { character ->
-            if (character.id == style.characterId && character.defaultDiceStyleId == styleId) {
-                character.copy(defaultDiceStyleId = null)
-            } else {
-                character
-            }
+            if (character.id == style.characterId) character.copy(
+                defaultDiceStyleId = character.defaultDiceStyleId.takeUnless { it == styleId },
+                secondaryDiceStyleId = character.secondaryDiceStyleId.takeUnless { it == styleId },
+            ) else character
         }
 
         val updatedRolls = data.rolls.map { roll ->
