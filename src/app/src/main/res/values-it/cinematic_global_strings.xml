@@ -1,0 +1,4 @@
+<resources>
+    <string name="cinematic_global_heading">Effetti visivi per tutti i tiri</string>
+    <string name="cinematic_global_help">Imposta qui l\'aspetto e le animazioni di tutti i tiri. Le modifiche valgono subito per ogni tiro. L\'interruttore generale delle animazioni ha sempre la precedenza.</string>
+</resources>

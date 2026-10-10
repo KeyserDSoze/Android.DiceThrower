@@ -1,0 +1,4 @@
+<resources>
+    <string name="cinematic_global_heading">すべてのロールの視覚効果</string>
+    <string name="cinematic_global_help">すべてのダイスロールの見た目と動きをここで設定します。変更はすぐに反映され、全体のアニメーション設定が優先されます。</string>
+</resources>

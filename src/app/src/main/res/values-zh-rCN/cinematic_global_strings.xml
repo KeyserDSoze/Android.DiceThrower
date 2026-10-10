@@ -1,0 +1,4 @@
+<resources>
+    <string name="cinematic_global_heading">所有掷骰的视觉效果</string>
+    <string name="cinematic_global_help">在这里设置所有掷骰的外观和动画。更改立即生效。上方的总动画开关始终优先。</string>
+</resources>

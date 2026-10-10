@@ -1,0 +1,4 @@
+<resources>
+    <string name="cinematic_global_heading">Визуальные эффекты всех бросков</string>
+    <string name="cinematic_global_help">Здесь настройте вид и анимацию всех бросков. Изменения применяются сразу. Общий переключатель анимации имеет приоритет.</string>
+</resources>

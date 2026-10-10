@@ -1,0 +1,4 @@
+<resources>
+    <string name="cinematic_global_heading">Efeitos visuais para todas as jogadas</string>
+    <string name="cinematic_global_help">Personalize o visual e as animações de todas as jogadas aqui. As alterações aplicam-se de imediato. A opção geral de animações tem prioridade.</string>
+</resources>

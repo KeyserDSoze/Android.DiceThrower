@@ -1,0 +1,4 @@
+<resources>
+    <string name="cinematic_global_heading">Visuele effecten voor alle worpen</string>
+    <string name="cinematic_global_help">Stel hier het uiterlijk en de animaties van alle worpen in. Wijzigingen gelden direct. De algemene animatieschakelaar heeft voorrang.</string>
+</resources>

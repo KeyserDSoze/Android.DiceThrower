@@ -1,0 +1,4 @@
+<resources>
+    <string name="cinematic_global_heading">Visual effects for every roll</string>
+    <string name="cinematic_global_help">Set the look and motion of all dice rolls here. Changes apply immediately to every roll. The main animations switch above always has priority.</string>
+</resources>
