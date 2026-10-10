@@ -2394,7 +2394,7 @@ private fun RollScreenV2(
     var resultRevealed by remember(roll.id, character.level, formula.expression) { mutableStateOf(false) }
     var showStats by remember(roll.id) { mutableStateOf(false) }
     var lastThrowMode by remember(roll.id, character.level, formula.expression) { mutableStateOf(DoubleRollMode.NORMAL) }
-    val cinematic = roll.visualEffects.withGlobalMotionEnabled(settings.animationsEnabled)
+    val cinematic = settings.effectiveVisualEffects()
 
     fun throwDice(requestedMode: DoubleRollMode = DoubleRollMode.NORMAL) {
         if (hasRolled && !resultRevealed) return
@@ -3546,6 +3546,17 @@ private fun SettingsScreenV2(
                     }
                 }
                 item { ToggleSettingCard(stringResource(R.string.animations_enabled), settings.animationsEnabled) { onSettingsChanged(settings.copy(animationsEnabled = it)) } }
+                item {
+                    PremiumCard(Modifier.fillMaxWidth()) {
+                        RollVisualSettingsEditorV2(
+                            settings = settings.visualEffects,
+                            onChange = { changed ->
+                                onSettingsChanged(settings.copy(visualEffects = changed))
+                            },
+                            modifier = Modifier.padding(16.dp),
+                        )
+                    }
+                }
 
                 item {
                     PremiumCard(Modifier.fillMaxWidth()) {
@@ -3979,6 +3990,7 @@ private fun GroupDialogV2(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun RollBuilderScreenV2(
     title: String,
@@ -3995,7 +4007,6 @@ internal fun RollBuilderScreenV2(
     var groupId by remember(existing?.id, initialGroupId) { mutableStateOf(existing?.groupId ?: initialGroupId) }
     var groupMenu by remember(existing?.id) { mutableStateOf(false) }
     var doubleRollEnabled by remember(existing?.id) { mutableStateOf(existing?.doubleRollEnabled ?: true) }
-    var visualEffects by remember(existing?.id) { mutableStateOf(existing?.visualEffects ?: com.keyserdsoze.dicethrower.model.RollVisualEffectsSettings()) }
     var minimumLevelText by remember(existing?.id) { mutableStateOf((existing?.minimumLevel ?: 1).toString()) }
     var effects by remember(existing?.id) { mutableStateOf(existing?.effects.orEmpty()) }
     var subgroups by remember(existing?.id) {
@@ -4029,23 +4040,40 @@ internal fun RollBuilderScreenV2(
         subgroups = updated
     }
 
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+    // Own the full edit screen irrespective of the entry point (table, character, group).
+    // An opaque surface prevents the previous dice-table/parent background from bleeding
+    // through partially transparent theme backgrounds and establishes readable content.
+    Surface(
+        modifier = modifier.fillMaxSize().testTag("roll-editor-screen"),
+        color = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onBackground,
     ) {
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onDismiss) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.back))
-                }
-                Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
-            }
-        }
-
+        ArcaneBackground {
+            Scaffold(
+                containerColor = Color.Transparent,
+                topBar = {
+                    TopAppBar(
+                        colors = transparentTopBarColors(),
+                        navigationIcon = {
+                            IconButton(onClick = onDismiss) {
+                                Icon(
+                                    Icons.AutoMirrored.Rounded.ArrowBack,
+                                    contentDescription = stringResource(R.string.back),
+                                )
+                            }
+                        },
+                        title = {
+                            Text(title, fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground)
+                        },
+                    )
+                },
+            ) { pagePadding ->
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(pagePadding),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 28.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
         item {
             PremiumCard(Modifier.fillMaxWidth()) {
                 Column(
@@ -4235,10 +4263,6 @@ internal fun RollBuilderScreenV2(
             }
 
         item {
-            RollVisualSettingsEditorV2(settings = visualEffects, onChange = { visualEffects = it })
-        }
-
-        item {
             EffectsEditorSectionV2(
                 effects = effects,
                 parts = subgroups,
@@ -4277,7 +4301,6 @@ internal fun RollBuilderScreenV2(
                             groupId = groupId,
                             subgroups = subgroups,
                             doubleRollEnabled = doubleRollEnabled,
-                            visualEffects = visualEffects,
                             minimumLevel = minimumLevel ?: 1,
                             effects = effectsToSave.orEmpty(),
                         )
@@ -4298,7 +4321,10 @@ internal fun RollBuilderScreenV2(
                 ) { Text(stringResource(R.string.save)) }
             }
         }
-    }
+                } // LazyColumn
+            } // Scaffold
+        } // ArcaneBackground
+    } // Opaque Surface
 }
 
 @Composable

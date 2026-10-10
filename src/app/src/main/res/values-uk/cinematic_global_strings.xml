@@ -1,0 +1,4 @@
+<resources>
+    <string name="cinematic_global_heading">Візуальні ефекти всіх кидків</string>
+    <string name="cinematic_global_help">Налаштуйте вигляд та анімацію всіх кидків тут. Зміни діють одразу. Загальний перемикач анімацій має пріоритет.</string>
+</resources>

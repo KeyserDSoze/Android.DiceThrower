@@ -1,0 +1,4 @@
+<resources>
+    <string name="cinematic_global_heading">Efek visual untuk semua lemparan</string>
+    <string name="cinematic_global_help">Atur tampilan dan animasi semua lemparan dadu di sini. Perubahan langsung berlaku. Sakelar animasi utama selalu diutamakan.</string>
+</resources>

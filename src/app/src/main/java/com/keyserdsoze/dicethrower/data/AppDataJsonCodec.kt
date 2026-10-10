@@ -327,6 +327,7 @@ object AppDataJsonCodec {
         .put("doubleTapStatsEnabled", settings.doubleTapStatsEnabled)
         .put("doubleRollDirectionalSwipeEnabled", settings.doubleRollDirectionalSwipeEnabled)
         .put("animationsEnabled", settings.animationsEnabled)
+        .put("visualEffects", encodeRollVisualEffects(settings.visualEffects))
         .put("showRollButton", settings.showRollButton)
         .put("rollButtonPosition", settings.rollButtonPosition.name)
         .put("logRetention", settings.logRetention)
@@ -343,6 +344,7 @@ object AppDataJsonCodec {
         doubleTapStatsEnabled = json.optBoolean("doubleTapStatsEnabled", true),
         doubleRollDirectionalSwipeEnabled = json.optBoolean("doubleRollDirectionalSwipeEnabled", true),
         animationsEnabled = json.optBoolean("animationsEnabled", true),
+        visualEffects = decodeRollVisualEffects(json.optJSONObject("visualEffects")),
         showRollButton = json.optBoolean("showRollButton", true),
         rollButtonPosition = enumValueOrDefault(
             json.optString("rollButtonPosition"),

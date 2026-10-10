@@ -1,0 +1,4 @@
+<resources>
+    <string name="cinematic_global_heading">Visuelle Effekte für alle Würfe</string>
+    <string name="cinematic_global_help">Passe hier das Aussehen und die Animationen aller Würfe an. Änderungen gelten sofort für alle Würfe. Der allgemeine Animationsschalter hat Vorrang.</string>
+</resources>

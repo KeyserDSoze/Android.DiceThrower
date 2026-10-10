@@ -1,0 +1,4 @@
+<resources>
+    <string name="cinematic_global_heading">التأثيرات البصرية لكل الرميات</string>
+    <string name="cinematic_global_help">اضبط مظهر وحركة جميع رميات النرد هنا. تُطبَّق التغييرات فورًا. إعداد الرسوم المتحركة العام له الأولوية.</string>
+</resources>

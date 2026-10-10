@@ -1,0 +1,4 @@
+<resources>
+    <string name="cinematic_global_heading">Tüm atışlar için görsel efektler</string>
+    <string name="cinematic_global_help">Tüm zar atışlarının görünümünü ve animasyonunu buradan ayarlayın. Değişiklikler hemen uygulanır. Genel animasyon anahtarı önceliklidir.</string>
+</resources>
