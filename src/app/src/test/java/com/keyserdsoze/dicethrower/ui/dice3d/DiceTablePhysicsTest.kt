@@ -9,6 +9,32 @@ import kotlin.math.sqrt
 
 class DiceTablePhysicsTest {
     @Test
+    fun neutralPartDiceCollideWithEitherCandidateWithoutMixingTheTwoCandidates() {
+        assertTrue(shouldResolveDiceCollision(null, 0))
+        assertTrue(shouldResolveDiceCollision(0, null))
+        assertTrue(shouldResolveDiceCollision(null, 1))
+        assertTrue(shouldResolveDiceCollision(1, null))
+        assertTrue(shouldResolveDiceCollision(0, 0))
+        assertTrue(shouldResolveDiceCollision(1, 1))
+        assertTrue(shouldResolveDiceCollision(null, null))
+        assertTrue(!shouldResolveDiceCollision(0, 1))
+        assertTrue(!shouldResolveDiceCollision(1, 0))
+
+        val physics = DiceTablePhysics(
+            count = 4, seed = 275L,
+            laneByDieIndex = mapOf(0 to 0, 1 to 1),
+        )
+        repeat(220) { physics.step(1f / 60f) }
+        assertTrue(physics.isSettled)
+        assertTrue(physics.states()[0].y > 0f)
+        assertTrue(physics.states()[1].y < 0f)
+        physics.states().forEach {
+            assertTrue(it.x in -DiceTableViewport.HALF_WIDTH..DiceTableViewport.HALF_WIDTH)
+            assertTrue(it.y in -DiceTableViewport.HALF_HEIGHT..DiceTableViewport.HALF_HEIGHT)
+        }
+    }
+
+    @Test
     fun generatedEffectDiceEnterFromEdgesWithoutChangingLogicalValues() {
         val physics = DiceTablePhysics(count = 2, seed = 813L, spawnFromEdge = true)
         val starting = physics.states()
