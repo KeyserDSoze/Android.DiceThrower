@@ -99,6 +99,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -2430,6 +2432,18 @@ private fun RollScreenV2(
 
     ArcaneBackground {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            // Keep A/B identification for TalkBack without placing visible
+            // chips over the dice or blocking the central play area.
+            val candidateDescription = if (hasRolled && visualEvent.candidateGroupByComponent.isNotEmpty()) {
+                val first = stringResource(R.string.cinematic_candidate_first)
+                val second = stringResource(R.string.cinematic_candidate_second)
+                val selected = visualEvent.candidateGroupByComponent.entries
+                    .firstOrNull { it.key in visualEvent.chosenCandidateComponents }?.value
+                val verdict = if (resultRevealed && selected != null)
+                    "${stringResource(R.string.cinematic_chosen)}: ${if (selected == 0) first else second}"
+                    else null
+                listOfNotNull(first, second, verdict).joinToString(". ")
+            } else null
             Dice3DScene(
                 event = visualEvent,
                 tableTheme = character.diceTableTheme,
@@ -2474,7 +2488,10 @@ private fun RollScreenV2(
                         }
                     }
                 },
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().then(
+                    if (candidateDescription == null) Modifier
+                    else Modifier.semantics { contentDescription = candidateDescription },
+                ),
             )
 
             // Each triggered arithmetic action gets a brief cinematic replay
