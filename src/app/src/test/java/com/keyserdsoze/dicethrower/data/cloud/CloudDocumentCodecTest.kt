@@ -65,7 +65,7 @@ class CloudDocumentCodecTest {
         val encoded = CloudDocumentCodec.encodeManifest(
             CloudManifest(generatedAt = 1L, writerId = "writer", characters = emptyList()),
         ).toString(Charsets.UTF_8)
-        val future = encoded.replaceFirst("\"schemaVersion\":1", "\"schemaVersion\":99")
+        val future = encoded.replaceFirst(Regex("\\\"schemaVersion\\\"\\s*:\\s*\\d+"), "\"schemaVersion\":99")
 
         val error = runCatching { CloudDocumentCodec.decodeManifest(future.toByteArray()) }.exceptionOrNull()
 
