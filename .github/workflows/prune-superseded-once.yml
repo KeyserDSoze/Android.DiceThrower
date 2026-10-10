@@ -45,7 +45,7 @@ jobs:
             else
               # A branch with no PR can go only if its exact tip is an ancestor
               # of main (no unique commits remain).
-              ahead="$(gh api "repos/$repo/compare/$sha...main" --jq '.ahead_by')"
+              ahead="$(gh api "repos/$repo/compare/main...$sha" --jq '.ahead_by')"
               if [[ "$ahead" != "0" ]]; then
                 echo "Preserved $branch: has commits not on main"
                 continue
