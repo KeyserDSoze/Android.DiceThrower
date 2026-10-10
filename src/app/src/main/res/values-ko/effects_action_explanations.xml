@@ -1,0 +1,6 @@
+<resources>
+    <string name="effects_empty_expression_hint">비워 두면 선택한 파트의 주사위를 사용합니다.</string>
+    <string name="effects_explain_replace">바꾸기는 주사위를 굴리지 않고 값을 지정합니다. 예: 피해 10.</string>
+    <string name="effects_explain_reroll">다시 굴리기는 선택한 파트의 주사위를 다시 굴려 이전 결과를 대체합니다.</string>
+    <string name="effects_explain_roll_after">추가 굴리기는 새 주사위를 굴려 선택한 파트에 더합니다.</string>
+</resources>

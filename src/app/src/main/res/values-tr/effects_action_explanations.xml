@@ -1,0 +1,6 @@
+<resources>
+    <string name="effects_empty_expression_hint">Seçilen bölümün zarlarını kullanmak için boş bırakın.</string>
+    <string name="effects_explain_replace">Değiştir, zar atmadan sayısal değeri ayarlar; örneğin hasar 10.</string>
+    <string name="effects_explain_reroll">Yeniden at, seçilen bölümün zarlarını tekrar atar ve eski sonucu değiştirir.</string>
+    <string name="effects_explain_roll_after">Ek atış, yeni zarlar atar ve sonucu seçilen bölüme ekler.</string>
+</resources>
