@@ -264,7 +264,7 @@ object CloudDocumentCodec {
     }
 
     private fun requireSupportedSchema(actual: Int) {
-        if (actual != CLOUD_SCHEMA_VERSION) {
+        if (actual !in 1..CLOUD_SCHEMA_VERSION) {
             throw CloudSchemaMismatchException(CLOUD_SCHEMA_VERSION, actual)
         }
     }
