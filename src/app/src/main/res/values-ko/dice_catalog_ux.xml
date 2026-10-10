@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">시스템 주사위 스타일</string>
+    <string name="dice_catalog_custom_title">사용자 지정 주사위 스타일</string>
+    <string name="dice_character_styles_summary">기본값: %1$s · 저장한 스타일 %2$d개</string>
+    <string name="dice_character_styles_add">주사위 스타일 추가</string>
+    <string name="dice_character_style_system_default">시스템 기본값</string>
+</resources>
