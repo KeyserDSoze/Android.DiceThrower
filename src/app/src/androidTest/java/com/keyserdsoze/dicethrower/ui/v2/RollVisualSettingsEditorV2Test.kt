@@ -31,18 +31,18 @@ class RollVisualSettingsEditorV2Test {
         composeRule.runOnIdle {
             assertEquals(RollVisualProfile.SUBTLE, current.profile)
             assertTrue(current.badge && current.groupLanes && current.winnerSpotlight)
-            assertFalse(current.particles || current.tableAura || current.resultTransitions)
+            assertFalse(current.particles || current.tableAura || current.resultTransitions || current.cameraImpact)
         }
         composeRule.onNodeWithText("Off").performClick()
         composeRule.runOnIdle {
             assertEquals(RollVisualProfile.OFF, current.profile)
             assertFalse(current.badge || current.groupLanes || current.winnerSpotlight)
-            assertFalse(current.actionCues)
+            assertFalse(current.actionCues || current.cameraImpact)
         }
         composeRule.onNodeWithText("Balanced").performClick()
         composeRule.runOnIdle {
             assertEquals(RollVisualProfile.BALANCED, current.profile)
-            assertTrue(current.particles && current.actionCues && current.resultTransitions)
+            assertTrue(current.particles && current.actionCues && current.resultTransitions && current.cameraImpact)
         }
     }
 }
