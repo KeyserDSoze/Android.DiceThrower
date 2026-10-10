@@ -25,7 +25,7 @@ data class RollVisualEffectsSettings(
             RollVisualProfile.OFF -> RollVisualEffectsSettings(
                 profile = profile, badge = false, groupLanes = false,
                 winnerSpotlight = false, tableAura = false, particles = false,
-                actionCues = false, cameraImpact = false, resultTransitions = false, cameraImpact = false,
+                actionCues = false, resultTransitions = false, cameraImpact = false,
             )
             RollVisualProfile.CUSTOM -> RollVisualEffectsSettings(profile = profile)
         }
@@ -41,6 +41,6 @@ data class RollVisualEffectsSettings(
     fun withGlobalMotionEnabled(enabled: Boolean): RollVisualEffectsSettings =
         if (enabled) this else copy(
             tableAura = false, particles = false, resultTransitions = false,
-            actionCues = false,
+            actionCues = false, cameraImpact = false,
         )
 }
