@@ -18,6 +18,33 @@ import kotlin.random.Random
 internal fun shouldResolveDiceCollision(firstLane: Int?, secondLane: Int?): Boolean =
     firstLane == null || secondLane == null || firstLane == secondLane
 
+/**
+ * The compared candidates share a compact, central playing area. Keep a clear
+ * gap between lanes and leave the table edges free for headers and results.
+ * These coordinates only affect rendering, never the logical dice outcome.
+ */
+internal object CandidateLaneLayout {
+    private const val CENTER_GAP = 0.22f
+    private const val MAX_DISTANCE_FROM_CENTER = 2.85f
+
+    fun bounds(lane: Int?, radius: Float, halfHeight: Float): Pair<Float, Float> {
+        if (lane == null) return -halfHeight + radius to halfHeight - radius
+        val minMagnitude = CENTER_GAP + radius
+        val maxMagnitude = (minOf(halfHeight, MAX_DISTANCE_FROM_CENTER) - radius)
+            .coerceAtLeast(minMagnitude)
+        return if (lane == 0) minMagnitude to maxMagnitude
+            else -maxMagnitude to -minMagnitude
+    }
+
+    fun initialY(lane: Int, row: Int, radius: Float, halfHeight: Float): Float {
+        val (minimum, maximum) = bounds(lane, radius, halfHeight)
+        val distance = CENTER_GAP + radius + row * radius * 2.08f
+        return (if (lane == 0) distance else -distance).coerceIn(minimum, maximum)
+    }
+
+    fun staticCenter(lane: Int): Float = if (lane == 0) 1.45f else -1.45f
+}
+
 internal class DiceTablePhysics(
     count: Int,
     seed: Long,
@@ -59,7 +86,9 @@ internal class DiceTablePhysics(
     private val random = Random(seed)
     private val bodies = List(count.coerceAtMost(MAX_DICE)) { index ->
         val lane = laneByDieIndex[index]
-        val columns = if (count <= 4) 2 else 3
+        // Four columns give larger A/B groups enough space without spreading
+        // them toward the top and bottom edges of the table.
+        val columns = if (lane != null && count > 4) 4 else if (count <= 4) 2 else 3
         // A/B bodies are simulated in independent vertical table halves,
         // not moved after the physics step (which could cause overlaps).
         val groupIndex = if (lane == null) index else
@@ -70,8 +99,7 @@ internal class DiceTablePhysics(
             (if (index % 2 == 0) -1f else 1f) * (halfWidth - radius) * 0.88f
             else (column - (columns - 1) / 2f) * radius * 2.35f
         val y = if (lane == null) -1.65f + row * radius * 1.45f
-            else (if (lane == 0) 2.15f else -2.15f) +
-                (row - 1) * radius * 0.35f
+            else CandidateLaneLayout.initialY(lane, row, radius, halfHeight)
         val launchAngle = random.nextFloat() * 1.7f + 0.72f
         val speed = 4.8f + random.nextFloat() * 2.6f
         Body(
@@ -136,7 +164,12 @@ internal class DiceTablePhysics(
             collideWithWalls(body)
         }
 
-        repeat(2) { resolvePairCollisions() }
+        repeat(3) {
+            resolvePairCollisions()
+            // Pair correction can displace a die outside its lane. Re-clamp
+            // after each pass so neither candidate drifts toward the footer.
+            bodies.filter { it.lane != null }.forEach(::collideWithWalls)
+        }
 
         val quiet = bodies.all { body ->
             body.vx * body.vx + body.vy * body.vy < LINEAR_SLEEP_SPEED * LINEAR_SLEEP_SPEED &&
@@ -156,11 +189,8 @@ internal class DiceTablePhysics(
         }
     }
 
-    private fun laneBounds(lane: Int?): Pair<Float, Float> = when (lane) {
-        0 -> 0.22f + radius to halfHeight - radius
-        1 -> -halfHeight + radius to -0.22f - radius
-        else -> -halfHeight + radius to halfHeight - radius
-    }
+    private fun laneBounds(lane: Int?): Pair<Float, Float> =
+        CandidateLaneLayout.bounds(lane, radius, halfHeight)
 
     private fun collideWithWalls(body: Body) {
         val maxX = halfWidth - radius
