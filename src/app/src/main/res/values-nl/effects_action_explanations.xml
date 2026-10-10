@@ -1,0 +1,6 @@
+<resources>
+    <string name="effects_empty_expression_hint">Laat leeg om de dobbelstenen van het gekozen onderdeel te gebruiken.</string>
+    <string name="effects_explain_replace">Vervangen stelt een getal in zonder te gooien, bijvoorbeeld schade 10.</string>
+    <string name="effects_explain_reroll">Opnieuw gooien gooit de dobbelstenen van het gekozen onderdeel opnieuw en vervangt de vorige waarde.</string>
+    <string name="effects_explain_roll_after">Extra worp gooit extra dobbelstenen en telt ze bij het gekozen onderdeel op.</string>
+</resources>

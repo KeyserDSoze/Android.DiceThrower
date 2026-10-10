@@ -1,0 +1,6 @@
+<resources>
+    <string name="effects_empty_expression_hint">Leer lassen, um die Würfel des ausgewählten Teils zu verwenden.</string>
+    <string name="effects_explain_replace">Ersetzen setzt eine Zahl ohne Würfelwurf, zum Beispiel Schaden 10.</string>
+    <string name="effects_explain_reroll">Neu würfeln wirft den ausgewählten Teil erneut und ersetzt den bisherigen Wert.</string>
+    <string name="effects_explain_roll_after">Zusatzwurf wirft weitere Würfel und addiert sie zum ausgewählten Teil.</string>
+</resources>
