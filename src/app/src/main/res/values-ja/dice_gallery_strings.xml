@@ -1,0 +1,8 @@
+<resources>
+    <string name="double_roll_explained">ダブルロールは選択したパートを2回振り、良い結果または悪い結果を採用します。通常のロールは1回です。</string>
+    <string name="dice_gallery_title">ダイスの外観を選ぶ</string>
+    <string name="dice_gallery_help">プリセットをタップすると3Dのダイスを表示します。キャラクターにコピーして、色や素材を編集できます。</string>
+    <string name="dice_gallery_add">選択したスタイルを追加</string>
+    <string name="dice_saved_styles_title">保存したダイススタイル</string>
+    <string name="dice_saved_styles_help">これらは選択中のキャラクターのスタイルです。色をタップしてプレビューするか、編集を選んでください。</string>
+</resources>

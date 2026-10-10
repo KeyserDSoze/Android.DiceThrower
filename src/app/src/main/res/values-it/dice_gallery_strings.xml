@@ -1,0 +1,8 @@
+<resources>
+    <string name="double_roll_explained">Il doppio tiro confronta due lanci delle Parts selezionate e tiene il risultato migliore o peggiore. Il tiro normale resta singolo.</string>
+    <string name="dice_gallery_title">Scegli un aspetto per i dadi</string>
+    <string name="dice_gallery_help">Tocca un preset per vedere il dado 3D. Aggiungi una copia al personaggio scelto, poi modifica colori o materiale. Puoi assegnare gli stili alle Parts e al tiro B.</string>
+    <string name="dice_gallery_add">Aggiungi lo stile selezionato</string>
+    <string name="dice_saved_styles_title">I tuoi stili di dadi</string>
+    <string name="dice_saved_styles_help">Questi stili appartengono al personaggio scelto. Tocca i cerchi colorati per vedere il dado oppure Modifica per personalizzarlo.</string>
+</resources>
