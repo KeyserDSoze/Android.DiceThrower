@@ -1,0 +1,6 @@
+<resources>
+    <string name="effects_empty_expression_hint">Deixe vazio para usar os dados da parte selecionada.</string>
+    <string name="effects_explain_replace">Substituir define um valor sem lançar dados, por exemplo dano 10.</string>
+    <string name="effects_explain_reroll">Relançar joga novamente os dados da parte selecionada e substitui o resultado anterior.</string>
+    <string name="effects_explain_roll_after">Lançamento adicional joga dados extras e soma-os à parte selecionada.</string>
+</resources>

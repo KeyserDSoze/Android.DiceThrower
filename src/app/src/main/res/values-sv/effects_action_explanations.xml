@@ -1,0 +1,6 @@
+<resources>
+    <string name="effects_empty_expression_hint">Lämna tomt för att använda tärningarna i vald del.</string>
+    <string name="effects_explain_replace">Ersätt anger ett tal utan att kasta tärningar, exempelvis skada 10.</string>
+    <string name="effects_explain_reroll">Slå om kastar tärningarna i vald del igen och ersätter det tidigare värdet.</string>
+    <string name="effects_explain_roll_after">Extra slag kastar fler tärningar och lägger till dem i vald del.</string>
+</resources>

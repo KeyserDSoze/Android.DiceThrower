@@ -1,0 +1,6 @@
+<resources>
+    <string name="effects_empty_expression_hint">Laissez vide pour utiliser les dés de la partie choisie.</string>
+    <string name="effects_explain_replace">Remplacer définit un nombre sans relancer les dés, par exemple 10 dégâts.</string>
+    <string name="effects_explain_reroll">Relancer lance à nouveau les dés de la partie choisie et remplace le résultat précédent.</string>
+    <string name="effects_explain_roll_after">Lancer après ajoute un nouveau lancer à la partie choisie.</string>
+</resources>

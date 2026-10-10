@@ -1,0 +1,6 @@
+<resources>
+    <string name="effects_empty_expression_hint">空欄にすると選択したパートのダイスを使います。</string>
+    <string name="effects_explain_replace">置換はダイスを振らずに数値を設定します。例：ダメージを10にします。</string>
+    <string name="effects_explain_reroll">振り直しは選択したパートのダイスを再度振り、前の値を置き換えます。</string>
+    <string name="effects_explain_roll_after">追加ロールは新しいダイスを振り、選択したパートに加算します。</string>
+</resources>
