@@ -36,27 +36,27 @@ import com.keyserdsoze.dicethrower.R
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.DiceStyle
+import com.keyserdsoze.dicethrower.model.DiceStylePresets
 
-/**
- * Assign appearances on the character; editing the actual look requires an explicit Add action.
- * The catalog itself must not decide where a die is used.
- */
 @Composable
 internal fun CharacterDiceStyleSectionV2(
     character: CharacterProfile,
     data: AppData,
     onDataChanged: (AppData) -> Unit,
 ) {
-    val styles = data.diceStyles.filter { it.characterId == character.id }.sortedBy { it.order }
+    val styles = DiceStylePresets.availableStyles(data.diceStyles)
+        .filter { it.characterId == null || it.characterId == character.id }
     var expanded by remember(character.id) { mutableStateOf(false) }
     var adding by remember(character.id) { mutableStateOf(false) }
-    val fallbackName = stringResource(R.string.dice_character_style_system_default)
-    val defaultName = styles.firstOrNull { it.id == character.defaultDiceStyleId }?.name ?: fallbackName
+    val systemDefault = stringResource(R.string.dice_character_style_system_default)
+    val defaultStyle = styles.firstOrNull { it.id == character.defaultDiceStyleId }
+    val secondStyle = styles.firstOrNull { it.id == character.secondaryDiceStyleId }
+    val defaultName = defaultStyle?.let { diceStyleDisplayName(it) } ?: systemDefault
 
     PremiumCard(Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
@@ -72,7 +72,8 @@ internal fun CharacterDiceStyleSectionV2(
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        stringResource(R.string.dice_character_styles_summary, defaultName, styles.size),
+                        stringResource(R.string.dice_character_styles_summary, defaultName,
+                            listOfNotNull(defaultStyle, secondStyle).distinctBy { it.id }.size),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -83,46 +84,10 @@ internal fun CharacterDiceStyleSectionV2(
                 )
             }
             if (expanded) {
-                DiceStyleAssignmentChoiceV2(
-                    label = stringResource(R.string.default_style),
-                    selection = defaultName,
-                    fallback = fallbackName,
-                    styles = styles,
-                    onSelect = { id ->
-                        onDataChanged(data.copy(characters = data.characters.map {
-                            if (it.id == character.id) it.copy(defaultDiceStyleId = id) else it
-                        }))
-                    },
-                )
-                DiceStyleAssignmentChoiceV2(
-                    label = stringResource(R.string.cinematic_candidate_second),
-                    selection = styles.firstOrNull { it.id == character.secondaryDiceStyleId }?.name
-                        ?: stringResource(R.string.secondary_dice_style_auto),
-                    fallback = stringResource(R.string.secondary_dice_style_auto),
-                    styles = styles,
-                    onSelect = { id ->
-                        onDataChanged(data.copy(characters = data.characters.map {
-                            if (it.id == character.id) it.copy(secondaryDiceStyleId = id) else it
-                        }))
-                    },
-                )
-                styles.forEach { style ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        Text("🎲", style = MaterialTheme.typography.titleMedium)
-                        Column(Modifier.weight(1f)) {
-                            Text(style.name, fontWeight = FontWeight.SemiBold)
-                            Text(
-                                stringResource(R.string.dice_catalog_custom_title),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
+                Text(stringResource(R.string.default_style) + ": " + defaultName)
+                Text(stringResource(R.string.cinematic_candidate_second) + ": " +
+                    (secondStyle?.let { diceStyleDisplayName(it) }
+                        ?: stringResource(R.string.secondary_dice_style_auto)))
                 OutlinedButton(
                     onClick = { adding = !adding },
                     modifier = Modifier.fillMaxWidth().testTag("dice-character-add-style"),
@@ -132,16 +97,72 @@ internal fun CharacterDiceStyleSectionV2(
                     Text(stringResource(R.string.dice_character_styles_add))
                 }
                 if (adding) {
-                    DiceStyleLibraryV2(character = character, data = data, onDataChanged = onDataChanged)
+                    Text(
+                        stringResource(R.string.dice_catalog_system_title),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    DiceStylePickerListV2(styles.filter { it.id.startsWith(DiceStylePresets.ID_PREFIX) },
+                        character.defaultDiceStyleId) { id ->
+                        onDataChanged(data.copy(characters = data.characters.map {
+                            if (it.id == character.id) it.copy(defaultDiceStyleId = id) else it
+                        }))
+                        adding = false
+                    }
+                    Text(
+                        stringResource(R.string.dice_catalog_custom_title),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    DiceStylePickerListV2(styles.filterNot { it.id.startsWith(DiceStylePresets.ID_PREFIX) },
+                        character.defaultDiceStyleId) { id ->
+                        onDataChanged(data.copy(characters = data.characters.map {
+                            if (it.id == character.id) it.copy(defaultDiceStyleId = id) else it
+                        }))
+                        adding = false
+                    }
                 }
+                DiceStyleAssignmentChoiceV2(
+                    selection = secondStyle?.let { diceStyleDisplayName(it) }
+                        ?: stringResource(R.string.secondary_dice_style_auto),
+                    fallback = stringResource(R.string.secondary_dice_style_auto),
+                    styles = styles,
+                    onSelect = { id ->
+                        onDataChanged(data.copy(characters = data.characters.map {
+                            if (it.id == character.id) it.copy(secondaryDiceStyleId = id) else it
+                        }))
+                    },
+                )
             }
         }
     }
 }
 
 @Composable
+private fun DiceStylePickerListV2(styles: List<DiceStyle>, selected: String?, onSelect: (String) -> Unit) {
+    styles.forEach { style ->
+        Row(
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+                .clickable { onSelect(style.id) }.padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("🎲", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.width(12.dp))
+            Text(diceStyleDisplayName(style), modifier = Modifier.weight(1f))
+            if (selected == style.id) Text("✓", color = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
+@Composable
+private fun diceStyleDisplayName(style: DiceStyle): String {
+    val preset = if (style.id.startsWith(DiceStylePresets.ID_PREFIX))
+        DiceStylePresets.find(style.id.removePrefix(DiceStylePresets.ID_PREFIX)) else null
+    return preset?.let { dicePresetName(it) } ?: style.name
+}
+
+@Composable
 private fun DiceStyleAssignmentChoiceV2(
-    label: String,
     selection: String,
     fallback: String,
     styles: List<DiceStyle>,
@@ -149,7 +170,8 @@ private fun DiceStyleAssignmentChoiceV2(
 ) {
     var showMenu by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+        Text(stringResource(R.string.cinematic_candidate_second),
+            modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
         Box {
             OutlinedButton(onClick = { showMenu = true }) {
                 Text(selection)
@@ -162,7 +184,7 @@ private fun DiceStyleAssignmentChoiceV2(
                     onSelect(null)
                 })
                 styles.forEach { style ->
-                    DropdownMenuItem(text = { Text(style.name) }, onClick = {
+                    DropdownMenuItem(text = { Text(diceStyleDisplayName(style)) }, onClick = {
                         showMenu = false
                         onSelect(style.id)
                     })
