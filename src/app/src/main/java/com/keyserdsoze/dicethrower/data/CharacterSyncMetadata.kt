@@ -34,6 +34,8 @@ object CharacterRevision {
         canonical.field("level", character.level)
         canonical.field("order", character.order)
         canonical.field("defaultDiceStyleId", character.defaultDiceStyleId)
+        // Omit unset field to preserve pre-feature Drive hashes for existing characters.
+        character.secondaryDiceStyleId?.let { canonical.field("secondaryDiceStyleId", it) }
         // ARCANE is the v6 default. Omitting it from the canonical form intentionally keeps
         // pre-v6 character revisions valid during upgrade and for older Drive documents.
         // Non-default tables still participate in the revision and therefore sync normally.
