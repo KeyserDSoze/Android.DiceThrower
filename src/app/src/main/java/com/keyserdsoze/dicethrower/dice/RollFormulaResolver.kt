@@ -13,6 +13,8 @@ data class ResolvedRollFormula(
     val expression: String,
     val appliedRules: List<RollLevelRule>,
     val subgroups: List<ResolvedRollSubgroup> = emptyList(),
+    /** Valid configured Parts that must not consume RNG in the initial throw. */
+    val supportSubgroups: List<ResolvedRollSubgroup> = emptyList(),
 )
 
 data class ResolvedRollSubgroup(
