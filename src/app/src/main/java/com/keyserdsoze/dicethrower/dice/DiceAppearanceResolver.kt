@@ -4,6 +4,7 @@ import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 import com.keyserdsoze.dicethrower.model.DiceMaterial
 import com.keyserdsoze.dicethrower.model.DiceStyle
+import com.keyserdsoze.dicethrower.model.DiceStylePresets
 import com.keyserdsoze.dicethrower.model.RollDiceAppearance
 import kotlin.random.Random
 
