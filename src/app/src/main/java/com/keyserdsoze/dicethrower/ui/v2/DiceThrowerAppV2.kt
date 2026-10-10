@@ -1239,7 +1239,7 @@ internal fun CharacterEditContentV2(
         }
 
         item {
-            DiceStyleLibraryV2(
+            CharacterDiceStyleSectionV2(
                 character = character,
                 data = data,
                 onDataChanged = onDataChanged,
