@@ -15,4 +15,5 @@
     <string name="cinematic_candidate_second">Rzut B</string>
     <string name="cinematic_chosen">Wybrany</string>
     <string name="cinematic_unselected">Niewybrany</string>
+    <string name="cinematic_camera">Delikatne drganie kamery</string>
 </resources>

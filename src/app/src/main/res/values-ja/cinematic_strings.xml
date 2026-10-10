@@ -15,4 +15,5 @@
     <string name="cinematic_candidate_second">ロール B</string>
     <string name="cinematic_chosen">選択</string>
     <string name="cinematic_unselected">未選択</string>
+    <string name="cinematic_camera">控えめなカメラの揺れ</string>
 </resources>

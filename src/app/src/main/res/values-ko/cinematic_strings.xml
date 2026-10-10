@@ -15,4 +15,5 @@
     <string name="cinematic_candidate_second">굴림 B</string>
     <string name="cinematic_chosen">선택됨</string>
     <string name="cinematic_unselected">선택 안 됨</string>
+    <string name="cinematic_camera">가벼운 카메라 흔들림</string>
 </resources>

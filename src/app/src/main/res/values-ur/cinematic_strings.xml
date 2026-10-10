@@ -15,4 +15,5 @@
     <string name="cinematic_candidate_second">رول B</string>
     <string name="cinematic_chosen">منتخب</string>
     <string name="cinematic_unselected">غیر منتخب</string>
+    <string name="cinematic_camera">ہلکی کیمرا لرزش</string>
 </resources>

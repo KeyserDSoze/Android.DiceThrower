@@ -15,4 +15,5 @@
     <string name="cinematic_candidate_second">রোল B</string>
     <string name="cinematic_chosen">নির্বাচিত</string>
     <string name="cinematic_unselected">নির্বাচিত নয়</string>
+    <string name="cinematic_camera">হালকা ক্যামেরা কাঁপুনি</string>
 </resources>
