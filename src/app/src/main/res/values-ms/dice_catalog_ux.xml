@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">Gaya dadu sistem</string>
+    <string name="dice_catalog_custom_title">Gaya dadu tersuai</string>
+    <string name="dice_character_styles_summary">Lalai: %1$s · %2$d gaya disimpan</string>
+    <string name="dice_character_styles_add">Tambah gaya dadu</string>
+    <string name="dice_character_style_system_default">Lalai sistem</string>
+</resources>
