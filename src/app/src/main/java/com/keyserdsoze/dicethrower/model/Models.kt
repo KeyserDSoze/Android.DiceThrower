@@ -55,7 +55,8 @@ enum class DiceAppearanceMode {
 
 data class DiceStyle(
     val id: String,
-    val characterId: String,
+    /** Null for a reusable catalog style; a non-null ID belongs to legacy per-character data. */
+    val characterId: String?,
     val name: String,
     val material: DiceMaterial = DiceMaterial.GLOSSY_RESIN,
     val primaryColorArgb: Int,
