@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">ਸਿਸਟਮ ਪਾਸਿਆਂ ਦੀਆਂ ਸ਼ੈਲੀਆਂ</string>
+    <string name="dice_catalog_custom_title">ਕਸਟਮ ਪਾਸਿਆਂ ਦੀਆਂ ਸ਼ੈਲੀਆਂ</string>
+    <string name="dice_character_styles_summary">ਡਿਫੌਲਟ: %1$s · %2$d ਸੰਭਾਲੀਆਂ ਸ਼ੈਲੀਆਂ</string>
+    <string name="dice_character_styles_add">ਪਾਸੇ ਦੀ ਸ਼ੈਲੀ ਜੋੜੋ</string>
+    <string name="dice_character_style_system_default">ਸਿਸਟਮ ਡਿਫੌਲਟ</string>
+</resources>
