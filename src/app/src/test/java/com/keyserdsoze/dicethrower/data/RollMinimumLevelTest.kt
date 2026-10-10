@@ -61,7 +61,7 @@ class RollMinimumLevelTest {
     fun storedMinimumSurvivesLocalBackupSyncAndCharacterCopy() {
         assertTrue(AppDataValidator.validate(baseline).isEmpty())
         val json = AppDataJsonCodec.encodeData(baseline)
-        assertEquals(14, json.getInt("version"))
+        assertEquals(AppDataJsonCodec.DATA_VERSION, json.getInt("version"))
         assertEquals(baseline, AppDataJsonCodec.decodeData(json))
         assertEquals(baseline,
             AppDataJsonCodec.decodeData(AppDataJsonCodec.encodeDataForSync(baseline)))
