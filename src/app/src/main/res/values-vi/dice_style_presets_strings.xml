@@ -1,0 +1,13 @@
+<resources>
+    <string name="dice_presets_add">Thêm mẫu xúc xắc</string>
+    <string name="dice_preset_arcane_blue">Xanh Huyền Bí</string>
+    <string name="dice_preset_inferno_forged">Lò Rèn Địa Ngục</string>
+    <string name="dice_preset_emerald_aether">Ngọc Lục Bảo</string>
+    <string name="dice_preset_violet_star">Ngôi Sao Tím</string>
+    <string name="dice_preset_obsidian_rune">Cổ Ngữ Hắc Diện Thạch</string>
+    <string name="dice_preset_lunar_frost">Băng Giá Mặt Trăng</string>
+    <string name="dice_preset_sunlit_brass">Đồng Thau Mặt Trời</string>
+    <string name="dice_preset_celestial_pearl">Ngọc Trai Thiên Giới</string>
+    <string name="dice_preset_deep_ocean">Đại Dương Sâu Thẳm</string>
+    <string name="dice_preset_ancient_copper">Đồng Cổ</string>
+</resources>

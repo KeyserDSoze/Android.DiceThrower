@@ -1,0 +1,13 @@
+<resources>
+    <string name="dice_presets_add">तैयार पासा शैली जोड़ें</string>
+    <string name="dice_preset_arcane_blue">जादुई नीला</string>
+    <string name="dice_preset_inferno_forged">नरक की भट्ठी</string>
+    <string name="dice_preset_emerald_aether">पन्ना ईथर</string>
+    <string name="dice_preset_violet_star">बैंगनी तारा</string>
+    <string name="dice_preset_obsidian_rune">ओब्सीडियन रूण</string>
+    <string name="dice_preset_lunar_frost">चंद्र हिम</string>
+    <string name="dice_preset_sunlit_brass">सौर पीतल</string>
+    <string name="dice_preset_celestial_pearl">स्वर्गीय मोती</string>
+    <string name="dice_preset_deep_ocean">गहरा महासागर</string>
+    <string name="dice_preset_ancient_copper">प्राचीन तांबा</string>
+</resources>

@@ -1,0 +1,13 @@
+<resources>
+    <string name="dice_presets_add">Add a dice preset</string>
+    <string name="dice_preset_arcane_blue">Arcane Blue</string>
+    <string name="dice_preset_inferno_forged">Inferno Forged</string>
+    <string name="dice_preset_emerald_aether">Emerald Aether</string>
+    <string name="dice_preset_violet_star">Violet Star</string>
+    <string name="dice_preset_obsidian_rune">Obsidian Rune</string>
+    <string name="dice_preset_lunar_frost">Lunar Frost</string>
+    <string name="dice_preset_sunlit_brass">Sunlit Brass</string>
+    <string name="dice_preset_celestial_pearl">Celestial Pearl</string>
+    <string name="dice_preset_deep_ocean">Deep Ocean</string>
+    <string name="dice_preset_ancient_copper">Ancient Copper</string>
+</resources>

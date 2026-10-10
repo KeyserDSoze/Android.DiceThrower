@@ -1,0 +1,4 @@
+<resources>
+    <string name="dice_library_entry">تخصيص النرد</string>
+    <string name="dice_library_hint">اختر شخصية. أضف أحد أنماط النرد العشرة الجاهزة أو أنشئ نمطك الخاص. استخدمها في الأجزاء وفي الخيار B.</string>
+</resources>

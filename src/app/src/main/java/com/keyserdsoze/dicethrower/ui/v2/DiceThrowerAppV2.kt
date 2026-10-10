@@ -170,13 +170,14 @@ import java.util.Date
 import java.util.UUID
 import kotlin.random.Random
 
-internal enum class RouteV2 { CHARACTERS, CHARACTER, GROUP, ROLL, SETTINGS, LOGS }
+internal enum class RouteV2 { CHARACTERS, DICE_LIBRARY, CHARACTER, GROUP, ROLL, SETTINGS, LOGS }
 
 internal fun previousRouteFor(
     route: RouteV2,
     hasRollReturnGroup: Boolean = false,
 ): RouteV2? = when (route) {
     RouteV2.CHARACTERS -> null
+    RouteV2.DICE_LIBRARY -> RouteV2.CHARACTERS
     RouteV2.CHARACTER -> RouteV2.CHARACTERS
     RouteV2.GROUP -> RouteV2.CHARACTER
     RouteV2.ROLL -> if (hasRollReturnGroup) RouteV2.GROUP else RouteV2.CHARACTER
@@ -328,6 +329,7 @@ fun DiceThrowerAppV2(
                 route = RouteV2.GROUP
             }
             RouteV2.CHARACTERS -> route = RouteV2.CHARACTERS
+            RouteV2.DICE_LIBRARY -> route = RouteV2.DICE_LIBRARY
             RouteV2.CHARACTER -> route = RouteV2.CHARACTER
             RouteV2.SETTINGS -> route = RouteV2.SETTINGS
             RouteV2.LOGS -> route = RouteV2.LOGS
@@ -359,6 +361,7 @@ fun DiceThrowerAppV2(
     // Keep each destination's LazyColumn position and saveable UI state when it leaves composition.
     val pageKey = when (route) {
         RouteV2.CHARACTERS -> "characters"
+        RouteV2.DICE_LIBRARY -> "dice_library"
         RouteV2.CHARACTER -> "character:${selectedCharacterId}:${editMode}"
         RouteV2.GROUP -> "group:${selectedCharacterId}:${selectedGroupId}:${editMode}"
         RouteV2.ROLL -> "roll:${selectedRollId}"
@@ -380,6 +383,19 @@ fun DiceThrowerAppV2(
                 persist(data.copy(characters = data.characters + character))
             },
             onSettings = { route = RouteV2.SETTINGS },
+            onCustomizeDice = {
+                selectedCharacterId = data.characters.firstOrNull { it.id == selectedCharacterId }?.id
+                    ?: data.characters.firstOrNull()?.id
+                route = RouteV2.DICE_LIBRARY
+            },
+        )
+
+        RouteV2.DICE_LIBRARY -> DiceCatalogScreenV2(
+            data = data,
+            selectedCharacterId = selectedCharacterId,
+            onSelectCharacter = { selectedCharacterId = it },
+            onDataChanged = ::persist,
+            onBack = ::navigateBack,
         )
 
         RouteV2.CHARACTER -> {
@@ -601,6 +617,7 @@ private fun CharactersScreenV2(
     onOpenCharacter: (String) -> Unit,
     onAddCharacter: (CharacterProfile) -> Unit,
     onSettings: () -> Unit,
+    onCustomizeDice: () -> Unit,
 ) {
     var showAdd by remember { mutableStateOf(false) }
 
@@ -703,6 +720,27 @@ private fun CharactersScreenV2(
                             }
                         }
                     }
+                    item(key = "dice-library-entry") {
+                        PremiumCard(
+                            modifier = Modifier.fillMaxWidth().clickable(onClick = onCustomizeDice),
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(18.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(Icons.Rounded.Casino, contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary)
+                                Spacer(Modifier.width(14.dp))
+                                Text(
+                                    stringResource(R.string.dice_library_entry),
+                                    modifier = Modifier.weight(1f),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -717,6 +755,81 @@ private fun CharactersScreenV2(
                 showAdd = false
             },
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DiceCatalogScreenV2(
+    data: AppData,
+    selectedCharacterId: String?,
+    onSelectCharacter: (String) -> Unit,
+    onDataChanged: (AppData) -> Unit,
+    onBack: () -> Unit,
+) {
+    val characters = data.characters.sortedBy { it.order }
+    val selected = characters.firstOrNull { it.id == selectedCharacterId }
+        ?: characters.firstOrNull()
+    var selectingCharacter by remember { mutableStateOf(false) }
+
+    ArcaneBackground {
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                TopAppBar(
+                    colors = transparentTopBarColors(),
+                    title = { Text(stringResource(R.string.dice_library_entry)) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack,
+                                contentDescription = stringResource(R.string.back))
+                        }
+                    },
+                )
+            },
+        ) { padding ->
+            Column(
+                modifier = Modifier.fillMaxSize().padding(padding)
+                    .verticalScroll(rememberScrollState()).padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    stringResource(R.string.dice_library_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (selected == null) {
+                    Text(stringResource(R.string.no_characters))
+                } else {
+                    Box {
+                        OutlinedButton(onClick = { selectingCharacter = true }) {
+                            Text(selected.name)
+                            Spacer(Modifier.width(8.dp))
+                            Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null)
+                        }
+                        DropdownMenu(
+                            expanded = selectingCharacter,
+                            onDismissRequest = { selectingCharacter = false },
+                        ) {
+                            characters.forEach { character ->
+                                DropdownMenuItem(
+                                    text = { Text(character.name) },
+                                    onClick = {
+                                        selectingCharacter = false
+                                        onSelectCharacter(character.id)
+                                    },
+                                )
+                            }
+                        }
+                    }
+                    DiceStyleLibraryV2(
+                        character = selected,
+                        data = data,
+                        onDataChanged = onDataChanged,
+                    )
+                }
+            }
+        }
     }
 }
 

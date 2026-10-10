@@ -1,0 +1,4 @@
+<resources>
+    <string name="dice_library_entry">自定义骰子</string>
+    <string name="dice_library_hint">选择角色。添加十种预设骰子样式之一，或创建自己的样式。可用于各部分和候选 B。</string>
+</resources>

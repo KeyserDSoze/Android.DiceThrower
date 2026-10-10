@@ -1,0 +1,13 @@
+<resources>
+    <string name="dice_presets_add">Würfelvorlage hinzufügen</string>
+    <string name="dice_preset_arcane_blue">Arkanes Blau</string>
+    <string name="dice_preset_inferno_forged">Höllenschmiede</string>
+    <string name="dice_preset_emerald_aether">Smaragdäther</string>
+    <string name="dice_preset_violet_star">Violetter Stern</string>
+    <string name="dice_preset_obsidian_rune">Obsidianrune</string>
+    <string name="dice_preset_lunar_frost">Mondfrost</string>
+    <string name="dice_preset_sunlit_brass">Sonnenmessing</string>
+    <string name="dice_preset_celestial_pearl">Himmelsperle</string>
+    <string name="dice_preset_deep_ocean">Tiefer Ozean</string>
+    <string name="dice_preset_ancient_copper">Antikes Kupfer</string>
+</resources>

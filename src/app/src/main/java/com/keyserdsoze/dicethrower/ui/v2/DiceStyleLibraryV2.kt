@@ -61,9 +61,26 @@ import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.DiceMaterial
 import com.keyserdsoze.dicethrower.model.DiceStyle
+import com.keyserdsoze.dicethrower.model.DiceStylePreset
+import com.keyserdsoze.dicethrower.model.DiceStylePresets
 import com.keyserdsoze.dicethrower.ui.dice3d.DiceStylePreview3D
 import java.util.Locale
 import java.util.UUID
+
+@Composable
+private fun dicePresetName(preset: DiceStylePreset): String = stringResource(when (preset.key) {
+    "arcane-blue" -> R.string.dice_preset_arcane_blue
+    "inferno-forged" -> R.string.dice_preset_inferno_forged
+    "emerald-aether" -> R.string.dice_preset_emerald_aether
+    "violet-star" -> R.string.dice_preset_violet_star
+    "obsidian-rune" -> R.string.dice_preset_obsidian_rune
+    "lunar-frost" -> R.string.dice_preset_lunar_frost
+    "sunlit-brass" -> R.string.dice_preset_sunlit_brass
+    "celestial-pearl" -> R.string.dice_preset_celestial_pearl
+    "deep-ocean" -> R.string.dice_preset_deep_ocean
+    "ancient-copper" -> R.string.dice_preset_ancient_copper
+    else -> error("Unknown built-in dice preset " + preset.key)
+})
 
 @Composable
 internal fun DiceStyleLibraryV2(
@@ -76,6 +93,7 @@ internal fun DiceStyleLibraryV2(
     var editingStyleId by remember(character.id) { mutableStateOf<String?>(null) }
     var deletingStyleId by remember(character.id) { mutableStateOf<String?>(null) }
     var copyingFromCharacter by remember(character.id) { mutableStateOf(false) }
+    var presetMenu by remember(character.id) { mutableStateOf(false) }
     var secondaryStyleMenu by remember(character.id) { mutableStateOf(false) }
     val copySuffix = stringResource(R.string.copy_suffix)
     val sourceCharacters = data.characters
@@ -102,6 +120,46 @@ internal fun DiceStyleLibraryV2(
             }
             IconButton(onClick = { creating = true }) {
                 Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.new_dice_style), tint = MaterialTheme.colorScheme.onBackground)
+            }
+        }
+
+        // Preset palettes become ordinary editable character styles with fresh
+        // IDs. Assignment to Parts and candidate B uses the existing storage.
+        Box(Modifier.fillMaxWidth()) {
+            OutlinedButton(
+                onClick = { presetMenu = true },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(Icons.Rounded.Add, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.dice_presets_add))
+            }
+            DropdownMenu(
+                expanded = presetMenu,
+                onDismissRequest = { presetMenu = false },
+            ) {
+                DiceStylePresets.all.forEach { preset ->
+                    val name = dicePresetName(preset)
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                DiceStyleSwatch(preset.instantiate(character.id, preset.key, name))
+                                Spacer(Modifier.width(12.dp))
+                                Text(name)
+                            }
+                        },
+                        onClick = {
+                            presetMenu = false
+                            val displayName = DiceStyleDataOperations.uniqueCopyName(
+                                styles.map { it.name }, name, copySuffix,
+                            )
+                            onDataChanged(DiceStyleDataOperations.createStyle(
+                                data,
+                                preset.instantiate(character.id, UUID.randomUUID().toString(), displayName),
+                            ))
+                        },
+                    )
+                }
             }
         }
 

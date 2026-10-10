@@ -1,0 +1,13 @@
+<resources>
+    <string name="dice_presets_add">Додати шаблон кубиків</string>
+    <string name="dice_preset_arcane_blue">Магічний синій</string>
+    <string name="dice_preset_inferno_forged">Пекельна кузня</string>
+    <string name="dice_preset_emerald_aether">Смарагдовий ефір</string>
+    <string name="dice_preset_violet_star">Фіолетова зірка</string>
+    <string name="dice_preset_obsidian_rune">Обсидіанова руна</string>
+    <string name="dice_preset_lunar_frost">Місячний мороз</string>
+    <string name="dice_preset_sunlit_brass">Сонячна латунь</string>
+    <string name="dice_preset_celestial_pearl">Небесні перли</string>
+    <string name="dice_preset_deep_ocean">Глибокий океан</string>
+    <string name="dice_preset_ancient_copper">Давня мідь</string>
+</resources>

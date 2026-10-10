@@ -1,0 +1,4 @@
+<resources>
+    <string name="dice_library_entry">Настроить кубики</string>
+    <string name="dice_library_hint">Выберите персонажа. Добавьте один из десяти готовых стилей или создайте собственный. Стили доступны для частей броска и варианта B.</string>
+</resources>

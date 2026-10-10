@@ -1,0 +1,4 @@
+<resources>
+    <string name="dice_library_entry">Personalizar dados</string>
+    <string name="dice_library_hint">Elige un personaje. Usa diez estilos de dados predefinidos o crea los tuyos. Puedes asignarlos a las partes y al candidato B.</string>
+</resources>

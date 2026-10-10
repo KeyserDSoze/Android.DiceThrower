@@ -1,0 +1,4 @@
+<resources>
+    <string name="dice_library_entry">Zarları özelleştir</string>
+    <string name="dice_library_hint">Bir karakter seçin. On hazır stilden birini ekleyin veya kendi stilinizi oluşturun. Zarları bölümlerde ve B adayında kullanın.</string>
+</resources>

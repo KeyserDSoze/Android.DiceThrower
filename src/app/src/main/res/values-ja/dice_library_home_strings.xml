@@ -1,0 +1,4 @@
+<resources>
+    <string name="dice_library_entry">ダイスをカスタマイズ</string>
+    <string name="dice_library_hint">キャラクターを選びます。10種類のプリセットを追加するか、独自のスタイルを作成できます。各パートと候補Bに使用できます。</string>
+</resources>

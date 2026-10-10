@@ -1,0 +1,13 @@
+<resources>
+    <string name="dice_presets_add">Добавить шаблон кубиков</string>
+    <string name="dice_preset_arcane_blue">Магический синий</string>
+    <string name="dice_preset_inferno_forged">Адская кузница</string>
+    <string name="dice_preset_emerald_aether">Изумрудный эфир</string>
+    <string name="dice_preset_violet_star">Фиолетовая звезда</string>
+    <string name="dice_preset_obsidian_rune">Обсидиановая руна</string>
+    <string name="dice_preset_lunar_frost">Лунный мороз</string>
+    <string name="dice_preset_sunlit_brass">Солнечная латунь</string>
+    <string name="dice_preset_celestial_pearl">Небесный жемчуг</string>
+    <string name="dice_preset_deep_ocean">Глубокий океан</string>
+    <string name="dice_preset_ancient_copper">Древняя медь</string>
+</resources>

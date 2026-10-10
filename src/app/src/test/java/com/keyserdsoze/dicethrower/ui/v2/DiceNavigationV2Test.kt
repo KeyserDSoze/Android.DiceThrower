@@ -8,6 +8,7 @@ class DiceNavigationV2Test {
     @Test
     fun androidBackUsesAppHierarchy() {
         assertNull(previousRouteFor(RouteV2.CHARACTERS))
+        assertEquals(RouteV2.CHARACTERS, previousRouteFor(RouteV2.DICE_LIBRARY))
         assertEquals(RouteV2.CHARACTERS, previousRouteFor(RouteV2.CHARACTER))
         assertEquals(RouteV2.CHARACTER, previousRouteFor(RouteV2.GROUP))
         assertEquals(RouteV2.CHARACTER, previousRouteFor(RouteV2.ROLL, hasRollReturnGroup = false))

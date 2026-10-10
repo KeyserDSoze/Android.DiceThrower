@@ -1,0 +1,13 @@
+<resources>
+    <string name="dice_presets_add">Lägg till tärningsförinställning</string>
+    <string name="dice_preset_arcane_blue">Arkanblå</string>
+    <string name="dice_preset_inferno_forged">Infernosmedjan</string>
+    <string name="dice_preset_emerald_aether">Smaragdetern</string>
+    <string name="dice_preset_violet_star">Violett Stjärna</string>
+    <string name="dice_preset_obsidian_rune">Obsidianruna</string>
+    <string name="dice_preset_lunar_frost">Månfrost</string>
+    <string name="dice_preset_sunlit_brass">Solmässing</string>
+    <string name="dice_preset_celestial_pearl">Himmelsk Pärla</string>
+    <string name="dice_preset_deep_ocean">Djupa Havet</string>
+    <string name="dice_preset_ancient_copper">Antik Koppar</string>
+</resources>

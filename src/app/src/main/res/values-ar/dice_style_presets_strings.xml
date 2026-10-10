@@ -1,0 +1,13 @@
+<resources>
+    <string name="dice_presets_add">إضافة نمط نرد جاهز</string>
+    <string name="dice_preset_arcane_blue">الأزرق السحري</string>
+    <string name="dice_preset_inferno_forged">الحدادة الجهنمية</string>
+    <string name="dice_preset_emerald_aether">أثير الزمرد</string>
+    <string name="dice_preset_violet_star">النجمة البنفسجية</string>
+    <string name="dice_preset_obsidian_rune">رون السبج</string>
+    <string name="dice_preset_lunar_frost">صقيع القمر</string>
+    <string name="dice_preset_sunlit_brass">نحاس الشمس</string>
+    <string name="dice_preset_celestial_pearl">اللؤلؤة السماوية</string>
+    <string name="dice_preset_deep_ocean">المحيط العميق</string>
+    <string name="dice_preset_ancient_copper">النحاس العتيق</string>
+</resources>

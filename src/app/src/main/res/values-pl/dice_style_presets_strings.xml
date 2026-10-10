@@ -1,0 +1,13 @@
+<resources>
+    <string name="dice_presets_add">Dodaj gotowy styl kości</string>
+    <string name="dice_preset_arcane_blue">Błękit Arkany</string>
+    <string name="dice_preset_inferno_forged">Piekielna Kuźnia</string>
+    <string name="dice_preset_emerald_aether">Szmaragdowy Eter</string>
+    <string name="dice_preset_violet_star">Fioletowa Gwiazda</string>
+    <string name="dice_preset_obsidian_rune">Obsydianowa Runa</string>
+    <string name="dice_preset_lunar_frost">Księżycowy Mróz</string>
+    <string name="dice_preset_sunlit_brass">Słoneczny Mosiądz</string>
+    <string name="dice_preset_celestial_pearl">Niebiańska Perła</string>
+    <string name="dice_preset_deep_ocean">Głęboki Ocean</string>
+    <string name="dice_preset_ancient_copper">Starożytna Miedź</string>
+</resources>

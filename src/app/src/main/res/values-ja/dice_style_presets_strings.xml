@@ -1,0 +1,13 @@
+<resources>
+    <string name="dice_presets_add">ダイスのプリセットを追加</string>
+    <string name="dice_preset_arcane_blue">秘術の青</string>
+    <string name="dice_preset_inferno_forged">地獄の鍛造</string>
+    <string name="dice_preset_emerald_aether">エメラルドのエーテル</string>
+    <string name="dice_preset_violet_star">紫の星</string>
+    <string name="dice_preset_obsidian_rune">黒曜石のルーン</string>
+    <string name="dice_preset_lunar_frost">月の霜</string>
+    <string name="dice_preset_sunlit_brass">太陽の真鍮</string>
+    <string name="dice_preset_celestial_pearl">天の真珠</string>
+    <string name="dice_preset_deep_ocean">深海</string>
+    <string name="dice_preset_ancient_copper">古代の銅</string>
+</resources>

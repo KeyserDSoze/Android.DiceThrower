@@ -1,0 +1,13 @@
+<resources>
+    <string name="dice_presets_add">Tambahkan preset dadu</string>
+    <string name="dice_preset_arcane_blue">Biru Arkana</string>
+    <string name="dice_preset_inferno_forged">Tempa Inferno</string>
+    <string name="dice_preset_emerald_aether">Eter Zamrud</string>
+    <string name="dice_preset_violet_star">Bintang Ungu</string>
+    <string name="dice_preset_obsidian_rune">Rune Obsidian</string>
+    <string name="dice_preset_lunar_frost">Embun Bulan</string>
+    <string name="dice_preset_sunlit_brass">Kuningan Surya</string>
+    <string name="dice_preset_celestial_pearl">Mutiara Langit</string>
+    <string name="dice_preset_deep_ocean">Laut Dalam</string>
+    <string name="dice_preset_ancient_copper">Tembaga Kuno</string>
+</resources>

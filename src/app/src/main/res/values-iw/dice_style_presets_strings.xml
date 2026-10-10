@@ -1,0 +1,13 @@
+<resources>
+    <string name="dice_presets_add">הוסף סגנון קוביות מוכן</string>
+    <string name="dice_preset_arcane_blue">כחול קסום</string>
+    <string name="dice_preset_inferno_forged">כור ההיתוך</string>
+    <string name="dice_preset_emerald_aether">אתר הברקת</string>
+    <string name="dice_preset_violet_star">כוכב סגול</string>
+    <string name="dice_preset_obsidian_rune">רונת אובסידיאן</string>
+    <string name="dice_preset_lunar_frost">כפור הירח</string>
+    <string name="dice_preset_sunlit_brass">פליז השמש</string>
+    <string name="dice_preset_celestial_pearl">פנינה שמימית</string>
+    <string name="dice_preset_deep_ocean">אוקיינוס עמוק</string>
+    <string name="dice_preset_ancient_copper">נחושת עתיקה</string>
+</resources>
