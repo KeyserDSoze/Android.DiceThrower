@@ -1,0 +1,4 @@
+<resources>
+    <string name="part_in_normal_roll">Diesen Teil normal würfeln</string>
+    <string name="part_support_only_help">Aus: Dieser Teil bleibt konfiguriert, seine Würfel werden zuerst nicht geworfen. Ein ausgelöster Bonus oder Malus kann sie später würfeln.</string>
+</resources>

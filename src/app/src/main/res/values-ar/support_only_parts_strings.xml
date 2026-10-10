@@ -1,0 +1,4 @@
+<resources>
+    <string name="part_in_normal_roll">Roll this Part normally</string>
+    <string name="part_support_only_help">Off: keep this Part configured but don\'t throw its dice initially. An activated Bonus or Malus may reroll it or add its dice.</string>
+</resources>

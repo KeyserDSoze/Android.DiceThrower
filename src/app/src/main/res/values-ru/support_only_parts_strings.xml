@@ -1,0 +1,4 @@
+<resources>
+    <string name="part_in_normal_roll">Бросать эту часть обычно</string>
+    <string name="part_support_only_help">Выкл.: часть остается настроенной, но ее кубики не бросаются сразу. Активный бонус или штраф может бросить их позже.</string>
+</resources>

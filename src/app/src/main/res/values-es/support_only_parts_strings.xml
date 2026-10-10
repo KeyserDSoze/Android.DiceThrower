@@ -1,0 +1,4 @@
+<resources>
+    <string name="part_in_normal_roll">Tirar esta parte normalmente</string>
+    <string name="part_support_only_help">Desactivado: esta parte permanece configurada, pero sus dados no se lanzan al principio. Un bonus o malus activado puede lanzarlos después.</string>
+</resources>

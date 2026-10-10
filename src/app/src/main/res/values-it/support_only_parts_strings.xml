@@ -1,0 +1,4 @@
+<resources>
+    <string name="part_in_normal_roll">Lancia questa Part nel tiro normale</string>
+    <string name="part_support_only_help">Disattivato: la Part resta configurata ma i suoi dadi non vengono lanciati subito. Un Bonus o Malus attivato può lanciarli in seguito.</string>
+</resources>
