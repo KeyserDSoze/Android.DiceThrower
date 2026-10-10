@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">Системні стилі кубиків</string>
+    <string name="dice_catalog_custom_title">Власні стилі кубиків</string>
+    <string name="dice_character_styles_summary">Типово: %1$s · збережено стилів: %2$d</string>
+    <string name="dice_character_styles_add">Додати стиль кубика</string>
+    <string name="dice_character_style_system_default">Системний типовий</string>
+</resources>
