@@ -138,8 +138,17 @@ class LocalStore(context: Context) {
         }
         currentIds.forEach(pendingById::remove)
         val updated = pendingById.values.sortedBy { it.characterId }
-        if (updated != journal.pendingDeletions) {
-            syncJournalStore.save(journal.copy(pendingDeletions = updated))
+        val previousRevision = SharedDiceStyleCatalog.revision(previous.diceStyles.filter { it.characterId == null })
+        val currentRevision = SharedDiceStyleCatalog.revision(current.diceStyles.filter { it.characterId == null })
+        val priorCatalog = journal.diceCatalogMetadata
+        val catalog = if (previousRevision != currentRevision) SettingsSyncMetadata(
+            updatedAt = maxOf(now, (priorCatalog?.updatedAt ?: -1L) + 1L),
+            revision = currentRevision,
+            writerId = writerId,
+            baseRevision = priorCatalog?.baseRevision,
+        ) else priorCatalog
+        if (updated != journal.pendingDeletions || catalog != priorCatalog) {
+            syncJournalStore.save(journal.copy(pendingDeletions = updated, diceCatalogMetadata = catalog))
         }
     }
 
