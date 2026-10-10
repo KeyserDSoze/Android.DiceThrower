@@ -40,6 +40,7 @@ fun Dice3DScene(
     tableImageKey: String? = null,
     fullBleed: Boolean = false,
     animateRoll: Boolean = true,
+    previewMode: Boolean = false,
     winnerRevealed: Boolean = false,
     onSettled: (Long) -> Unit = {},
 ) {
@@ -47,7 +48,7 @@ fun Dice3DScene(
     AndroidView(
         modifier = sceneModifier,
         factory = { context ->
-            DiceGLView(context).also {
+            DiceGLView(context, previewMode).also {
                 it.onSettled = onSettled
                 it.setScene(event, tableTheme, tableImage, tableImageKey, animateRoll)
                 it.setWinnerRevealed(winnerRevealed)
@@ -68,9 +69,9 @@ private data class SceneKey(
     val animateRoll: Boolean,
 )
 
-private class DiceGLView(context: Context) : GLSurfaceView(context) {
+private class DiceGLView(context: Context, previewMode: Boolean) : GLSurfaceView(context) {
     var onSettled: (Long) -> Unit = {}
-    private val diceRenderer = DiceSceneRenderer { eventId -> post { onSettled(eventId) } }
+    private val diceRenderer = DiceSceneRenderer({ eventId -> post { onSettled(eventId) } }, previewMode)
     private var lastSceneKey: SceneKey? = null
 
     init {
@@ -250,6 +251,7 @@ internal fun tableTextureCoordinatesFor(
 
 private class DiceSceneRenderer(
     private val onSettled: (Long) -> Unit,
+    private val previewMode: Boolean,
 ) : GLSurfaceView.Renderer {
     private var program = 0
     private var positionHandle = 0
@@ -386,7 +388,9 @@ private class DiceSceneRenderer(
         GLES20.glViewport(0, 0, width, height)
         val aspect = if (height == 0) 1f else width.toFloat() / height.toFloat()
         viewportAspect = aspect.coerceAtLeast(0.25f)
-        cameraDistance = DiceTableViewport.cameraDistanceFor(viewportAspect)
+        // Standalone dice previews need a close-up camera, unlike the full throwing table.
+        // Do not change the main table's collision bounds or camera framing.
+        cameraDistance = if (previewMode) 4.2f else DiceTableViewport.cameraDistanceFor(viewportAspect)
         val visualBounds = DiceTableViewport.visualBoundsFor(viewportAspect, cameraDistance)
         tablePositions = tablePositionsFor(visualBounds.halfWidth, visualBounds.halfHeight)
         tableTextureCoordinates = tableTextureCoordinatesFor(
