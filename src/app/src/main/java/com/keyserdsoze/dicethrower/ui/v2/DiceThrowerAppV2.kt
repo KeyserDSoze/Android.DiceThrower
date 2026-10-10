@@ -2580,6 +2580,8 @@ private fun RollScreenV2(
                         parts = doubleEvaluation?.parts?.map { ResolvedRollSubgroupResult(it.subgroup, it.chosen) }
                             ?: formula.subgroupResults(value),
                         total = finalRollTotal ?: value.total,
+                        originalTotal = value.total.takeIf { it != finalRollTotal },
+                        animateValues = cinematic.resultTransitions && settings.animationsEnabled,
                         partTotalsById = effectsExecution?.finalSnapshot?.parts?.mapValues { it.value.total }.orEmpty(),
                         aboveAverage = (finalRollTotal ?: value.total) > value.expectedTotal(),
                         modifier = Modifier
@@ -2888,15 +2890,18 @@ internal fun RollResultsOverlayV2(
     aboveAverage: Boolean,
     modifier: Modifier = Modifier,
     partTotalsById: Map<String, Int> = emptyMap(),
+    originalTotal: Int? = null,
+    animateValues: Boolean = true,
 ) {
     Box(
         modifier = modifier.testTag("roll-results-overlay"),
         contentAlignment = Alignment.BottomCenter,
     ) {
         if (parts.size > 1) {
-            RollPartsReveal(parts, partTotalsById)
+            RollPartsReveal(parts, partTotalsById, animateValues)
         } else {
-            RollTotalReveal(total = total, aboveAverage = aboveAverage)
+            RollTotalReveal(total = total, aboveAverage = aboveAverage,
+                originalTotal = originalTotal, animateValues = animateValues)
         }
     }
 }
@@ -2905,6 +2910,7 @@ internal fun RollResultsOverlayV2(
 private fun RollPartsReveal(
     parts: List<ResolvedRollSubgroupResult>,
     finalTotalsById: Map<String, Int> = emptyMap(),
+    animateValues: Boolean = true,
 ) {
     val scrollState = rememberScrollState()
     LaunchedEffect(parts) { scrollState.scrollTo(0) }
@@ -2939,8 +2945,11 @@ private fun RollPartsReveal(
                     )
                     Column(horizontalAlignment = Alignment.End) {
                         val finalTotal = finalTotalsById[part.subgroup.id] ?: part.result.total
+                        val animatedTotal = animatedRollValue(
+                            original = part.result.total, final = finalTotal, enabled = animateValues,
+                        )
                         Text(
-                            finalTotal.toString(),
+                            animatedTotal.toString(),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Black,
                             color = MaterialTheme.colorScheme.primary,
@@ -2961,10 +2970,31 @@ private fun RollPartsReveal(
     }
 }
 
+/** Numerically inert visual interpolation; the stored roll total never changes. */
 @Composable
-private fun RollTotalReveal(total: Int, aboveAverage: Boolean) {
-    val scale = remember(total) { Animatable(0.72f) }
-    LaunchedEffect(total) { scale.animateTo(1f, animationSpec = tween(durationMillis = 420)) }
+private fun animatedRollValue(original: Int, final: Int, enabled: Boolean): Int {
+    val value = remember(original, final, enabled) {
+        Animatable(if (enabled) original.toFloat() else final.toFloat())
+    }
+    LaunchedEffect(original, final, enabled) {
+        if (enabled && original != final) {
+            value.animateTo(final.toFloat(), animationSpec = tween(durationMillis = 650))
+        } else {
+            value.snapTo(final.toFloat())
+        }
+    }
+    return if (enabled && value.isRunning) value.value.toInt() else final
+}
+
+@Composable
+private fun RollTotalReveal(total: Int, aboveAverage: Boolean,
+    originalTotal: Int? = null, animateValues: Boolean = true) {
+    val scale = remember(total, animateValues) { Animatable(if (animateValues) 0.72f else 1f) }
+    LaunchedEffect(total, animateValues) {
+        if (animateValues) scale.animateTo(1f, animationSpec = tween(durationMillis = 420))
+        else scale.snapTo(1f)
+    }
+    val visibleTotal = animatedRollValue(originalTotal ?: total, total, animateValues)
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = if (aboveAverage) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
@@ -2983,7 +3013,7 @@ private fun RollTotalReveal(total: Int, aboveAverage: Boolean) {
         ) {
             Text(stringResource(R.string.total), style = MaterialTheme.typography.labelMedium)
             Text(
-                total.toString(),
+                visibleTotal.toString(),
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Black,
                 color = if (aboveAverage) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
