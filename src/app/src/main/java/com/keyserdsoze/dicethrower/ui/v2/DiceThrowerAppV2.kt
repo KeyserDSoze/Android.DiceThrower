@@ -122,6 +122,7 @@ import com.keyserdsoze.dicethrower.data.sync.SyncStatus
 import com.keyserdsoze.dicethrower.data.sync.SyncStatusKind
 import com.keyserdsoze.dicethrower.dice.DiceAppearanceResolver
 import com.keyserdsoze.dicethrower.dice.DoubleRollEngine
+import com.keyserdsoze.dicethrower.dice.DoubleRollVisualPlanner
 import com.keyserdsoze.dicethrower.dice.DoubleRollEvaluation
 import com.keyserdsoze.dicethrower.dice.EffectExecutionResult
 import com.keyserdsoze.dicethrower.dice.EffectRollSnapshot
@@ -144,6 +145,8 @@ import com.keyserdsoze.dicethrower.model.CharacterImageRef
 import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.ConflictPolicy
 import com.keyserdsoze.dicethrower.model.DoubleRollMode
+import com.keyserdsoze.dicethrower.model.EffectType
+import com.keyserdsoze.dicethrower.model.RollVisualEffectsSettings
 import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.DiceTableTheme
 import com.keyserdsoze.dicethrower.model.LevelRuleKind
@@ -2275,6 +2278,8 @@ private fun RollScreenV2(
     var hasRolled by remember(roll.id, character.level, formula.expression) { mutableStateOf(false) }
     var resultRevealed by remember(roll.id, character.level, formula.expression) { mutableStateOf(false) }
     var showStats by remember(roll.id) { mutableStateOf(false) }
+    var lastThrowMode by remember(roll.id, character.level, formula.expression) { mutableStateOf(DoubleRollMode.NORMAL) }
+    val cinematic = roll.visualEffects.withGlobalMotionEnabled(settings.animationsEnabled)
 
     fun throwDice(requestedMode: DoubleRollMode = DoubleRollMode.NORMAL) {
         if (hasRolled && !resultRevealed) return
@@ -2315,6 +2320,9 @@ private fun RollScreenV2(
                     }
                 }
         }
+        val candidatePlan = DoubleRollVisualPlanner.plan(
+            evaluation, subgroupIdByComponentIndex, extraComponentOwners, selectedPartIds,
+        )
         val timeline = EffectsVisualTimeline.build(
             baseline = evaluation.visualResult,
             baselineOwners = subgroupIdByComponentIndex + extraComponentOwners,
@@ -2324,6 +2332,7 @@ private fun RollScreenV2(
         )
         visualStages = timeline
         visualStageIndex = 0
+        lastThrowMode = evaluation.mode
         visualSeed = System.nanoTime()
         val firstStage = timeline.first()
         visualEvent = DiceRollVisualEvent(
@@ -2339,6 +2348,9 @@ private fun RollScreenV2(
             ),
             dimmedComponentIndices = (if (firstStage.retainsBaseline) evaluation.dimmedComponentIndices else emptySet()) + firstStage.rerolledComponentIndices,
             effectAccentComponents = firstStage.accentByComponentIndex,
+            candidateGroupByComponent = candidatePlan.groups.takeIf { firstStage.retainsBaseline }.orEmpty(),
+            chosenCandidateComponents = candidatePlan.chosen.takeIf { firstStage.retainsBaseline }.orEmpty(),
+            visualSettings = cinematic,
         )
         doubleEvaluation = evaluation
         effectsExecution = execution
@@ -2411,6 +2423,7 @@ private fun RollScreenV2(
                 tableImageKey = tableImageKey,
                 fullBleed = true,
                 animateRoll = hasRolled && settings.animationsEnabled,
+                winnerRevealed = resultRevealed,
                 onSettled = { eventId ->
                     if (hasRolled && eventId == visualEvent.id) {
                         if (settings.animationsEnabled && visualStageIndex < visualStages.lastIndex) {
@@ -2433,6 +2446,11 @@ private fun RollScreenV2(
                                     else emptySet()) + stage.rerolledComponentIndices,
                                 effectAccentComponents = stage.accentByComponentIndex,
                                 persistentDiceCount = stage.persistentDiceCount,
+                                candidateGroupByComponent = if (stage.retainsBaseline)
+                                    visualEvent.candidateGroupByComponent else emptyMap(),
+                                chosenCandidateComponents = if (stage.retainsBaseline)
+                                    visualEvent.chosenCandidateComponents else emptySet(),
+                                visualSettings = cinematic,
                             )
                         } else {
                             resultRevealed = true
@@ -2542,6 +2560,7 @@ private fun RollScreenV2(
                             tint = Color.White.copy(alpha = 0.9f),
                         )
                     }
+                    val waitingForDice = hasRolled && !resultRevealed
                     if (roll.doubleRollEnabled) {
                         IconButton(
                             onClick = { requestThrow(DoubleRollMode.WORST) },
@@ -2551,7 +2570,8 @@ private fun RollScreenV2(
                                 Icons.Rounded.Casino,
                                 contentDescription = stringResource(R.string.double_roll_worst),
                                 modifier = Modifier.size(27.dp),
-                                tint = Color(0xFFF87171),
+                                tint = Color(0xFFF87171).copy(alpha = if (!waitingForDice) 1f
+                                    else if (lastThrowMode == DoubleRollMode.WORST) 0.72f else 0.30f),
                             )
                         }
                         IconButton(
@@ -2562,7 +2582,8 @@ private fun RollScreenV2(
                                 Icons.Rounded.Casino,
                                 contentDescription = stringResource(R.string.double_roll_best),
                                 modifier = Modifier.size(27.dp),
-                                tint = Color(0xFF86EFAC),
+                                tint = Color(0xFF86EFAC).copy(alpha = if (!waitingForDice) 1f
+                                    else if (lastThrowMode == DoubleRollMode.BEST) 0.72f else 0.30f),
                             )
                         }
                     }
@@ -2574,6 +2595,8 @@ private fun RollScreenV2(
                             Icons.Rounded.Casino,
                             contentDescription = stringResource(if (hasRolled) R.string.roll_again else R.string.throw_dice),
                             modifier = Modifier.size(30.dp),
+                            tint = Color.White.copy(alpha = if (!waitingForDice) 1f
+                                else if (lastThrowMode == DoubleRollMode.NORMAL) 0.72f else 0.30f),
                         )
                     }
                 }
