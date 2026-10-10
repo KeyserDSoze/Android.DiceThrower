@@ -85,7 +85,7 @@ object AppDataValidator {
                 val style = styleById[styleId]
                 if (style == null) {
                     errors += "Character ${character.id} references a missing default dice style"
-                } else if (style.characterId != character.id) {
+                } else if (style.characterId != null && style.characterId != character.id) {
                     errors += "Character ${character.id} references a dice style owned by another character"
                 }
             }
