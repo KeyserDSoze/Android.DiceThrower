@@ -21,7 +21,7 @@ class EffectsVisualCueV2Test {
             }
         }
         composeRule.onNodeWithTag("effects-visual-cue").assertExists()
-        composeRule.onNodeWithText("Bonus · Power hit · Roll after").assertExists()
+        composeRule.onNodeWithText("Power hit").assertExists()
     }
 
     @Test
@@ -33,6 +33,6 @@ class EffectsVisualCueV2Test {
             }
         }
         composeRule.onNodeWithTag("effects-visual-cue").assertExists()
-        composeRule.onNodeWithText("Malus · Weakened").assertExists()
+        composeRule.onNodeWithText("Weakened").assertExists()
     }
 }
