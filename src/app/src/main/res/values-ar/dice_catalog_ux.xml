@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">أنماط النرد المدمجة</string>
+    <string name="dice_catalog_custom_title">أنماط النرد المخصصة</string>
+    <string name="dice_character_styles_summary">الافتراضي: %1$s · الأنماط المحفوظة: %2$d</string>
+    <string name="dice_character_styles_add">إضافة نمط نرد</string>
+    <string name="dice_character_style_system_default">الافتراضي للنظام</string>
+</resources>
