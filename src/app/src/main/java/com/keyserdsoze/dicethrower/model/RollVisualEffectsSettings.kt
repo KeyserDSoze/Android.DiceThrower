@@ -12,18 +12,20 @@ data class RollVisualEffectsSettings(
     val particles: Boolean = true,
     val actionCues: Boolean = true,
     val resultTransitions: Boolean = true,
+    /** Tiny one-shot scene impact, never applied when global animations are disabled. */
+    val cameraImpact: Boolean = true,
 ) {
     companion object {
         fun preset(profile: RollVisualProfile): RollVisualEffectsSettings = when (profile) {
             RollVisualProfile.BALANCED -> RollVisualEffectsSettings()
             RollVisualProfile.SUBTLE -> RollVisualEffectsSettings(
                 profile = profile, particles = false, tableAura = false,
-                resultTransitions = false,
+                resultTransitions = false, cameraImpact = false,
             )
             RollVisualProfile.OFF -> RollVisualEffectsSettings(
                 profile = profile, badge = false, groupLanes = false,
                 winnerSpotlight = false, tableAura = false, particles = false,
-                actionCues = false, resultTransitions = false,
+                actionCues = false, cameraImpact = false, resultTransitions = false, cameraImpact = false,
             )
             RollVisualProfile.CUSTOM -> RollVisualEffectsSettings(profile = profile)
         }
