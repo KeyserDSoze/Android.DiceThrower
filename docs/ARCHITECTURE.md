@@ -201,6 +201,10 @@ Renderer material profiles map the domain-level `GLOSSY_RESIN`, `MATTE_RESIN`, `
 
 Appearance randomization uses a random source separate from the one passed to `DiceExpression.evaluate`, so choosing or randomizing a visual style cannot consume or alter dice-result RNG state.
 
+## Critical-hit quick template (#140 / EPIC #139)
+
+`EffectEditorDraft.criticalHit` creates a normal persisted `RollEffect` with stable IDs, `PART` trigger on the first subgroup (`DICE_ONLY == 20`) and a `MULTIPLY ×2` action on the second subgroup using `DICE_ONLY`. Modifiers remain unmodified and the execution path stays `EffectSequenceExecutor` → `EffectActionEngine`, never the renderer. No schema migration or separate effects executor is needed. The UI offers the template plus WHEN/THEN headings; existing advanced groups/actions remain editable and serializable. Limitation: `DICE_ONLY` is the dice subtotal of the Part, not a predicate on one die face within a multi-die Part.
+
 ## Immutable dice appearance presets (EPIC #138, slice #141)
 
 `DiceStylePresets` is a pure-domain, immutable catalog of ten material/color palettes with stable keys. Presets are *definitions*, not persisted records. Adding a preset creates a fresh character-owned `DiceStyle` via `DiceStyleDataOperations.createStyle`, with an owned ID, localized saved name and existing reference-safe storage/backup/Drive lifecycle. The home character list now links to a Dice Customization hub, which selects a character and reuses the existing editing surface. No graphics can affect `DiceExpression.evaluate` or physics-to-RNG coupling.
