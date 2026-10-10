@@ -1,0 +1,4 @@
+<resources>
+    <string name="dice_library_entry">Sesuaikan dadu</string>
+    <string name="dice_library_hint">Pilih karakter. Tambahkan salah satu dari sepuluh gaya dadu bawaan atau buat gaya sendiri. Gunakan untuk bagian lemparan dan kandidat B.</string>
+</resources>

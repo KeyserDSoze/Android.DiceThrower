@@ -1,0 +1,4 @@
+<resources>
+    <string name="dice_library_entry">Würfel gestalten</string>
+    <string name="dice_library_hint">Wähle einen Charakter. Nutze zehn fertige Würfelstile oder erstelle eigene. Sie stehen für Roll-Teile und Kandidat B bereit.</string>
+</resources>

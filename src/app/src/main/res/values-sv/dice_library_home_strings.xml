@@ -1,0 +1,4 @@
+<resources>
+    <string name="dice_library_entry">Anpassa tärningar</string>
+    <string name="dice_library_hint">Välj en karaktär. Lägg till en av tio färdiga stilar eller skapa egna. Använd dem för slagdelar och kandidat B.</string>
+</resources>

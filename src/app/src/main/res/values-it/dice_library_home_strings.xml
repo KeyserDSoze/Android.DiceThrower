@@ -1,0 +1,4 @@
+<resources>
+    <string name="dice_library_entry">Personalizza i dadi</string>
+    <string name="dice_library_hint">Scegli un personaggio. Aggiungi uno dei dieci stili pronti oppure creane di tuoi. Puoi usarli per le Parts e per il tiro B.</string>
+</resources>

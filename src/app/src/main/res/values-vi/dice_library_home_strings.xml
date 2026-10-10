@@ -1,0 +1,4 @@
+<resources>
+    <string name="dice_library_entry">Tùy chỉnh xúc xắc</string>
+    <string name="dice_library_hint">Chọn nhân vật. Thêm một trong mười mẫu có sẵn hoặc tạo kiểu riêng. Dùng cho các phần lượt đổ và ứng viên B.</string>
+</resources>
