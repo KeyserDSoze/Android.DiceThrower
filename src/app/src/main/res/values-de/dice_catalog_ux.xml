@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">System-Würfelstile</string>
+    <string name="dice_catalog_custom_title">Benutzerdefinierte Würfelstile</string>
+    <string name="dice_character_styles_summary">Standard: %1$s · %2$d gespeicherte Stile</string>
+    <string name="dice_character_styles_add">Würfelstil hinzufügen</string>
+    <string name="dice_character_style_system_default">Systemstandard</string>
+</resources>
