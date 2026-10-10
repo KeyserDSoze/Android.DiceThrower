@@ -4044,7 +4044,7 @@ internal fun RollBuilderScreenV2(
     // An opaque surface prevents the previous dice-table/parent background from bleeding
     // through partially transparent theme backgrounds and establishes readable content.
     Surface(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize().testTag("roll-editor-screen"),
         color = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.onBackground,
     ) {
