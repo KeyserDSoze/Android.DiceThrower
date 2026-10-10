@@ -1,0 +1,8 @@
+<resources>
+    <string name="double_roll_explained">La tirada doble compara dos tiradas de las partes elegidas y conserva la mejor o la peor. La tirada normal es única.</string>
+    <string name="dice_gallery_title">Elige un aspecto de dados</string>
+    <string name="dice_gallery_help">Toca un diseño para ver el dado 3D. Añade una copia al personaje y personaliza colores o material.</string>
+    <string name="dice_gallery_add">Añadir estilo elegido</string>
+    <string name="dice_saved_styles_title">Tus estilos de dados guardados</string>
+    <string name="dice_saved_styles_help">Estos estilos pertenecen al personaje seleccionado. Toca los colores para verlos o Editar para personalizarlos.</string>
+</resources>

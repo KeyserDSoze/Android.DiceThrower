@@ -1,0 +1,6 @@
+<resources>
+    <string name="effects_empty_expression_hint">留空则使用所选部分的骰子。</string>
+    <string name="effects_explain_replace">替换直接设置数字而不掷骰，例如将伤害设为 10。</string>
+    <string name="effects_explain_reroll">重掷会重新掷出所选部分的骰子并替换之前的数值。</string>
+    <string name="effects_explain_roll_after">追加掷骰会掷出额外骰子并加到所选部分。</string>
+</resources>

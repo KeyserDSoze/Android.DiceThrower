@@ -69,11 +69,34 @@ internal fun isGuidedEffectRule(effect: RollEffect, parts: List<RollSubgroup>): 
         condition.partId in ids &&
         condition.threshold.trim().toDoubleOrNull() != null &&
         action.targetPartId in ids &&
-        action.kind in setOf(
+        when (action.kind) {
             EffectActionType.ADD, EffectActionType.SUBTRACT,
-            EffectActionType.MULTIPLY, EffectActionType.REPLACE,
-        ) &&
-        action.expression.trim().toDoubleOrNull() != null
+            EffectActionType.MULTIPLY, EffectActionType.REPLACE ->
+                action.expression.trim().toDoubleOrNull() != null
+            EffectActionType.REROLL, EffectActionType.ROLL_AFTER ->
+                action.expression.isBlank() || runCatching {
+                    com.keyserdsoze.dicethrower.dice.DiceExpression.parse(action.expression)
+                }.isSuccess
+        }
+}
+
+/** A blank dice formula means "use the selected Part expression". */
+internal fun nextEffectActionKind(action: EffectAction, kind: EffectActionType): EffectAction {
+    if (action.kind == kind) return action
+    val samplesDice = kind == EffectActionType.REROLL || kind == EffectActionType.ROLL_AFTER
+    val wasSampling = action.kind == EffectActionType.REROLL ||
+        action.kind == EffectActionType.ROLL_AFTER
+    return action.copy(
+        kind = kind,
+        expression = when {
+            samplesDice -> "" // The engine resolves the target Part at throw time.
+            wasSampling || action.expression.isBlank() ||
+                action.expression.toDoubleOrNull() == null -> "1"
+            else -> action.expression
+        },
+        scope = if (samplesDice && action.scope == EffectValueScope.MODIFIERS_ONLY)
+            EffectValueScope.DICE_ONLY else action.scope,
+    )
 }
 
 internal object EffectEditorDraft {
@@ -194,7 +217,6 @@ internal fun EffectsEditorSectionV2(
 ) {
     val defaultBonusName = stringResource(R.string.effects_bonus)
     val defaultMalusName = stringResource(R.string.effects_malus)
-    val criticalName = stringResource(R.string.effects_quick_critical)
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -202,21 +224,6 @@ internal fun EffectsEditorSectionV2(
         Text(stringResource(R.string.effects_heading), style = MaterialTheme.typography.titleLarge)
         Text(
             stringResource(R.string.effects_help),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        OutlinedButton(
-            enabled = parts.size >= 2,
-            onClick = {
-                onChange(effects + EffectEditorDraft.criticalHit(parts, effects.size, criticalName))
-            },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(Icons.Rounded.Add, contentDescription = null)
-            Text(stringResource(R.string.effects_quick_critical))
-        }
-        Text(
-            stringResource(R.string.effects_critical_help),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -460,11 +467,9 @@ private fun GuidedEffectRuleEditorV2(
         partLabel,
     ) { id -> changeAction(action.copy(targetPartId = id)) }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        EffectChoice(action.kind, listOf(
-            EffectActionType.ADD, EffectActionType.SUBTRACT,
-            EffectActionType.MULTIPLY, EffectActionType.REPLACE,
-        ), stringResource(R.string.effects_action), { actionLabel(it) }) { kind ->
-            changeAction(action.copy(kind = kind))
+        EffectChoice(action.kind, EffectActionType.entries,
+            stringResource(R.string.effects_action), { actionLabel(it) }) { kind ->
+            changeAction(nextEffectActionKind(action, kind))
         }
         EffectChoice(action.scope, EffectValueScope.entries,
             stringResource(R.string.effects_scope), { scopeLabel(it) }) { scope ->
@@ -474,12 +479,25 @@ private fun GuidedEffectRuleEditorV2(
     OutlinedTextField(
         value = action.expression,
         onValueChange = { changeAction(action.copy(expression = it)) },
-        label = { Text(stringResource(R.string.effects_formula)) },
+        label = { Text(stringResource(
+            if (action.kind == EffectActionType.REROLL || action.kind == EffectActionType.ROLL_AFTER)
+                R.string.effects_dice_expression else R.string.effects_formula,
+        )) },
+        supportingText = {
+            if (action.kind == EffectActionType.REROLL || action.kind == EffectActionType.ROLL_AFTER) {
+                Text(stringResource(R.string.effects_empty_expression_hint))
+            }
+        },
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
     )
     Text(
-        stringResource(R.string.effects_guided_tip),
+        stringResource(when (action.kind) {
+            EffectActionType.REPLACE -> R.string.effects_explain_replace
+            EffectActionType.REROLL -> R.string.effects_explain_reroll
+            EffectActionType.ROLL_AFTER -> R.string.effects_explain_roll_after
+            else -> R.string.effects_guided_tip
+        }),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         style = MaterialTheme.typography.bodySmall,
     )
@@ -633,15 +651,7 @@ private fun EffectActionEditorV2(
         }
         EffectChoice(action.kind, EffectActionType.entries,
             stringResource(R.string.effects_action), { actionLabel(it) }) { kind ->
-            onChange(action.copy(
-                kind = kind,
-                expression = when {
-                    kind == EffectActionType.REROLL -> ""
-                    kind == EffectActionType.ROLL_AFTER -> "1d6"
-                    action.expression.isBlank() -> "1"
-                    else -> action.expression
-                },
-            ))
+            onChange(nextEffectActionKind(action, kind))
         }
         if (parts.isNotEmpty()) {
             EffectChoice(action.targetPartId ?: parts.first().id, parts.map { it.id },
@@ -661,8 +671,22 @@ private fun EffectActionEditorV2(
             label = { Text(stringResource(if (action.kind == EffectActionType.REROLL ||
                 action.kind == EffectActionType.ROLL_AFTER)
                 R.string.effects_dice_expression else R.string.effects_formula)) },
+            supportingText = {
+                if (action.kind == EffectActionType.REROLL || action.kind == EffectActionType.ROLL_AFTER) {
+                    Text(stringResource(R.string.effects_empty_expression_hint))
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
+        )
+        Text(
+            stringResource(when (action.kind) {
+                EffectActionType.REPLACE -> R.string.effects_explain_replace
+                EffectActionType.REROLL -> R.string.effects_explain_reroll
+                EffectActionType.ROLL_AFTER -> R.string.effects_explain_roll_after
+                else -> R.string.effects_guided_tip
+            }),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

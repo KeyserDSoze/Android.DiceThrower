@@ -1,0 +1,8 @@
+<resources>
+    <string name="double_roll_explained">双重掷骰将选定部分掷两次，保留较好或较差的结果。普通掷骰仍只掷一次。</string>
+    <string name="dice_gallery_title">选择骰子外观</string>
+    <string name="dice_gallery_help">点击预设查看 3D 骰子。复制给选定角色后，可修改颜色和材质。</string>
+    <string name="dice_gallery_add">添加所选样式</string>
+    <string name="dice_saved_styles_title">已保存的骰子样式</string>
+    <string name="dice_saved_styles_help">这些样式属于当前角色。点击色块预览，或点击编辑进行修改。</string>
+</resources>

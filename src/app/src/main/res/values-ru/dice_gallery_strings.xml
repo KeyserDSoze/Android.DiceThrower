@@ -1,0 +1,8 @@
+<resources>
+    <string name="double_roll_explained">Double roll compares two throws of the selected Parts, then keeps the better or worse result. A normal roll still throws once.</string>
+    <string name="dice_gallery_title">Choose a dice look</string>
+    <string name="dice_gallery_help">Tap a preset to see its 3D die. Add a copy to the selected character, then change colors or material. Your saved styles can be assigned to Parts and candidate B.</string>
+    <string name="dice_gallery_add">Add selected style</string>
+    <string name="dice_saved_styles_title">Your saved dice styles</string>
+    <string name="dice_saved_styles_help">These styles belong to the selected character. Tap the color circles to see the dice, or use Edit to change them.</string>
+</resources>

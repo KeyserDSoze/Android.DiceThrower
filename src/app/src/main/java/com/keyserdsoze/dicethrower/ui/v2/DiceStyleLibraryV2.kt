@@ -52,6 +52,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.keyserdsoze.dicethrower.R
@@ -93,7 +94,8 @@ internal fun DiceStyleLibraryV2(
     var editingStyleId by remember(character.id) { mutableStateOf<String?>(null) }
     var deletingStyleId by remember(character.id) { mutableStateOf<String?>(null) }
     var copyingFromCharacter by remember(character.id) { mutableStateOf(false) }
-    var presetMenu by remember(character.id) { mutableStateOf(false) }
+    var selectedPresetKey by remember(character.id) { mutableStateOf(DiceStylePresets.all.first().key) }
+    var previewSavedStyleId by remember(character.id) { mutableStateOf<String?>(null) }
     var secondaryStyleMenu by remember(character.id) { mutableStateOf(false) }
     val copySuffix = stringResource(R.string.copy_suffix)
     val sourceCharacters = data.characters
@@ -123,44 +125,77 @@ internal fun DiceStyleLibraryV2(
             }
         }
 
-        // Preset palettes become ordinary editable character styles with fresh
-        // IDs. Assignment to Parts and candidate B uses the existing storage.
-        Box(Modifier.fillMaxWidth()) {
-            OutlinedButton(
-                onClick = { presetMenu = true },
+        Text(
+            stringResource(R.string.dice_gallery_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            stringResource(R.string.dice_gallery_help),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        // A single 3D preview is cheaper than creating ten animated renderers.
+        // Each palette remains independent of dice RNG and is only copied on demand.
+        val selectedPreset = DiceStylePresets.find(selectedPresetKey)
+            ?: DiceStylePresets.all.first()
+        val selectedPresetName = dicePresetName(selectedPreset)
+        DiceStylePreview3D(
+            style = selectedPreset.instantiate(character.id, "preview-preset", selectedPresetName),
+            modifier = Modifier.fillMaxWidth().height(172.dp),
+        )
+        Text(
+            selectedPresetName,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+        )
+        DiceStylePresets.all.chunked(2).forEach { pair ->
+            Row(
                 modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Icon(Icons.Rounded.Add, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.dice_presets_add))
-            }
-            DropdownMenu(
-                expanded = presetMenu,
-                onDismissRequest = { presetMenu = false },
-            ) {
-                DiceStylePresets.all.forEach { preset ->
-                    val name = dicePresetName(preset)
-                    DropdownMenuItem(
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                DiceStyleSwatch(preset.instantiate(character.id, preset.key, name))
-                                Spacer(Modifier.width(12.dp))
-                                Text(name)
+                pair.forEach { preset ->
+                    val presetName = dicePresetName(preset)
+                    FilterChip(
+                        selected = preset.key == selectedPresetKey,
+                        onClick = { selectedPresetKey = preset.key },
+                        modifier = Modifier.weight(1f).testTag("dice-preset-" + preset.key),
+                        label = {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                DiceStyleSwatch(preset.instantiate(character.id, preset.key, presetName))
+                                Text(presetName, maxLines = 2, style = MaterialTheme.typography.labelMedium)
+                                Text(
+                                    materialLabel(preset.material),
+                                    maxLines = 1,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                             }
-                        },
-                        onClick = {
-                            presetMenu = false
-                            val displayName = DiceStyleDataOperations.uniqueCopyName(
-                                styles.map { it.name }, name, copySuffix,
-                            )
-                            onDataChanged(DiceStyleDataOperations.createStyle(
-                                data,
-                                preset.instantiate(character.id, UUID.randomUUID().toString(), displayName),
-                            ))
                         },
                     )
                 }
+                if (pair.size == 1) Spacer(Modifier.weight(1f))
             }
+        }
+        Button(
+            onClick = {
+                val displayName = DiceStyleDataOperations.uniqueCopyName(
+                    styles.map { it.name }, selectedPresetName, copySuffix,
+                )
+                onDataChanged(DiceStyleDataOperations.createStyle(
+                    data,
+                    selectedPreset.instantiate(character.id, UUID.randomUUID().toString(), displayName),
+                ))
+            },
+            modifier = Modifier.fillMaxWidth().testTag("dice-add-selected-preset"),
+        ) {
+            Icon(Icons.Rounded.Add, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.dice_gallery_add))
         }
 
         OutlinedButton(
@@ -226,6 +261,16 @@ internal fun DiceStyleLibraryV2(
             }
         }
 
+        Text(
+            stringResource(R.string.dice_saved_styles_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            stringResource(R.string.dice_saved_styles_help),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         if (styles.isEmpty()) {
             PremiumCard(Modifier.fillMaxWidth()) {
                 Text(
@@ -241,7 +286,16 @@ internal fun DiceStyleLibraryV2(
             PremiumCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth().padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        DiceStyleSwatch(style)
+                        Box(
+                            modifier = Modifier
+                                .clickable {
+                                    previewSavedStyleId =
+                                        if (previewSavedStyleId == style.id) null else style.id
+                                }
+                                .testTag("dice-preview-" + style.id),
+                        ) {
+                            DiceStyleSwatch(style)
+                        }
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -284,6 +338,13 @@ internal fun DiceStyleLibraryV2(
                         ) {
                             Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = stringResource(R.string.move_down))
                         }
+                    }
+
+                    if (previewSavedStyleId == style.id) {
+                        DiceStylePreview3D(
+                            style = style,
+                            modifier = Modifier.fillMaxWidth().height(156.dp),
+                        )
                     }
 
                     Row(

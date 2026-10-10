@@ -106,7 +106,8 @@ class EffectEditorDraftTest {
             simple.copy(activationGroups = listOf(group.copy(conditions = group.conditions +
                 EffectCondition("another", partId = parts.last().id)))),
             simple.copy(actions = listOf(action, action.copy(id = "other"))),
-            simple.copy(actions = listOf(action.copy(kind = EffectActionType.REROLL))),
+            simple.copy(actions = listOf(action.copy(kind = EffectActionType.REROLL,
+                expression = "{level}d6"))),
             simple.copy(actions = listOf(action.copy(expression = "{parts:Damage}"))),
             simple.copy(activationGroups = listOf(group.copy(
                 conditions = listOf(group.conditions.single().copy(threshold = "{level}")),
@@ -116,6 +117,43 @@ class EffectEditorDraftTest {
             assertFalse(complex.toString(), isGuidedEffectRule(complex, parts))
         }
         assertFalse(isGuidedEffectRule(simple, parts.take(1)))
+    }
+
+    @Test
+    fun rerollAndRollAfterAreGuidedAndUseTargetPartByDefault() {
+        val initial = EffectEditorDraft.initial(EffectType.BONUS, parts, 0, "Bonus")
+        val action = initial.actions.single().copy(targetPartId = parts.last().id)
+        val reroll = nextEffectActionKind(action, EffectActionType.REROLL)
+        assertEquals(EffectActionType.REROLL, reroll.kind)
+        assertEquals("", reroll.expression)
+        assertEquals("damage-2", reroll.targetPartId)
+        assertTrue(isGuidedEffectRule(initial.copy(actions = listOf(reroll)), parts))
+        assertEquals("", nextEffectActionKind(reroll, EffectActionType.ROLL_AFTER).expression)
+        val customDice = reroll.copy(expression = "2d8")
+        assertTrue(isGuidedEffectRule(initial.copy(actions = listOf(customDice)), parts))
+        assertFalse(isGuidedEffectRule(initial.copy(actions = listOf(
+            reroll.copy(expression = "{level}d8"),
+        )), parts))
+        val saved = EffectEditorDraft.canonicalize(
+            listOf(initial.copy(actions = listOf(reroll))), parts, 5, emptyList(),
+        )
+        assertEquals("", saved.single().actions.single().expression)
+        val backToReplace = nextEffectActionKind(reroll, EffectActionType.REPLACE)
+        assertEquals("1", backToReplace.expression)
+        assertTrue(isGuidedEffectRule(initial.copy(actions = listOf(backToReplace)), parts))
+    }
+
+    @Test
+    fun numericReplaceIsNotAnotherDiceRoll() {
+        val base = EffectEditorDraft.initial(EffectType.MALUS, parts, 0, "Malus")
+        val action = base.actions.single()
+        val replace = nextEffectActionKind(action, EffectActionType.REPLACE)
+        assertEquals("1", replace.expression)
+        assertEquals(EffectActionType.REPLACE, replace.kind)
+        assertEquals(EffectValueScope.TOTAL, replace.scope)
+        assertEquals(replace, EffectEditorDraft.canonicalize(
+            listOf(base.copy(actions = listOf(replace))), parts, 2, emptyList(),
+        ).single().actions.single())
     }
 
     @Test

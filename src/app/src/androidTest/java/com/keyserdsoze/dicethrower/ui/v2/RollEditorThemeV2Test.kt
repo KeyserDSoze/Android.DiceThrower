@@ -13,6 +13,7 @@ import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.RollDefinition
 import com.keyserdsoze.dicethrower.model.ThemeMode
 import com.keyserdsoze.dicethrower.ui.theme.DiceThrowerTheme
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -37,6 +38,16 @@ class RollEditorThemeV2Test {
         composeRule.onNodeWithTag("roll-editor-screen").assertIsDisplayed()
         composeRule.onNodeWithText("Edit roll").assertIsDisplayed()
         composeRule.onNodeWithText("Roll name").assertIsDisplayed()
+    }
+
+    @Test
+    fun doubleRollSettingAppearsBeforeGroupPicker() {
+        displayRollEditor(ThemeMode.DARK)
+        val doubleRollTop = composeRule.onNodeWithText("Enable double rolls for this roll")
+            .fetchSemanticsNode().boundsInRoot.top
+        val groupTop = composeRule.onNodeWithText("Ungrouped")
+            .fetchSemanticsNode().boundsInRoot.top
+        assertTrue("Double roll must be central in the Roll setup", doubleRollTop < groupTop)
     }
 
     private fun displayRollEditor(mode: ThemeMode) {

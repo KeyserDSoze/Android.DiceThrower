@@ -4103,6 +4103,16 @@ internal fun RollBuilderScreenV2(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    RollTriggerToggle(
+                        label = stringResource(R.string.double_roll_enable),
+                        checked = doubleRollEnabled,
+                        onChecked = { doubleRollEnabled = it },
+                    )
+                    Text(
+                        stringResource(R.string.double_roll_explained),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     OutlinedTextField(
                         value = minimumLevelText,
                         onValueChange = { input ->
@@ -4242,7 +4252,7 @@ internal fun RollBuilderScreenV2(
                             label = stringResource(R.string.part_in_normal_roll),
                             checked = subgroup.includeInNormalRoll,
                             onChecked = { selected ->
-                                // A Roll must have at least one Part in its initial throw.
+                                // Keep at least one initial Roll Part.
                                 if (selected || subgroups.count { it.includeInNormalRoll } > 1) {
                                     updateSubgroups(subgroups.map { part ->
                                         if (part.id == subgroup.id) part.copy(
@@ -4286,11 +4296,6 @@ internal fun RollBuilderScreenV2(
             }
 
             item {
-                RollTriggerToggle(
-                    label = stringResource(R.string.double_roll_enable),
-                    checked = doubleRollEnabled,
-                    onChecked = { doubleRollEnabled = it },
-                )
                 Surface(
                     shape = RoundedCornerShape(14.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
