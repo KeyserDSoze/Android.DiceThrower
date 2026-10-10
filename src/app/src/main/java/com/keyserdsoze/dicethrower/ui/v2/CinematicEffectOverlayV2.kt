@@ -3,6 +3,8 @@ package com.keyserdsoze.dicethrower.ui.v2
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,8 +13,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -22,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import com.keyserdsoze.dicethrower.R
 import com.keyserdsoze.dicethrower.model.EffectActionType
 import com.keyserdsoze.dicethrower.model.EffectType
+import com.keyserdsoze.dicethrower.model.RollVisualEffectsSettings
+import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -123,6 +131,55 @@ internal fun CinematicActionCueV2(
             if (before != null && after != null && before != after) {
                 Text("  $before → $after", style = MaterialTheme.typography.labelLarge)
             }
+        }
+    }
+}
+
+/** A visual cue replays the *trace*, never the actual logical action. */
+internal data class CinematicActionMoment(
+    val effectId: String,
+    val type: EffectType,
+    val action: EffectActionType,
+    val before: Int?,
+    val after: Int?,
+)
+
+@Composable
+internal fun CinematicActionSequenceV2(
+    rollSeed: Long,
+    moments: List<CinematicActionMoment>,
+    options: RollVisualEffectsSettings,
+    modifier: Modifier = Modifier,
+) {
+    if (moments.isEmpty() || !(options.actionCues || options.tableAura || options.particles)) return
+    val limited = remember(moments) { moments.take(16) }
+    var index by remember(rollSeed, limited) { mutableIntStateOf(0) }
+    LaunchedEffect(rollSeed, limited) {
+        index = 0
+        for (n in limited.indices) {
+            index = n
+            delay(980L)
+        }
+        index = limited.size
+    }
+    val moment = limited.getOrNull(index) ?: return
+    Box(modifier) {
+        CinematicEffectOverlayV2(
+            key = "$rollSeed:$index:${moment.effectId}",
+            type = moment.type,
+            action = moment.action,
+            particles = options.particles,
+            aura = options.tableAura,
+            modifier = Modifier.fillMaxSize(),
+        )
+        if (options.actionCues) {
+            CinematicActionCueV2(
+                action = moment.action,
+                type = moment.type,
+                before = moment.before,
+                after = moment.after,
+                modifier = Modifier.align(Alignment.Center),
+            )
         }
     }
 }
