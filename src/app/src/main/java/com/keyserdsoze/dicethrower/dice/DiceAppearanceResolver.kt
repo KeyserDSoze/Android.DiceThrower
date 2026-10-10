@@ -69,6 +69,8 @@ object DiceAppearanceResolver {
         result: DiceRollResult,
         subgroupIdByComponentIndex: Map<Int, String> = emptyMap(),
         random: Random = Random(System.nanoTime()),
+        /** Only components in logical candidate B receive this visual override. */
+        secondaryCandidateComponentIndices: Set<Int> = emptySet(),
     ): List<ResolvedDiceAppearance> {
         val ownedStyles = styles
             .filter { it.characterId == character.id }
@@ -101,10 +103,40 @@ object DiceAppearanceResolver {
                         DiceAppearanceMode.RANDOM_UNIFORM -> uniformRandomStyle
                         DiceAppearanceMode.RANDOM_PER_DIE -> randomPool().randomOrNull(random) ?: defaultStyle
                     }
-                    add(style.toResolved(slot, componentIndex, dieIndex))
+                    val primary = style.toResolved(slot, componentIndex, dieIndex)
+                    add(if (componentIndex in secondaryCandidateComponentIndices) {
+                        resolveStyle(character.secondaryDiceStyleId)
+                            ?.toResolved(slot, componentIndex, dieIndex)
+                            ?: contrastingAlternative(primary)
+                    } else primary)
                 }
             }
         }
+    }
+
+    /**
+     * Two distinct premium looks without creating hidden persisted styles for new
+     * characters. Use a second palette when the original is already violet.
+     * Deterministic and completely independent of the logical roll's RNG.
+     */
+    private fun contrastingAlternative(original: ResolvedDiceAppearance): ResolvedDiceAppearance {
+        val firstRgb = original.primaryColorArgb
+        val violet = 0xFF8C52E5.toInt()
+        val gold = 0xFFE9A942.toInt()
+        fun distance(a: Int, b: Int): Int =
+            kotlin.math.abs(((a ushr 16) and 0xFF) - ((b ushr 16) and 0xFF)) +
+                kotlin.math.abs(((a ushr 8) and 0xFF) - ((b ushr 8) and 0xFF)) +
+                kotlin.math.abs((a and 0xFF) - (b and 0xFF))
+        val alternativePrimary = if (distance(firstRgb, violet) > distance(firstRgb, gold))
+            violet else gold
+        return original.copy(
+            sourceStyleId = null,
+            material = if (original.material == DiceMaterial.GEMSTONE) DiceMaterial.METAL
+                else DiceMaterial.GEMSTONE,
+            primaryColorArgb = alternativePrimary,
+            secondaryColorArgb = if (alternativePrimary == violet) 0xFF67EBDA.toInt()
+                else 0xFF173C64.toInt(),
+        )
     }
 
     private fun DiceStyle?.toResolved(
