@@ -37,6 +37,39 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CloudSyncEngineTest {
+
+    @Test
+    fun sharedCatalogEditsDownloadAndConcurrentEditsNeedExplicitResolution() = runBlocking {
+        fun style(name: String) = DiceStyle(
+            id = "shared", characterId = null, name = name,
+            primaryColorArgb = 0xFF224466.toInt(),
+            secondaryColorArgb = 0xFFEEDD88.toInt(),
+        )
+        val remote = FakeRemote()
+        val deviceA = FakeLocal("device-a", AppData(diceStyles = listOf(style("Initial"))))
+        val deviceB = FakeLocal("device-b", AppData())
+        val engineA = engine(deviceA, remote, 100L)
+        val engineB = engine(deviceB, remote, 200L)
+
+        assertEquals(SyncStatusKind.SYNCED, engineA.sync().status.kind)
+        assertEquals(SyncStatusKind.SYNCED, engineB.sync().status.kind)
+        assertEquals("Initial", deviceB.data.diceStyles.single().name)
+
+        deviceA.data = SharedDiceStyleCatalog.edit(deviceA.data, style("Blue"))
+        deviceB.data = SharedDiceStyleCatalog.edit(deviceB.data, style("Red"))
+        assertEquals(SyncStatusKind.SYNCED, engineA.sync().status.kind)
+        val conflict = engineB.sync()
+        assertEquals(SyncStatusKind.CONFLICT, conflict.status.kind)
+        assertEquals(SyncConflictKind.DICE_CATALOG_DIVERGED, conflict.status.conflicts.single().kind)
+        assertEquals("Red", deviceB.data.diceStyles.single().name)
+
+        val resolved = engineB.sync(resolutions = mapOf(
+            CloudSyncEngine.CATALOG_CONFLICT_KEY to SyncConflictResolution.USE_REMOTE,
+        ))
+        assertEquals(SyncStatusKind.SYNCED, resolved.status.kind)
+        assertEquals("Blue", deviceB.data.diceStyles.single().name)
+    }
+
     @Test
     fun deviceAUploadIsDownloadedByDeviceBWithoutDuplicateTransfers() = runBlocking {
         val remote = FakeRemote()
