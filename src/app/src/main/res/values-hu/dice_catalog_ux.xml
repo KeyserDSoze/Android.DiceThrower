@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">Rendszerkocka-stílusok</string>
+    <string name="dice_catalog_custom_title">Egyéni kockastílusok</string>
+    <string name="dice_character_styles_summary">Alapértelmezett: %1$s · %2$d mentett stílus</string>
+    <string name="dice_character_styles_add">Kockastílus hozzáadása</string>
+    <string name="dice_character_style_system_default">Rendszer alapértelmezett</string>
+</resources>
