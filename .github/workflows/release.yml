@@ -206,8 +206,8 @@ jobs:
           VERSION: ${{ needs.release.outputs.version }}
         run: |
           mkdir -p distribution/whatsnew
-          printf 'Dice Thrower %s: conditional bonus/malus can reroll a Part or add dice from a support-only Part. Clearer Effect actions, redesigned dice preset gallery, and double-roll configuration at the top of Edit Roll.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
-          printf 'Dice Thrower %s: bonus/malus possono ritirare una Part o aggiungere dadi da Parts usate solo dagli effetti. Azioni più chiare, nuova galleria dadi e opzione doppio tiro in alto in Modifica Roll.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
+          printf 'Dice Thrower %s: shared custom dice styles across characters and Roll Parts, reusable system presets, a clearer style picker and larger 3D preview. Includes safe style migration/deletion and improved Drive conflict handling.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
+          printf 'Dice Thrower %s: stili dei dadi personalizzati condivisi tra personaggi e Roll Parts, preset di sistema, selezione più chiara e anteprima 3D più grande. Migrazione ed eliminazione sicure, conflitti Drive migliorati.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
 
       - name: Upload to Google Play Internal testing
         uses: r0adkll/upload-google-play@v1.1.5
