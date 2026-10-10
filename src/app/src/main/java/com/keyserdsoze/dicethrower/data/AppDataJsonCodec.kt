@@ -27,7 +27,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 object AppDataJsonCodec {
-    const val DATA_VERSION = 14
+    const val DATA_VERSION = 15
 
     fun encodeData(data: AppData): JSONObject = encodeData(data, includeLegacyImageUris = true)
 
@@ -101,7 +101,8 @@ object AppDataJsonCodec {
                         }
                     })
                     .put("diceAppearance", encodeDiceAppearance(item.diceAppearance))
-                    .put("effects", EffectsJsonCodec.encode(item.effects)))
+                    .put("effects", EffectsJsonCodec.encode(item.effects))
+                    .put("visualEffects", encodeRollVisualEffects(item.visualEffects)))
             }
         })
         .put("logs", JSONArray().apply {
@@ -157,6 +158,35 @@ object AppDataJsonCodec {
             }
         })
 
+    private fun encodeRollVisualEffects(settings: com.keyserdsoze.dicethrower.model.RollVisualEffectsSettings) =
+        JSONObject()
+            .put("profile", settings.profile.name)
+            .put("badge", settings.badge)
+            .put("groupLanes", settings.groupLanes)
+            .put("winnerSpotlight", settings.winnerSpotlight)
+            .put("tableAura", settings.tableAura)
+            .put("particles", settings.particles)
+            .put("actionCues", settings.actionCues)
+            .put("resultTransitions", settings.resultTransitions)
+
+    private fun decodeRollVisualEffects(json: JSONObject?): com.keyserdsoze.dicethrower.model.RollVisualEffectsSettings {
+        val profile = runCatching {
+            com.keyserdsoze.dicethrower.model.RollVisualProfile.valueOf(
+                json?.optString("profile") ?: "BALANCED",
+            )
+        }.getOrDefault(com.keyserdsoze.dicethrower.model.RollVisualProfile.BALANCED)
+        val preset = com.keyserdsoze.dicethrower.model.RollVisualEffectsSettings.preset(profile)
+        return if (json == null) preset else preset.copy(
+            badge = json.optBoolean("badge", preset.badge),
+            groupLanes = json.optBoolean("groupLanes", preset.groupLanes),
+            winnerSpotlight = json.optBoolean("winnerSpotlight", preset.winnerSpotlight),
+            tableAura = json.optBoolean("tableAura", preset.tableAura),
+            particles = json.optBoolean("particles", preset.particles),
+            actionCues = json.optBoolean("actionCues", preset.actionCues),
+            resultTransitions = json.optBoolean("resultTransitions", preset.resultTransitions),
+        )
+    }
+
     fun decodeData(json: JSONObject): AppData = AppData(
         characters = json.optJSONArray("characters").mapObjects { item ->
             CharacterProfile(
@@ -204,6 +234,7 @@ object AppDataJsonCodec {
                 order = item.optInt("order"),
                 doubleRollEnabled = item.optBoolean("doubleRollEnabled", false),
                 effects = EffectsJsonCodec.decode(item.optJSONArray("effects")),
+                visualEffects = decodeRollVisualEffects(item.optJSONObject("visualEffects")),
                 levelRules = item.optJSONArray("levelRules").mapObjects { rule ->
                     RollLevelRule(
                         id = rule.getString("id"),
