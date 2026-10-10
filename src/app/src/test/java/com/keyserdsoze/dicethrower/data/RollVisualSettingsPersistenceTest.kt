@@ -61,9 +61,6 @@ class RollVisualSettingsPersistenceTest {
             idFactory = { "copy-${nextId++}" })
         assertTrue(AppDataValidator.validate(clone).isEmpty())
         assertEquals(custom, clone.rolls.single { it.characterId != "hero" }.visualEffects)
-        assertEquals(RollVisualEffectsSettings(), changed.rolls.single()
-            .visualEffects.copy(profile = RollVisualProfile.BALANCED).takeIf { false }
-            ?: RollVisualEffectsSettings())
     }
 
     @Test
