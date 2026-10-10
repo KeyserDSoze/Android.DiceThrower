@@ -3,6 +3,7 @@ package com.keyserdsoze.dicethrower.data.sync
 import com.keyserdsoze.dicethrower.data.AppDataValidator
 import com.keyserdsoze.dicethrower.data.LocalStore
 import com.keyserdsoze.dicethrower.data.SharedDiceStyleCatalog
+import com.keyserdsoze.dicethrower.data.SyncMetadataManager
 import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.data.PortableCharacterImageAsset
 import com.keyserdsoze.dicethrower.model.AppData
@@ -163,6 +164,13 @@ class AndroidSyncLocalGateway(private val store: LocalStore) : SyncLocalGateway 
                 current.writerId == writerId && current.baseRevision == change.originalBaseRevision) {
                 journal = journal.copy(diceCatalogMetadata =
                     current.copy(baseRevision = change.metadataAfter.baseRevision))
+            }
+        }
+        if (plan.catalog != null) {
+            val repaired = SharedDiceStyleCatalog.repairDanglingReferences(data)
+            if (repaired != data) {
+                data = SyncMetadataManager.reconcileLocalEdit(data, repaired, writerId, plan.successfulAt)
+                dataChanged = true
             }
         }
         if (dataChanged) {
