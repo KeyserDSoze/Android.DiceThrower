@@ -1,6 +1,6 @@
 package com.keyserdsoze.dicethrower.model
 
-/** Settings belong to a Roll, not to the app-wide dice RNG or to the renderer. */
+/** Global visual settings never alter the numerical dice engine or RNG. */
 enum class RollVisualProfile { BALANCED, SUBTLE, OFF, CUSTOM }
 
 data class RollVisualEffectsSettings(
@@ -35,7 +35,7 @@ data class RollVisualEffectsSettings(
         update().copy(profile = RollVisualProfile.CUSTOM)
 
     /**
-     * Device-wide motion preference has priority over per-Roll animation toggles,
+     * Device-wide motion preference has priority over visual-effect toggles,
      * but does not erase the Roll's saved configuration.
      */
     fun withGlobalMotionEnabled(enabled: Boolean): RollVisualEffectsSettings =
