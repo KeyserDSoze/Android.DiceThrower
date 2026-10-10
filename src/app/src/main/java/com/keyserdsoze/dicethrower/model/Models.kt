@@ -222,7 +222,11 @@ data class AppSettings(
     val logRetention: Int = 20,
     // Device-local by design: this preference never participates in roaming settings sync.
     val conflictPolicy: ConflictPolicy = ConflictPolicy.ASK,
-)
+) {
+    /** Shared by every Roll on this device; never reads per-Roll visual overrides. */
+    fun effectiveVisualEffects(): RollVisualEffectsSettings =
+        visualEffects.withGlobalMotionEnabled(animationsEnabled)
+}
 
 data class CharacterSyncMetadata(
     val characterId: String,
