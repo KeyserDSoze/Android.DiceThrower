@@ -19,6 +19,7 @@ internal class DiceTablePhysics(
     seed: Long,
     private val halfWidth: Float = DiceTableViewport.HALF_WIDTH,
     private val halfHeight: Float = DiceTableViewport.HALF_HEIGHT,
+    private val laneByDieIndex: Map<Int, Int> = emptyMap(),
 ) {
     private data class Body(
         var x: Float,
@@ -31,6 +32,7 @@ internal class DiceTablePhysics(
         var spinX: Float,
         var spinY: Float,
         var spinZ: Float,
+        val lane: Int? = null,
     )
 
     data class State(
@@ -50,24 +52,32 @@ internal class DiceTablePhysics(
 
     private val random = Random(seed)
     private val bodies = List(count.coerceAtMost(MAX_DICE)) { index ->
+        val lane = laneByDieIndex[index]
         val columns = if (count <= 4) 2 else 3
-        val column = index % columns
-        val row = index / columns
+        // A/B bodies are simulated in independent vertical table halves,
+        // not moved after the physics step (which could cause overlaps).
+        val groupIndex = if (lane == null) index else
+            (0 until index).count { laneByDieIndex[it] == lane }
+        val column = groupIndex % columns
+        val row = groupIndex / columns
         val x = (column - (columns - 1) / 2f) * radius * 2.35f
-        val y = -1.65f + row * radius * 1.45f
+        val y = if (lane == null) -1.65f + row * radius * 1.45f
+            else (if (lane == 0) 2.15f else -2.15f) +
+                (row - 1) * radius * 0.35f
         val launchAngle = random.nextFloat() * 1.7f + 0.72f
         val speed = 4.8f + random.nextFloat() * 2.6f
         Body(
             x = x,
-            y = y.coerceIn(-halfHeight + radius, halfHeight - radius),
+            y = y.coerceIn(laneBounds(lane).first, laneBounds(lane).second),
             vx = cos(launchAngle) * speed + (random.nextFloat() - 0.5f) * 2.4f,
-            vy = sin(launchAngle) * speed + 1.1f,
+            vy = (if (lane == 1) -1f else 1f) * (sin(launchAngle) * speed + 1.1f),
             angleX = random.nextFloat() * 360f,
             angleY = random.nextFloat() * 360f,
             angleZ = random.nextFloat() * 360f,
             spinX = random.signed(430f, 760f),
             spinY = random.signed(390f, 720f),
             spinZ = random.signed(220f, 480f),
+            lane = lane,
         )
     }
 
@@ -136,16 +146,22 @@ internal class DiceTablePhysics(
         }
     }
 
+    private fun laneBounds(lane: Int?): Pair<Float, Float> = when (lane) {
+        0 -> 0.22f + radius to halfHeight - radius
+        1 -> -halfHeight + radius to -0.22f - radius
+        else -> -halfHeight + radius to halfHeight - radius
+    }
+
     private fun collideWithWalls(body: Body) {
         val maxX = halfWidth - radius
-        val maxY = halfHeight - radius
+        val (minY, maxY) = laneBounds(body.lane)
         if (body.x < -maxX || body.x > maxX) {
             body.x = body.x.coerceIn(-maxX, maxX)
             body.vx = -body.vx * WALL_RESTITUTION
             body.spinY *= -0.82f
         }
-        if (body.y < -maxY || body.y > maxY) {
-            body.y = body.y.coerceIn(-maxY, maxY)
+        if (body.y < minY || body.y > maxY) {
+            body.y = body.y.coerceIn(minY, maxY)
             body.vy = -body.vy * WALL_RESTITUTION
             body.spinX *= -0.82f
         }
@@ -157,6 +173,7 @@ internal class DiceTablePhysics(
             for (secondIndex in firstIndex + 1 until bodies.size) {
                 val first = bodies[firstIndex]
                 val second = bodies[secondIndex]
+                if (first.lane != second.lane) continue
                 var dx = second.x - first.x
                 var dy = second.y - first.y
                 var distanceSquared = dx * dx + dy * dy
