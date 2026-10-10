@@ -2421,7 +2421,12 @@ private fun RollScreenV2(
             resolvedPartExpressions = if (formula.subgroups.isEmpty()) {
                 mapOf("single" to formula.expression)
             } else {
-                (formula.subgroups + formula.supportSubgroups).associate { it.id to it.expression }
+                (formula.subgroups + formula.supportSubgroups).associate { part ->
+                    val supportSubtraction = formula.supportSubgroups.any {
+                        it.id == part.id && it.operator == RollSubgroupOperator.SUBTRACT
+                    }
+                    part.id to if (supportSubtraction) "-(${part.expression})" else part.expression
+                }
             },
         )
         val adjustedTotal = execution?.let {
