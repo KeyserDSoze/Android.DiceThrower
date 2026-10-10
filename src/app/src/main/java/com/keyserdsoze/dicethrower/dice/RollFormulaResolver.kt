@@ -13,6 +13,8 @@ data class ResolvedRollFormula(
     val expression: String,
     val appliedRules: List<RollLevelRule>,
     val subgroups: List<ResolvedRollSubgroup> = emptyList(),
+    /** Valid configured Parts that must not consume RNG in the initial throw. */
+    val supportSubgroups: List<ResolvedRollSubgroup> = emptyList(),
 )
 
 data class ResolvedRollSubgroup(
@@ -21,6 +23,20 @@ data class ResolvedRollSubgroup(
     val operator: RollSubgroupOperator,
     val expression: String,
 )
+
+/**
+ * Existing normal Parts keep their logical formula; dormant subtracting Parts
+ * carry a negative sample when invoked by an Effect. An explicit action dice
+ * expression still takes precedence over this default.
+ */
+fun ResolvedRollFormula.effectPartExpressions(): Map<String, String> {
+    val supportIds = supportSubgroups.map { it.id }.toSet()
+    return (subgroups + supportSubgroups).associate { part ->
+        part.id to if (part.id in supportIds &&
+            part.operator == RollSubgroupOperator.SUBTRACT) "-(${part.expression})"
+        else part.expression
+    }
+}
 
 data class ResolvedRollSubgroupResult(
     val subgroup: ResolvedRollSubgroup,
@@ -77,12 +93,17 @@ object RollFormulaResolver {
                 expression = resolveExpression(subgroup.expression, variables),
             )
         }
+        val activeSubgroups = if (roll.subgroups.isEmpty()) emptyList() else
+            resolvedSubgroups.filterIndexed { index, _ -> roll.subgroups[index].includeInNormalRoll }
+        val supportSubgroups = if (roll.subgroups.isEmpty()) emptyList() else
+            resolvedSubgroups.filterIndexed { index, _ -> !roll.subgroups[index].includeInNormalRoll }
         val baseExpression = if (resolvedSubgroups.isEmpty()) {
             resolveExpression(roll.expression, variables)
         } else {
             canonicalExpression(
-                resolvedSubgroups.map { subgroup ->
-                    RollSubgroup(subgroup.id, subgroup.name, subgroup.expression, subgroup.operator)
+                roll.subgroups.filter { it.includeInNormalRoll }.map { subgroup ->
+                    val expression = resolvedSubgroups.first { it.id == subgroup.id }.expression
+                    subgroup.copy(expression = expression)
                 },
             )
         }
@@ -112,13 +133,15 @@ object RollFormulaResolver {
         return ResolvedRollFormula(
             expression = parsed.source,
             appliedRules = appliedRules,
-            subgroups = resolvedSubgroups,
+            subgroups = activeSubgroups,
+            supportSubgroups = supportSubgroups,
         )
     }
 
     fun canonicalExpression(subgroups: List<RollSubgroup>): String {
-        require(subgroups.isNotEmpty()) { "At least one roll subgroup is required" }
-        return subgroups.mapIndexed { index, subgroup ->
+        val normalParts = subgroups.filter { it.includeInNormalRoll }
+        require(normalParts.isNotEmpty()) { "At least one Roll Part must be included in the initial throw" }
+        return normalParts.mapIndexed { index, subgroup ->
             require(subgroup.expression.isNotBlank()) { "Roll subgroup expression cannot be blank" }
             val wrapped = "(${subgroup.expression.trim()})"
             when {

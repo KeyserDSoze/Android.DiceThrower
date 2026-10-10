@@ -1,0 +1,4 @@
+<resources>
+    <string name="part_in_normal_roll">このパートを通常のロールで振る</string>
+    <string name="part_support_only_help">オフにすると設定は保持されますが、最初はダイスを振りません。発動したボーナスやペナルティで後から振ることができます。</string>
+</resources>

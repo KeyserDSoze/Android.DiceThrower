@@ -1,0 +1,4 @@
+<resources>
+    <string name="part_in_normal_roll">Lancer cette partie normalement</string>
+    <string name="part_support_only_help">Désactivé : cette partie reste configurée sans lancer ses dés au départ. Un bonus ou malus activé peut les lancer ensuite.</string>
+</resources>

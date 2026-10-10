@@ -141,6 +141,9 @@ object AppDataValidator {
             if (!RollFormulaResolver.validateTemplate(roll.expression, character.level, modifiers)) {
                 errors += "Roll ${roll.id} has an invalid expression"
             }
+            if (roll.subgroups.isNotEmpty() && roll.subgroups.none { it.includeInNormalRoll }) {
+                errors += "Roll ${roll.id} needs at least one Part in the initial throw"
+            }
             roll.subgroups.forEach { subgroup ->
                 if (!RollFormulaResolver.validateTemplate(subgroup.expression, character.level, modifiers)) {
                     errors += "Roll subgroup ${subgroup.id} has an invalid expression"

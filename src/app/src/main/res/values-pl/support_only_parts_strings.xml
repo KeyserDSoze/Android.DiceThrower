@@ -1,0 +1,4 @@
+<resources>
+    <string name="part_in_normal_roll">Rzucaj tę część normalnie</string>
+    <string name="part_support_only_help">Wył.: część pozostaje skonfigurowana, ale jej kości nie są początkowo rzucane. Aktywny bonus lub malus może rzucić nimi później.</string>
+</resources>

@@ -1,0 +1,4 @@
+<resources>
+    <string name="part_in_normal_roll">在普通掷骰中掷此部分</string>
+    <string name="part_support_only_help">关闭后保留此部分的设置，但起初不掷其骰子。触发的奖励或惩罚效果可稍后掷骰。</string>
+</resources>

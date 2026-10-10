@@ -140,6 +140,7 @@ import com.keyserdsoze.dicethrower.dice.RollFormulaResolver
 import com.keyserdsoze.dicethrower.dice.ResolvedRollSubgroupResult
 import com.keyserdsoze.dicethrower.dice.subgroupIdByComponentIndex
 import com.keyserdsoze.dicethrower.dice.subgroupResults
+import com.keyserdsoze.dicethrower.dice.effectPartExpressions
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.AppSettings
 import com.keyserdsoze.dicethrower.model.CharacterModifier
@@ -2400,7 +2401,8 @@ private fun RollScreenV2(
         if (hasRolled && !resultRevealed) return
         val mode = if (roll.doubleRollEnabled) requestedMode else DoubleRollMode.NORMAL
         val selectedPartIds = if (roll.subgroups.isEmpty()) setOf("single") else
-            roll.subgroups.filter { it.includeInDoubleRoll }.map { it.id }.toSet()
+            roll.subgroups.filter { it.includeInNormalRoll && it.includeInDoubleRoll }
+                .map { it.id }.toSet()
         val evaluation = DoubleRollEngine.evaluate(formula, mode, selectedPartIds)
         val result = evaluation.result
         // Logical effects consume only the selected double-roll candidates.
@@ -2408,6 +2410,7 @@ private fun RollScreenV2(
         val execution = if (roll.effects.isEmpty()) null else EffectSequenceExecutor.execute(
             original = EffectRollSnapshot.fromDoubleRoll(
                 evaluation,
+                supportSubgroups = formula.supportSubgroups,
                 variables = buildMap {
                     put("level", character.level)
                     modifiers.filter { it.characterId == character.id }.forEach { modifier ->
@@ -2419,7 +2422,7 @@ private fun RollScreenV2(
             resolvedPartExpressions = if (formula.subgroups.isEmpty()) {
                 mapOf("single" to formula.expression)
             } else {
-                formula.subgroups.associate { it.id to it.expression }
+                formula.effectPartExpressions()
             },
         )
         val adjustedTotal = execution?.let {
@@ -2520,7 +2523,17 @@ private fun RollScreenV2(
                             alternativeTotal = part.alternative?.total,
                             alternativeDetail = part.alternative?.detail(),
                         )
-                    }.orEmpty(),
+                    }.orEmpty() + EffectRuntimeHistory.supportPartResults(
+                        execution, formula.supportSubgroups,
+                    ).map { support ->
+                        RollLogPart(
+                            name = support.subgroup.name.ifBlank { roll.name },
+                            expression = support.subgroup.expression,
+                            total = execution?.finalSnapshot?.parts?.get(support.subgroup.id)?.total
+                                ?: support.result.total,
+                            detail = support.result.detail(),
+                        )
+                    },
             ),
         )
     }
@@ -2692,8 +2705,11 @@ private fun RollScreenV2(
                     // Keep the center of the table free for the 3D dice. The result stack
                     // grows upwards from the footer, with a viewport bound on small screens.
                     RollResultsOverlayV2(
-                        parts = doubleEvaluation?.parts?.map { ResolvedRollSubgroupResult(it.subgroup, it.chosen) }
-                            ?: formula.subgroupResults(value),
+                        parts = (doubleEvaluation?.parts?.map { ResolvedRollSubgroupResult(it.subgroup, it.chosen) }
+                            ?: formula.subgroupResults(value)) +
+                            EffectRuntimeHistory.supportPartResults(
+                                effectsExecution, formula.supportSubgroups,
+                            ),
                         total = finalRollTotal ?: value.total,
                         originalTotal = value.total.takeIf { it != finalRollTotal },
                         animateValues = cinematic.resultTransitions && settings.animationsEnabled,
@@ -4025,7 +4041,7 @@ internal fun RollBuilderScreenV2(
     val expressionToSave = runCatching {
         RollFormulaResolver.canonicalExpression(subgroups)
     }.getOrDefault("")
-    val groupsValid = subgroups.isNotEmpty() && subgroups.all { subgroup ->
+    val groupsValid = subgroups.any { it.includeInNormalRoll } && subgroups.all { subgroup ->
         subgroup.expression.isNotBlank() &&
             RollFormulaResolver.validateTemplate(subgroup.expression, character.level, modifiers)
     }
@@ -4233,6 +4249,29 @@ internal fun RollBuilderScreenV2(
                             }
                         }
                         RollTriggerToggle(
+                            label = stringResource(R.string.part_in_normal_roll),
+                            checked = subgroup.includeInNormalRoll,
+                            onChecked = { selected ->
+                                // Keep at least one initial Roll Part.
+                                if (selected || subgroups.count { it.includeInNormalRoll } > 1) {
+                                    updateSubgroups(subgroups.map { part ->
+                                        if (part.id == subgroup.id) part.copy(
+                                            includeInNormalRoll = selected,
+                                            includeInDoubleRoll = if (selected) part.includeInDoubleRoll else false,
+                                        ) else part
+                                    })
+                                }
+                            },
+                        )
+                        if (!subgroup.includeInNormalRoll) {
+                            Text(
+                                stringResource(R.string.part_support_only_help),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (subgroup.includeInNormalRoll) {
+                        RollTriggerToggle(
                             label = stringResource(R.string.double_roll_part),
                             checked = subgroup.includeInDoubleRoll,
                             onChecked = { selected ->
@@ -4241,6 +4280,7 @@ internal fun RollBuilderScreenV2(
                                 })
                             },
                         )
+                        }
                         GuidedExpressionEditorV2(
                             value = subgroup.expression,
                             character = character,

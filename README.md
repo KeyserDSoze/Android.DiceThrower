@@ -68,6 +68,8 @@ L'editor degli effetti ora presenta un flusso semplice **QUANDO → ALLORA** per
 
 Nel modulo **Modifica Roll**, il comando Doppio tiro si trova nella scheda principale, prima del gruppo, con una spiegazione: i tiri BEST/WORST confrontano due esecuzioni delle Parts selezionate, mentre il tiro normale resta singolo. È una proprietà del Roll, non un'opzione nascosta vicino alla formula.
 
+Ogni **Roll Part** può ora essere contrassegnata come **non inclusa nel tiro normale**. La Part resta configurata, con nome, espressione e stile, ma i suoi dadi non si lanciano all'inizio: una condizione Bonus/Malus può utilizzare **Ritira (Reroll)** o **Tiro aggiuntivo (Roll After)** sulla Part per generare quei dadi soltanto quando serve. Il tiro iniziale deve contenere almeno una Part attiva e solo quelle attive possono far parte del confronto A/B. Il risultato della Part di supporto compare nei risultati e nel log quando l'effetto si attiva, senza influenzare la casualità del tiro iniziale.
+
 ## Double Roll ed Effects (bonus/malus)
 
 Ogni Roll può abilitare il **doppio tiro Best/Worst**; alla creazione la prima Roll Part è selezionata per il confronto, mentre le altre sono opzionali e si attivano individualmente. Quando più Parts sono selezionate, il confronto migliore/peggiore usa **la loro somma per scegliere il gruppo vincente**, ma i risultati delle singole Parts rimangono visibili e distinti. Swipe a destra = Best, swipe a sinistra = Worst, swipe verso l'alto = tiro normale. I relativi pulsanti del footer permettono di scegliere esplicitamente la modalità anche senza gesture; il normale pulsante del dado resta all'estremità destra. I dadi non selezionati per il risultato rimangono consultabili e sono visivamente attenuati.

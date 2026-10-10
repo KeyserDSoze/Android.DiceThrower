@@ -60,6 +60,37 @@ object EffectRuntimeHistory {
     }
 
     /**
+     * Return only support-only Parts actually modified by activated Effects.
+     * The initial throw never includes these Parts. Re-roll replaces visible
+     * sampled components while Roll After appends them; numeric totals always
+     * come from the logical snapshot, never from the renderer.
+     */
+    fun supportPartResults(
+        execution: EffectExecutionResult?,
+        supportSubgroups: List<ResolvedRollSubgroup>,
+    ): List<ResolvedRollSubgroupResult> {
+        if (execution == null) return emptyList()
+        return supportSubgroups.mapNotNull { subgroup ->
+            val numeric = execution.finalSnapshot.parts[subgroup.id] ?: return@mapNotNull null
+            val samples = execution.generatedDice.filter { it.partId == subgroup.id }
+            if (samples.isEmpty() && numeric.total == 0) return@mapNotNull null
+            val dice = mutableListOf<DiceComponent>()
+            samples.forEach { sample ->
+                if (sample.kind == com.keyserdsoze.dicethrower.model.EffectActionType.REROLL) dice.clear()
+                dice.addAll(sample.result.components)
+            }
+            val chosen = DiceRollResult(
+                // Display sample components honestly; the final total can also
+                // include arithmetic effects, supplied by the final snapshot.
+                total = dice.sumOf { it.subtotal } + numeric.modifiers,
+                components = dice,
+                constantTotal = numeric.modifiers,
+            )
+            ResolvedRollSubgroupResult(subgroup, chosen)
+        }
+    }
+
+    /**
      * Preserve the legacy single scalar for old consumers, but change it only
      * by the sum of actual Part deltas. Unrelated Parts remain distinct in UI.
      */
