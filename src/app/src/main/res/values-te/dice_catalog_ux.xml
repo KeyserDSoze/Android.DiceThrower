@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">సిస్టమ్ పాచికల శైలులు</string>
+    <string name="dice_catalog_custom_title">అనుకూల పాచికల శైలులు</string>
+    <string name="dice_character_styles_summary">డిఫాల్ట్: %1$s · సేవ్ చేసిన శైలులు %2$d</string>
+    <string name="dice_character_styles_add">పాచికల శైలిని జోడించు</string>
+    <string name="dice_character_style_system_default">సిస్టమ్ డిఫాల్ట్</string>
+</resources>
