@@ -15,4 +15,5 @@
     <string name="cinematic_candidate_second">Lançamento B</string>
     <string name="cinematic_chosen">Escolhido</string>
     <string name="cinematic_unselected">Não escolhido</string>
+    <string name="cinematic_camera">Impacto suave da câmara</string>
 </resources>

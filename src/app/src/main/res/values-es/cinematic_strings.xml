@@ -15,4 +15,5 @@
     <string name="cinematic_candidate_second">Tirada B</string>
     <string name="cinematic_chosen">Elegido</string>
     <string name="cinematic_unselected">No elegido</string>
+    <string name="cinematic_camera">Ligero impacto de cámara</string>
 </resources>

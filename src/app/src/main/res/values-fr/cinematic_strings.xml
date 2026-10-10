@@ -15,4 +15,5 @@
     <string name="cinematic_candidate_second">Lancer B</string>
     <string name="cinematic_chosen">Choisi</string>
     <string name="cinematic_unselected">Non choisi</string>
+    <string name="cinematic_camera">Léger mouvement de caméra</string>
 </resources>
