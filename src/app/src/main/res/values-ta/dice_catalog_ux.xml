@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">அமைப்பு பகடை பாணிகள்</string>
+    <string name="dice_catalog_custom_title">தனிப்பயன் பகடை பாணிகள்</string>
+    <string name="dice_character_styles_summary">இயல்புநிலை: %1$s · சேமித்த பாணிகள் %2$d</string>
+    <string name="dice_character_styles_add">பகடை பாணியைச் சேர்</string>
+    <string name="dice_character_style_system_default">அமைப்பு இயல்புநிலை</string>
+</resources>
