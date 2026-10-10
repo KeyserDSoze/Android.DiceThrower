@@ -201,6 +201,12 @@ Renderer material profiles map the domain-level `GLOSSY_RESIN`, `MATTE_RESIN`, `
 
 Appearance randomization uses a random source separate from the one passed to `DiceExpression.evaluate`, so choosing or randomizing a visual style cannot consume or alter dice-result RNG state.
 
+## Immutable dice appearance presets (EPIC #138, slice #141)
+
+`DiceStylePresets` is a pure-domain, immutable catalog of ten material/color palettes with stable keys. Presets are *definitions*, not persisted records. Adding a preset creates a fresh character-owned `DiceStyle` via `DiceStyleDataOperations.createStyle`, with an owned ID, localized saved name and existing reference-safe storage/backup/Drive lifecycle. The home character list now links to a Dice Customization hub, which selects a character and reuses the existing editing surface. No graphics can affect `DiceExpression.evaluate` or physics-to-RNG coupling.
+
+**Not global user-style sharing yet:** the catalog management hub currently works on a selected character; cross-character copies are value based. Future #138 subissues will establish shared user-created style identity and its offline-first sync/conflict model before changing persisted owner semantics. Do not silently reinterpret existing character style IDs as global.
+
 ## Dice style editor
 
 Character Edit mode exposes the character-owned `DiceStyle` collection without coupling the OpenGL renderer to persistence. `DiceStyleDataOperations` owns reference-safe create/update/duplicate/reorder/default/delete operations, while Compose edits domain values and persists the returned `AppData` through the existing screen boundary.
