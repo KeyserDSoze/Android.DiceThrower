@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">Stiluri de zaruri de sistem</string>
+    <string name="dice_catalog_custom_title">Stiluri de zaruri personalizate</string>
+    <string name="dice_character_styles_summary">Implicit: %1$s · %2$d stiluri salvate</string>
+    <string name="dice_character_styles_add">Adaugă stil de zar</string>
+    <string name="dice_character_style_system_default">Implicit de sistem</string>
+</resources>
