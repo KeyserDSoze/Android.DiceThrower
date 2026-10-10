@@ -55,6 +55,7 @@ internal fun RollVisualSettingsEditorV2(
         VisualToggle(R.string.cinematic_particles, settings.particles) { change { copy(particles = it) } }
         VisualToggle(R.string.cinematic_actions, settings.actionCues) { change { copy(actionCues = it) } }
         VisualToggle(R.string.cinematic_results, settings.resultTransitions) { change { copy(resultTransitions = it) } }
+        VisualToggle(R.string.cinematic_camera, settings.cameraImpact) { change { copy(cameraImpact = it) } }
     }
 }
 
