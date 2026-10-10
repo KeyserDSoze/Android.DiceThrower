@@ -1,0 +1,8 @@
+<resources>
+    <string name="double_roll_explained">Le double lancer compare deux lancers des parties choisies et garde le meilleur ou le pire. Le lancer normal reste unique.</string>
+    <string name="dice_gallery_title">Choisir un style de dés</string>
+    <string name="dice_gallery_help">Touchez un modèle pour voir le dé 3D. Ajoutez une copie au personnage, puis changez les couleurs et le matériau.</string>
+    <string name="dice_gallery_add">Ajouter le style choisi</string>
+    <string name="dice_saved_styles_title">Vos styles de dés enregistrés</string>
+    <string name="dice_saved_styles_help">Ces styles appartiennent au personnage sélectionné. Touchez les pastilles de couleur pour voir un dé ou Modifier pour personnaliser.</string>
+</resources>

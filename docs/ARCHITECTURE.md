@@ -209,6 +209,10 @@ Appearance randomization uses a random source separate from the one passed to `D
 
 `EffectEditorDraft.criticalHit` creates a normal persisted `RollEffect` with stable IDs, `PART` trigger on the first subgroup (`DICE_ONLY == 20`) and a `MULTIPLY ×2` action on the second subgroup using `DICE_ONLY`. Modifiers remain unmodified and the execution path stays `EffectSequenceExecutor` → `EffectActionEngine`, never the renderer. No schema migration or separate effects executor is needed. The UI offers the template plus WHEN/THEN headings; existing advanced groups/actions remain editable and serializable. Limitation: `DICE_ONLY` is the dice subtotal of the Part, not a predicate on one die face within a multi-die Part.
 
+## Dice gallery and Roll builder UX (#156)
+
+The character-scoped dice customizer provides a lightweight two-column preset palette gallery. Only the **selected** preset gets a 3D renderer instance to avoid creating ten live preview surfaces; choices show two color circles and a material name. Selecting a preset is non-mutating. An explicit Add button copies it into the existing per-character DiceStyle store with a fresh ID. Saved style previews are expanded one at a time, and all existing editor/backup/Drive semantics remain untouched. The double-roll control is in the primary Roll identity card, before group selection; settings and logical semantics are unchanged.
+
 ## Immutable dice appearance presets (EPIC #138, slice #141)
 
 `DiceStylePresets` is a pure-domain, immutable catalog of ten material/color palettes with stable keys. Presets are *definitions*, not persisted records. Adding a preset creates a fresh character-owned `DiceStyle` via `DiceStyleDataOperations.createStyle`, with an owned ID, localized saved name and existing reference-safe storage/backup/Drive lifecycle. The home character list now links to a Dice Customization hub, which selects a character and reuses the existing editing surface. No graphics can affect `DiceExpression.evaluate` or physics-to-RNG coupling.

@@ -1,0 +1,8 @@
+<resources>
+    <string name="double_roll_explained">Der Doppelwurf vergleicht zwei Würfe der ausgewählten Teile und verwendet den besseren oder schlechteren Wert. Normal würfelt nur einmal.</string>
+    <string name="dice_gallery_title">Würfeldesign wählen</string>
+    <string name="dice_gallery_help">Tippe auf eine Vorlage, um den 3D-Würfel zu sehen. Füge dem Charakter eine Kopie hinzu und bearbeite Farben und Material.</string>
+    <string name="dice_gallery_add">Ausgewählten Stil hinzufügen</string>
+    <string name="dice_saved_styles_title">Deine gespeicherten Würfelstile</string>
+    <string name="dice_saved_styles_help">Diese Stile gehören zum gewählten Charakter. Tippe auf die Farben für eine Vorschau oder auf Bearbeiten.</string>
+</resources>
