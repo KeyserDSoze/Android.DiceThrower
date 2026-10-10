@@ -32,7 +32,7 @@ fun DiceStylePreview3D(
             ),
         )
     }
-    Dice3DScene(event = event, modifier = modifier)
+    Dice3DScene(event = event, modifier = modifier, animateRoll = false, previewMode = true)
 }
 
 private val previewEventIds = AtomicLong(10_000L)
