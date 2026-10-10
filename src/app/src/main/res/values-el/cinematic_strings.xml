@@ -15,4 +15,5 @@
     <string name="cinematic_candidate_second">Ρίψη Β</string>
     <string name="cinematic_chosen">Επιλεγμένο</string>
     <string name="cinematic_unselected">Μη επιλεγμένο</string>
+    <string name="cinematic_camera">Ήπια δόνηση κάμερας</string>
 </resources>

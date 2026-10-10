@@ -15,4 +15,5 @@
     <string name="cinematic_candidate_second">Kast B</string>
     <string name="cinematic_chosen">Vald</string>
     <string name="cinematic_unselected">Inte vald</string>
+    <string name="cinematic_camera">Mjuk kameraskakning</string>
 </resources>

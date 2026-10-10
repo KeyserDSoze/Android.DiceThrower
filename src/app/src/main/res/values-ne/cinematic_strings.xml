@@ -15,4 +15,5 @@
     <string name="cinematic_candidate_second">रोल B</string>
     <string name="cinematic_chosen">छानिएको</string>
     <string name="cinematic_unselected">नछानिएको</string>
+    <string name="cinematic_camera">हल्का क्यामेरा कम्पन</string>
 </resources>

@@ -15,4 +15,5 @@
     <string name="cinematic_candidate_second">Кидок Б</string>
     <string name="cinematic_chosen">Обрано</string>
     <string name="cinematic_unselected">Не обрано</string>
+    <string name="cinematic_camera">Легке тремтіння камери</string>
 </resources>

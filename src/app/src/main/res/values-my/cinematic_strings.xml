@@ -15,4 +15,5 @@
     <string name="cinematic_candidate_second">ပစ်ချက် B</string>
     <string name="cinematic_chosen">ရွေးထား</string>
     <string name="cinematic_unselected">မရွေးထား</string>
+    <string name="cinematic_camera">ကင်မရာ အနည်းငယ်တုန်ခါမှု</string>
 </resources>
