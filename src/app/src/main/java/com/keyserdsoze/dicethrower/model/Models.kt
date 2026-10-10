@@ -215,6 +215,8 @@ data class AppSettings(
     val doubleTapStatsEnabled: Boolean = true,
     val doubleRollDirectionalSwipeEnabled: Boolean = true,
     val animationsEnabled: Boolean = true,
+    /** Device-wide cinematic preferences applied to every Roll. Included in JSON backup. */
+    val visualEffects: RollVisualEffectsSettings = RollVisualEffectsSettings(),
     val showRollButton: Boolean = true,
     val rollButtonPosition: RollButtonPosition = RollButtonPosition.BOTTOM_RIGHT,
     val logRetention: Int = 20,
