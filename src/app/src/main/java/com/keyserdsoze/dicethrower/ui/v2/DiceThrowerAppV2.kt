@@ -4087,6 +4087,16 @@ internal fun RollBuilderScreenV2(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    RollTriggerToggle(
+                        label = stringResource(R.string.double_roll_enable),
+                        checked = doubleRollEnabled,
+                        onChecked = { doubleRollEnabled = it },
+                    )
+                    Text(
+                        stringResource(R.string.double_roll_explained),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     OutlinedTextField(
                         value = minimumLevelText,
                         onValueChange = { input ->
@@ -4246,11 +4256,6 @@ internal fun RollBuilderScreenV2(
             }
 
             item {
-                RollTriggerToggle(
-                    label = stringResource(R.string.double_roll_enable),
-                    checked = doubleRollEnabled,
-                    onChecked = { doubleRollEnabled = it },
-                )
                 Surface(
                     shape = RoundedCornerShape(14.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant,
