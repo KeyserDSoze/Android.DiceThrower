@@ -67,6 +67,39 @@ class DiceTablePhysicsTest {
 
 
     @Test
+    fun doubleRollDiceRemainInCompactLanesEvenWhenGroupsAreUneven() {
+        // Eleven dice in one candidate is a stress case for the 12-die GPU cap.
+        for (groupASize in listOf(1, 6, 11)) {
+            val physics = DiceTablePhysics(
+                count = 12, seed = 1200L + groupASize,
+                laneByDieIndex = (0 until 12).associateWith { if (it < groupASize) 0 else 1 },
+            )
+            val top = CandidateLaneLayout.bounds(0, physics.radius, DiceTableViewport.HALF_HEIGHT)
+            val bottom = CandidateLaneLayout.bounds(1, physics.radius, DiceTableViewport.HALF_HEIGHT)
+            assertTrue(top.second <= 2.85f)
+            assertTrue(bottom.first >= -2.85f)
+            assertTrue(top.first > 0f && bottom.second < 0f)
+            repeat(230) {
+                physics.step(1f / 60f)
+                physics.states().forEachIndexed { index, die ->
+                    val limits = if (index < groupASize) top else bottom
+                    assertTrue("Die $index escaped its compact lane at step $it: ${die.y} not in $limits",
+                        die.y >= limits.first - 0.001f && die.y <= limits.second + 0.001f)
+                }
+            }
+            assertTrue(physics.isSettled)
+        }
+    }
+
+    @Test
+    fun nonComparedDiceKeepFullTableBounds() {
+        val radius = DiceTablePhysics(count = 2, seed = 9L).radius
+        val bounds = CandidateLaneLayout.bounds(null, radius, DiceTableViewport.HALF_HEIGHT)
+        assertEquals(-DiceTableViewport.HALF_HEIGHT + radius, bounds.first, 0.0001f)
+        assertEquals(DiceTableViewport.HALF_HEIGHT - radius, bounds.second, 0.0001f)
+    }
+
+    @Test
     fun simulationIsDeterministicAndKeepsDiceInsideTable() {
         val first = DiceTablePhysics(count = 8, seed = 42L)
         val second = DiceTablePhysics(count = 8, seed = 42L)
