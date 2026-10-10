@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">סגנונות קוביות מערכת</string>
+    <string name="dice_catalog_custom_title">סגנונות קוביות מותאמים</string>
+    <string name="dice_character_styles_summary">ברירת מחדל: %1$s · %2$d סגנונות שמורים</string>
+    <string name="dice_character_styles_add">הוספת סגנון קובייה</string>
+    <string name="dice_character_style_system_default">ברירת מחדל של המערכת</string>
+</resources>
