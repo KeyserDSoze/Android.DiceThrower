@@ -1,0 +1,4 @@
+<resources>
+    <string name="cinematic_global_heading">Effets visuels pour tous les lancers</string>
+    <string name="cinematic_global_help">Réglez ici l\'apparence et les animations de tous les lancers. Les modifications s\'appliquent immédiatement. Le réglage général des animations est prioritaire.</string>
+</resources>

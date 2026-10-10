@@ -1,0 +1,4 @@
+<resources>
+    <string name="cinematic_global_heading">सभी थ्रो के विज़ुअल प्रभाव</string>
+    <string name="cinematic_global_help">सभी पासा थ्रो के दृश्य और एनिमेशन यहाँ बदलें। बदलाव तुरंत सभी थ्रो पर लागू होते हैं। मुख्य एनिमेशन स्विच को प्राथमिकता मिलती है।</string>
+</resources>

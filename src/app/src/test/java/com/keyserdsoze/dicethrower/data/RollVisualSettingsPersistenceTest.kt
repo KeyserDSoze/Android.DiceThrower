@@ -22,6 +22,45 @@ class RollVisualSettingsPersistenceTest {
     )
 
     @Test
+    fun globalVisualSettingsRoundTripThroughSettingsAndBackupWithSafeLegacyDefault() {
+        val selected = RollVisualEffectsSettings.preset(RollVisualProfile.SUBTLE).custom {
+            copy(badge = false, groupLanes = false, winnerSpotlight = true,
+                tableAura = true, actionCues = false)
+        }
+        val settings = AppSettings(visualEffects = selected)
+        assertEquals(selected, AppDataJsonCodec.decodeSettings(
+            AppDataJsonCodec.encodeSettings(settings)).visualEffects)
+        val backup = AppBackupCodec.decode(AppBackupCodec.encode(data, settings, "it"))
+        assertEquals(settings, backup.settings)
+        assertEquals(data, backup.data)
+
+        val oldSettings = AppDataJsonCodec.encodeSettings(settings)
+        oldSettings.remove("visualEffects")
+        assertEquals(RollVisualEffectsSettings(),
+            AppDataJsonCodec.decodeSettings(oldSettings).visualEffects)
+
+        // Per-Roll legacy fields still decode, but cannot override the global choice.
+        val legacyRoll = roll.copy(visualEffects = RollVisualEffectsSettings.preset(RollVisualProfile.OFF))
+        val global = settings.copy(visualEffects = RollVisualEffectsSettings.preset(RollVisualProfile.BALANCED))
+        assertEquals(RollVisualProfile.BALANCED, global.effectiveVisualEffects().profile)
+        assertEquals(RollVisualProfile.OFF, legacyRoll.visualEffects.profile)
+        assertEquals(global.effectiveVisualEffects(),
+            global.copy().effectiveVisualEffects())
+    }
+
+    @Test
+    fun reducedMotionDisablesAnimatedAccentsWithoutDiscardingGlobalSelection() {
+        val preferred = RollVisualEffectsSettings.preset(RollVisualProfile.BALANCED)
+        val settings = AppSettings(animationsEnabled = false, visualEffects = preferred)
+        val effective = settings.effectiveVisualEffects()
+        assertFalse(effective.tableAura || effective.particles || effective.actionCues ||
+            effective.resultTransitions || effective.cameraImpact)
+        assertTrue(effective.badge && effective.groupLanes && effective.winnerSpotlight)
+        assertEquals(preferred, settings.visualEffects)
+        assertEquals(preferred, settings.copy(animationsEnabled = true).effectiveVisualEffects())
+    }
+
+    @Test
     fun balancedProfileIsDefaultAndOldDataNeverLoseEffectsOnUpgrade() {
         val json = AppDataJsonCodec.encodeData(data)
         assertEquals(15, json.getInt("version"))

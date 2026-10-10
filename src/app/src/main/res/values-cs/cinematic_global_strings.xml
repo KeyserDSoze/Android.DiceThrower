@@ -1,0 +1,4 @@
+<resources>
+    <string name="cinematic_global_heading">Vizuální efekty pro všechny hody</string>
+    <string name="cinematic_global_help">Zde nastavte vzhled a animace všech hodů. Změny se projeví ihned. Hlavní přepínač animací má přednost.</string>
+</resources>

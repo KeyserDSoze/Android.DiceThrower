@@ -1,0 +1,4 @@
+<resources>
+    <string name="cinematic_global_heading">Efekty wizualne wszystkich rzutów</string>
+    <string name="cinematic_global_help">Tutaj ustaw wygląd i animacje wszystkich rzutów. Zmiany obowiązują od razu. Ogólne ustawienie animacji ma pierwszeństwo.</string>
+</resources>

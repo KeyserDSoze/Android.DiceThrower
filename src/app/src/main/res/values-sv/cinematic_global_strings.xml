@@ -1,0 +1,4 @@
+<resources>
+    <string name="cinematic_global_heading">Visuella effekter för alla slag</string>
+    <string name="cinematic_global_help">Här ändrar du utseende och animationer för alla slag. Ändringar gäller direkt. Den övergripande animationsinställningen har företräde.</string>
+</resources>

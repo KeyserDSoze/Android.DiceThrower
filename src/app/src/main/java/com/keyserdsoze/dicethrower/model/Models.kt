@@ -215,12 +215,18 @@ data class AppSettings(
     val doubleTapStatsEnabled: Boolean = true,
     val doubleRollDirectionalSwipeEnabled: Boolean = true,
     val animationsEnabled: Boolean = true,
+    /** Device-wide cinematic preferences applied to every Roll. Included in JSON backup. */
+    val visualEffects: RollVisualEffectsSettings = RollVisualEffectsSettings(),
     val showRollButton: Boolean = true,
     val rollButtonPosition: RollButtonPosition = RollButtonPosition.BOTTOM_RIGHT,
     val logRetention: Int = 20,
     // Device-local by design: this preference never participates in roaming settings sync.
     val conflictPolicy: ConflictPolicy = ConflictPolicy.ASK,
-)
+) {
+    /** Shared by every Roll on this device; never reads per-Roll visual overrides. */
+    fun effectiveVisualEffects(): RollVisualEffectsSettings =
+        visualEffects.withGlobalMotionEnabled(animationsEnabled)
+}
 
 data class CharacterSyncMetadata(
     val characterId: String,

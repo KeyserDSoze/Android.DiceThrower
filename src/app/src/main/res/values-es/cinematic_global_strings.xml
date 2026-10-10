@@ -1,0 +1,4 @@
+<resources>
+    <string name="cinematic_global_heading">Efectos visuales para todas las tiradas</string>
+    <string name="cinematic_global_help">Configura aquí el aspecto y las animaciones de todas las tiradas. Los cambios se aplican al instante. El ajuste general de animaciones tiene prioridad.</string>
+</resources>
