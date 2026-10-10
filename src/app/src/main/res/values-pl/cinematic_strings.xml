@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">Efekty wizualne rzutu</string>
+    <string name="cinematic_help">Wybierz profil i dostosuj efekty. Animacje podlegają ustawieniu ogólnemu.</string>
+    <string name="cinematic_balanced">Zrównoważony</string>
+    <string name="cinematic_subtle">Subtelny</string>
+    <string name="cinematic_off">Wyłączone</string>
+    <string name="cinematic_badge">Etykieta efektu</string>
+    <string name="cinematic_lanes">Oddziel grupy podwójnego rzutu</string>
+    <string name="cinematic_spotlight">Podświetl wybrane kości</string>
+    <string name="cinematic_aura">Magiczna aura stołu</string>
+    <string name="cinematic_particles">Iskry i cząstki popiołu</string>
+    <string name="cinematic_actions">Efekty zależne od akcji</string>
+    <string name="cinematic_results">Animuj zmianę wyniku</string>
+    <string name="cinematic_candidate_first">Rzut A</string>
+    <string name="cinematic_candidate_second">Rzut B</string>
+    <string name="cinematic_chosen">Wybrany</string>
+    <string name="cinematic_unselected">Niewybrany</string>
+</resources>

@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">Kesan visual balingan</string>
+    <string name="cinematic_help">Pilih profil dan ubah kesan. Animasi mengikut tetapan umum.</string>
+    <string name="cinematic_balanced">Seimbang</string>
+    <string name="cinematic_subtle">Lembut</string>
+    <string name="cinematic_off">Mati</string>
+    <string name="cinematic_badge">Label nama kesan</string>
+    <string name="cinematic_lanes">Asingkan kumpulan balingan berganda</string>
+    <string name="cinematic_spotlight">Serlahkan dadu terpilih</string>
+    <string name="cinematic_aura">Aura ajaib meja</string>
+    <string name="cinematic_particles">Percikan dan zarah abu</string>
+    <string name="cinematic_actions">Kesan mengikut tindakan</string>
+    <string name="cinematic_results">Animasi perubahan hasil</string>
+    <string name="cinematic_candidate_first">Balingan A</string>
+    <string name="cinematic_candidate_second">Balingan B</string>
+    <string name="cinematic_chosen">Dipilih</string>
+    <string name="cinematic_unselected">Tidak dipilih</string>
+</resources>

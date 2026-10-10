@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">Atış görsel efektleri</string>
+    <string name="cinematic_help">Bir profil seçip efektleri özelleştirin. Animasyonlar genel ayara uyar.</string>
+    <string name="cinematic_balanced">Dengeli</string>
+    <string name="cinematic_subtle">Hafif</string>
+    <string name="cinematic_off">Kapalı</string>
+    <string name="cinematic_badge">Etki adı etiketi</string>
+    <string name="cinematic_lanes">Çift atış gruplarını ayır</string>
+    <string name="cinematic_spotlight">Seçilen zarları vurgula</string>
+    <string name="cinematic_aura">Masada büyülü aura</string>
+    <string name="cinematic_particles">Kıvılcım ve kül parçacıkları</string>
+    <string name="cinematic_actions">İşleme özel efektler</string>
+    <string name="cinematic_results">Sonuç değişimini canlandır</string>
+    <string name="cinematic_candidate_first">Atış A</string>
+    <string name="cinematic_candidate_second">Atış B</string>
+    <string name="cinematic_chosen">Seçildi</string>
+    <string name="cinematic_unselected">Seçilmedi</string>
+</resources>

@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">Roll visual effects</string>
+    <string name="cinematic_help">Choose a preset, then customize each visual effect. Animations follow the global setting.</string>
+    <string name="cinematic_balanced">Balanced</string>
+    <string name="cinematic_subtle">Subtle</string>
+    <string name="cinematic_off">Off</string>
+    <string name="cinematic_badge">Effect name badge</string>
+    <string name="cinematic_lanes">Separate double-roll groups</string>
+    <string name="cinematic_spotlight">Highlight chosen dice</string>
+    <string name="cinematic_aura">Magical table aura</string>
+    <string name="cinematic_particles">Sparks and ash particles</string>
+    <string name="cinematic_actions">Action-specific effects</string>
+    <string name="cinematic_results">Animated result changes</string>
+    <string name="cinematic_candidate_first">Roll A</string>
+    <string name="cinematic_candidate_second">Roll B</string>
+    <string name="cinematic_chosen">Chosen</string>
+    <string name="cinematic_unselected">Not chosen</string>
+</resources>

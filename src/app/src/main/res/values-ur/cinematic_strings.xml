@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">رول کے بصری اثرات</string>
+    <string name="cinematic_help">پروفائل چنیں اور اثرات بدلیں۔ حرکت کی عمومی ترتیب نافذ ہوگی۔</string>
+    <string name="cinematic_balanced">متوازن</string>
+    <string name="cinematic_subtle">ہلکا</string>
+    <string name="cinematic_off">بند</string>
+    <string name="cinematic_badge">اثر کا نام دکھائیں</string>
+    <string name="cinematic_lanes">دہرے رول کے گروہ الگ کریں</string>
+    <string name="cinematic_spotlight">منتخب پاسے روشن کریں</string>
+    <string name="cinematic_aura">میز پر جادوئی روشنی</string>
+    <string name="cinematic_particles">چنگاریاں اور راکھ کے ذرات</string>
+    <string name="cinematic_actions">عمل کے مطابق اثرات</string>
+    <string name="cinematic_results">نتیجے کی تبدیلی کی حرکت</string>
+    <string name="cinematic_candidate_first">رول A</string>
+    <string name="cinematic_candidate_second">رول B</string>
+    <string name="cinematic_chosen">منتخب</string>
+    <string name="cinematic_unselected">غیر منتخب</string>
+</resources>

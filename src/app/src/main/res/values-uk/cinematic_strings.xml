@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">Візуальні ефекти кидка</string>
+    <string name="cinematic_help">Оберіть профіль та налаштуйте ефекти. Анімація враховує загальні налаштування.</string>
+    <string name="cinematic_balanced">Збалансований</string>
+    <string name="cinematic_subtle">Стриманий</string>
+    <string name="cinematic_off">Вимкнено</string>
+    <string name="cinematic_badge">Підпис ефекту</string>
+    <string name="cinematic_lanes">Розділити групи подвійного кидка</string>
+    <string name="cinematic_spotlight">Підсвітити обрані кубики</string>
+    <string name="cinematic_aura">Магічна аура столу</string>
+    <string name="cinematic_particles">Іскри та частинки попелу</string>
+    <string name="cinematic_actions">Ефекти відповідно до дії</string>
+    <string name="cinematic_results">Анімація зміни результату</string>
+    <string name="cinematic_candidate_first">Кидок А</string>
+    <string name="cinematic_candidate_second">Кидок Б</string>
+    <string name="cinematic_chosen">Обрано</string>
+    <string name="cinematic_unselected">Не обрано</string>
+</resources>

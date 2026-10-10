@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">굴림 시각 효과</string>
+    <string name="cinematic_help">프리셋을 선택하고 효과를 조정하세요. 애니메이션은 전체 설정을 따릅니다.</string>
+    <string name="cinematic_balanced">균형</string>
+    <string name="cinematic_subtle">은은하게</string>
+    <string name="cinematic_off">끄기</string>
+    <string name="cinematic_badge">효과 이름 표시</string>
+    <string name="cinematic_lanes">더블 롤 그룹 분리</string>
+    <string name="cinematic_spotlight">선택된 주사위 강조</string>
+    <string name="cinematic_aura">테이블 마법 오라</string>
+    <string name="cinematic_particles">불꽃과 재 입자</string>
+    <string name="cinematic_actions">작업별 효과</string>
+    <string name="cinematic_results">결과 변화 애니메이션</string>
+    <string name="cinematic_candidate_first">굴림 A</string>
+    <string name="cinematic_candidate_second">굴림 B</string>
+    <string name="cinematic_chosen">선택됨</string>
+    <string name="cinematic_unselected">선택 안 됨</string>
+</resources>

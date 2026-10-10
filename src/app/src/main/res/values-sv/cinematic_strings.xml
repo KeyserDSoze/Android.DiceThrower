@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">Visuella kasteffekter</string>
+    <string name="cinematic_help">Välj profil och anpassa effekter. Animationer följer den allmänna inställningen.</string>
+    <string name="cinematic_balanced">Balanserad</string>
+    <string name="cinematic_subtle">Diskret</string>
+    <string name="cinematic_off">Av</string>
+    <string name="cinematic_badge">Effektnamn</string>
+    <string name="cinematic_lanes">Separera dubbelkastens grupper</string>
+    <string name="cinematic_spotlight">Markera valda tärningar</string>
+    <string name="cinematic_aura">Magisk bordsaura</string>
+    <string name="cinematic_particles">Gnistor och askpartiklar</string>
+    <string name="cinematic_actions">Effekter för varje åtgärd</string>
+    <string name="cinematic_results">Animera resultatändringar</string>
+    <string name="cinematic_candidate_first">Kast A</string>
+    <string name="cinematic_candidate_second">Kast B</string>
+    <string name="cinematic_chosen">Vald</string>
+    <string name="cinematic_unselected">Inte vald</string>
+</resources>

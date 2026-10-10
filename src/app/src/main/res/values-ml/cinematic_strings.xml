@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">റോൾ ദൃശ്യ ഇഫക്റ്റുകൾ</string>
+    <string name="cinematic_help">പ്രൊഫൈൽ തിരഞ്ഞെടുത്ത് ഇഫക്റ്റുകൾ ക്രമീകരിക്കുക. ആനിമേഷൻ പൊതുസജ്ജീകരണം പിന്തുടരും.</string>
+    <string name="cinematic_balanced">സന്തുലിതം</string>
+    <string name="cinematic_subtle">മിതമായത്</string>
+    <string name="cinematic_off">ഓഫ്</string>
+    <string name="cinematic_badge">ഇഫക്റ്റിന്റെ പേര്</string>
+    <string name="cinematic_lanes">ഇരട്ട റോൾ ഗ്രൂപ്പുകൾ വേർതിരിക്കുക</string>
+    <string name="cinematic_spotlight">തിരഞ്ഞെടുത്ത ഡൈസുകൾ തെളിയിക്കുക</string>
+    <string name="cinematic_aura">മേശയിലെ മാന്ത്രിക പ്രകാശം</string>
+    <string name="cinematic_particles">തീപ്പൊരികളും ചാരക്കണങ്ങളും</string>
+    <string name="cinematic_actions">പ്രവർത്തനത്തിനു പ്രത്യേക ഇഫക്റ്റുകൾ</string>
+    <string name="cinematic_results">ഫലമാറ്റ ആനിമേഷൻ</string>
+    <string name="cinematic_candidate_first">റോൾ A</string>
+    <string name="cinematic_candidate_second">റോൾ B</string>
+    <string name="cinematic_chosen">തിരഞ്ഞെടുത്തത്</string>
+    <string name="cinematic_unselected">തിരഞ്ഞെടുക്കാത്തത്</string>
+</resources>

@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">Tasirin gani na jefa</string>
+    <string name="cinematic_help">Zaɓi salo ka tsara tasiri. Motsi yana bin saitin gaba ɗaya.</string>
+    <string name="cinematic_balanced">Daidaitacce</string>
+    <string name="cinematic_subtle">Mai sauƙi</string>
+    <string name="cinematic_off">A kashe</string>
+    <string name="cinematic_badge">Sunan tasiri</string>
+    <string name="cinematic_lanes">Raba rukunin jefa biyu</string>
+    <string name="cinematic_spotlight">Haskaka ƙwallayen da aka zaɓa</string>
+    <string name="cinematic_aura">Hasken sihiri a tebur</string>
+    <string name="cinematic_particles">Tartsatsi da ƙurar toka</string>
+    <string name="cinematic_actions">Tasiri ga kowane aiki</string>
+    <string name="cinematic_results">Motsin sauyin sakamako</string>
+    <string name="cinematic_candidate_first">Jefa A</string>
+    <string name="cinematic_candidate_second">Jefa B</string>
+    <string name="cinematic_chosen">An zaɓa</string>
+    <string name="cinematic_unselected">Ba a zaɓa ba</string>
+</resources>

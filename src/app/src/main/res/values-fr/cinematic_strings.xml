@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">Effets visuels du lancer</string>
+    <string name="cinematic_help">Choisissez un profil et personnalisez les effets. Les animations suivent le réglage général.</string>
+    <string name="cinematic_balanced">Équilibré</string>
+    <string name="cinematic_subtle">Discret</string>
+    <string name="cinematic_off">Désactivé</string>
+    <string name="cinematic_badge">Étiquette de l’effet</string>
+    <string name="cinematic_lanes">Séparer les deux lancers</string>
+    <string name="cinematic_spotlight">Mettre en valeur les dés choisis</string>
+    <string name="cinematic_aura">Aura magique sur la table</string>
+    <string name="cinematic_particles">Étincelles et particules de cendre</string>
+    <string name="cinematic_actions">Effets propres aux actions</string>
+    <string name="cinematic_results">Animation des résultats</string>
+    <string name="cinematic_candidate_first">Lancer A</string>
+    <string name="cinematic_candidate_second">Lancer B</string>
+    <string name="cinematic_chosen">Choisi</string>
+    <string name="cinematic_unselected">Non choisi</string>
+</resources>

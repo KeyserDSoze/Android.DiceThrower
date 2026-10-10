@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">Visuele worpeffecten</string>
+    <string name="cinematic_help">Kies een profiel en pas effecten aan. Animaties volgen de algemene instelling.</string>
+    <string name="cinematic_balanced">Gebalanceerd</string>
+    <string name="cinematic_subtle">Subtiel</string>
+    <string name="cinematic_off">Uit</string>
+    <string name="cinematic_badge">Effectnaam tonen</string>
+    <string name="cinematic_lanes">Dubbele worpen scheiden</string>
+    <string name="cinematic_spotlight">Gekozen dobbelstenen benadrukken</string>
+    <string name="cinematic_aura">Magische tafelaura</string>
+    <string name="cinematic_particles">Vonken en asdeeltjes</string>
+    <string name="cinematic_actions">Actiespecifieke effecten</string>
+    <string name="cinematic_results">Resultaatverandering animeren</string>
+    <string name="cinematic_candidate_first">Worp A</string>
+    <string name="cinematic_candidate_second">Worp B</string>
+    <string name="cinematic_chosen">Gekozen</string>
+    <string name="cinematic_unselected">Niet gekozen</string>
+</resources>

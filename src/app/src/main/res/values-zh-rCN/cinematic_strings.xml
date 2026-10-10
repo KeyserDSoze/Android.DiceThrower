@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">掷骰视觉效果</string>
+    <string name="cinematic_help">选择预设并自定义每种效果。动画遵循全局设置。</string>
+    <string name="cinematic_balanced">均衡</string>
+    <string name="cinematic_subtle">轻量</string>
+    <string name="cinematic_off">关闭</string>
+    <string name="cinematic_badge">效果名称标签</string>
+    <string name="cinematic_lanes">分开显示双重掷骰</string>
+    <string name="cinematic_spotlight">突出显示选中骰子</string>
+    <string name="cinematic_aura">桌面魔法光环</string>
+    <string name="cinematic_particles">火花与灰烬粒子</string>
+    <string name="cinematic_actions">按操作显示效果</string>
+    <string name="cinematic_results">结果变化动画</string>
+    <string name="cinematic_candidate_first">掷骰 A</string>
+    <string name="cinematic_candidate_second">掷骰 B</string>
+    <string name="cinematic_chosen">已选</string>
+    <string name="cinematic_unselected">未选</string>
+</resources>

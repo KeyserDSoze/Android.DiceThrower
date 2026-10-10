@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">Visuelle Wurfeffekte</string>
+    <string name="cinematic_help">Wähle ein Profil und passe Effekte an. Animationen beachten die globale Einstellung.</string>
+    <string name="cinematic_balanced">Ausgewogen</string>
+    <string name="cinematic_subtle">Dezent</string>
+    <string name="cinematic_off">Aus</string>
+    <string name="cinematic_badge">Effektname anzeigen</string>
+    <string name="cinematic_lanes">Doppelwürfe in Gruppen trennen</string>
+    <string name="cinematic_spotlight">Ausgewählte Würfel hervorheben</string>
+    <string name="cinematic_aura">Magische Tischaura</string>
+    <string name="cinematic_particles">Funken und Aschepartikel</string>
+    <string name="cinematic_actions">Effekte je Aktion</string>
+    <string name="cinematic_results">Ergebnisänderungen animieren</string>
+    <string name="cinematic_candidate_first">Wurf A</string>
+    <string name="cinematic_candidate_second">Wurf B</string>
+    <string name="cinematic_chosen">Gewählt</string>
+    <string name="cinematic_unselected">Nicht gewählt</string>
+</resources>

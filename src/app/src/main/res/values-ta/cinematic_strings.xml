@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">உருட்டல் காட்சி விளைவுகள்</string>
+    <string name="cinematic_help">ஒரு அமைப்பைத் தேர்ந்தெடுத்து விளைவுகளை மாற்றவும். அசைவுகள் பொதுவான அமைப்பைப் பின்பற்றும்.</string>
+    <string name="cinematic_balanced">சமநிலை</string>
+    <string name="cinematic_subtle">மென்மை</string>
+    <string name="cinematic_off">முடக்கு</string>
+    <string name="cinematic_badge">விளைவின் பெயர்</string>
+    <string name="cinematic_lanes">இரட்டை உருட்டல் குழுக்களைப் பிரி</string>
+    <string name="cinematic_spotlight">தேர்ந்த பகடைகளை ஒளிரச்செய்</string>
+    <string name="cinematic_aura">மேசையின் மந்திர ஒளிவட்டம்</string>
+    <string name="cinematic_particles">தீப்பொறிகளும் சாம்பல் துகள்களும்</string>
+    <string name="cinematic_actions">செயலுக்கான தனி விளைவுகள்</string>
+    <string name="cinematic_results">முடிவு மாற்ற அசைவு</string>
+    <string name="cinematic_candidate_first">உருட்டல் A</string>
+    <string name="cinematic_candidate_second">உருட்டல் B</string>
+    <string name="cinematic_chosen">தேர்ந்தது</string>
+    <string name="cinematic_unselected">தேராதது</string>
+</resources>

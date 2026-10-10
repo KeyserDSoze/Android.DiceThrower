@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">Dobás vizuális hatásai</string>
+    <string name="cinematic_help">Válassz profilt és módosítsd a hatásokat. Az animáció a közös beállítást követi.</string>
+    <string name="cinematic_balanced">Kiegyensúlyozott</string>
+    <string name="cinematic_subtle">Visszafogott</string>
+    <string name="cinematic_off">Ki</string>
+    <string name="cinematic_badge">Hatás neve</string>
+    <string name="cinematic_lanes">Kettős dobás csoportjainak elkülönítése</string>
+    <string name="cinematic_spotlight">Kiválasztott kockák kiemelése</string>
+    <string name="cinematic_aura">Varázslatos asztalaura</string>
+    <string name="cinematic_particles">Szikrák és hamurészecskék</string>
+    <string name="cinematic_actions">Művelethez kötött hatások</string>
+    <string name="cinematic_results">Eredményváltozás animálása</string>
+    <string name="cinematic_candidate_first">A dobás</string>
+    <string name="cinematic_candidate_second">B dobás</string>
+    <string name="cinematic_chosen">Kiválasztva</string>
+    <string name="cinematic_unselected">Nincs kiválasztva</string>
+</resources>

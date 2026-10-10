@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">Efek visual lemparan</string>
+    <string name="cinematic_help">Pilih preset lalu sesuaikan tiap efek. Animasi mengikuti pengaturan umum.</string>
+    <string name="cinematic_balanced">Seimbang</string>
+    <string name="cinematic_subtle">Halus</string>
+    <string name="cinematic_off">Mati</string>
+    <string name="cinematic_badge">Label nama efek</string>
+    <string name="cinematic_lanes">Pisahkan grup lemparan ganda</string>
+    <string name="cinematic_spotlight">Soroti dadu terpilih</string>
+    <string name="cinematic_aura">Aura ajaib meja</string>
+    <string name="cinematic_particles">Percikan dan partikel abu</string>
+    <string name="cinematic_actions">Efek khusus tindakan</string>
+    <string name="cinematic_results">Animasi perubahan hasil</string>
+    <string name="cinematic_candidate_first">Lemparan A</string>
+    <string name="cinematic_candidate_second">Lemparan B</string>
+    <string name="cinematic_chosen">Dipilih</string>
+    <string name="cinematic_unselected">Tidak dipilih</string>
+</resources>

@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">ಎಸೆತದ ದೃಶ್ಯ ಪರಿಣಾಮಗಳು</string>
+    <string name="cinematic_help">ಪ್ರೊಫೈಲ್ ಆಯ್ದು ಪರಿಣಾಮಗಳನ್ನು ಬದಲಿಸಿ. ಚಲನೆಗಳು ಸಾಮಾನ್ಯ ಸೆಟ್ಟಿಂಗ್ ಅನುಸರಿಸುತ್ತವೆ.</string>
+    <string name="cinematic_balanced">ಸಮತೋಲಿತ</string>
+    <string name="cinematic_subtle">ಸೌಮ್ಯ</string>
+    <string name="cinematic_off">ಆಫ್</string>
+    <string name="cinematic_badge">ಪರಿಣಾಮದ ಹೆಸರು</string>
+    <string name="cinematic_lanes">ಎರಡು ಎಸೆತದ ಗುಂಪುಗಳನ್ನು ಬೇರ್ಪಡಿಸಿ</string>
+    <string name="cinematic_spotlight">ಆಯ್ಕೆ ಮಾಡಿದ ದಾಳಗಳನ್ನು ಹೊಳೆಯಿಸಿ</string>
+    <string name="cinematic_aura">ಮೇಜಿನ ಮಾಯಾ ಪ್ರಭೆ</string>
+    <string name="cinematic_particles">ಕಿಡಿಗಳು ಮತ್ತು ಬೂದಿ ಕಣಗಳು</string>
+    <string name="cinematic_actions">ಕ್ರಿಯೆಗೆ ತಕ್ಕ ಪರಿಣಾಮ</string>
+    <string name="cinematic_results">ಫಲಿತಾಂಶ ಬದಲಾವಣೆ ಚಲನೆ</string>
+    <string name="cinematic_candidate_first">ಎಸೆತ A</string>
+    <string name="cinematic_candidate_second">ಎಸೆತ B</string>
+    <string name="cinematic_chosen">ಆಯ್ಕೆಯಾದ</string>
+    <string name="cinematic_unselected">ಆಯ್ಕೆಯಾಗಿಲ್ಲ</string>
+</resources>

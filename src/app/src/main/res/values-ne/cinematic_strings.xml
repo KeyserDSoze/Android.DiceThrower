@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">रोल दृश्य प्रभावहरू</string>
+    <string name="cinematic_help">प्रोफाइल छानेर प्रभाव बदल्नुहोस्। एनिमेसन सामान्य सेटिङअनुसार चल्छ।</string>
+    <string name="cinematic_balanced">सन्तुलित</string>
+    <string name="cinematic_subtle">हल्का</string>
+    <string name="cinematic_off">बन्द</string>
+    <string name="cinematic_badge">प्रभावको नाम</string>
+    <string name="cinematic_lanes">दोहोरो रोलका समूह छुट्याउनुहोस्</string>
+    <string name="cinematic_spotlight">छानिएका पासा चम्काउनुहोस्</string>
+    <string name="cinematic_aura">टेबलमा जादुई आभा</string>
+    <string name="cinematic_particles">झिल्का र खरानीका कण</string>
+    <string name="cinematic_actions">कार्यअनुसार प्रभाव</string>
+    <string name="cinematic_results">नतिजा परिवर्तनको एनिमेसन</string>
+    <string name="cinematic_candidate_first">रोल A</string>
+    <string name="cinematic_candidate_second">रोल B</string>
+    <string name="cinematic_chosen">छानिएको</string>
+    <string name="cinematic_unselected">नछानिएको</string>
+</resources>

@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">ပစ်ချက် မြင်ကွင်းအကျိုးသက်ရောက်မှုများ</string>
+    <string name="cinematic_help">ပုံစံရွေးပြီး အကျိုးသက်ရောက်မှုများပြင်ပါ။ လှုပ်ရှားမှုသည် အထွေထွေဆက်တင်ကို လိုက်နာသည်။</string>
+    <string name="cinematic_balanced">မျှတသော</string>
+    <string name="cinematic_subtle">နူးညံ့သော</string>
+    <string name="cinematic_off">ပိတ်</string>
+    <string name="cinematic_badge">အကျိုးသက်ရောက်မှုအမည်</string>
+    <string name="cinematic_lanes">နှစ်ကြိမ်ပစ်အုပ်စုများခွဲပါ</string>
+    <string name="cinematic_spotlight">ရွေးထားသောအန်စာတုံးကိုလင်းစေပါ</string>
+    <string name="cinematic_aura">စားပွဲပေါ် မှော်အလင်း</string>
+    <string name="cinematic_particles">မီးပွားနှင့်ပြာမှုန်</string>
+    <string name="cinematic_actions">လုပ်ဆောင်ချက်အလိုက် အကျိုးသက်ရောက်မှု</string>
+    <string name="cinematic_results">ရလဒ်ပြောင်းလဲမှု လှုပ်ရှားမှု</string>
+    <string name="cinematic_candidate_first">ပစ်ချက် A</string>
+    <string name="cinematic_candidate_second">ပစ်ချက် B</string>
+    <string name="cinematic_chosen">ရွေးထား</string>
+    <string name="cinematic_unselected">မရွေးထား</string>
+</resources>

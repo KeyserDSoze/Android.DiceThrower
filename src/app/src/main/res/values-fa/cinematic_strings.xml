@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">جلوه‌های بصری پرتاب</string>
+    <string name="cinematic_help">یک نمایه انتخاب و جلوه‌ها را تنظیم کنید. پویانمایی از تنظیم کلی پیروی می‌کند.</string>
+    <string name="cinematic_balanced">متعادل</string>
+    <string name="cinematic_subtle">ملایم</string>
+    <string name="cinematic_off">خاموش</string>
+    <string name="cinematic_badge">برچسب نام افکت</string>
+    <string name="cinematic_lanes">جداسازی دو گروه پرتاب</string>
+    <string name="cinematic_spotlight">درخشش تاس‌های انتخاب‌شده</string>
+    <string name="cinematic_aura">هالهٔ جادویی میز</string>
+    <string name="cinematic_particles">جرقه و ذرات خاکستر</string>
+    <string name="cinematic_actions">جلوهٔ ویژهٔ هر اقدام</string>
+    <string name="cinematic_results">پویانمایی تغییر نتیجه</string>
+    <string name="cinematic_candidate_first">پرتاب A</string>
+    <string name="cinematic_candidate_second">پرتاب B</string>
+    <string name="cinematic_chosen">انتخاب‌شده</string>
+    <string name="cinematic_unselected">انتخاب‌نشده</string>
+</resources>

@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">Athari za mwonekano wa urushaji</string>
+    <string name="cinematic_help">Chagua wasifu na ubadilishe athari. Uhuishaji hufuata mpangilio mkuu.</string>
+    <string name="cinematic_balanced">Wastani</string>
+    <string name="cinematic_subtle">Mpole</string>
+    <string name="cinematic_off">Zima</string>
+    <string name="cinematic_badge">Lebo ya athari</string>
+    <string name="cinematic_lanes">Tenganisha makundi ya urushaji mara mbili</string>
+    <string name="cinematic_spotlight">Angazia kete zilizochaguliwa</string>
+    <string name="cinematic_aura">Miale ya uchawi mezani</string>
+    <string name="cinematic_particles">Cheche na chembe za majivu</string>
+    <string name="cinematic_actions">Athari kulingana na kitendo</string>
+    <string name="cinematic_results">Uhuishaji wa matokeo</string>
+    <string name="cinematic_candidate_first">Urushaji A</string>
+    <string name="cinematic_candidate_second">Urushaji B</string>
+    <string name="cinematic_chosen">Imechaguliwa</string>
+    <string name="cinematic_unselected">Haijachaguliwa</string>
+</resources>

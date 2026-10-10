@@ -1,0 +1,18 @@
+<resources>
+    <string name="cinematic_heading">फेकीचे दृश्य परिणाम</string>
+    <string name="cinematic_help">प्रोफाइल निवडा आणि परिणाम बदला. अॅनिमेशन सामान्य सेटिंगनुसार होईल.</string>
+    <string name="cinematic_balanced">समतोल</string>
+    <string name="cinematic_subtle">सौम्य</string>
+    <string name="cinematic_off">बंद</string>
+    <string name="cinematic_badge">परिणामाचे नाव</string>
+    <string name="cinematic_lanes">दुहेरी फेकीचे गट वेगळे करा</string>
+    <string name="cinematic_spotlight">निवडलेले फासे उजळवा</string>
+    <string name="cinematic_aura">टेबलवर जादुई आभा</string>
+    <string name="cinematic_particles">ठिणग्या आणि राखेचे कण</string>
+    <string name="cinematic_actions">क्रियेनुसार परिणाम</string>
+    <string name="cinematic_results">निकालातील बदलाचे अॅनिमेशन</string>
+    <string name="cinematic_candidate_first">फेक A</string>
+    <string name="cinematic_candidate_second">फेक B</string>
+    <string name="cinematic_chosen">निवडलेले</string>
+    <string name="cinematic_unselected">न निवडलेले</string>
+</resources>
