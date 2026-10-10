@@ -16,4 +16,5 @@
     <string name="cinematic_chosen">Gekozen</string>
     <string name="cinematic_unselected">Niet gekozen</string>
     <string name="cinematic_camera">Subtiele cameraschok</string>
+    <string name="secondary_dice_style_auto">Automatisch contrast</string>
 </resources>

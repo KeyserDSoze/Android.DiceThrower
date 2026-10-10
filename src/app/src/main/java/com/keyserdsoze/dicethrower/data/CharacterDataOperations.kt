@@ -49,6 +49,7 @@ object CharacterDataOperations {
             name = newName.trim(),
             order = data.characters.size,
             defaultDiceStyleId = source.defaultDiceStyleId?.let(styleIdMap::get),
+            secondaryDiceStyleId = source.secondaryDiceStyleId?.let(styleIdMap::get),
         )
 
         val duplicatedStyles = data.diceStyles

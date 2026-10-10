@@ -99,6 +99,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -123,7 +125,6 @@ import com.keyserdsoze.dicethrower.data.sync.SyncStatusKind
 import com.keyserdsoze.dicethrower.dice.DiceAppearanceResolver
 import com.keyserdsoze.dicethrower.dice.DoubleRollEngine
 import com.keyserdsoze.dicethrower.dice.DoubleRollVisualPlanner
-import com.keyserdsoze.dicethrower.dice.DoubleRollVisualPlan
 import com.keyserdsoze.dicethrower.dice.DoubleRollEvaluation
 import com.keyserdsoze.dicethrower.dice.EffectExecutionResult
 import com.keyserdsoze.dicethrower.dice.EffectRollSnapshot
@@ -2280,7 +2281,6 @@ private fun RollScreenV2(
     var resultRevealed by remember(roll.id, character.level, formula.expression) { mutableStateOf(false) }
     var showStats by remember(roll.id) { mutableStateOf(false) }
     var lastThrowMode by remember(roll.id, character.level, formula.expression) { mutableStateOf(DoubleRollMode.NORMAL) }
-    var lastCandidatePlan by remember(roll.id, character.level, formula.expression) { mutableStateOf(DoubleRollVisualPlan()) }
     val cinematic = roll.visualEffects.withGlobalMotionEnabled(settings.animationsEnabled)
 
     fun throwDice(requestedMode: DoubleRollMode = DoubleRollMode.NORMAL) {
@@ -2347,7 +2347,6 @@ private fun RollScreenV2(
         visualStages = timeline
         visualStageIndex = 0
         lastThrowMode = evaluation.mode
-        lastCandidatePlan = candidatePlan
         visualSeed = System.nanoTime()
         val firstStage = timeline.first()
         visualEvent = DiceRollVisualEvent(
@@ -2360,6 +2359,8 @@ private fun RollScreenV2(
                 result = firstStage.result,
                 subgroupIdByComponentIndex = firstStage.componentOwners,
                 random = Random(visualSeed),
+                secondaryCandidateComponentIndices = candidatePlan.groups
+                    .filterValues { it == 1 }.keys.takeIf { firstStage.retainsBaseline }.orEmpty(),
             ),
             dimmedComponentIndices = (if (firstStage.retainsBaseline) evaluation.dimmedComponentIndices else emptySet()) + firstStage.rerolledComponentIndices,
             effectAccentComponents = firstStage.accentByComponentIndex,
@@ -2431,6 +2432,18 @@ private fun RollScreenV2(
 
     ArcaneBackground {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            // Keep A/B identification for TalkBack without placing visible
+            // chips over the dice or blocking the central play area.
+            val candidateDescription = if (hasRolled && visualEvent.candidateGroupByComponent.isNotEmpty()) {
+                val first = stringResource(R.string.cinematic_candidate_first)
+                val second = stringResource(R.string.cinematic_candidate_second)
+                val selected = visualEvent.candidateGroupByComponent.entries
+                    .firstOrNull { it.key in visualEvent.chosenCandidateComponents }?.value
+                val verdict = if (resultRevealed && selected != null)
+                    "${stringResource(R.string.cinematic_chosen)}: ${if (selected == 0) first else second}"
+                    else null
+                listOfNotNull(first, second, verdict).joinToString(". ")
+            } else null
             Dice3DScene(
                 event = visualEvent,
                 tableTheme = character.diceTableTheme,
@@ -2455,6 +2468,9 @@ private fun RollScreenV2(
                                     result = stage.result,
                                     subgroupIdByComponentIndex = stage.componentOwners,
                                     random = Random(visualSeed),
+                                    secondaryCandidateComponentIndices = if (stage.retainsBaseline)
+                                        visualEvent.candidateGroupByComponent.filterValues { it == 1 }.keys
+                                        else emptySet(),
                                 ),
                                 dimmedComponentIndices =
                                     (if (stage.retainsBaseline) doubleEvaluation?.dimmedComponentIndices.orEmpty()
@@ -2472,37 +2488,11 @@ private fun RollScreenV2(
                         }
                     }
                 },
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().then(
+                    if (candidateDescription == null) Modifier
+                    else Modifier.semantics { contentDescription = candidateDescription },
+                ),
             )
-
-            // Readable A/B lanes stay stable while both groups tumble.
-            // The chosen group is identified only after every 3D stage settles.
-            if (hasRolled && cinematic.groupLanes && lastCandidatePlan.isDoubleRoll) {
-                val winner = lastCandidatePlan.selectedGroup
-                listOf(0, 1).forEach { group ->
-                    val selected = resultRevealed && winner == group && cinematic.winnerSpotlight
-                    Surface(
-                        modifier = Modifier
-                            .align(if (group == 0) Alignment.TopStart else Alignment.BottomStart)
-                            .padding(start = 18.dp)
-                            .then(if (group == 0) Modifier.padding(top = maxHeight * 0.27f)
-                                else Modifier.padding(bottom = maxHeight * 0.27f)),
-                        shape = RoundedCornerShape(13.dp),
-                        color = Color(0xDB192132),
-                        contentColor = Color.White,
-                    ) {
-                        Text(
-                            (if (group == 0) stringResource(R.string.cinematic_candidate_first)
-                                else stringResource(R.string.cinematic_candidate_second)) +
-                                if (selected) "  ✦ ${stringResource(R.string.cinematic_chosen)}" else "",
-                            modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (selected) Color(0xFFB0FFDC)
-                                else if (group == 0) Color(0xFFB0E9FF) else Color(0xFFFFDDA6),
-                        )
-                    }
-                }
-            }
 
             // Each triggered arithmetic action gets a brief cinematic replay
             // of its recorded before/after values. The 3D outcome never changes.

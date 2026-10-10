@@ -16,4 +16,5 @@
     <string name="cinematic_chosen">Escolhido</string>
     <string name="cinematic_unselected">Não escolhido</string>
     <string name="cinematic_camera">Impacto suave da câmara</string>
+    <string name="secondary_dice_style_auto">Contraste automático</string>
 </resources>

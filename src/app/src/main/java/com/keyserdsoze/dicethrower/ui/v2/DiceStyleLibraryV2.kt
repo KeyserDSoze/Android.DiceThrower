@@ -76,6 +76,7 @@ internal fun DiceStyleLibraryV2(
     var editingStyleId by remember(character.id) { mutableStateOf<String?>(null) }
     var deletingStyleId by remember(character.id) { mutableStateOf<String?>(null) }
     var copyingFromCharacter by remember(character.id) { mutableStateOf(false) }
+    var secondaryStyleMenu by remember(character.id) { mutableStateOf(false) }
     val copySuffix = stringResource(R.string.copy_suffix)
     val sourceCharacters = data.characters
         .filter { it.id != character.id }
@@ -119,6 +120,52 @@ internal fun DiceStyleLibraryV2(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+
+        // Candidate B's material/color is selected per character, independently
+        // from the Roll's normal appearance overrides. The automatic look needs
+        // no persisted DiceStyle object for newly created characters.
+        PremiumCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "${stringResource(R.string.dice_styles)} · ${stringResource(R.string.cinematic_candidate_second)}",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Box {
+                    OutlinedButton(onClick = { secondaryStyleMenu = true }) {
+                        Text(styles.firstOrNull { it.id == character.secondaryDiceStyleId }?.name
+                            ?: stringResource(R.string.secondary_dice_style_auto))
+                        Spacer(Modifier.width(8.dp))
+                        Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = null)
+                    }
+                    DropdownMenu(
+                        expanded = secondaryStyleMenu,
+                        onDismissRequest = { secondaryStyleMenu = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.secondary_dice_style_auto)) },
+                            onClick = {
+                                secondaryStyleMenu = false
+                                onDataChanged(data.copy(characters = data.characters.map {
+                                    if (it.id == character.id) it.copy(secondaryDiceStyleId = null) else it
+                                }))
+                            },
+                        )
+                        styles.forEach { style ->
+                            DropdownMenuItem(
+                                text = { Text(style.name) },
+                                onClick = {
+                                    secondaryStyleMenu = false
+                                    onDataChanged(data.copy(characters = data.characters.map {
+                                        if (it.id == character.id) it.copy(secondaryDiceStyleId = style.id) else it
+                                    }))
+                                },
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         if (styles.isEmpty()) {

@@ -87,6 +87,8 @@ data class CharacterProfile(
     val level: Int = 1,
     val order: Int = 0,
     val defaultDiceStyleId: String? = null,
+    /** Optional character-owned style for BEST/WORST candidate B; null = contrasting auto preset. */
+    val secondaryDiceStyleId: String? = null,
     val diceTableTheme: DiceTableTheme = DiceTableTheme.ARCANE,
     val diceTableImage: CharacterImageRef? = null,
 )

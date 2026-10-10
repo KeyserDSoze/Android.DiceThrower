@@ -71,6 +71,12 @@ object AppDataValidator {
                 errors += "Character ${character.id} contains an invalid or reserved modifier name"
             }
 
+            character.secondaryDiceStyleId?.let { styleId ->
+                val style = styleById[styleId]
+                if (style == null || style.characterId != character.id) {
+                    errors += "Character ${character.id} references an invalid secondary dice style"
+                }
+            }
             character.defaultDiceStyleId?.let { styleId ->
                 val style = styleById[styleId]
                 if (style == null) {

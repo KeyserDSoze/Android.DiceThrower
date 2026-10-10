@@ -16,4 +16,5 @@
     <string name="cinematic_chosen">Wybrany</string>
     <string name="cinematic_unselected">Niewybrany</string>
     <string name="cinematic_camera">Delikatne drganie kamery</string>
+    <string name="secondary_dice_style_auto">Automatyczny kontrast</string>
 </resources>

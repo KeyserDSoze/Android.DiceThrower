@@ -16,4 +16,5 @@
     <string name="cinematic_chosen">ಆಯ್ಕೆಯಾದ</string>
     <string name="cinematic_unselected">ಆಯ್ಕೆಯಾಗಿಲ್ಲ</string>
     <string name="cinematic_camera">ಸೌಮ್ಯ ಕ್ಯಾಮೆರಾ ಕಂಪನ</string>
+    <string name="secondary_dice_style_auto">ಸ್ವಯಂಚಾಲಿತ ಕಾಂಟ್ರಾಸ್ಟ್</string>
 </resources>
