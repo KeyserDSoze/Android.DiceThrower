@@ -6,6 +6,7 @@ import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 import com.keyserdsoze.dicethrower.model.EffectValueSource
 import com.keyserdsoze.dicethrower.model.EffectActionType
 import com.keyserdsoze.dicethrower.model.PartReferenceAliases
+import com.keyserdsoze.dicethrower.model.DiceStylePresets
 
 object AppDataValidator {
     private val dieSlotRegex = Regex("""\d+:\d+""")
@@ -16,7 +17,7 @@ object AppDataValidator {
         val errors = mutableListOf<String>()
         val characterIds = data.characters.map { it.id }.toSet()
         val groupById = data.groups.associateBy { it.id }
-        val styleById = data.diceStyles.associateBy { it.id }
+        val styleById = DiceStylePresets.availableStyles(data.diceStyles).associateBy { it.id }
 
         checkUnique("character", data.characters.map { it.id }, errors)
         checkUnique("modifier", data.modifiers.map { it.id }, errors)
@@ -24,6 +25,9 @@ object AppDataValidator {
         checkUnique("roll", data.rolls.map { it.id }, errors)
         checkUnique("log", data.logs.map { it.id }, errors)
         checkUnique("dice style", data.diceStyles.map { it.id }, errors)
+        if (data.diceStyles.any { it.id.startsWith(DiceStylePresets.ID_PREFIX) }) {
+            errors += "Custom style cannot use a reserved system preset ID"
+        }
         checkUnique("character sync metadata", data.characterSyncMetadata.map { it.characterId }, errors)
         checkUnique(
             "level rule",
@@ -73,7 +77,7 @@ object AppDataValidator {
 
             character.secondaryDiceStyleId?.let { styleId ->
                 val style = styleById[styleId]
-                if (style == null || style.characterId != character.id) {
+                if (style == null || (style.characterId != null && style.characterId != character.id)) {
                     errors += "Character ${character.id} references an invalid secondary dice style"
                 }
             }
@@ -122,7 +126,7 @@ object AppDataValidator {
         }
 
         data.diceStyles.forEach { style ->
-            if (style.characterId !in characterIds) {
+            if (style.characterId != null && style.characterId !in characterIds) {
                 errors += "Dice style ${style.id} references a missing character"
             }
             if (style.name.isBlank()) errors += "Dice style ${style.id} has a blank name"
@@ -275,7 +279,7 @@ object AppDataValidator {
         val style = styleById[styleId]
         if (style == null) {
             errors += "Roll $rollId references a missing dice style"
-        } else if (style.characterId != characterId) {
+        } else if (style.characterId != null && style.characterId != characterId) {
             errors += "Roll $rollId references a dice style owned by another character"
         }
     }
