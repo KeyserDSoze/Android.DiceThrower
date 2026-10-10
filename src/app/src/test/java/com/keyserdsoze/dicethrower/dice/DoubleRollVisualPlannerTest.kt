@@ -7,6 +7,32 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DoubleRollVisualPlannerTest {
+    @Test
+    fun legacyRollWithNoStoredPartsStillSeparatesAndRevealsBothCandidates() {
+        // Matches the canonical single-Part IDs produced by RollScreenV2
+        // for a RollDefinition with no named subgroup records.
+        val first = DiceRollResult(12,
+            listOf(DiceComponent(1, 20, 1, listOf(12))), 0)
+        val alternative = DiceRollResult(17,
+            listOf(DiceComponent(1, 20, 1, listOf(17))), 0)
+        val visual = DiceRollResult(29,
+            first.components + alternative.components, 0)
+        val evaluation = DoubleRollEvaluation(
+            mode = DoubleRollMode.BEST, result = alternative,
+            visualResult = visual, parts = emptyList(),
+            dimmedComponentIndices = setOf(0),
+        )
+        val plan = DoubleRollVisualPlanner.plan(
+            evaluation, mapOf(0 to "single"), mapOf(1 to "single"),
+            selectedPartIds = setOf("single"),
+        )
+        assertTrue(plan.isDoubleRoll)
+        assertEquals(mapOf(0 to 0, 1 to 1), plan.groups)
+        assertEquals(setOf(1), plan.chosen)
+        assertEquals(setOf(0), plan.discarded)
+        assertEquals(1, plan.selectedGroup)
+    }
+
     private val first = DiceRollResult(
         25, listOf(
             DiceComponent(1, 20, 1, listOf(17)),
