@@ -1,0 +1,65 @@
+name: One-off retirement of superseded branches
+
+# Historical branches from closed-unmerged PRs are not removed by the
+# automatic merged-PR pruning workflow. Delete only this audited allowlist.
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/prune-superseded-once.yml
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  retire:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Retire four branches only if their original SHAs and successors match
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          retired=0
+
+          while IFS=$'\t' read -r branch sha old_pr successor_pr; do
+            [[ -n "$branch" ]] || continue
+            current_sha="$(gh api "repos/$repo/git/ref/heads/$branch" --jq '.object.sha' 2>/dev/null || true)"
+            if [[ "$sha" != "$current_sha" ]]; then
+              echo "Preserved $branch: changed or absent"
+              continue
+            fi
+
+            if [[ "$old_pr" != "-" ]]; then
+              original_valid="$(gh api "repos/$repo/pulls/$old_pr" |
+                jq -r --arg branch "$branch" --arg sha "$sha" \
+                  '.state == "closed" and .merged_at == null and .head.ref == $branch and .head.sha == $sha')"
+              successor_valid="$(gh api "repos/$repo/pulls/$successor_pr" --jq '.merged_at != null')"
+              if [[ "$original_valid" != "true" || "$successor_valid" != "true" ]]; then
+                echo "Preserved $branch: original PR or merged replacement not verified"
+                continue
+              fi
+            else
+              # A branch with no PR can go only if its exact tip is an ancestor
+              # of main (no unique commits remain).
+              ahead="$(gh api "repos/$repo/compare/$sha...main" --jq '.ahead_by')"
+              if [[ "$ahead" != "0" ]]; then
+                echo "Preserved $branch: has commits not on main"
+                continue
+              fi
+            fi
+
+            echo "Deleting superseded branch $branch"
+            gh api --method DELETE "repos/$repo/git/refs/heads/$branch"
+            retired=$((retired + 1))
+          done <<'BRANCHES'
+          feat/effects-formula-arithmetic-105	b36fb0ba42579efd8683618feabc84c0a17fc6b8	115	116
+          feat/effects-chained-rollafter-106	2216538dbf4869033e769d16d944b49272e74acf	117	118
+          release/0.0.17	ae5dcb2a5f2bb75a8340d060b0e4c62636cb7fce	101	125
+          release/v0.0.17-from-main	294038c7c1c7c88f452c43fdac78e5a4890612f2	-	-
+          BRANCHES
+
+          echo "Retired $retired of four audited historical branches."
