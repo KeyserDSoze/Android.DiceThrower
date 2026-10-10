@@ -1,0 +1,5 @@
+<resources>
+    <string name="effects_show_advanced">Tùy chọn nâng cao</string>
+    <string name="effects_show_guided">Quy tắc đơn giản</string>
+    <string name="effects_guided_tip">Chọn phần kích hoạt trong KHI và phần đích trong THÌ. Chỉ xúc xắc giữ nguyên điểm bổ trợ. Dùng Nâng cao cho nhiều điều kiện.</string>
+</resources>

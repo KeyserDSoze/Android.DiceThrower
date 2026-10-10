@@ -1,0 +1,5 @@
+<resources>
+    <string name="effects_show_advanced">Geavanceerde opties</string>
+    <string name="effects_show_guided">Eenvoudige regel</string>
+    <string name="effects_guided_tip">Kies bij WANNEER het brononderdeel en bij DAN het doelonderdeel. Alleen dobbelstenen laat modifiers gelijk. Geavanceerd is voor meerdere voorwaarden.</string>
+</resources>

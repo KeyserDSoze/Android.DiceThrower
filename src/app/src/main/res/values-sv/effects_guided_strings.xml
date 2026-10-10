@@ -1,0 +1,5 @@
+<resources>
+    <string name="effects_show_advanced">Avancerade alternativ</string>
+    <string name="effects_show_guided">Enkel regel</string>
+    <string name="effects_guided_tip">Välj utlösande del under NÄR och måldel under DÅ. Endast tärningar ändrar inte modifierare. Använd Avancerat för flera villkor.</string>
+</resources>

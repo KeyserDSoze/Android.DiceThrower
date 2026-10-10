@@ -1,0 +1,5 @@
+<resources>
+    <string name="effects_show_advanced">Opciones avanzadas</string>
+    <string name="effects_show_guided">Regla sencilla</string>
+    <string name="effects_guided_tip">En CUANDO elige la parte que activa el efecto y en ENTONCES la parte a modificar. Solo dados mantiene los modificadores. Usa Avanzado para más reglas.</string>
+</resources>

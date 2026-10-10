@@ -1,0 +1,5 @@
+<resources>
+    <string name="effects_show_advanced">고급 옵션</string>
+    <string name="effects_show_guided">간단한 규칙</string>
+    <string name="effects_guided_tip">조건에서 발동 파트를, 결과에서 대상 파트를 선택하세요. 주사위만 선택하면 수정치는 유지됩니다. 여러 조건은 고급 설정에서 편집하세요.</string>
+</resources>

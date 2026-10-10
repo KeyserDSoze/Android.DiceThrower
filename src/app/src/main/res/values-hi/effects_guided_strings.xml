@@ -1,0 +1,5 @@
+<resources>
+    <string name="effects_show_advanced">उन्नत विकल्प</string>
+    <string name="effects_show_guided">सरल नियम</string>
+    <string name="effects_guided_tip">जब में सक्रिय करने वाला भाग और तब में लक्ष्य भाग चुनें। केवल पासे संशोधकों को नहीं बदलता। कई शर्तों के लिए उन्नत विकल्प चुनें।</string>
+</resources>
