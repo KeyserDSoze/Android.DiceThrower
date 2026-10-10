@@ -15,4 +15,5 @@
     <string name="cinematic_candidate_second">फेक B</string>
     <string name="cinematic_chosen">निवडलेले</string>
     <string name="cinematic_unselected">न निवडलेले</string>
+    <string name="cinematic_camera">सौम्य कॅमेरा कंपन</string>
 </resources>

@@ -15,4 +15,5 @@
     <string name="cinematic_candidate_second">Urushaji B</string>
     <string name="cinematic_chosen">Imechaguliwa</string>
     <string name="cinematic_unselected">Haijachaguliwa</string>
+    <string name="cinematic_camera">Mtetemo mdogo wa kamera</string>
 </resources>
