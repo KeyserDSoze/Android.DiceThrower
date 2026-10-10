@@ -83,6 +83,7 @@ object CharacterRevision {
                 canonical.field("particles", roll.visualEffects.particles)
                 canonical.field("actionCues", roll.visualEffects.actionCues)
                 canonical.field("resultTransitions", roll.visualEffects.resultTransitions)
+                canonical.field("cameraImpact", roll.visualEffects.cameraImpact)
             }
             // Preserve legacy revision hashes when double-roll is disabled.
             if (roll.doubleRollEnabled) canonical.field("doubleRollEnabled", true)
