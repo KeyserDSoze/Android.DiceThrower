@@ -58,6 +58,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.keyserdsoze.dicethrower.R
 import com.keyserdsoze.dicethrower.data.DiceStyleDataOperations
+import com.keyserdsoze.dicethrower.data.SharedDiceStyleCatalog
 import com.keyserdsoze.dicethrower.dice.DiceAppearanceResolver
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.CharacterProfile
@@ -70,7 +71,7 @@ import java.util.Locale
 import java.util.UUID
 
 @Composable
-private fun dicePresetName(preset: DiceStylePreset): String = stringResource(when (preset.key) {
+internal fun dicePresetName(preset: DiceStylePreset): String = stringResource(when (preset.key) {
     "arcane-blue" -> R.string.dice_preset_arcane_blue
     "inferno-forged" -> R.string.dice_preset_inferno_forged
     "emerald-aether" -> R.string.dice_preset_emerald_aether
@@ -86,21 +87,16 @@ private fun dicePresetName(preset: DiceStylePreset): String = stringResource(whe
 
 @Composable
 internal fun DiceStyleLibraryV2(
-    character: CharacterProfile,
     data: AppData,
     onDataChanged: (AppData) -> Unit,
 ) {
-    val styles = data.diceStyles.filter { it.characterId == character.id }.sortedBy { it.order }
-    var creating by remember(character.id) { mutableStateOf(false) }
-    var editingStyleId by remember(character.id) { mutableStateOf<String?>(null) }
-    var deletingStyleId by remember(character.id) { mutableStateOf<String?>(null) }
-    var copyingFromCharacter by remember(character.id) { mutableStateOf(false) }
-    var selectedPresetKey by remember(character.id) { mutableStateOf(DiceStylePresets.all.first().key) }
-    var previewSavedStyleId by remember(character.id) { mutableStateOf<String?>(null) }
+    val styles = data.diceStyles.filter { it.characterId == null }.sortedBy { it.order }
+    var creating by remember { mutableStateOf(false) }
+    var editingStyleId by remember { mutableStateOf<String?>(null) }
+    var deletingStyleId by remember { mutableStateOf<String?>(null) }
+    var selectedPresetKey by remember { mutableStateOf(DiceStylePresets.all.first().key) }
+    var previewSavedStyleId by remember { mutableStateOf<String?>(null) }
     val copySuffix = stringResource(R.string.copy_suffix)
-    val sourceCharacters = data.characters
-        .filter { it.id != character.id }
-        .filter { source -> data.diceStyles.any { it.characterId == source.id } }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(
@@ -142,7 +138,7 @@ internal fun DiceStyleLibraryV2(
             ?: DiceStylePresets.all.first()
         val selectedPresetName = dicePresetName(selectedPreset)
         DiceStylePreview3D(
-            style = selectedPreset.instantiate(character.id, "preview-preset", selectedPresetName),
+            style = selectedPreset.instantiate("", "preview-preset", selectedPresetName).copy(characterId = null),
             modifier = Modifier.fillMaxWidth().height(172.dp),
         )
         Text(
@@ -176,7 +172,7 @@ internal fun DiceStyleLibraryV2(
                         modifier = Modifier.size(40.dp),
                         tint = Color(preset.primaryColorArgb),
                     )
-                    DiceStyleSwatch(preset.instantiate(character.id, preset.key, presetName))
+                    DiceStyleSwatch(preset.instantiate("", preset.key, presetName).copy(characterId = null))
                     Column(Modifier.weight(1f)) {
                         Text(presetName, fontWeight = FontWeight.Bold)
                         Text(
@@ -193,9 +189,9 @@ internal fun DiceStyleLibraryV2(
                 val displayName = DiceStyleDataOperations.uniqueCopyName(
                     styles.map { it.name }, selectedPresetName, copySuffix,
                 )
-                onDataChanged(DiceStyleDataOperations.createStyle(
+                onDataChanged(SharedDiceStyleCatalog.create(
                     data,
-                    selectedPreset.instantiate(character.id, UUID.randomUUID().toString(), displayName),
+                    selectedPreset.instantiate("", UUID.randomUUID().toString(), displayName).copy(characterId = null),
                 ))
             },
             modifier = Modifier.fillMaxWidth().testTag("dice-add-selected-preset"),
@@ -203,23 +199,6 @@ internal fun DiceStyleLibraryV2(
             Icon(Icons.Rounded.Add, contentDescription = null)
             Spacer(Modifier.width(8.dp))
             Text(stringResource(R.string.dice_gallery_add))
-        }
-
-        OutlinedButton(
-            enabled = sourceCharacters.isNotEmpty(),
-            onClick = { copyingFromCharacter = true },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(Icons.Rounded.ContentCopy, contentDescription = null)
-            Spacer(Modifier.width(8.dp))
-            Text(stringResource(R.string.copy_from_character))
-        }
-        if (sourceCharacters.isEmpty()) {
-            Text(
-                text = stringResource(R.string.no_other_dice_styles),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
 
         Text(
@@ -268,7 +247,7 @@ internal fun DiceStyleLibraryV2(
                         IconButton(
                             enabled = index > 0,
                             onClick = {
-                                onDataChanged(DiceStyleDataOperations.moveStyle(data, character.id, style.id, -1))
+                                onDataChanged(SharedDiceStyleCatalog.move(data, style.id, -1))
                             },
                         ) {
                             Icon(Icons.Rounded.KeyboardArrowUp, contentDescription = stringResource(R.string.move_up))
@@ -276,7 +255,7 @@ internal fun DiceStyleLibraryV2(
                         IconButton(
                             enabled = index < styles.lastIndex,
                             onClick = {
-                                onDataChanged(DiceStyleDataOperations.moveStyle(data, character.id, style.id, 1))
+                                onDataChanged(SharedDiceStyleCatalog.move(data, style.id, 1))
                             },
                         ) {
                             Icon(Icons.Rounded.KeyboardArrowDown, contentDescription = stringResource(R.string.move_down))
@@ -299,9 +278,9 @@ internal fun DiceStyleLibraryV2(
                             onClick = {
                                 val copyName = nextCopyName(styles.map { it.name }, style.name, copySuffix)
                                 onDataChanged(
-                                    DiceStyleDataOperations.duplicateStyle(
+                                    SharedDiceStyleCatalog.duplicate(
                                         data = data,
-                                        styleId = style.id,
+                                        sourceId = style.id,
                                         newId = UUID.randomUUID().toString(),
                                         newName = copyName,
                                     ),
@@ -325,11 +304,11 @@ internal fun DiceStyleLibraryV2(
     if (creating) {
         DiceStyleEditorDialog(
             existing = null,
-            characterId = character.id,
+            characterId = null,
             existingNames = styles.map { it.name },
             onDismiss = { creating = false },
             onSave = { style ->
-                onDataChanged(DiceStyleDataOperations.createStyle(data, style))
+                onDataChanged(SharedDiceStyleCatalog.create(data, style))
                 creating = false
             },
         )
@@ -339,11 +318,11 @@ internal fun DiceStyleLibraryV2(
         styles.firstOrNull { it.id == id }?.let { existing ->
             DiceStyleEditorDialog(
                 existing = existing,
-                characterId = character.id,
+                characterId = null,
                 existingNames = styles.filterNot { it.id == id }.map { it.name },
                 onDismiss = { editingStyleId = null },
                 onSave = { style ->
-                    onDataChanged(DiceStyleDataOperations.updateStyle(data, style))
+                    onDataChanged(SharedDiceStyleCatalog.edit(data, style))
                     editingStyleId = null
                 },
             )
@@ -352,7 +331,7 @@ internal fun DiceStyleLibraryV2(
 
     deletingStyleId?.let { id ->
         styles.firstOrNull { it.id == id }?.let { style ->
-            val usage = DiceStyleDataOperations.usage(data, id)
+            val usage = SharedDiceStyleCatalog.usage(data, id)
             AlertDialog(
                 onDismissRequest = { deletingStyleId = null },
                 title = { Text(stringResource(R.string.delete_dice_style_title, style.name)) },
@@ -366,7 +345,7 @@ internal fun DiceStyleLibraryV2(
                 confirmButton = {
                     Button(
                         onClick = {
-                            onDataChanged(DiceStyleDataOperations.deleteStyle(data, id))
+                            onDataChanged(SharedDiceStyleCatalog.delete(data, id))
                             deletingStyleId = null
                         },
                     ) { Text(stringResource(R.string.delete)) }
@@ -378,149 +357,7 @@ internal fun DiceStyleLibraryV2(
         }
     }
 
-    if (copyingFromCharacter) {
-        CopyDiceStylesDialog(
-            destinationCharacter = character,
-            data = data,
-            onDismiss = { copyingFromCharacter = false },
-            onCopy = { sourceCharacterId, selectedStyleIds, copyDefault ->
-                onDataChanged(
-                    DiceStyleDataOperations.copyStylesFromCharacter(
-                        data = data,
-                        sourceCharacterId = sourceCharacterId,
-                        destinationCharacterId = character.id,
-                        styleIds = selectedStyleIds,
-                        copySourceDefault = copyDefault,
-                        copySuffix = copySuffix,
-                    ),
-                )
-                copyingFromCharacter = false
-            },
-        )
-    }
-}
 
-@Composable
-private fun CopyDiceStylesDialog(
-    destinationCharacter: CharacterProfile,
-    data: AppData,
-    onDismiss: () -> Unit,
-    onCopy: (sourceCharacterId: String, styleIds: Set<String>, copyDefault: Boolean) -> Unit,
-) {
-    val sourceCharacters = data.characters
-        .filter { it.id != destinationCharacter.id }
-        .filter { source -> data.diceStyles.any { it.characterId == source.id } }
-    var sourceCharacterId by remember(destinationCharacter.id) {
-        mutableStateOf(sourceCharacters.firstOrNull()?.id)
-    }
-    var sourceMenuExpanded by remember { mutableStateOf(false) }
-    var selectedStyleIds by remember(sourceCharacterId) { mutableStateOf(emptySet<String>()) }
-    var copyDefault by remember(sourceCharacterId) { mutableStateOf(false) }
-    val sourceCharacter = sourceCharacters.firstOrNull { it.id == sourceCharacterId }
-    val sourceStyles = data.diceStyles
-        .filter { it.characterId == sourceCharacterId }
-        .sortedBy { it.order }
-    val sourceDefaultSelected = sourceCharacter?.defaultDiceStyleId?.let { it in selectedStyleIds } == true
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.copy_from_character)) },
-        text = {
-            Column(
-                modifier = Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text(
-                    text = stringResource(R.string.copy_styles_help),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(stringResource(R.string.source_character), fontWeight = FontWeight.SemiBold)
-                Box {
-                    OutlinedButton(onClick = { sourceMenuExpanded = true }) {
-                        Text(sourceCharacter?.name ?: stringResource(R.string.source_character))
-                    }
-                    DropdownMenu(
-                        expanded = sourceMenuExpanded,
-                        onDismissRequest = { sourceMenuExpanded = false },
-                    ) {
-                        sourceCharacters.forEach { candidate ->
-                            DropdownMenuItem(
-                                text = { Text(candidate.name) },
-                                onClick = {
-                                    sourceCharacterId = candidate.id
-                                    selectedStyleIds = emptySet()
-                                    copyDefault = false
-                                    sourceMenuExpanded = false
-                                },
-                            )
-                        }
-                    }
-                }
-                Text(stringResource(R.string.select_dice_styles), fontWeight = FontWeight.SemiBold)
-                sourceStyles.forEach { style ->
-                    val selected = style.id in selectedStyleIds
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .clickable {
-                                val updated = if (selected) selectedStyleIds - style.id else selectedStyleIds + style.id
-                                selectedStyleIds = updated
-                                if (sourceCharacter?.defaultDiceStyleId?.let { it in updated } != true) copyDefault = false
-                            }
-                            .padding(horizontal = 8.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Checkbox(checked = selected, onCheckedChange = null)
-                        Spacer(Modifier.width(6.dp))
-                        DiceStyleSwatch(style)
-                        Spacer(Modifier.width(10.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(style.name, fontWeight = FontWeight.SemiBold)
-                            Text(
-                                materialLabel(style.material),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        if (sourceCharacter?.defaultDiceStyleId == style.id) {
-                            Icon(Icons.Rounded.Star, contentDescription = stringResource(R.string.default_style))
-                        }
-                    }
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = sourceDefaultSelected) { copyDefault = !copyDefault },
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Checkbox(
-                        checked = copyDefault,
-                        onCheckedChange = { copyDefault = it },
-                        enabled = sourceDefaultSelected,
-                    )
-                    Text(
-                        text = stringResource(R.string.use_copied_default),
-                        color = if (sourceDefaultSelected) {
-                            MaterialTheme.colorScheme.onSurface
-                        } else {
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f)
-                        },
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                enabled = sourceCharacterId != null && selectedStyleIds.isNotEmpty(),
-                onClick = {
-                    sourceCharacterId?.let { onCopy(it, selectedStyleIds, copyDefault) }
-                },
-            ) { Text(stringResource(R.string.copy_selected_styles)) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
-    )
 }
 
 @Composable
@@ -546,7 +383,7 @@ private fun DiceStyleSwatch(style: DiceStyle) {
 @Composable
 private fun DiceStyleEditorDialog(
     existing: DiceStyle?,
-    characterId: String,
+    characterId: String?,
     existingNames: List<String>,
     onDismiss: () -> Unit,
     onSave: (DiceStyle) -> Unit,
