@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">Systeemdobbelsteenstijlen</string>
+    <string name="dice_catalog_custom_title">Aangepaste dobbelsteenstijlen</string>
+    <string name="dice_character_styles_summary">Standaard: %1$s · %2$d opgeslagen stijlen</string>
+    <string name="dice_character_styles_add">Dobbelsteenstijl toevoegen</string>
+    <string name="dice_character_style_system_default">Systeemstandaard</string>
+</resources>
