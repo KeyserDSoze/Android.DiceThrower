@@ -137,6 +137,34 @@ class SupportOnlyRollPartTest {
     }
 
     @Test
+    fun negativeSupportPartOnlySamplesWhenTriggeredAndKeepsItsSign() {
+        val negative = reserve.copy(operator =
+            com.keyserdsoze.dicethrower.model.RollSubgroupOperator.SUBTRACT)
+        val formula = RollFormulaResolver.resolve(
+            hero, emptyList(), roll.copy(subgroups = listOf(attack, negative)),
+        )
+        val negativeFormula = formula.effectPartExpressions().getValue("reserve")
+        assertEquals("-(2d6)", negativeFormula)
+        assertEquals(-1, DiceExpression.parse(negativeFormula).diceShape().single().sign)
+        val original = EffectRollSnapshot.fromResolvedRoll(
+            formula, DiceExpression.parse(formula.expression).evaluate(Random(10)),
+        )
+        val condition = EffectCondition("always", partId = "attack",
+            comparison = EffectComparison.GREATER_OR_EQUAL, threshold = "1")
+        val effect = RollEffect(
+            id = "malus", name = "Penalty", type = EffectType.MALUS,
+            activationGroups = listOf(EffectActivationGroup("group", listOf(condition))),
+            actions = listOf(EffectAction("a", EffectActionType.ROLL_AFTER,
+                "reserve", EffectValueScope.DICE_ONLY, "")),
+        )
+        val output = EffectSequenceExecutor.execute(
+            original, listOf(effect), formula.effectPartExpressions(), Random(10),
+        )
+        assertTrue(output.finalSnapshot.parts.getValue("reserve").dice < 0)
+        assertTrue(output.generatedDice.single().result.components.single().sign < 0)
+    }
+
+    @Test
     fun rejectsRollWithoutAnInitialPart() {
         val hidden = parts.map { it.copy(includeInNormalRoll = false) }
         assertTrue(runCatching { RollFormulaResolver.canonicalExpression(hidden) }.isFailure)
