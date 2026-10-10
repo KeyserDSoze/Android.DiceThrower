@@ -1,0 +1,7 @@
+<resources>
+    <string name="dice_catalog_system_title">Estilos de dados do sistema</string>
+    <string name="dice_catalog_custom_title">Estilos de dados personalizados</string>
+    <string name="dice_character_styles_summary">Padrão: %1$s · %2$d estilos guardados</string>
+    <string name="dice_character_styles_add">Adicionar estilo de dado</string>
+    <string name="dice_character_style_system_default">Padrão do sistema</string>
+</resources>
