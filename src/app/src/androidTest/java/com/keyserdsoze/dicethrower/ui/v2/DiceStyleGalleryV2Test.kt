@@ -25,7 +25,7 @@ class DiceStyleGalleryV2Test {
     @get:Rule val composeRule = createComposeRule()
 
     @Test
-    fun choosePreviewThenCopyPresetWithoutAffectingOtherCharacters() {
+    fun choosePreviewThenCreateSharedPresetCopyWithoutAffectingAssignments() {
         val one = CharacterProfile(id = "hero", name = "Hero")
         val two = CharacterProfile(id = "rival", name = "Rival")
         var data by mutableStateOf(AppData(characters = listOf(one, two)))
@@ -33,7 +33,6 @@ class DiceStyleGalleryV2Test {
             MaterialTheme {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
                     DiceStyleLibraryV2(
-                        character = one,
                         data = data,
                         onDataChanged = { data = it },
                     )
@@ -45,7 +44,7 @@ class DiceStyleGalleryV2Test {
         composeRule.onNodeWithTag("dice-add-selected-preset").performScrollTo().performClick()
         composeRule.runOnIdle {
             assertEquals(1, data.diceStyles.size)
-            assertEquals("hero", data.diceStyles.single().characterId)
+            assertEquals(null, data.diceStyles.single().characterId)
             assertEquals(DiceStylePresets.find("emerald-aether")!!.primaryColorArgb,
                 data.diceStyles.single().primaryColorArgb)
             assertEquals(null, data.characters.last().defaultDiceStyleId)
