@@ -311,15 +311,13 @@ private fun RandomStylePool(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(stringResource(R.string.random_style_pool), fontWeight = FontWeight.SemiBold)
-        Text(
-            stringResource(R.string.random_style_pool_help),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
         FilterChip(
             selected = selectedStyleIds.isEmpty(),
             onClick = { onSelectedStyleIdsChanged(emptyList()) },
-            label = { Text(stringResource(R.string.all_character_styles)) },
+            label = {
+                Text(stringResource(R.string.dice_catalog_system_title) + " + " +
+                    stringResource(R.string.dice_catalog_custom_title))
+            },
         )
         styles.forEach { style ->
             FilterChip(
@@ -334,7 +332,7 @@ private fun RandomStylePool(
                     }
                     onSelectedStyleIdsChanged(updated)
                 },
-                label = { Text(style.name) },
+                label = { Text(appearanceStyleName(style)) },
             )
         }
     }
