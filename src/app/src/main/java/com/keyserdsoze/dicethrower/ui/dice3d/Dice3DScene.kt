@@ -14,6 +14,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.keyserdsoze.dicethrower.dice.DiceRollVisualEvent
+import com.keyserdsoze.dicethrower.dice.CandidateVisualLighting
 import com.keyserdsoze.dicethrower.model.EffectType
 import com.keyserdsoze.dicethrower.model.DiceTableTheme
 import com.keyserdsoze.dicethrower.model.RollVisualEffectsSettings
@@ -476,14 +477,16 @@ private class DiceSceneRenderer(
 
             val style = die.renderStyle
             // The less favorable sampled candidate stays visible, but recedes visually.
-            val canSpotlight = winnerRevealed && visualSettings.winnerSpotlight
             // Both candidates are full-brightness during physics. Only after
             // all stages settle does the chosen set glow and the other dim.
-            val candidateBrightness = if (canSpotlight && die.dimmed) 0.42f else 1f
-            val selectedFlash = if (canSpotlight && die.chosenCandidate) {
-                val elapsed = ((now - winnerRevealNanos) / 1_000_000_000f).coerceAtLeast(0f)
-                (0.34f * (1f - elapsed / 1.0f).coerceIn(0f, 1f))
-            } else 0f
+            val candidateBrightness = CandidateVisualLighting.brightness(
+                revealed = winnerRevealed, enabled = visualSettings.winnerSpotlight, discarded = die.dimmed,
+            )
+            val selectedFlash = CandidateVisualLighting.chosenPulse(
+                revealed = winnerRevealed, enabled = visualSettings.winnerSpotlight,
+                chosen = die.chosenCandidate,
+                elapsedSeconds = (now - winnerRevealNanos) / 1_000_000_000f,
+            )
             // Accent is visual-only: green/cyan for bonuses and warm crimson
             // for maluses. No GPU path can change the sampled die value.
             val accentRgb = when (die.effectAccent) {
