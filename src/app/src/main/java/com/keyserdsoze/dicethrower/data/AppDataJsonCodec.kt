@@ -261,6 +261,7 @@ object AppDataJsonCodec {
                             RollSubgroupOperator.ADD,
                         ),
                         includeInDoubleRoll = subgroup.optBoolean("includeInDoubleRoll", false),
+                        includeInNormalRoll = subgroup.optBoolean("includeInNormalRoll", true),
                     )
                 },
                 diceAppearance = item.optJSONObject("diceAppearance")?.let(::decodeDiceAppearance)
