@@ -63,7 +63,7 @@ class RollVisualSettingsPersistenceTest {
     @Test
     fun balancedProfileIsDefaultAndOldDataNeverLoseEffectsOnUpgrade() {
         val json = AppDataJsonCodec.encodeData(data)
-        assertEquals(15, json.getInt("version"))
+        assertEquals(AppDataJsonCodec.DATA_VERSION, json.getInt("version"))
         json.getJSONArray("rolls").getJSONObject(0).remove("visualEffects")
         json.put("version", 14)
         val decoded = AppDataJsonCodec.decodeData(json)
