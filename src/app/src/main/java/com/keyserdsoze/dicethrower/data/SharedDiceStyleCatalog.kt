@@ -88,6 +88,34 @@ object SharedDiceStyleCatalog {
         )
     }
 
+    /**
+     * A remote device may still have a character referencing a style deleted elsewhere.
+     * Repair these references deterministically after applying the authoritative catalog.
+     */
+    fun repairDanglingReferences(data: AppData): AppData {
+        val ids = data.diceStyles.mapTo(mutableSetOf()) { it.id } +
+            DiceStylePresets.all.map { DiceStylePresets.styleId(it.key) }
+        val fallback = data.diceStyles.filter { it.characterId == null }
+            .sortedWith(compareBy<DiceStyle> { it.order }.thenBy { it.id })
+            .firstOrNull()?.id ?: DiceStylePresets.fallbackId
+        fun String?.validOrNull(): String? = this?.takeIf { it in ids } ?: if (this == null) null else fallback
+        return data.copy(
+            characters = data.characters.map { ch -> ch.copy(
+                defaultDiceStyleId = ch.defaultDiceStyleId.validOrNull(),
+                secondaryDiceStyleId = ch.secondaryDiceStyleId.validOrNull(),
+            ) },
+            rolls = data.rolls.map { roll ->
+                val a = roll.diceAppearance
+                roll.copy(diceAppearance = a.copy(
+                    styleId = a.styleId.validOrNull(),
+                    subgroupStyleIds = a.subgroupStyleIds.mapValues { it.value.validOrNull() ?: fallback },
+                    perDieStyleIds = a.perDieStyleIds.mapValues { it.value.validOrNull() ?: fallback },
+                    randomStyleIds = a.randomStyleIds.mapNotNull { it.validOrNull() }.distinct(),
+                ))
+            },
+        )
+    }
+
     fun move(data: AppData, styleId: String, delta: Int): AppData {
         val sorted = data.diceStyles.sortedBy { it.order }.toMutableList()
         val at = sorted.indexOfFirst { it.id == styleId }
