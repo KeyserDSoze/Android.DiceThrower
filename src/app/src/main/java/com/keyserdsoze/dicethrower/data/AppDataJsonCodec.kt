@@ -168,6 +168,7 @@ object AppDataJsonCodec {
             .put("particles", settings.particles)
             .put("actionCues", settings.actionCues)
             .put("resultTransitions", settings.resultTransitions)
+            .put("cameraImpact", settings.cameraImpact)
 
     private fun decodeRollVisualEffects(json: JSONObject?): com.keyserdsoze.dicethrower.model.RollVisualEffectsSettings {
         val profile = runCatching {
@@ -184,6 +185,7 @@ object AppDataJsonCodec {
             particles = json.optBoolean("particles", preset.particles),
             actionCues = json.optBoolean("actionCues", preset.actionCues),
             resultTransitions = json.optBoolean("resultTransitions", preset.resultTransitions),
+            cameraImpact = json.optBoolean("cameraImpact", preset.cameraImpact),
         )
     }
 
