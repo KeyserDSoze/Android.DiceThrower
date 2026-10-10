@@ -1,0 +1,19 @@
+<resources>
+    <string name="cinematic_heading">مؤثرات الرمية المرئية</string>
+    <string name="cinematic_help">اختر نمطًا وخصّص كل مؤثر. تتبع الحركة الإعداد العام.</string>
+    <string name="cinematic_balanced">متوازن</string>
+    <string name="cinematic_subtle">هادئ</string>
+    <string name="cinematic_off">إيقاف</string>
+    <string name="cinematic_badge">اسم التأثير</string>
+    <string name="cinematic_lanes">فصل مجموعتي الرمية المزدوجة</string>
+    <string name="cinematic_spotlight">تمييز النرد المختار</string>
+    <string name="cinematic_aura">هالة سحرية على الطاولة</string>
+    <string name="cinematic_particles">شرارات وجزيئات رماد</string>
+    <string name="cinematic_actions">مؤثرات حسب الإجراء</string>
+    <string name="cinematic_results">تحريك تغيّر النتائج</string>
+    <string name="cinematic_candidate_first">الرمية أ</string>
+    <string name="cinematic_candidate_second">الرمية ب</string>
+    <string name="cinematic_chosen">المختار</string>
+    <string name="cinematic_unselected">غير المختار</string>
+    <string name="cinematic_camera">اهتزاز خفيف للكاميرا</string>
+</resources>

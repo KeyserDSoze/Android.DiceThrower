@@ -9,6 +9,38 @@ import kotlin.math.sqrt
 
 class DiceTablePhysicsTest {
     @Test
+    fun generatedEffectDiceEnterFromEdgesWithoutChangingLogicalValues() {
+        val physics = DiceTablePhysics(count = 2, seed = 813L, spawnFromEdge = true)
+        val starting = physics.states()
+        assertTrue(starting[0].x < -1.5f)
+        assertTrue(starting[1].x > 1.5f)
+        repeat(200) { physics.step(1f / 60f) }
+        assertTrue(physics.isSettled)
+        physics.states().forEach { state ->
+            assertTrue(state.x in -DiceTableViewport.HALF_WIDTH..DiceTableViewport.HALF_WIDTH)
+            assertTrue(state.y in -DiceTableViewport.HALF_HEIGHT..DiceTableViewport.HALF_HEIGHT)
+        }
+    }
+
+
+    @Test
+    fun twoCandidatesStayInSeparateTableHalfLanesDuringAndAfterPhysics() {
+        val physics = DiceTablePhysics(
+            count = 6, seed = 993L,
+            laneByDieIndex = (0..2).associateWith { 0 } + (3..5).associateWith { 1 },
+        )
+        repeat(230) {
+            physics.step(1f / 60f)
+            physics.states().forEachIndexed { index, state ->
+                if (index < 3) assertTrue("A must remain above center", state.y > 0f)
+                else assertTrue("B must remain below center", state.y < 0f)
+            }
+        }
+        assertTrue(physics.isSettled)
+    }
+
+
+    @Test
     fun simulationIsDeterministicAndKeepsDiceInsideTable() {
         val first = DiceTablePhysics(count = 8, seed = 42L)
         val second = DiceTablePhysics(count = 8, seed = 42L)

@@ -1,0 +1,19 @@
+<resources>
+    <string name="cinematic_heading">Hiệu ứng hình ảnh khi tung</string>
+    <string name="cinematic_help">Chọn cấu hình rồi tùy chỉnh hiệu ứng. Hoạt ảnh tuân theo cài đặt chung.</string>
+    <string name="cinematic_balanced">Cân bằng</string>
+    <string name="cinematic_subtle">Nhẹ nhàng</string>
+    <string name="cinematic_off">Tắt</string>
+    <string name="cinematic_badge">Nhãn tên hiệu ứng</string>
+    <string name="cinematic_lanes">Tách nhóm tung đôi</string>
+    <string name="cinematic_spotlight">Làm nổi bật xúc xắc được chọn</string>
+    <string name="cinematic_aura">Hào quang phép thuật trên bàn</string>
+    <string name="cinematic_particles">Tia lửa và hạt tro</string>
+    <string name="cinematic_actions">Hiệu ứng theo hành động</string>
+    <string name="cinematic_results">Hoạt ảnh đổi kết quả</string>
+    <string name="cinematic_candidate_first">Lượt A</string>
+    <string name="cinematic_candidate_second">Lượt B</string>
+    <string name="cinematic_chosen">Đã chọn</string>
+    <string name="cinematic_unselected">Không chọn</string>
+    <string name="cinematic_camera">Rung máy quay nhẹ</string>
+</resources>

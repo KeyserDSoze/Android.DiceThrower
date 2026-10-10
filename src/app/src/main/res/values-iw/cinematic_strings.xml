@@ -1,0 +1,19 @@
+<resources>
+    <string name="cinematic_heading">אפקטים חזותיים להטלה</string>
+    <string name="cinematic_help">בחר פרופיל והתאם את האפקטים. ההנפשות כפופות להגדרה הכללית.</string>
+    <string name="cinematic_balanced">מאוזן</string>
+    <string name="cinematic_subtle">עדין</string>
+    <string name="cinematic_off">כבוי</string>
+    <string name="cinematic_badge">שם ההשפעה</string>
+    <string name="cinematic_lanes">הפרדת קבוצות הטלה כפולה</string>
+    <string name="cinematic_spotlight">הדגשת הקוביות שנבחרו</string>
+    <string name="cinematic_aura">הילה קסומה על השולחן</string>
+    <string name="cinematic_particles">ניצוצות וחלקיקי אפר</string>
+    <string name="cinematic_actions">אפקטים לפי פעולה</string>
+    <string name="cinematic_results">הנפשת שינוי התוצאה</string>
+    <string name="cinematic_candidate_first">הטלה א</string>
+    <string name="cinematic_candidate_second">הטלה ב</string>
+    <string name="cinematic_chosen">נבחר</string>
+    <string name="cinematic_unselected">לא נבחר</string>
+    <string name="cinematic_camera">רעידת מצלמה עדינה</string>
+</resources>

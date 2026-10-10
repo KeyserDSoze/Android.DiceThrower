@@ -1,0 +1,19 @@
+<resources>
+    <string name="cinematic_heading">রোলের দৃশ্যমান প্রভাব</string>
+    <string name="cinematic_help">প্রোফাইল বেছে প্রতিটি প্রভাব বদলান। অ্যানিমেশন সাধারণ সেটিং মানে।</string>
+    <string name="cinematic_balanced">সুষম</string>
+    <string name="cinematic_subtle">হালকা</string>
+    <string name="cinematic_off">বন্ধ</string>
+    <string name="cinematic_badge">প্রভাবের নাম</string>
+    <string name="cinematic_lanes">ডাবল রোলের গ্রুপ আলাদা করুন</string>
+    <string name="cinematic_spotlight">নির্বাচিত পাশা উজ্জ্বল করুন</string>
+    <string name="cinematic_aura">টেবিলে জাদুকরী আভা</string>
+    <string name="cinematic_particles">স্ফুলিঙ্গ ও ছাইয়ের কণা</string>
+    <string name="cinematic_actions">কাজ অনুযায়ী প্রভাব</string>
+    <string name="cinematic_results">ফলের পরিবর্তনের অ্যানিমেশন</string>
+    <string name="cinematic_candidate_first">রোল A</string>
+    <string name="cinematic_candidate_second">রোল B</string>
+    <string name="cinematic_chosen">নির্বাচিত</string>
+    <string name="cinematic_unselected">নির্বাচিত নয়</string>
+    <string name="cinematic_camera">হালকা ক্যামেরা কাঁপুনি</string>
+</resources>

@@ -1,0 +1,19 @@
+<resources>
+    <string name="cinematic_heading">ਰੋਲ ਦੇ ਦਿੱਖ ਪ੍ਰਭਾਵ</string>
+    <string name="cinematic_help">ਪ੍ਰੋਫਾਈਲ ਚੁਣੋ ਅਤੇ ਪ੍ਰਭਾਵ ਬਦਲੋ। ਐਨੀਮੇਸ਼ਨ ਆਮ ਸੈਟਿੰਗ ਦੇ ਅਨੁਸਾਰ ਹੈ।</string>
+    <string name="cinematic_balanced">ਸੰਤੁਲਿਤ</string>
+    <string name="cinematic_subtle">ਹਲਕਾ</string>
+    <string name="cinematic_off">ਬੰਦ</string>
+    <string name="cinematic_badge">ਪ੍ਰਭਾਵ ਨਾਮ</string>
+    <string name="cinematic_lanes">ਦੋਹਰੇ ਰੋਲ ਸਮੂਹ ਵੱਖ ਕਰੋ</string>
+    <string name="cinematic_spotlight">ਚੁਣੇ ਪਾਸੇ ਚਮਕਾਓ</string>
+    <string name="cinematic_aura">ਮੇਜ਼ ਉੱਤੇ ਜਾਦੂਈ ਆਭਾ</string>
+    <string name="cinematic_particles">ਚਿੰਗਾਰੀਆਂ ਤੇ ਸੁਆਹ ਦੇ ਕਣ</string>
+    <string name="cinematic_actions">ਕਾਰਵਾਈ ਅਨੁਸਾਰ ਪ੍ਰਭਾਵ</string>
+    <string name="cinematic_results">ਨਤੀਜੇ ਬਦਲਣ ਦੀ ਐਨੀਮੇਸ਼ਨ</string>
+    <string name="cinematic_candidate_first">ਰੋਲ A</string>
+    <string name="cinematic_candidate_second">ਰੋਲ B</string>
+    <string name="cinematic_chosen">ਚੁਣਿਆ</string>
+    <string name="cinematic_unselected">ਨਹੀਂ ਚੁਣਿਆ</string>
+    <string name="cinematic_camera">ਹਲਕਾ ਕੈਮਰਾ ਝਟਕਾ</string>
+</resources>

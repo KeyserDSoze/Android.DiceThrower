@@ -1,0 +1,19 @@
+<resources>
+    <string name="cinematic_heading">Vizuální efekty hodu</string>
+    <string name="cinematic_help">Vyberte profil a upravte efekty. Animace respektují hlavní nastavení.</string>
+    <string name="cinematic_balanced">Vyvážené</string>
+    <string name="cinematic_subtle">Jemné</string>
+    <string name="cinematic_off">Vypnuto</string>
+    <string name="cinematic_badge">Popisek efektu</string>
+    <string name="cinematic_lanes">Oddělit dvojité hody</string>
+    <string name="cinematic_spotlight">Zvýraznit vybrané kostky</string>
+    <string name="cinematic_aura">Magická aura stolu</string>
+    <string name="cinematic_particles">Jiskry a částice popela</string>
+    <string name="cinematic_actions">Efekty podle akce</string>
+    <string name="cinematic_results">Animace změny výsledku</string>
+    <string name="cinematic_candidate_first">Hod A</string>
+    <string name="cinematic_candidate_second">Hod B</string>
+    <string name="cinematic_chosen">Vybráno</string>
+    <string name="cinematic_unselected">Nevybráno</string>
+    <string name="cinematic_camera">Jemné otřesy kamery</string>
+</resources>

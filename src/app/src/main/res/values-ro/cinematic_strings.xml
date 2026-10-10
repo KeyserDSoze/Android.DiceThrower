@@ -1,0 +1,19 @@
+<resources>
+    <string name="cinematic_heading">Efecte vizuale ale aruncării</string>
+    <string name="cinematic_help">Alege un profil și personalizează efectele. Animațiile respectă setarea generală.</string>
+    <string name="cinematic_balanced">Echilibrat</string>
+    <string name="cinematic_subtle">Discret</string>
+    <string name="cinematic_off">Oprit</string>
+    <string name="cinematic_badge">Eticheta efectului</string>
+    <string name="cinematic_lanes">Separă grupurile aruncării duble</string>
+    <string name="cinematic_spotlight">Evidențiază zarurile alese</string>
+    <string name="cinematic_aura">Aură magică pe masă</string>
+    <string name="cinematic_particles">Scântei și particule de cenușă</string>
+    <string name="cinematic_actions">Efecte specifice acțiunii</string>
+    <string name="cinematic_results">Animația rezultatului</string>
+    <string name="cinematic_candidate_first">Aruncare A</string>
+    <string name="cinematic_candidate_second">Aruncare B</string>
+    <string name="cinematic_chosen">Ales</string>
+    <string name="cinematic_unselected">Neales</string>
+    <string name="cinematic_camera">Vibrație ușoară a camerei</string>
+</resources>

@@ -1,0 +1,19 @@
+<resources>
+    <string name="cinematic_heading">Effetti visivi del tiro</string>
+    <string name="cinematic_help">Scegli un profilo e personalizza gli effetti. Le animazioni rispettano le impostazioni generali.</string>
+    <string name="cinematic_balanced">Bilanciato</string>
+    <string name="cinematic_subtle">Discreto</string>
+    <string name="cinematic_off">Spento</string>
+    <string name="cinematic_badge">Etichetta nome effetto</string>
+    <string name="cinematic_lanes">Separa i gruppi del doppio tiro</string>
+    <string name="cinematic_spotlight">Evidenzia dadi scelti</string>
+    <string name="cinematic_aura">Aura magica sul tavolo</string>
+    <string name="cinematic_particles">Scintille e particelle di cenere</string>
+    <string name="cinematic_actions">Effetti per tipo di azione</string>
+    <string name="cinematic_results">Animazione dei risultati</string>
+    <string name="cinematic_candidate_first">Tiro A</string>
+    <string name="cinematic_candidate_second">Tiro B</string>
+    <string name="cinematic_chosen">Scelto</string>
+    <string name="cinematic_unselected">Non scelto</string>
+    <string name="cinematic_camera">Leggero impatto della camera</string>
+</resources>

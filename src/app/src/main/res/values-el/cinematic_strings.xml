@@ -1,0 +1,19 @@
+<resources>
+    <string name="cinematic_heading">Οπτικά εφέ ρίψης</string>
+    <string name="cinematic_help">Επιλέξτε προφίλ και προσαρμόστε τα εφέ. Οι κινήσεις ακολουθούν τη γενική ρύθμιση.</string>
+    <string name="cinematic_balanced">Ισορροπημένο</string>
+    <string name="cinematic_subtle">Διακριτικό</string>
+    <string name="cinematic_off">Ανενεργό</string>
+    <string name="cinematic_badge">Ετικέτα ονόματος εφέ</string>
+    <string name="cinematic_lanes">Διαχωρισμός διπλών ρίψεων</string>
+    <string name="cinematic_spotlight">Τονισμός επιλεγμένων ζαριών</string>
+    <string name="cinematic_aura">Μαγική αύρα στο τραπέζι</string>
+    <string name="cinematic_particles">Σπινθήρες και στάχτη</string>
+    <string name="cinematic_actions">Εφέ ανά ενέργεια</string>
+    <string name="cinematic_results">Κίνηση αλλαγής αποτελέσματος</string>
+    <string name="cinematic_candidate_first">Ρίψη Α</string>
+    <string name="cinematic_candidate_second">Ρίψη Β</string>
+    <string name="cinematic_chosen">Επιλεγμένο</string>
+    <string name="cinematic_unselected">Μη επιλεγμένο</string>
+    <string name="cinematic_camera">Ήπια δόνηση κάμερας</string>
+</resources>

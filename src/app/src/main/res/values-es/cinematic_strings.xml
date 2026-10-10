@@ -1,0 +1,19 @@
+<resources>
+    <string name="cinematic_heading">Efectos visuales del lanzamiento</string>
+    <string name="cinematic_help">Elige un perfil y personaliza los efectos. Las animaciones respetan el ajuste global.</string>
+    <string name="cinematic_balanced">Equilibrado</string>
+    <string name="cinematic_subtle">Discreto</string>
+    <string name="cinematic_off">Desactivado</string>
+    <string name="cinematic_badge">Etiqueta del efecto</string>
+    <string name="cinematic_lanes">Separar grupos del doble lanzamiento</string>
+    <string name="cinematic_spotlight">Resaltar dados elegidos</string>
+    <string name="cinematic_aura">Aura mágica en la mesa</string>
+    <string name="cinematic_particles">Chispas y partículas de ceniza</string>
+    <string name="cinematic_actions">Efectos según la acción</string>
+    <string name="cinematic_results">Cambios de resultado animados</string>
+    <string name="cinematic_candidate_first">Tirada A</string>
+    <string name="cinematic_candidate_second">Tirada B</string>
+    <string name="cinematic_chosen">Elegido</string>
+    <string name="cinematic_unselected">No elegido</string>
+    <string name="cinematic_camera">Ligero impacto de cámara</string>
+</resources>

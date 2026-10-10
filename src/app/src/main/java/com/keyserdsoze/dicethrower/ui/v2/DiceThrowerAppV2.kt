@@ -122,6 +122,8 @@ import com.keyserdsoze.dicethrower.data.sync.SyncStatus
 import com.keyserdsoze.dicethrower.data.sync.SyncStatusKind
 import com.keyserdsoze.dicethrower.dice.DiceAppearanceResolver
 import com.keyserdsoze.dicethrower.dice.DoubleRollEngine
+import com.keyserdsoze.dicethrower.dice.DoubleRollVisualPlanner
+import com.keyserdsoze.dicethrower.dice.DoubleRollVisualPlan
 import com.keyserdsoze.dicethrower.dice.DoubleRollEvaluation
 import com.keyserdsoze.dicethrower.dice.EffectExecutionResult
 import com.keyserdsoze.dicethrower.dice.EffectRollSnapshot
@@ -144,6 +146,8 @@ import com.keyserdsoze.dicethrower.model.CharacterImageRef
 import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.ConflictPolicy
 import com.keyserdsoze.dicethrower.model.DoubleRollMode
+import com.keyserdsoze.dicethrower.model.EffectType
+import com.keyserdsoze.dicethrower.model.RollVisualEffectsSettings
 import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.DiceTableTheme
 import com.keyserdsoze.dicethrower.model.LevelRuleKind
@@ -2275,6 +2279,9 @@ private fun RollScreenV2(
     var hasRolled by remember(roll.id, character.level, formula.expression) { mutableStateOf(false) }
     var resultRevealed by remember(roll.id, character.level, formula.expression) { mutableStateOf(false) }
     var showStats by remember(roll.id) { mutableStateOf(false) }
+    var lastThrowMode by remember(roll.id, character.level, formula.expression) { mutableStateOf(DoubleRollMode.NORMAL) }
+    var lastCandidatePlan by remember(roll.id, character.level, formula.expression) { mutableStateOf(DoubleRollVisualPlan()) }
+    val cinematic = roll.visualEffects.withGlobalMotionEnabled(settings.animationsEnabled)
 
     fun throwDice(requestedMode: DoubleRollMode = DoubleRollMode.NORMAL) {
         if (hasRolled && !resultRevealed) return
@@ -2315,6 +2322,9 @@ private fun RollScreenV2(
                     }
                 }
         }
+        val candidatePlan = DoubleRollVisualPlanner.plan(
+            evaluation, subgroupIdByComponentIndex, extraComponentOwners, selectedPartIds,
+        )
         val timeline = EffectsVisualTimeline.build(
             baseline = evaluation.visualResult,
             baselineOwners = subgroupIdByComponentIndex + extraComponentOwners,
@@ -2324,6 +2334,8 @@ private fun RollScreenV2(
         )
         visualStages = timeline
         visualStageIndex = 0
+        lastThrowMode = evaluation.mode
+        lastCandidatePlan = candidatePlan
         visualSeed = System.nanoTime()
         val firstStage = timeline.first()
         visualEvent = DiceRollVisualEvent(
@@ -2339,6 +2351,9 @@ private fun RollScreenV2(
             ),
             dimmedComponentIndices = (if (firstStage.retainsBaseline) evaluation.dimmedComponentIndices else emptySet()) + firstStage.rerolledComponentIndices,
             effectAccentComponents = firstStage.accentByComponentIndex,
+            candidateGroupByComponent = candidatePlan.groups.takeIf { firstStage.retainsBaseline }.orEmpty(),
+            chosenCandidateComponents = candidatePlan.chosen.takeIf { firstStage.retainsBaseline }.orEmpty(),
+            visualSettings = cinematic,
         )
         doubleEvaluation = evaluation
         effectsExecution = execution
@@ -2411,6 +2426,7 @@ private fun RollScreenV2(
                 tableImageKey = tableImageKey,
                 fullBleed = true,
                 animateRoll = hasRolled && settings.animationsEnabled,
+                winnerRevealed = resultRevealed,
                 onSettled = { eventId ->
                     if (hasRolled && eventId == visualEvent.id) {
                         if (settings.animationsEnabled && visualStageIndex < visualStages.lastIndex) {
@@ -2433,6 +2449,11 @@ private fun RollScreenV2(
                                     else emptySet()) + stage.rerolledComponentIndices,
                                 effectAccentComponents = stage.accentByComponentIndex,
                                 persistentDiceCount = stage.persistentDiceCount,
+                                candidateGroupByComponent = if (stage.retainsBaseline)
+                                    visualEvent.candidateGroupByComponent else emptyMap(),
+                                chosenCandidateComponents = if (stage.retainsBaseline)
+                                    visualEvent.chosenCandidateComponents else emptySet(),
+                                visualSettings = cinematic,
                             )
                         } else {
                             resultRevealed = true
@@ -2442,6 +2463,78 @@ private fun RollScreenV2(
                 modifier = Modifier.fillMaxSize(),
             )
 
+            // Readable A/B lanes stay stable while both groups tumble.
+            // The chosen group is identified only after every 3D stage settles.
+            if (hasRolled && cinematic.groupLanes && lastCandidatePlan.isDoubleRoll) {
+                val winner = lastCandidatePlan.selectedGroup
+                listOf(0, 1).forEach { group ->
+                    val selected = resultRevealed && winner == group && cinematic.winnerSpotlight
+                    Surface(
+                        modifier = Modifier
+                            .align(if (group == 0) Alignment.TopStart else Alignment.BottomStart)
+                            .padding(start = 18.dp)
+                            .then(if (group == 0) Modifier.padding(top = maxHeight * 0.27f)
+                                else Modifier.padding(bottom = maxHeight * 0.27f)),
+                        shape = RoundedCornerShape(13.dp),
+                        color = Color(0xDB192132),
+                        contentColor = Color.White,
+                    ) {
+                        Text(
+                            (if (group == 0) stringResource(R.string.cinematic_candidate_first)
+                                else stringResource(R.string.cinematic_candidate_second)) +
+                                if (selected) "  ✦ ${stringResource(R.string.cinematic_chosen)}" else "",
+                            modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (selected) Color(0xFFB0FFDC)
+                                else if (group == 0) Color(0xFFB0E9FF) else Color(0xFFFFDDA6),
+                        )
+                    }
+                }
+            }
+
+            // Each triggered arithmetic action gets a brief cinematic replay
+            // of its recorded before/after values. The 3D outcome never changes.
+            val cinematicMoments = remember(effectsExecution, roll.effects) {
+                effectsExecution?.steps.orEmpty().flatMap { step ->
+                    val effect = roll.effects.firstOrNull { it.id == step.effectId }
+                    if (effect == null || !step.activation.activated) emptyList()
+                    else step.actions.mapNotNull { result ->
+                        val action = effect.actions.firstOrNull { it.id == result.actionId }
+                        if (action == null || !result.applied) null else CinematicActionMoment(
+                            effectId = effect.id, type = effect.type, action = action.kind,
+                            before = result.before, after = result.after,
+                        )
+                    }
+                }
+            }
+            if (resultRevealed && settings.animationsEnabled && !showStats) {
+                CinematicActionSequenceV2(
+                    rollSeed = visualSeed,
+                    moments = cinematicMoments,
+                    options = cinematic,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+            if (hasRolled && !resultRevealed && settings.animationsEnabled && !showStats) {
+                val stage = visualStages.getOrNull(visualStageIndex)
+                val effect = roll.effects.firstOrNull { it.id == stage?.effectId }
+                if (effect != null && stage != null) {
+                    CinematicEffectOverlayV2(
+                        key = "$visualSeed:${visualStageIndex}:${effect.id}",
+                        type = effect.type, action = stage.actionKind,
+                        particles = cinematic.particles, aura = cinematic.tableAura,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    if (cinematic.actionCues && stage.actionKind != null) {
+                        CinematicActionCueV2(
+                            action = stage.actionKind, type = effect.type,
+                            before = null, after = null,
+                            modifier = Modifier.align(Alignment.Center),
+                        )
+                    }
+                }
+            }
+
             // Keep the center clear: a compact accessible cue appears near
             // the top while additional pre-resolved dice enter the 3D scene.
             if (hasRolled && !showStats) {
@@ -2450,7 +2543,7 @@ private fun RollScreenV2(
                     effectsExecution?.steps?.firstOrNull { it.activation.activated }?.effectId
                 } else null
                 val activeEffect = roll.effects.firstOrNull { it.id == activeEffectId }
-                if (activeEffect != null) {
+                if (activeEffect != null && cinematic.badge) {
                     EffectsVisualCueV2(
                         effectName = activeEffect.name,
                         type = activeEffect.type,
@@ -2487,6 +2580,8 @@ private fun RollScreenV2(
                         parts = doubleEvaluation?.parts?.map { ResolvedRollSubgroupResult(it.subgroup, it.chosen) }
                             ?: formula.subgroupResults(value),
                         total = finalRollTotal ?: value.total,
+                        originalTotal = value.total.takeIf { it != finalRollTotal },
+                        animateValues = cinematic.resultTransitions && settings.animationsEnabled,
                         partTotalsById = effectsExecution?.finalSnapshot?.parts?.mapValues { it.value.total }.orEmpty(),
                         aboveAverage = (finalRollTotal ?: value.total) > value.expectedTotal(),
                         modifier = Modifier
@@ -2542,6 +2637,7 @@ private fun RollScreenV2(
                             tint = Color.White.copy(alpha = 0.9f),
                         )
                     }
+                    val waitingForDice = hasRolled && !resultRevealed
                     if (roll.doubleRollEnabled) {
                         IconButton(
                             onClick = { requestThrow(DoubleRollMode.WORST) },
@@ -2551,7 +2647,8 @@ private fun RollScreenV2(
                                 Icons.Rounded.Casino,
                                 contentDescription = stringResource(R.string.double_roll_worst),
                                 modifier = Modifier.size(27.dp),
-                                tint = Color(0xFFF87171),
+                                tint = Color(0xFFF87171).copy(alpha = if (!waitingForDice) 1f
+                                    else if (lastThrowMode == DoubleRollMode.WORST) 0.72f else 0.30f),
                             )
                         }
                         IconButton(
@@ -2562,7 +2659,8 @@ private fun RollScreenV2(
                                 Icons.Rounded.Casino,
                                 contentDescription = stringResource(R.string.double_roll_best),
                                 modifier = Modifier.size(27.dp),
-                                tint = Color(0xFF86EFAC),
+                                tint = Color(0xFF86EFAC).copy(alpha = if (!waitingForDice) 1f
+                                    else if (lastThrowMode == DoubleRollMode.BEST) 0.72f else 0.30f),
                             )
                         }
                     }
@@ -2574,6 +2672,8 @@ private fun RollScreenV2(
                             Icons.Rounded.Casino,
                             contentDescription = stringResource(if (hasRolled) R.string.roll_again else R.string.throw_dice),
                             modifier = Modifier.size(30.dp),
+                            tint = Color.White.copy(alpha = if (!waitingForDice) 1f
+                                else if (lastThrowMode == DoubleRollMode.NORMAL) 0.72f else 0.30f),
                         )
                     }
                 }
@@ -2790,15 +2890,18 @@ internal fun RollResultsOverlayV2(
     aboveAverage: Boolean,
     modifier: Modifier = Modifier,
     partTotalsById: Map<String, Int> = emptyMap(),
+    originalTotal: Int? = null,
+    animateValues: Boolean = true,
 ) {
     Box(
         modifier = modifier.testTag("roll-results-overlay"),
         contentAlignment = Alignment.BottomCenter,
     ) {
         if (parts.size > 1) {
-            RollPartsReveal(parts, partTotalsById)
+            RollPartsReveal(parts, partTotalsById, animateValues)
         } else {
-            RollTotalReveal(total = total, aboveAverage = aboveAverage)
+            RollTotalReveal(total = total, aboveAverage = aboveAverage,
+                originalTotal = originalTotal, animateValues = animateValues)
         }
     }
 }
@@ -2807,6 +2910,7 @@ internal fun RollResultsOverlayV2(
 private fun RollPartsReveal(
     parts: List<ResolvedRollSubgroupResult>,
     finalTotalsById: Map<String, Int> = emptyMap(),
+    animateValues: Boolean = true,
 ) {
     val scrollState = rememberScrollState()
     LaunchedEffect(parts) { scrollState.scrollTo(0) }
@@ -2841,8 +2945,11 @@ private fun RollPartsReveal(
                     )
                     Column(horizontalAlignment = Alignment.End) {
                         val finalTotal = finalTotalsById[part.subgroup.id] ?: part.result.total
+                        val animatedTotal = animatedRollValue(
+                            original = part.result.total, final = finalTotal, enabled = animateValues,
+                        )
                         Text(
-                            finalTotal.toString(),
+                            animatedTotal.toString(),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Black,
                             color = MaterialTheme.colorScheme.primary,
@@ -2863,10 +2970,32 @@ private fun RollPartsReveal(
     }
 }
 
+/** Numerically inert visual interpolation; the stored roll total never changes. */
 @Composable
-private fun RollTotalReveal(total: Int, aboveAverage: Boolean) {
-    val scale = remember(total) { Animatable(0.72f) }
-    LaunchedEffect(total) { scale.animateTo(1f, animationSpec = tween(durationMillis = 420)) }
+private fun animatedRollValue(original: Int, final: Int, enabled: Boolean): Int {
+    val value = remember(original, final, enabled) {
+        Animatable(if (enabled) original.toFloat() else final.toFloat())
+    }
+    LaunchedEffect(original, final, enabled) {
+        if (enabled && original != final) {
+            value.animateTo(final.toFloat(), animationSpec = tween(durationMillis = 650))
+        } else {
+            value.snapTo(final.toFloat())
+        }
+    }
+    // Show the original value from the first frame, not a flash of the final total.
+    return if (enabled && original != final) value.value.toInt() else final
+}
+
+@Composable
+private fun RollTotalReveal(total: Int, aboveAverage: Boolean,
+    originalTotal: Int? = null, animateValues: Boolean = true) {
+    val scale = remember(total, animateValues) { Animatable(if (animateValues) 0.72f else 1f) }
+    LaunchedEffect(total, animateValues) {
+        if (animateValues) scale.animateTo(1f, animationSpec = tween(durationMillis = 420))
+        else scale.snapTo(1f)
+    }
+    val visibleTotal = animatedRollValue(originalTotal ?: total, total, animateValues)
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = if (aboveAverage) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
@@ -2885,7 +3014,7 @@ private fun RollTotalReveal(total: Int, aboveAverage: Boolean) {
         ) {
             Text(stringResource(R.string.total), style = MaterialTheme.typography.labelMedium)
             Text(
-                total.toString(),
+                visibleTotal.toString(),
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Black,
                 color = if (aboveAverage) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
@@ -3751,6 +3880,7 @@ internal fun RollBuilderScreenV2(
     var groupId by remember(existing?.id, initialGroupId) { mutableStateOf(existing?.groupId ?: initialGroupId) }
     var groupMenu by remember(existing?.id) { mutableStateOf(false) }
     var doubleRollEnabled by remember(existing?.id) { mutableStateOf(existing?.doubleRollEnabled ?: true) }
+    var visualEffects by remember(existing?.id) { mutableStateOf(existing?.visualEffects ?: com.keyserdsoze.dicethrower.model.RollVisualEffectsSettings()) }
     var minimumLevelText by remember(existing?.id) { mutableStateOf((existing?.minimumLevel ?: 1).toString()) }
     var effects by remember(existing?.id) { mutableStateOf(existing?.effects.orEmpty()) }
     var subgroups by remember(existing?.id) {
@@ -3990,6 +4120,10 @@ internal fun RollBuilderScreenV2(
             }
 
         item {
+            RollVisualSettingsEditorV2(settings = visualEffects, onChange = { visualEffects = it })
+        }
+
+        item {
             EffectsEditorSectionV2(
                 effects = effects,
                 parts = subgroups,
@@ -4028,6 +4162,7 @@ internal fun RollBuilderScreenV2(
                             groupId = groupId,
                             subgroups = subgroups,
                             doubleRollEnabled = doubleRollEnabled,
+                            visualEffects = visualEffects,
                             minimumLevel = minimumLevel ?: 1,
                             effects = effectsToSave.orEmpty(),
                         )

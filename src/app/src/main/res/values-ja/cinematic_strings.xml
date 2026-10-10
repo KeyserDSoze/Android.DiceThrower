@@ -1,0 +1,19 @@
+<resources>
+    <string name="cinematic_heading">ロールの視覚効果</string>
+    <string name="cinematic_help">プリセットを選んで効果を調整します。アニメーションは全体設定に従います。</string>
+    <string name="cinematic_balanced">標準</string>
+    <string name="cinematic_subtle">控えめ</string>
+    <string name="cinematic_off">オフ</string>
+    <string name="cinematic_badge">効果名バッジ</string>
+    <string name="cinematic_lanes">ダブルロールを分けて表示</string>
+    <string name="cinematic_spotlight">選択したダイスを強調</string>
+    <string name="cinematic_aura">卓上の魔法の光</string>
+    <string name="cinematic_particles">火花と灰の粒子</string>
+    <string name="cinematic_actions">アクション別の演出</string>
+    <string name="cinematic_results">結果の変化をアニメーション</string>
+    <string name="cinematic_candidate_first">ロール A</string>
+    <string name="cinematic_candidate_second">ロール B</string>
+    <string name="cinematic_chosen">選択</string>
+    <string name="cinematic_unselected">未選択</string>
+    <string name="cinematic_camera">控えめなカメラの揺れ</string>
+</resources>

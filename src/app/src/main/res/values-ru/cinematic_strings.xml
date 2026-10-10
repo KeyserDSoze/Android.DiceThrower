@@ -1,0 +1,19 @@
+<resources>
+    <string name="cinematic_heading">Визуальные эффекты броска</string>
+    <string name="cinematic_help">Выберите профиль и настройте эффекты. Анимация зависит от общих настроек.</string>
+    <string name="cinematic_balanced">Сбалансированный</string>
+    <string name="cinematic_subtle">Сдержанный</string>
+    <string name="cinematic_off">Выключено</string>
+    <string name="cinematic_badge">Подпись эффекта</string>
+    <string name="cinematic_lanes">Разделять группы двойного броска</string>
+    <string name="cinematic_spotlight">Подсвечивать выбранные кубики</string>
+    <string name="cinematic_aura">Магическая аура стола</string>
+    <string name="cinematic_particles">Искры и частицы пепла</string>
+    <string name="cinematic_actions">Эффекты действий</string>
+    <string name="cinematic_results">Анимация изменения результата</string>
+    <string name="cinematic_candidate_first">Бросок А</string>
+    <string name="cinematic_candidate_second">Бросок Б</string>
+    <string name="cinematic_chosen">Выбран</string>
+    <string name="cinematic_unselected">Не выбран</string>
+    <string name="cinematic_camera">Лёгкая встряска камеры</string>
+</resources>

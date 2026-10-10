@@ -1,0 +1,19 @@
+<resources>
+    <string name="cinematic_heading">విసురు దృశ్య ప్రభావాలు</string>
+    <string name="cinematic_help">ప్రొఫైల్ ఎంచుకుని ప్రభావాలు మార్చండి. యానిమేషన్లు సాధారణ సెట్టింగ్‌ను అనుసరిస్తాయి.</string>
+    <string name="cinematic_balanced">సమతుల్యం</string>
+    <string name="cinematic_subtle">సున్నితం</string>
+    <string name="cinematic_off">ఆఫ్</string>
+    <string name="cinematic_badge">ప్రభావం పేరు</string>
+    <string name="cinematic_lanes">డబుల్ రోల్ సమూహాలు వేరు చేయి</string>
+    <string name="cinematic_spotlight">ఎంచుకున్న పాచికలను వెలిగించు</string>
+    <string name="cinematic_aura">బల్లపై మాయా కాంతి</string>
+    <string name="cinematic_particles">నిప్పురవ్వలు బూడిద రేణువులు</string>
+    <string name="cinematic_actions">చర్యనుబట్టి ప్రభావాలు</string>
+    <string name="cinematic_results">ఫలితం మార్పు యానిమేషన్</string>
+    <string name="cinematic_candidate_first">విసురు A</string>
+    <string name="cinematic_candidate_second">విసురు B</string>
+    <string name="cinematic_chosen">ఎంచుకున్నది</string>
+    <string name="cinematic_unselected">ఎంచుకోనిది</string>
+    <string name="cinematic_camera">సున్నితమైన కెమెరా కంపనం</string>
+</resources>

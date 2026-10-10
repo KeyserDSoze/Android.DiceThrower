@@ -1,0 +1,19 @@
+<resources>
+    <string name="cinematic_heading">ફેંકના દૃશ્ય પ્રભાવો</string>
+    <string name="cinematic_help">પ્રોફાઇલ પસંદ કરી પ્રભાવો બદલો. એનિમેશન સામાન્ય સેટિંગ અનુસરે છે.</string>
+    <string name="cinematic_balanced">સંતુલિત</string>
+    <string name="cinematic_subtle">હળવું</string>
+    <string name="cinematic_off">બંધ</string>
+    <string name="cinematic_badge">અસરના નામનું લેબલ</string>
+    <string name="cinematic_lanes">બે ફેંકનાં જૂથો અલગ કરો</string>
+    <string name="cinematic_spotlight">પસંદ કરેલા પાસા ચમકાવો</string>
+    <string name="cinematic_aura">ટેબલ પર જાદુઈ આભા</string>
+    <string name="cinematic_particles">તણખા અને રાખના કણ</string>
+    <string name="cinematic_actions">ક્રિયા મુજબ પ્રભાવો</string>
+    <string name="cinematic_results">પરિણામ બદલવાનું એનિમેશન</string>
+    <string name="cinematic_candidate_first">ફેંક A</string>
+    <string name="cinematic_candidate_second">ફેંક B</string>
+    <string name="cinematic_chosen">પસંદ કર્યું</string>
+    <string name="cinematic_unselected">પસંદ નથી</string>
+    <string name="cinematic_camera">હળવો કેમેરા આંચકો</string>
+</resources>

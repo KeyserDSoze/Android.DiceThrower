@@ -1,0 +1,19 @@
+<resources>
+    <string name="cinematic_heading">เอฟเฟกต์ภาพของการทอย</string>
+    <string name="cinematic_help">เลือกโปรไฟล์แล้วปรับแต่งเอฟเฟกต์ ภาพเคลื่อนไหวจะใช้ค่ารวม</string>
+    <string name="cinematic_balanced">สมดุล</string>
+    <string name="cinematic_subtle">นุ่มนวล</string>
+    <string name="cinematic_off">ปิด</string>
+    <string name="cinematic_badge">ป้ายชื่อเอฟเฟกต์</string>
+    <string name="cinematic_lanes">แยกกลุ่มทอยสองครั้ง</string>
+    <string name="cinematic_spotlight">เน้นลูกเต๋าที่เลือก</string>
+    <string name="cinematic_aura">ออราเวทมนตร์บนโต๊ะ</string>
+    <string name="cinematic_particles">ประกายไฟและฝุ่นเถ้า</string>
+    <string name="cinematic_actions">เอฟเฟกต์ตามการกระทำ</string>
+    <string name="cinematic_results">ภาพเคลื่อนไหวผลลัพธ์</string>
+    <string name="cinematic_candidate_first">ทอย A</string>
+    <string name="cinematic_candidate_second">ทอย B</string>
+    <string name="cinematic_chosen">เลือกแล้ว</string>
+    <string name="cinematic_unselected">ไม่ได้เลือก</string>
+    <string name="cinematic_camera">การสั่นกล้องเบา ๆ</string>
+</resources>

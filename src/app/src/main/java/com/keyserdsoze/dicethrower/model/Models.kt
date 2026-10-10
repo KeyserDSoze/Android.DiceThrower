@@ -136,6 +136,7 @@ data class RollDefinition(
     val effects: List<RollEffect> = emptyList(),
     /** 1 keeps older Rolls available at every valid character level. */
     val minimumLevel: Int = 1,
+    val visualEffects: RollVisualEffectsSettings = RollVisualEffectsSettings(),
 )
 
 /** Immutable, backup-safe roll execution trace, independent of the renderer. */

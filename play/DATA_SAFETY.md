@@ -19,7 +19,7 @@ The app always stores its primary working copy on the user's device. In standalo
 - optional character images selected through Android's Storage Access Framework and copied into private app storage;
 - free-form character tags;
 - locally defined character modifiers;
-- dice-roll names, parameterized expressions, level-scaling rules, and optional user-defined Bonus/Malus Effects (activation thresholds, actions and target Part references);
+- dice-roll names, parameterized expressions, level-scaling rules, and optional user-defined Bonus/Malus Effects (activation thresholds, actions and target Part references) and per-Roll visual presentation preferences (local / optionally synced, no new collection type);
 - dashboard grouping and ordering;
 - app settings;
 - dice-roll history, including optional per-roll effect evaluation traces (original/final Part totals, conditions and generated dice details).

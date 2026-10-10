@@ -1,6 +1,7 @@
 package com.keyserdsoze.dicethrower.dice
 
 import com.keyserdsoze.dicethrower.model.EffectType
+import com.keyserdsoze.dicethrower.model.EffectActionType
 
 /**
  * Visual-only snapshots made from dice already sampled by the logical engine.
@@ -13,6 +14,8 @@ data class EffectsVisualStage(
     /** The previous dice remain on the table; only the additional dice animate. */
     val persistentDiceCount: Int = 0,
     val effectId: String? = null,
+    val actionKind: EffectActionType? = null,
+    val targetPartId: String? = null,
     val rerolledComponentIndices: Set<Int> = emptySet(),
     val retainsBaseline: Boolean = true,
 )
@@ -73,6 +76,8 @@ object EffectsVisualTimeline {
                 accentByComponentIndex = accents,
                 persistentDiceCount = previousCount,
                 effectId = sample.effectId,
+                actionKind = sample.kind,
+                targetPartId = sample.partId,
                 rerolledComponentIndices = replacedComponents,
                 retainsBaseline = retainsBaseline,
             )

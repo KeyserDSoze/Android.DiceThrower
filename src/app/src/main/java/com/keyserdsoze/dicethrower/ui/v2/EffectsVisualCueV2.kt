@@ -17,9 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.keyserdsoze.dicethrower.R
 import com.keyserdsoze.dicethrower.model.EffectType
 
 /**
@@ -57,12 +55,10 @@ internal fun EffectsVisualCueV2(
             modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(if (type == EffectType.BONUS) "✦ +" else "◆ −", color = tint,
+            Text(if (type == EffectType.BONUS) "✦" else "◆", color = tint,
                 style = MaterialTheme.typography.titleMedium)
             Text(
-                "${stringResource(if (type == EffectType.BONUS) R.string.effects_bonus
-                    else R.string.effects_malus)} · $effectName" +
-                    if (rollAfter) " · ${stringResource(R.string.effects_action_roll_after)}" else "",
+                effectName,
                 color = Color.White,
                 style = MaterialTheme.typography.bodyMedium,
             )

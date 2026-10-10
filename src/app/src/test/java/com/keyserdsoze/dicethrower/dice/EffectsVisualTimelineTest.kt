@@ -8,6 +8,23 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EffectsVisualTimelineTest {
+    @Test
+    fun generatedStageRetainsActionTypeWithoutNewLogicalDiceSampling() {
+        val stages = EffectsVisualTimeline.build(
+            baseline = base,
+            baselineOwners = emptyMap(),
+            execution = execution(followUp, malusReroll),
+            effectTypes = mapOf("bonus" to EffectType.BONUS, "malus" to EffectType.MALUS),
+            animate = true,
+        )
+        assertEquals(EffectActionType.ROLL_AFTER, stages[1].actionKind)
+        assertEquals(EffectActionType.REROLL, stages[2].actionKind)
+        assertEquals("damage", stages[1].targetPartId)
+        assertEquals("attack", stages[2].targetPartId)
+        assertEquals(base, stages[0].result)
+    }
+
+
     private val base = DiceRollResult(
         25,
         listOf(
