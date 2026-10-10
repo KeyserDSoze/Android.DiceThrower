@@ -2,7 +2,7 @@ package com.keyserdsoze.dicethrower.model
 
 /**
  * Immutable built-in palettes, not persisted user styles. A preset is copied into
- * the character-owned style library with a fresh ID before it is assigned to
+ * the shared custom-style catalog with a fresh ID before it is assigned to
  * Roll Parts, dice slots or candidate B. None of these choices affect dice RNG.
  */
 data class DiceStylePreset(
