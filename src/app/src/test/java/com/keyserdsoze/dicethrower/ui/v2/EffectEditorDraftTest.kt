@@ -82,6 +82,43 @@ class EffectEditorDraftTest {
     }
 
     @Test
+    fun guidedModeAcceptsSimpleCrossPartCriticalAndPlainBonus() {
+        val critical = EffectEditorDraft.criticalHit(parts, 0, "Critical")
+        assertTrue(isGuidedEffectRule(critical, parts))
+        assertTrue(isGuidedEffectRule(
+            EffectEditorDraft.initial(EffectType.BONUS, parts, 1, "Bonus"), parts,
+        ))
+        val redirected = critical.copy(actions = critical.actions.map {
+            it.copy(targetPartId = parts.first().id, expression = "3")
+        })
+        assertTrue(isGuidedEffectRule(redirected, parts))
+        val persisted = EffectEditorDraft.canonicalize(listOf(critical), parts, 5, emptyList())
+        assertEquals(critical, persisted.single())
+    }
+
+    @Test
+    fun complexEffectsMustStayInAdvancedModeWithoutAnyLoss() {
+        val simple = EffectEditorDraft.criticalHit(parts, 0, "Critical")
+        val group = simple.activationGroups.single()
+        val action = simple.actions.single()
+        val complexCases = listOf(
+            simple.copy(activationGroups = listOf(group, group.copy(id = "second"))),
+            simple.copy(activationGroups = listOf(group.copy(conditions = group.conditions +
+                EffectCondition("another", partId = parts.last().id)))),
+            simple.copy(actions = listOf(action, action.copy(id = "other"))),
+            simple.copy(actions = listOf(action.copy(kind = EffectActionType.REROLL))),
+            simple.copy(actions = listOf(action.copy(expression = "{parts:Damage}"))),
+            simple.copy(activationGroups = listOf(group.copy(
+                conditions = listOf(group.conditions.single().copy(threshold = "{level}")),
+            ))),
+        )
+        complexCases.forEach { complex ->
+            assertFalse(complex.toString(), isGuidedEffectRule(complex, parts))
+        }
+        assertFalse(isGuidedEffectRule(simple, parts.take(1)))
+    }
+
+    @Test
     fun bonusAndMalusDefaultsStartValidAndTargetStableFirstPart() {
         val bonus = EffectEditorDraft.initial(EffectType.BONUS, parts, 0, "Bonus")
         val malus = EffectEditorDraft.initial(EffectType.MALUS, parts, 1, "Malus")
