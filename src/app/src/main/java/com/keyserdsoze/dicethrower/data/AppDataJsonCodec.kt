@@ -98,7 +98,8 @@ object AppDataJsonCodec {
                                 .put("name", subgroup.name)
                                 .put("expression", subgroup.expression)
                                 .put("operator", subgroup.operator.name)
-                                .put("includeInDoubleRoll", subgroup.includeInDoubleRoll))
+                                .put("includeInDoubleRoll", subgroup.includeInDoubleRoll)
+                                .put("includeInNormalRoll", subgroup.includeInNormalRoll))
                         }
                     })
                     .put("diceAppearance", encodeDiceAppearance(item.diceAppearance))
