@@ -14,6 +14,10 @@ import kotlin.random.Random
  * This engine never generates a roll result. It only animates already-resolved dice, keeping
  * presentation physics strictly separated from the logical RNG in DiceExpression.
  */
+/** Pure predicate shared by collision simulation and JVM regression tests. */
+internal fun shouldResolveDiceCollision(firstLane: Int?, secondLane: Int?): Boolean =
+    firstLane == null || secondLane == null || firstLane == secondLane
+
 internal class DiceTablePhysics(
     count: Int,
     seed: Long,
@@ -179,7 +183,10 @@ internal class DiceTablePhysics(
             for (secondIndex in firstIndex + 1 until bodies.size) {
                 val first = bodies[firstIndex]
                 val second = bodies[secondIndex]
-                if (first.lane != second.lane) continue
+                // Two distinct named candidates cannot cross lanes, but
+                // a neutral (non-compared Part) die must still physically
+                // collide with *both* groups instead of passing through them.
+                if (!shouldResolveDiceCollision(first.lane, second.lane)) continue
                 var dx = second.x - first.x
                 var dy = second.y - first.y
                 var distanceSquared = dx * dx + dy * dy
