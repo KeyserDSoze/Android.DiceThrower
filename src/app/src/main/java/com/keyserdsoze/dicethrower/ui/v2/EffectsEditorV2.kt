@@ -79,7 +79,7 @@ internal fun isGuidedEffectRule(effect: RollEffect, parts: List<RollSubgroup>): 
 internal object EffectEditorDraft {
     fun initial(kind: EffectType, parts: List<RollSubgroup>, order: Int, defaultName: String): RollEffect {
         require(parts.isNotEmpty())
-        val target = parts.first().id
+        val target = (parts.firstOrNull { it.includeInNormalRoll } ?: parts.first()).id
         return RollEffect(
             id = UUID.randomUUID().toString(),
             name = defaultName,
