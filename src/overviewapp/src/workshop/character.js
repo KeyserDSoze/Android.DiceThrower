@@ -1,0 +1,292 @@
+import pako from 'pako';
+
+/**
+ * Browser data stays in IndexedDB. A share link contains a compressed, versioned
+ * snapshot in its fragment; GitHub Pages never receives the fragment in HTTP.
+ */
+export const FORMAT = 'dice-thrower-character';
+export const FORMAT_VERSION = 1;
+export const MAX_LINK_LENGTH = 2600;
+const MAX_RAW_LENGTH = 128 * 1024;
+const DB_NAME = 'dicethrower-workshop';
+const STORE = 'characters';
+const uid = () => crypto.randomUUID();
+
+export function newCharacter(name = 'New character') {
+  return {
+    character: {
+      id: uid(), name, level: 1, tag: '', order: 0,
+      defaultDiceStyleId: null, secondaryDiceStyleId: null, diceTableTheme: 'ARCANE',
+    },
+    modifiers: [], groups: [], rolls: [], diceStyles: [],
+  };
+}
+
+export function newModifier(characterId) {
+  return { id: uid(), characterId, name: 'Modifier', value: 0, order: 0 };
+}
+export function newGroup(characterId) {
+  return { id: uid(), characterId, name: 'New group', order: 0 };
+}
+export function newPart() {
+  return { id: uid(), name: 'Part', expression: '1d20', operator: 'ADD',
+    includeInNormalRoll: true, includeInDoubleRoll: false };
+}
+export function normalFormula(parts) {
+  const active = parts.filter(part => part.includeInNormalRoll);
+  return active.map((part, index) => {
+    const term = '(' + part.expression.trim() + ')';
+    return (index === 0 && part.operator === 'ADD') ? term
+      : (part.operator === 'SUBTRACT' ? '-' : '+') + term;
+  }).join('');
+}
+export function newRoll(characterId, groupId = null) {
+  return { id: uid(), characterId, groupId, name: 'New roll', expression: '1d20',
+    enabled: true, order: 0, minimumLevel: 1, doubleRollEnabled: false,
+    subgroups: [], levelRules: [], effects: [], diceAppearance: { mode: 'CHARACTER_DEFAULT' } };
+}
+export function newLevelRule() {
+  return { id: uid(), kind: 'FROM_LEVEL', trigger: 2, expression: '1d6' };
+}
+export function newStyle() {
+  return { id: uid(), characterId: null, name: 'Custom dice', material: 'GLOSSY_RESIN',
+    primaryColorArgb: -14384101, secondaryColorArgb: -11751600, order: 0 };
+}
+
+const isRecord = x => !!x && typeof x === 'object' && !Array.isArray(x);
+const validName = x => typeof x === 'string' && x.trim().length > 0 && x.length <= 160;
+const validId = x => typeof x === 'string' && x.length > 0 && x.length <= 180;
+const exprPattern = /^[\d\s()+\-*/xXdD.%{}\p{L}\p{M}_:]+$/u;
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+export function validateDocument(doc) {
+  assert(isRecord(doc) && isRecord(doc.character), 'Invalid character document');
+  const c = doc.character;
+  assert(validId(c.id) && validName(c.name), 'Invalid character name or ID');
+  assert(Number.isInteger(c.level) && c.level >= 1 && c.level <= 9999, 'Invalid character level');
+  for (const field of ['modifiers', 'groups', 'rolls', 'diceStyles']) {
+    assert(Array.isArray(doc[field]) && doc[field].length <= 250, 'Invalid ' + field);
+  }
+  assert(doc.rolls.length <= 150, 'Too many rolls');
+  const ids = new Set();
+  const unique = (id) => { assert(validId(id) && !ids.has(id), 'Duplicate or invalid ID'); ids.add(id); };
+  unique(c.id);
+  for (const item of [...doc.modifiers, ...doc.groups, ...doc.rolls, ...doc.diceStyles]) {
+    assert(isRecord(item), 'Invalid item');
+    unique(item.id);
+    if ('characterId' in item) assert(item.characterId === c.id || (doc.diceStyles.includes(item) && item.characterId == null), 'Foreign character reference');
+    assert(validName(item.name), 'Invalid name');
+  }
+  const groupIds = new Set(doc.groups.map(g => g.id));
+  const styleIds = new Set(doc.diceStyles.map(s => s.id));
+  const allStyles = new Set([...styleIds, ...['arcane-blue','inferno-forged','emerald-aether','violet-star','obsidian-rune','lunar-frost','sunlit-brass','celestial-pearl','deep-ocean','ancient-copper'].map(s => 'preset:' + s)]);
+  const checkStyle = id => assert(id == null || allStyles.has(id), 'Unknown dice style');
+  checkStyle(c.defaultDiceStyleId); checkStyle(c.secondaryDiceStyleId);
+  const names = new Set(['level']);
+  for (const m of doc.modifiers) {
+    assert(Number.isInteger(m.value) && Math.abs(m.value) <= 100000, 'Invalid modifier');
+    const key = m.name.trim().toLowerCase();
+    assert(!names.has(key), 'Duplicate modifier: ' + m.name);
+    names.add(key);
+  }
+  const formula = text => {
+    assert(typeof text === 'string' && text.length > 0 && text.length <= 1500 && exprPattern.test(text), 'Invalid dice expression');
+    for (const match of text.matchAll(/\{([^{}]+)\}/g)) {
+      assert(names.has(match[1].trim().toLowerCase()) || match[1].startsWith('partId:'), 'Missing variable: ' + match[1]);
+    }
+  };
+  const nestedIds = new Set();
+  for (const roll of doc.rolls) {
+    assert(roll.groupId == null || groupIds.has(roll.groupId), 'Unknown roll group');
+    assert(Number.isInteger(roll.minimumLevel ?? 1) && (roll.minimumLevel ?? 1) >= 1, 'Invalid roll minimum level');
+    formula(roll.expression);
+    assert(Array.isArray(roll.subgroups) && roll.subgroups.length <= 30, 'Invalid roll parts');
+    assert(Array.isArray(roll.levelRules) && roll.levelRules.length <= 40, 'Invalid level rules');
+    assert(Array.isArray(roll.effects) && roll.effects.length <= 40, 'Invalid effects');
+    if (roll.subgroups.length) {
+      assert(roll.subgroups.some(s => s.includeInNormalRoll !== false), 'At least one normal Part needed');
+      assert(normalFormula(roll.subgroups) === roll.expression, 'Roll parts and formula do not match');
+    }
+    for (const part of roll.subgroups) {
+      assert(validId(part.id) && !nestedIds.has(part.id), 'Invalid/duplicate Part ID'); nestedIds.add(part.id);
+      assert(validName(part.name), 'Invalid Part name');
+      formula(part.expression);
+    }
+    for (const rule of roll.levelRules) {
+      assert(validId(rule.id) && !nestedIds.has(rule.id), 'Invalid/duplicate rule ID'); nestedIds.add(rule.id);
+      assert(Number.isInteger(rule.trigger) && rule.trigger > 0, 'Invalid level rule');
+      formula(rule.expression);
+    }
+    // Preserve the complete native effect/appearance schema, even if advanced
+    // editing is performed in Android instead of the browser.
+    const appearance = roll.diceAppearance || {};
+    checkStyle(appearance.styleId);
+    for (const item of appearance.subgroupStyleIds || []) {
+      assert(roll.subgroups.some(part => part.id === item.subgroupId), 'Unknown appearance Part');
+      checkStyle(item.styleId);
+    }
+    for (const item of appearance.perDieStyleIds || []) checkStyle(item.styleId);
+    for (const id of appearance.randomStyleIds || []) checkStyle(id);
+  }
+  assert(new TextEncoder().encode(JSON.stringify(doc)).length <= MAX_RAW_LENGTH, 'Character too large');
+  return doc;
+}
+
+export function envelope(doc) {
+  validateDocument(doc);
+  const { character, modifiers, groups, rolls, diceStyles } = doc;
+  return {
+    format: FORMAT, formatVersion: FORMAT_VERSION,
+    data: { version: 16, characters: [{ ...character, image: null, imageUri: null, diceTableImage: null }],
+      modifiers, groups, rolls, diceStyles, logs: [], characterSyncMetadata: [] },
+  };
+}
+export function documentFromEnvelope(packet) {
+  assert(isRecord(packet) && packet.format === FORMAT && packet.formatVersion === FORMAT_VERSION, 'Unsupported character link');
+  assert(isRecord(packet.data) && packet.data.characters?.length === 1, 'Link must contain exactly one character');
+  assert(!packet.data.logs?.length && !packet.data.characterSyncMetadata?.length, 'Share contains private history or sync data');
+  const doc = { character: packet.data.characters[0], modifiers: packet.data.modifiers || [],
+    groups: packet.data.groups || [], rolls: packet.data.rolls || [], diceStyles: packet.data.diceStyles || [] };
+  assert(doc.character.image == null && doc.character.diceTableImage == null && doc.character.imageUri == null, 'Images are not supported in links');
+  return validateDocument(doc);
+}
+function toBase64(bytes) {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 0x8000)
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function fromBase64(string) {
+  assert(/^[A-Za-z0-9_-]+$/.test(string) && string.length <= 120000, 'Invalid link payload');
+  const base = string.replace(/-/g, '+').replace(/_/g, '/');
+  const decoded = atob(base + '='.repeat((4 - base.length % 4) % 4));
+  return Uint8Array.from(decoded, value => value.charCodeAt(0));
+}
+export function encodeToken(doc) {
+  const compressed = pako.deflate(new TextEncoder().encode(JSON.stringify(envelope(doc))), { level: 9 });
+  return 'v1.' + toBase64(compressed);
+}
+export function decodeToken(token) {
+  assert(typeof token === 'string' && token.startsWith('v1.'), 'Unsupported link');
+  // pako's maxOutputLength guards against zip bombs before allocating huge strings.
+  const bytes = pako.inflate(fromBase64(token.slice(3)), { maxOutputLength: MAX_RAW_LENGTH });
+  assert(bytes.length <= MAX_RAW_LENGTH, 'Character too large');
+  return documentFromEnvelope(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)));
+}
+export function shareUrl(doc, base = window.location.href) {
+  const url = new URL(base);
+  url.hash = 'character=' + encodeToken(doc);
+  if (url.href.length > MAX_LINK_LENGTH) throw new Error('Link too long for a reliable QR code. Export the JSON file instead.');
+  return url.href;
+}
+export function readShareHash(hash = window.location.hash) {
+  const match = hash.match(/^#character=(v1\.[A-Za-z0-9_-]+)$/);
+  if (!match) return null;
+  return decodeToken(match[1]);
+}
+export function androidUrl(doc) { return 'dicethrower://import?data=' + encodeURIComponent(encodeToken(doc)); }
+
+function db() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = () => { if (!request.result.objectStoreNames.contains(STORE))
+      request.result.createObjectStore(STORE, { keyPath: 'character.id' }); };
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+  });
+}
+async function transaction(mode, run) {
+  const database = await db();
+  try {
+    return await new Promise((resolve, reject) => {
+      const tx = database.transaction(STORE, mode);
+      const request = run(tx.objectStore(STORE));
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  } finally { database.close(); }
+}
+export const listSaved = () => transaction('readonly', store => store.getAll());
+export const saveDocument = doc => { validateDocument(doc); return transaction('readwrite', store => store.put(doc)); };
+export const removeDocument = id => transaction('readwrite', store => store.delete(id));
+
+export function importAsCopy(document) {
+  // The browser uses fresh IDs for all owned definitions to avoid overwriting an
+  // existing saved character (including when opening the same QR twice).
+  validateDocument(document);
+  const doc = structuredClone(document);
+  const cId = uid();
+  const map = new Map([[doc.character.id, cId]]);
+  for (const list of [doc.modifiers, doc.groups, doc.rolls, doc.diceStyles]) {
+    for (const item of list) map.set(item.id, uid());
+  }
+  const remap = (id) => map.get(id) || id;
+  doc.character.id = cId;
+  doc.character.defaultDiceStyleId = doc.character.defaultDiceStyleId && remap(doc.character.defaultDiceStyleId);
+  doc.character.secondaryDiceStyleId = doc.character.secondaryDiceStyleId && remap(doc.character.secondaryDiceStyleId);
+  for (const list of [doc.modifiers, doc.groups, doc.rolls, doc.diceStyles]) for (const item of list) {
+    item.id = remap(item.id);
+    if (item.characterId) item.characterId = cId;
+  }
+  for (const roll of doc.rolls) {
+    roll.groupId = roll.groupId && remap(roll.groupId);
+    for (const part of roll.subgroups) { map.set(part.id, uid()); part.id = remap(part.id); }
+    for (const rule of roll.levelRules) rule.id = uid();
+    if (roll.diceAppearance) {
+      const a = roll.diceAppearance;
+      if (a.styleId) a.styleId = remap(a.styleId);
+      if (a.subgroupStyleIds) a.subgroupStyleIds = a.subgroupStyleIds.map(x => ({ subgroupId: remap(x.subgroupId), styleId: remap(x.styleId) }));
+      if (a.perDieStyleIds) a.perDieStyleIds = a.perDieStyleIds.map(x => ({ ...x, styleId: remap(x.styleId) }));
+      if (a.randomStyleIds) a.randomStyleIds = a.randomStyleIds.map(remap);
+    }
+    // Advanced effects can contain Part IDs in expressions and conditions.
+    const deepRemap = obj => {
+      if (typeof obj === 'string') return obj.replace(/\{partId:([^{}]+)\}/g, (_, id) => '{partId:' + remap(id) + '}');
+      if (Array.isArray(obj)) return obj.map(deepRemap);
+      if (!isRecord(obj)) return obj;
+      return Object.fromEntries(Object.entries(obj).map(([k, v]) => [k,
+        (['partId', 'targetPartId'].includes(k) && typeof v === 'string') ? remap(v) :
+        (k === 'id' && typeof v === 'string') ? uid() : deepRemap(v)]));
+    };
+    roll.effects = deepRemap(roll.effects);
+  }
+  return validateDocument(doc);
+}
+
+const starterSpecs = [
+  ['D&D 5e · Fighter', 'Aric · Level 1 Fighter', 'D&D 5e sample, Strength +3 and proficiency +2', 1,
+    [['Strength', 3], ['Dexterity', 1], ['Constitution', 2], ['Proficiency', 2]],
+    [['Combat', [['Longsword · attack', '1d20+{Strength}+{Proficiency}'], ['Longsword · damage', '1d8+{Strength}'], ['Initiative', '1d20+{Dexterity}']]],
+     ['Skills & saves', [['Athletics', '1d20+{Strength}+{Proficiency}'], ['Strength save', '1d20+{Strength}+{Proficiency}'], ['Constitution save', '1d20+{Constitution}+{Proficiency}']]],
+     ['Recovery', [['Second Wind · heal', '1d10+{level}']]]]],
+  ['Fantasy · Rogue', 'Nim · Shadow Rogue', 'A nimble adventurer', 1, [['Agility', 3], ['Skill', 2]], [['Combat', [['Quick strike', '1d20+{Agility}+{Skill}'], ['Sneak damage', '1d6+{Agility}']]], ['Skills', [['Stealth', '1d20+{Agility}+{Skill}']]]]],
+  ['Fantasy · Mage', 'Lyra · Spellcaster', 'An elemental mage', 1, [['Magic', 3]], [['Spells', [['Arcane bolt', '1d20+{Magic}'], ['Fire spark', '2d6+{Magic}']]], ['Checks', [['Arcana', '1d20+{Magic}']]]]],
+  ['Fantasy · Ranger', 'Bryn · Ranger', 'A woodland explorer', 1, [['Agility', 2], ['Tracking', 3]], [['Combat', [['Bow shot', '1d20+{Agility}'], ['Bow damage', '1d8+{Agility}']]], ['Exploration', [['Track', '1d20+{Tracking}']]]]],
+  ['Fantasy · Cleric', 'Sol · Healer', 'A protective spellcaster', 1, [['Faith', 3]], [['Magic', [['Healing word', '1d4+{Faith}'], ['Radiant strike', '1d8+{Faith}']]], ['Checks', [['Insight', '1d20+{Faith}']]]]],
+  ['Fantasy · Paladin', 'Thane · Guardian', 'A steadfast champion', 1, [['Might', 3]], [['Combat', [['Sword attack', '1d20+{Might}'], ['Sword damage', '1d8+{Might}']]], ['Defense', [['Resolve', '1d20+{Might}']]]]],
+  ['Sci-fi · Pilot', 'Nova · Pilot', 'Spacefaring character template', 1, [['Piloting', 4], ['Tech', 2]], [['Flight', [['Hard maneuver', '1d20+{Piloting}'], ['Evasive action', '2d6+{Piloting}']]], ['Systems', [['Repair', '1d20+{Tech}']]]]],
+  ['Sci-fi · Engineer', 'Echo · Engineer', 'Systems specialist', 1, [['Tech', 4]], [['Engineering', [['Diagnose', '1d20+{Tech}'], ['Field repair', '2d6+{Tech}']]]]],
+  ['Adventure · Explorer', 'Iris · Explorer', 'General purpose exploration', 1, [['Perception', 3], ['Agility', 2]], [['Exploration', [['Notice', '1d20+{Perception}'], ['Climb', '1d20+{Agility}']]]]],
+  ['Adventure · Bard', 'Orin · Performer', 'Creative social adventurer', 1, [['Charm', 3], ['Art', 2]], [['Social', [['Persuade', '1d20+{Charm}'], ['Performance', '1d20+{Art}']]], ['Support', [['Encourage', '1d6+{Charm}']]]]],
+];
+export const templates = starterSpecs.map(([category, name, description], index) => ({ category, name, description, index }));
+export function instantiateTemplate(index) {
+  const spec = starterSpecs[index];
+  if (!spec) throw new Error('Unknown template');
+  const [, name, tag, level, modifiers, sections] = spec;
+  const doc = newCharacter(name);
+  doc.character.tag = tag; doc.character.level = level;
+  doc.modifiers = modifiers.map(([m, v], order) => ({ id: uid(), characterId: doc.character.id, name: m, value: v, order }));
+  sections.forEach(([groupName, definitions], order) => {
+    const group = { id: uid(), characterId: doc.character.id, name: groupName, order };
+    doc.groups.push(group);
+    definitions.forEach(([rollName, formula], indexInGroup) => {
+      doc.rolls.push({ ...newRoll(doc.character.id, group.id), name: rollName, expression: formula, order: doc.rolls.length + indexInGroup });
+    });
+  });
+  return validateDocument(doc);
+}
