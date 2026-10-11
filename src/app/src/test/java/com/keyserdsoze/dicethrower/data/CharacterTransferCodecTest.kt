@@ -21,6 +21,12 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
+import com.google.zxing.BinaryBitmap
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.RGBLuminanceSource
+import com.google.zxing.common.HybridBinarizer
+import com.google.zxing.qrcode.QRCodeReader
+import com.google.zxing.qrcode.QRCodeWriter
 
 class CharacterTransferCodecTest {
     private fun sample() = AppData(
@@ -83,6 +89,20 @@ class CharacterTransferCodecTest {
         expectFailure { CharacterTransferCodec.decodeJson(json.toString()) }
     }
 
+
+
+    @Test fun outgoingQrIsReadableByQrDecoder() {
+        val url = requireNotNull(CharacterTransferCodec.shareUrlOrNull(sample(), "fighter"))
+        val matrix = QRCodeWriter().encode(url, BarcodeFormat.QR_CODE, 700, 700)
+        val pixels = IntArray(matrix.width * matrix.height) { index ->
+            val x = index % matrix.width
+            val y = index / matrix.width
+            if (matrix[x, y]) 0xff000000.toInt() else 0xffffffff.toInt()
+        }
+        val image = RGBLuminanceSource(matrix.width, matrix.height, pixels)
+        val decoded = QRCodeReader().decode(BinaryBitmap(HybridBinarizer(image)))
+        assertEquals(url, decoded.text)
+    }
 
     @Test fun androidOutgoingShareUrlOpensWebWorkshopAndDecodes() {
         val original = sample()
