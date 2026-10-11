@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">పాత్రను పంచుకోండి</string>
+    <string name="share_character_warning">ఈ లింక్ లేదా QR ఉన్నవారు పాత్రను, పాచిక నియమాలను చదవగలరు. చిత్రాలు, చరిత్ర మరియు క్లౌడ్ డేటా చేర్చబడవు.</string>
+    <string name="share_character_qr_alt">పాత్ర షేర్ QR కోడ్</string>
+    <string name="share_character_scan_hint">వెబ్‌లో ప్రివ్యూ కోసం స్కాన్ చేయండి.</string>
+    <string name="share_character_share_link">లింక్ పంచుకోండి</string>
+    <string name="share_character_copy_link">లింక్ కాపీ చేయండి</string>
+    <string name="share_character_file_only">నమ్మదగిన QR కోసం పాత్ర పెద్దది. JSON ఫైల్ ఎగుమతి చేయండి.</string>
+    <string name="share_character_error">పాత్రను పంచుకోవడం లేదా ఎగుమతి చేయడం సాధ్యం కాలేదు.</string>
+    <string name="share_character_export_json">పాత్ర JSON ఎగుమతి</string>
+    <string name="share_character_exported">పాత్ర ఫైల్ ఎగుమతి చేయబడింది</string>
+</resources>
