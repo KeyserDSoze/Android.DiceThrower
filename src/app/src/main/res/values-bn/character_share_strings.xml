@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">চরিত্র শেয়ার করুন</string>
+    <string name="share_character_warning">এই লিঙ্ক বা QR কোড যার কাছে থাকবে, সে চরিত্র ও পাশা নিক্ষেপের নিয়ম পড়তে পারবে। ছবি, ইতিহাস বা ক্লাউড ডেটা অন্তর্ভুক্ত নয়।</string>
+    <string name="share_character_qr_alt">চরিত্র শেয়ারের QR কোড</string>
+    <string name="share_character_scan_hint">ওয়েবসাইটে প্রিভিউ দেখতে স্ক্যান করুন।</string>
+    <string name="share_character_share_link">লিঙ্ক শেয়ার করুন</string>
+    <string name="share_character_copy_link">লিঙ্ক কপি করুন</string>
+    <string name="share_character_file_only">নির্ভরযোগ্য QR কোডের জন্য চরিত্রটি বড়। JSON ফাইল রপ্তানি করুন।</string>
+    <string name="share_character_error">চরিত্র শেয়ার বা রপ্তানি করা যায়নি।</string>
+    <string name="share_character_export_json">চরিত্রের JSON রপ্তানি</string>
+    <string name="share_character_exported">চরিত্রের ফাইল রপ্তানি হয়েছে</string>
+</resources>
