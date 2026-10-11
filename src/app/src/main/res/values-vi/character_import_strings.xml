@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">Nhập nhân vật được chia sẻ?</string>
+    <string name="import_character_message">Thêm bản sao riêng của %1$s (cấp %2$d, %3$d lượt tung) vào thiết bị này? Các nhân vật hiện có sẽ không bị thay đổi.</string>
+    <string name="import_character_confirm">Nhập nhân vật</string>
+    <string name="import_character_error_title">Không thể nhập nhân vật</string>
+    <string name="import_character_error_message">Liên kết không hợp lệ, không được hỗ trợ hoặc chứa dữ liệu không nhất quán.</string>
+</resources>
