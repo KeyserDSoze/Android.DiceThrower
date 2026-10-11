@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">اشتراک‌گذاری شخصیت</string>
+    <string name="share_character_warning">هر کس این لینک یا کد QR را داشته باشد می‌تواند شخصیت و قوانین تاس را بخواند. تصاویر، تاریخچه و داده‌های ابری شامل نمی‌شوند.</string>
+    <string name="share_character_qr_alt">کد QR اشتراک شخصیت</string>
+    <string name="share_character_scan_hint">برای نمایش پیش‌نمایش در وب اسکن کنید.</string>
+    <string name="share_character_share_link">اشتراک لینک</string>
+    <string name="share_character_copy_link">کپی لینک</string>
+    <string name="share_character_file_only">شخصیت برای QR قابل اعتماد بیش از حد بزرگ است. فایل JSON را خروجی بگیرید.</string>
+    <string name="share_character_error">اشتراک یا خروجی شخصیت ناموفق بود.</string>
+    <string name="share_character_export_json">خروجی JSON شخصیت</string>
+    <string name="share_character_exported">فایل شخصیت صادر شد</string>
+</resources>
