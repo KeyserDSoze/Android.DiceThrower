@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">Поділитися персонажем</string>
+    <string name="share_character_warning">Усі, хто має це посилання чи QR-код, можуть прочитати персонажа та правила кидків. Зображення, історія й хмарні дані не включені.</string>
+    <string name="share_character_qr_alt">QR-код для поширення персонажа</string>
+    <string name="share_character_scan_hint">Скануйте для перегляду на сайті.</string>
+    <string name="share_character_share_link">Поділитися посиланням</string>
+    <string name="share_character_copy_link">Копіювати посилання</string>
+    <string name="share_character_file_only">Персонаж завеликий для надійного QR. Експортуйте файл JSON.</string>
+    <string name="share_character_error">Не вдалося поділитися персонажем чи експортувати його.</string>
+    <string name="share_character_export_json">Експорт JSON персонажа</string>
+    <string name="share_character_exported">Файл персонажа експортовано</string>
+</resources>
