@@ -54,6 +54,7 @@ import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.AlertDialog
@@ -814,6 +815,10 @@ private fun CharacterScreenV2(
     onDataChanged: (AppData) -> Unit,
  ) {
     var childEditorVisible by remember(character.id) { mutableStateOf(false) }
+    var showShare by remember(character.id) { mutableStateOf(false) }
+    if (showShare) {
+        CharacterShareDialog(character = character, data = data, onDismiss = { showShare = false })
+    }
     ArcaneBackground {
         Scaffold(
             containerColor = Color.Transparent,
@@ -854,6 +859,9 @@ private fun CharacterScreenV2(
                         }
                     },
                     actions = {
+                        IconButton(onClick = { showShare = true }) {
+                            Icon(Icons.Rounded.Share, contentDescription = stringResource(R.string.share_character_title))
+                        }
                         IconButton(onClick = onOpenLogs) {
                             Icon(Icons.Rounded.History, contentDescription = stringResource(R.string.logs))
                         }
