@@ -149,7 +149,7 @@ object CharacterDataOperations {
     private fun RollDiceAppearance.remapStyles(styleIdMap: Map<String, String>): RollDiceAppearance = copy(
         styleId = styleId?.let { styleIdMap[it] ?: it },
         subgroupStyleIds = subgroupStyleIds.mapValues { (_, styleId) -> styleIdMap[styleId] ?: styleId },
-        perDieStyleIds = perDieStyleIds.mapValues { (_, styleId) -> styleIdMap.getValue(styleId) },
+        perDieStyleIds = perDieStyleIds.mapValues { (_, styleId) -> styleIdMap[styleId] ?: styleId },
         randomStyleIds = randomStyleIds.map { styleIdMap[it] ?: it },
     )
 
