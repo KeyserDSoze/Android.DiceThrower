@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">Import shared character?</string>
+    <string name="import_character_message">Add a separate copy of %1$s (level %2$d, %3$d rolls) to this device? Existing characters will not be changed.</string>
+    <string name="import_character_confirm">Import character</string>
+    <string name="import_character_error_title">Cannot import character</string>
+    <string name="import_character_error_message">The link is invalid, unsupported, or contains inconsistent character data.</string>
+</resources>

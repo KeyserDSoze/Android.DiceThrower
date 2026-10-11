@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">¿Importar personaje compartido?</string>
+    <string name="import_character_message">¿Añadir una copia independiente de %1$s (nivel %2$d, %3$d tiradas) a este dispositivo? No se modificarán los personajes existentes.</string>
+    <string name="import_character_confirm">Importar personaje</string>
+    <string name="import_character_error_title">No se puede importar el personaje</string>
+    <string name="import_character_error_message">El enlace no es válido, no se admite o contiene datos incoherentes.</string>
+</resources>

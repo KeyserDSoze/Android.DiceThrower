@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">共有されたキャラクターを取り込みますか？</string>
+    <string name="import_character_message">%1$s（レベル %2$d、ロール %3$d 件）の別コピーをこの端末に追加しますか？既存のキャラクターは変更されません。</string>
+    <string name="import_character_confirm">キャラクターを取り込む</string>
+    <string name="import_character_error_title">キャラクターを取り込めません</string>
+    <string name="import_character_error_message">リンクが無効、非対応、またはデータに矛盾があります。</string>
+</resources>

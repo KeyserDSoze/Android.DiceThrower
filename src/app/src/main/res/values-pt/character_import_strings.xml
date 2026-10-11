@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">Importar personagem compartilhado?</string>
+    <string name="import_character_message">Adicionar uma cópia independente de %1$s (nível %2$d, %3$d jogadas) a este dispositivo? Os personagens existentes não serão alterados.</string>
+    <string name="import_character_confirm">Importar personagem</string>
+    <string name="import_character_error_title">Não foi possível importar personagem</string>
+    <string name="import_character_error_message">O link é inválido, não é suportado ou contém dados inconsistentes.</string>
+</resources>

@@ -43,3 +43,8 @@ https://keyserdsoze.github.io/Android.DiceThrower/contact/
 or:
 
 https://github.com/KeyserDSoze/Android.DiceThrower/issues
+
+
+### Browser character workshop and sharing
+
+The GitHub Pages character workshop stores character drafts in the visitor's own browser IndexedDB; no account is required and these drafts are not uploaded by the site. When the visitor explicitly requests a character share link or QR, the character's name, description, level, modifiers, roll definitions, parts, rules and custom styles are packed into a compressed, reversible URL fragment. Anyone who obtains that URL or scans its QR can read these data; users should avoid entering sensitive information. Link data are not stored by Dice Thrower or GitHub Pages as a hosted character record, although pasting links into third-party apps or websites may expose them to those services. Character images, roll history, tokens and sync metadata are excluded. The website's **Open in Android app** button passes the same payload to Dice Thrower; import occurs only after confirmation and creates a local copy. Clearing browser storage may remove drafts. No web Google Drive synchronization is implemented at present.

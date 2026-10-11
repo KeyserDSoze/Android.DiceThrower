@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">Paylaşılan karakter içe aktarılsın mı?</string>
+    <string name="import_character_message">%1$s karakterinin (seviye %2$d, %3$d zar atışı) ayrı bir kopyası bu cihaza eklensin mi? Mevcut karakterler değişmez.</string>
+    <string name="import_character_confirm">Karakteri içe aktar</string>
+    <string name="import_character_error_title">Karakter içe aktarılamadı</string>
+    <string name="import_character_error_message">Bağlantı geçersiz, desteklenmiyor veya tutarsız veriler içeriyor.</string>
+</resources>

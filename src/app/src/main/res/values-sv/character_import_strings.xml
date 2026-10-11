@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">Importera delad karaktär?</string>
+    <string name="import_character_message">Lägg till en separat kopia av %1$s (nivå %2$d, %3$d kast) på den här enheten? Befintliga karaktärer ändras inte.</string>
+    <string name="import_character_confirm">Importera karaktär</string>
+    <string name="import_character_error_title">Kan inte importera karaktären</string>
+    <string name="import_character_error_message">Länken är ogiltig, stöds inte eller innehåller motstridiga data.</string>
+</resources>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">לייבא דמות משותפת?</string>
+    <string name="import_character_message">להוסיף למכשיר עותק נפרד של %1$s (רמה %2$d, %3$d הטלות)? דמויות קיימות לא ישתנו.</string>
+    <string name="import_character_confirm">ייבוא דמות</string>
+    <string name="import_character_error_title">אי אפשר לייבא את הדמות</string>
+    <string name="import_character_error_message">הקישור אינו תקין, אינו נתמך או מכיל נתונים לא עקביים.</string>
+</resources>

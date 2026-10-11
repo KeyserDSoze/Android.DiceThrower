@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">Importovat sdílenou postavu?</string>
+    <string name="import_character_message">Přidat na toto zařízení samostatnou kopii %1$s (úroveň %2$d, %3$d hodů)? Stávající postavy zůstanou beze změny.</string>
+    <string name="import_character_confirm">Importovat postavu</string>
+    <string name="import_character_error_title">Postavu nelze importovat</string>
+    <string name="import_character_error_message">Odkaz je neplatný, nepodporovaný nebo obsahuje nekonzistentní data.</string>
+</resources>

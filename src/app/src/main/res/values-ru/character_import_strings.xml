@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">Импортировать персонажа?</string>
+    <string name="import_character_message">Добавить отдельную копию %1$s (уровень %2$d, бросков: %3$d) на устройство? Существующие персонажи не изменятся.</string>
+    <string name="import_character_confirm">Импортировать персонажа</string>
+    <string name="import_character_error_title">Не удалось импортировать персонажа</string>
+    <string name="import_character_error_message">Ссылка недействительна, не поддерживается или содержит противоречивые данные.</string>
+</resources>

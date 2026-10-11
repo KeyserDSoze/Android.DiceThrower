@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">साझा पात्र आयात करें?</string>
+    <string name="import_character_message">इस डिवाइस पर %1$s (स्तर %2$d, %3$d रोल) की अलग प्रति जोड़ें? मौजूदा पात्र नहीं बदलेंगे।</string>
+    <string name="import_character_confirm">पात्र आयात करें</string>
+    <string name="import_character_error_title">पात्र आयात नहीं हो सका</string>
+    <string name="import_character_error_message">लिंक अमान्य है, समर्थित नहीं है या डेटा असंगत है।</string>
+</resources>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">Importați personajul partajat?</string>
+    <string name="import_character_message">Adăugați o copie separată a lui %1$s (nivelul %2$d, %3$d aruncări) pe acest dispozitiv? Personajele existente rămân neschimbate.</string>
+    <string name="import_character_confirm">Importă personajul</string>
+    <string name="import_character_error_title">Nu se poate importa personajul</string>
+    <string name="import_character_error_message">Linkul este invalid, neacceptat sau conține date inconsistente.</string>
+</resources>

@@ -2,10 +2,15 @@ package com.keyserdsoze.dicethrower
 
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.res.stringResource
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -16,6 +21,8 @@ import com.keyserdsoze.dicethrower.data.CloudAccountStore
 import com.keyserdsoze.dicethrower.data.CloudAccountTransitions
 import com.keyserdsoze.dicethrower.data.GoogleAccountIdentity
 import com.keyserdsoze.dicethrower.data.LocalStore
+import com.keyserdsoze.dicethrower.data.CharacterTransferCodec
+import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.data.cloud.CloudRepositoryFactory
 import com.keyserdsoze.dicethrower.data.cloud.CloudRemoteRepository
 import com.keyserdsoze.dicethrower.data.sync.AndroidSyncLocalGateway
@@ -50,6 +57,8 @@ class MainActivity : ComponentActivity() {
     private var syncJob: Job? = null
     private var cloudDeleteBusy by mutableStateOf(false)
     private var cloudDeleteFailed by mutableStateOf(false)
+    private var pendingCharacterImport by mutableStateOf<AppData?>(null)
+    private var characterImportError by mutableStateOf(false)
 
     private val driveAuthorizationLauncher = registerForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult(),
@@ -83,6 +92,7 @@ class MainActivity : ComponentActivity() {
         syncStatus = syncEngine.currentStatus(cloudAccountState.googleConnected)
         selectedLanguage = AppLocaleManager.selectedLanguage(this)
         enableEdgeToEdge()
+        handleIncomingCharacterLink(intent)
 
         setContent {
             DiceThrowerTheme(themeMode = settings.themeMode) {
@@ -122,8 +132,71 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                     )
+
+                    pendingCharacterImport?.let { incoming ->
+                        val character = incoming.characters.single()
+                        AlertDialog(
+                            onDismissRequest = { pendingCharacterImport = null },
+                            title = { Text(stringResource(R.string.import_character_title)) },
+                            text = { Text(stringResource(
+                                R.string.import_character_message,
+                                character.name, character.level, incoming.rolls.size,
+                            )) },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    try {
+                                        val merged = CharacterTransferCodec.importCopy(store.loadData(), incoming)
+                                        store.saveData(merged)
+                                        dataRefreshVersion++
+                                        refreshPendingStatus()
+                                    } catch (_: Exception) {
+                                        characterImportError = true
+                                    }
+                                    pendingCharacterImport = null
+                                }) { Text(stringResource(R.string.import_character_confirm)) }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { pendingCharacterImport = null }) {
+                                    Text(stringResource(R.string.cancel))
+                                }
+                            },
+                        )
+                    }
+                    if (characterImportError) {
+                        AlertDialog(
+                            onDismissRequest = { characterImportError = false },
+                            title = { Text(stringResource(R.string.import_character_error_title)) },
+                            text = { Text(stringResource(R.string.import_character_error_message)) },
+                            confirmButton = {
+                                TextButton(onClick = { characterImportError = false }) {
+                                    Text(stringResource(R.string.cancel))
+                                }
+                            },
+                        )
+                    }
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIncomingCharacterLink(intent)
+    }
+
+    private fun handleIncomingCharacterLink(incoming: Intent?) {
+        if (incoming?.action != Intent.ACTION_VIEW) return
+        val uri = incoming.data ?: return
+        if (uri.scheme != "dicethrower" || uri.host != "import") return
+        val token = uri.getQueryParameter("data")
+        try {
+            require(!token.isNullOrBlank()) { "Missing character payload" }
+            pendingCharacterImport = CharacterTransferCodec.decodeToken(token)
+            characterImportError = false
+        } catch (_: Exception) {
+            pendingCharacterImport = null
+            characterImportError = true
         }
     }
 

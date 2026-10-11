@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">استيراد الشخصية المشتركة؟</string>
+    <string name="import_character_message">هل تريد إضافة نسخة مستقلة من %1$s (المستوى %2$d، عدد الرميات %3$d) إلى هذا الجهاز؟ لن تتغير الشخصيات الحالية.</string>
+    <string name="import_character_confirm">استيراد الشخصية</string>
+    <string name="import_character_error_title">تعذر استيراد الشخصية</string>
+    <string name="import_character_error_message">الرابط غير صالح أو غير مدعوم أو يحتوي على بيانات غير متسقة.</string>
+</resources>

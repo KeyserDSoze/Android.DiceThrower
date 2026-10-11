@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">공유 캐릭터를 가져올까요?</string>
+    <string name="import_character_message">이 기기에 %1$s(레벨 %2$d, 굴림 %3$d개)의 별도 사본을 추가할까요? 기존 캐릭터는 변경되지 않습니다.</string>
+    <string name="import_character_confirm">캐릭터 가져오기</string>
+    <string name="import_character_error_title">캐릭터를 가져올 수 없음</string>
+    <string name="import_character_error_message">링크가 유효하지 않거나 지원되지 않거나 데이터가 일치하지 않습니다.</string>
+</resources>

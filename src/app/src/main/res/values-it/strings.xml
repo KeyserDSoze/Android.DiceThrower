@@ -205,4 +205,9 @@
     <string name="random_style_pool">Gruppo di stili casuali</string>
     <string name="random_style_pool_help">Usa tutti gli stili del personaggio oppure limita la scelta casuale a un sottoinsieme.</string>
     <string name="all_character_styles">Tutti gli stili del personaggio</string>
+    <string name="import_character_title">Importare il personaggio condiviso?</string>
+    <string name="import_character_message">Aggiungere una copia indipendente di %1$s (livello %2$d, %3$d tiri) sul dispositivo? I personaggi esistenti non cambieranno.</string>
+    <string name="import_character_confirm">Importa personaggio</string>
+    <string name="import_character_error_title">Impossibile importare il personaggio</string>
+    <string name="import_character_error_message">Il link non è valido, non è supportato oppure contiene dati incoerenti.</string>
 </resources>

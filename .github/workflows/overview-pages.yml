@@ -37,6 +37,10 @@ jobs:
         working-directory: src/overviewapp
         run: npm install --no-audit --no-fund
 
+      - name: Test character transfer protocol and starter templates
+        working-directory: src/overviewapp
+        run: npm test
+
       - name: Build overview site
         working-directory: src/overviewapp
         run: npm run build
