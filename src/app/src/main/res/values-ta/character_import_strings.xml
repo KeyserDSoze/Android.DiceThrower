@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">பகிரப்பட்ட கதாபாத்திரத்தை இறக்குமதி செய்யவா?</string>
+    <string name="import_character_message">%1$s (நிலை %2$d, %3$d உருட்டல்கள்) என்பதன் தனி நகலை இந்தச் சாதனத்தில் சேர்க்கவா? ஏற்கெனவே உள்ளவை மாறாது.</string>
+    <string name="import_character_confirm">கதாபாத்திரத்தை இறக்குமதி செய்</string>
+    <string name="import_character_error_title">கதாபாத்திரத்தை இறக்குமதி செய்ய முடியவில்லை</string>
+    <string name="import_character_error_message">இணைப்பு தவறானது அல்லது ஆதரிக்கப்படவில்லை.</string>
+</resources>
