@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">Εισαγωγή κοινόχρηστου χαρακτήρα;</string>
+    <string name="import_character_message">Προσθήκη ξεχωριστού αντιγράφου του %1$s (επίπεδο %2$d, %3$d ρίψεις) σε αυτή τη συσκευή; Οι υπάρχοντες χαρακτήρες δεν θα αλλάξουν.</string>
+    <string name="import_character_confirm">Εισαγωγή χαρακτήρα</string>
+    <string name="import_character_error_title">Αδυναμία εισαγωγής χαρακτήρα</string>
+    <string name="import_character_error_message">Ο σύνδεσμος δεν είναι έγκυρος, δεν υποστηρίζεται ή περιέχει ασυνεπή δεδομένα.</string>
+</resources>
