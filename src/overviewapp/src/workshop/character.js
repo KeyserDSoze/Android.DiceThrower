@@ -56,7 +56,7 @@ export function newStyle() {
 const isRecord = x => !!x && typeof x === 'object' && !Array.isArray(x);
 const validName = x => typeof x === 'string' && x.trim().length > 0 && x.length <= 160;
 const validId = x => typeof x === 'string' && x.length > 0 && x.length <= 180;
-const exprPattern = /^[\d\s()+\-*/xXdD.%{}\p{L}\p{M}_:]+$/u;
+const exprPattern = /^[\d\s()+\-*\/xXdD.%{}\p{L}\p{M}_:]+$/u;
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
