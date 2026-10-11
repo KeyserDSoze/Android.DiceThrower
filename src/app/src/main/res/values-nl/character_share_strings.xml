@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">Personage delen</string>
+    <string name="share_character_warning">Iedereen met deze link of QR kan het personage en de dobbelregels lezen. Afbeeldingen, geschiedenis en cloudgegevens zijn uitgesloten.</string>
+    <string name="share_character_qr_alt">QR-code om personage te delen</string>
+    <string name="share_character_scan_hint">Scan voor een voorbeeld op de website.</string>
+    <string name="share_character_share_link">Link delen</string>
+    <string name="share_character_copy_link">Link kopiëren</string>
+    <string name="share_character_file_only">Het personage is te groot voor een betrouwbare QR. Exporteer een JSON-bestand.</string>
+    <string name="share_character_error">Kan personage niet delen of exporteren.</string>
+    <string name="share_character_export_json">Personage-JSON exporteren</string>
+    <string name="share_character_exported">Personagebestand geëxporteerd</string>
+</resources>
