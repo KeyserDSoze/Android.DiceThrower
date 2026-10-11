@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">שיתוף דמות</string>
+    <string name="share_character_warning">כל מי שקיבל את הקישור או קוד ה-QR יכול לקרוא את הדמות וכללי ההטלה שלה. תמונות, היסטוריה ונתוני ענן אינם כלולים.</string>
+    <string name="share_character_qr_alt">קוד QR לשיתוף דמות</string>
+    <string name="share_character_scan_hint">סרקו לצפייה מקדימה באתר.</string>
+    <string name="share_character_share_link">שיתוף קישור</string>
+    <string name="share_character_copy_link">העתקת קישור</string>
+    <string name="share_character_file_only">הדמות גדולה מדי לקוד QR אמין. יש לייצא קובץ JSON.</string>
+    <string name="share_character_error">לא ניתן לשתף או לייצא את הדמות.</string>
+    <string name="share_character_export_json">ייצוא JSON של דמות</string>
+    <string name="share_character_exported">קובץ הדמות יוצא</string>
+</resources>
