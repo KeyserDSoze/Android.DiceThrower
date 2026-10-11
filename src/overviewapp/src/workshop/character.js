@@ -15,7 +15,7 @@ const uid = () => crypto.randomUUID();
 export function newCharacter(name = 'New character') {
   return {
     character: {
-      id: uid(), name, level: 1, tag: '', order: 0,
+      id: uid(), name, level: 1, tag: '', order: 0, image: null, imageUri: null, diceTableImage: null,
       defaultDiceStyleId: null, secondaryDiceStyleId: null, diceTableTheme: 'ARCANE',
     },
     modifiers: [], groups: [], rolls: [], diceStyles: [],
@@ -101,7 +101,7 @@ export function validateDocument(doc) {
   const nestedIds = new Set();
   for (const roll of doc.rolls) {
     assert(roll.groupId == null || groupIds.has(roll.groupId), 'Unknown roll group');
-    assert(Number.isInteger(roll.minimumLevel ?? 1) && (roll.minimumLevel ?? 1) >= 1, 'Invalid roll minimum level');
+    assert(Number.isInteger(roll.minimumLevel ?? 1) && (roll.minimumLevel ?? 1) >= 1 && (roll.minimumLevel ?? 1) <= 9999, 'Invalid roll minimum level');
     formula(roll.expression);
     assert(Array.isArray(roll.subgroups) && roll.subgroups.length <= 30, 'Invalid roll parts');
     assert(Array.isArray(roll.levelRules) && roll.levelRules.length <= 40, 'Invalid level rules');
@@ -171,9 +171,20 @@ export function encodeToken(doc) {
 }
 export function decodeToken(token) {
   assert(typeof token === 'string' && token.startsWith('v1.'), 'Unsupported link');
-  // pako's maxOutputLength guards against zip bombs before allocating huge strings.
-  const bytes = pako.inflate(fromBase64(token.slice(3)), { maxOutputLength: MAX_RAW_LENGTH });
-  assert(bytes.length <= MAX_RAW_LENGTH, 'Character too large');
+  // Inflate in bounded chunks to reject malicious highly-compressible zip bombs.
+  const inflater = new pako.Inflate({ chunkSize: 4096 });
+  const chunks = [];
+  let total = 0;
+  inflater.onData = (chunk) => {
+    total += chunk.length;
+    assert(total <= MAX_RAW_LENGTH, 'Character too large');
+    chunks.push(chunk);
+  };
+  inflater.push(fromBase64(token.slice(3)), true);
+  assert(!inflater.err, 'Invalid compressed character');
+  const bytes = new Uint8Array(total);
+  let position = 0;
+  for (const chunk of chunks) { bytes.set(chunk, position); position += chunk.length; }
   return documentFromEnvelope(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)));
 }
 export function shareUrl(doc, base = window.location.href) {
