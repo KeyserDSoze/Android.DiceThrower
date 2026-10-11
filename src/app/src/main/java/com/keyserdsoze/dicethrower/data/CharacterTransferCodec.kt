@@ -5,6 +5,8 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.Base64
 import java.util.zip.InflaterInputStream
+import java.util.zip.Deflater
+import java.util.zip.DeflaterOutputStream
 import org.json.JSONObject
 
 /**
@@ -17,6 +19,73 @@ object CharacterTransferCodec {
     const val FORMAT_VERSION = 1
     private const val MAX_RAW_BYTES = 128 * 1024
     private const val MAX_TOKEN_LENGTH = 120_000
+    const val MAX_SHARE_URL_LENGTH = 2600
+    const val WORKSHOP_URL = "https://keyserdsoze.github.io/Android.DiceThrower/workshop/"
+
+    /**
+     * Snapshot only the selected character and styles referenced by that character.
+     * This is deliberately separate from full backup and from optional Drive sync.
+     */
+    fun exportCharacter(data: AppData, characterId: String): AppData {
+        val character = data.characters.firstOrNull { it.id == characterId }
+            ?: throw IllegalArgumentException("Character not found")
+        val ownedRolls = data.rolls.filter { it.characterId == characterId }
+        val styleIds = buildSet {
+            character.defaultDiceStyleId?.let(::add)
+            character.secondaryDiceStyleId?.let(::add)
+            ownedRolls.forEach { roll ->
+                roll.diceAppearance.styleId?.let(::add)
+                addAll(roll.diceAppearance.subgroupStyleIds.values)
+                addAll(roll.diceAppearance.perDieStyleIds.values)
+                addAll(roll.diceAppearance.randomStyleIds)
+            }
+        }
+        val exported = AppData(
+            characters = listOf(character.copy(
+                imageUri = null,
+                image = null,
+                diceTableImage = null,
+                order = 0,
+            )),
+            modifiers = data.modifiers.filter { it.characterId == characterId },
+            groups = data.groups.filter { it.characterId == characterId },
+            rolls = ownedRolls,
+            diceStyles = data.diceStyles.filter { it.id in styleIds }.map { it.copy(characterId = null) },
+        )
+        AppDataValidator.requireValid(exported)
+        return exported
+    }
+
+    fun encodeJson(data: AppData, characterId: String): String {
+        val snapshot = exportCharacter(data, characterId)
+        val json = JSONObject()
+            .put("format", FORMAT)
+            .put("formatVersion", FORMAT_VERSION)
+            .put("data", AppDataJsonCodec.encodeDataForSync(snapshot))
+            .toString()
+        require(json.toByteArray(Charsets.UTF_8).size <= MAX_RAW_BYTES) {
+            "Character is too large to export"
+        }
+        return json
+    }
+
+    fun encodeToken(data: AppData, characterId: String): String {
+        val raw = encodeJson(data, characterId)
+        val stream = ByteArrayOutputStream()
+        DeflaterOutputStream(stream, Deflater(9)).use { out ->
+            out.write(raw.toByteArray(Charsets.UTF_8))
+        }
+        return "v1." + Base64.getUrlEncoder().withoutPadding().encodeToString(stream.toByteArray())
+    }
+
+    /**
+     * URL/QR share is supported only for reasonably short payloads.
+     * Call encodeJson for a SAF .json export if this returns null.
+     */
+    fun shareUrlOrNull(data: AppData, characterId: String): String? {
+        val url = WORKSHOP_URL + "#character=" + encodeToken(data, characterId)
+        return url.takeIf { it.length <= MAX_SHARE_URL_LENGTH }
+    }
 
     fun decodeToken(token: String): AppData {
         require(token.startsWith("v1.") && token.length <= MAX_TOKEN_LENGTH) {
