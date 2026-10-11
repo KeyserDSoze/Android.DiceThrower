@@ -57,8 +57,8 @@ function JsonField({ label, value, onChange }) {
     {error && <small role="alert">{error}</small>}
   </label>;
 }
-function downloadDocument(document) {
-  const blob = new Blob([JSON.stringify(envelope(document), null, 2)], { type: 'application/json' });
+function downloadDocument(characterDoc) {
+  const blob = new Blob([JSON.stringify(envelope(characterDoc), null, 2)], { type: 'application/json' });
   const href = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = href;
@@ -229,7 +229,7 @@ export default function CharacterWorkshop({ locale = 'en' }) {
                 <label className="workshop-check"><input type="checkbox" checked={r.enabled !== false} onChange={e => edit(x => x.rolls[i].enabled = e.target.checked)} /> {t.enabled}</label>
                 <label className="workshop-check"><input type="checkbox" checked={!!r.doubleRollEnabled} onChange={e => edit(x => x.rolls[i].doubleRollEnabled = e.target.checked)} /> {t.double}</label>
               </div>
-              <Field label={t.formula} value={r.expression} onChange={v => edit(x => { x.rolls[i].expression = v; if (x.rolls[i].subgroups.length === 1) x.rolls[i].subgroups[0].expression = v; })} />
+              <Field label={t.formula} value={r.expression} onChange={v => edit(x => { x.rolls[i].expression = v; if (x.rolls[i].subgroups.length === 1) { x.rolls[i].subgroups[0].expression = v; x.rolls[i].expression = normalFormula(x.rolls[i].subgroups); } })} />
               <div className="workshop-row-head"><h3>{t.parts}</h3><button onClick={() => edit(x => {
                 const roll = x.rolls[i];
                 if (!roll.subgroups.length) roll.subgroups = [{ ...newPart(), name: roll.name, expression: roll.expression }];
