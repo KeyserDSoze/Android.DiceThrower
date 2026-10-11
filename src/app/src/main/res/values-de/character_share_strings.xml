@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">Charakter teilen</string>
+    <string name="share_character_warning">Jeder mit diesem Link oder QR-Code kann den Charakter und seine Regeln lesen. Bilder, Verlauf und Cloud-Daten sind nicht enthalten.</string>
+    <string name="share_character_qr_alt">QR-Code zum Teilen des Charakters</string>
+    <string name="share_character_scan_hint">Scannen, um die Vorschau im Web-Editor zu öffnen.</string>
+    <string name="share_character_share_link">Link teilen</string>
+    <string name="share_character_copy_link">Link kopieren</string>
+    <string name="share_character_file_only">Der Charakter ist zu groß für einen zuverlässigen QR-Code. Stattdessen JSON exportieren.</string>
+    <string name="share_character_error">Charakter konnte nicht geteilt oder exportiert werden.</string>
+    <string name="share_character_export_json">Charakter als JSON exportieren</string>
+    <string name="share_character_exported">Charakterdatei exportiert</string>
+</resources>
