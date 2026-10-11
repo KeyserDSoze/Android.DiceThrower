@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">షేర్ చేసిన పాత్రను దిగుమతి చేయాలా?</string>
+    <string name="import_character_message">%1$s (స్థాయి %2$d, %3$d రోల్స్) యొక్క ప్రత్యేక కాపీని ఈ పరికరానికి జోడించాలా? ఉన్న పాత్రలు మారవు.</string>
+    <string name="import_character_confirm">పాత్రను దిగుమతి చేయండి</string>
+    <string name="import_character_error_title">పాత్రను దిగుమతి చేయలేకపోయాం</string>
+    <string name="import_character_error_message">లింక్ చెల్లదు లేదా మద్దతు లేదు.</string>
+</resources>
