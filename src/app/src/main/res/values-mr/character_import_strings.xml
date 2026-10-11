@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">शेअर केलेले पात्र आयात करायचे?</string>
+    <string name="import_character_message">या डिव्हाइसवर %1$s (पातळी %2$d, %3$d फेकी) ची स्वतंत्र प्रत जोडायची? विद्यमान पात्रे बदलणार नाहीत.</string>
+    <string name="import_character_confirm">पात्र आयात करा</string>
+    <string name="import_character_error_title">पात्र आयात करता आले नाही</string>
+    <string name="import_character_error_message">दुवा अवैध आहे किंवा समर्थित नाही.</string>
+</resources>
