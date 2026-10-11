@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">Compartir personaje</string>
+    <string name="share_character_warning">Quien tenga este enlace o QR podrá leer el personaje y sus reglas. No se incluyen imágenes, historial ni datos de la nube.</string>
+    <string name="share_character_qr_alt">Código QR para compartir el personaje</string>
+    <string name="share_character_scan_hint">Escanea para abrir una vista previa en el sitio web.</string>
+    <string name="share_character_share_link">Compartir enlace</string>
+    <string name="share_character_copy_link">Copiar enlace</string>
+    <string name="share_character_file_only">El personaje es demasiado grande para un QR fiable. Exporta un archivo JSON.</string>
+    <string name="share_character_error">No se pudo compartir ni exportar el personaje.</string>
+    <string name="share_character_export_json">Exportar JSON del personaje</string>
+    <string name="share_character_exported">Archivo del personaje exportado</string>
+</resources>
