@@ -45,6 +45,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.Casino
+import androidx.compose.material.icons.rounded.FileOpen
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.Delete
@@ -286,6 +287,7 @@ fun DiceThrowerAppV2(
     dataRefreshVersion: Int,
     onSettingsChanged: (AppSettings) -> Unit,
     onLocalDataChanged: () -> Unit,
+    onImportCharacterFile: () -> Unit,
     onSyncNow: () -> Unit,
     onResolveConflict: (SyncConflict, SyncConflictResolution) -> Unit,
     onUseStandalone: () -> Unit,
@@ -385,6 +387,7 @@ fun DiceThrowerAppV2(
                 persist(data.copy(characters = data.characters + character))
             },
             onSettings = { route = RouteV2.SETTINGS },
+            onImportCharacterFile = onImportCharacterFile,
             onCustomizeDice = {
                 selectedCharacterId = data.characters.firstOrNull { it.id == selectedCharacterId }?.id
                     ?: data.characters.firstOrNull()?.id
@@ -619,6 +622,7 @@ private fun CharactersScreenV2(
     onOpenCharacter: (String) -> Unit,
     onAddCharacter: (CharacterProfile) -> Unit,
     onSettings: () -> Unit,
+    onImportCharacterFile: () -> Unit,
     onCustomizeDice: () -> Unit,
 ) {
     var showAdd by remember { mutableStateOf(false) }
@@ -647,6 +651,9 @@ private fun CharactersScreenV2(
                         }
                     },
                     actions = {
+                        IconButton(onClick = onImportCharacterFile) {
+                            Icon(Icons.Rounded.FileOpen, contentDescription = stringResource(R.string.import_character_confirm))
+                        }
                         IconButton(onClick = onSettings) {
                             Icon(Icons.Rounded.Settings, contentDescription = stringResource(R.string.settings))
                         }
