@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
 import { initialLocale, locales } from './i18n.js';
+import CharacterWorkshop from './workshop/CharacterWorkshop.jsx';
 
 const repo = 'https://github.com/KeyserDSoze/Android.DiceThrower';
 const brandArt = 'https://raw.githubusercontent.com/KeyserDSoze/Android.DiceThrower/main/src/app/src/main/res/drawable-nodpi/ic_launcher_art.png';
 
 function currentPage() {
   const path = window.location.pathname;
+  if (path.includes('/workshop')) return 'workshop';
   if (path.includes('/privacy')) return 'privacy';
   if (path.includes('/terms')) return 'terms';
   if (path.includes('/contact')) return 'contact';
@@ -38,6 +40,7 @@ export default function App() {
   const links = (
     <nav>
       <a href={base}>Dice Thrower</a>
+      <a href={base + 'workshop/'}>{locale === 'it' ? 'Crea personaggi' : 'Character workshop'}</a>
       <a href={base + 'privacy/'}>{copy.privacy}</a>
       <a href={base + 'terms/'}>{copy.terms}</a>
       <a href={base + 'contact/'}>{copy.contact}</a>
@@ -112,6 +115,8 @@ export default function App() {
               </div>
             </section>
 
+            <section className="workshop-cta premium-panel"><div><h2>{locale === 'it' ? 'Crea e condividi personaggi' : 'Build & share your characters'}</h2><p>{locale === 'it' ? 'Editor sul web, salvataggio nel browser, link e QR per importare in Android.' : 'Web editor, browser storage, links and QR codes for Android import.'}</p></div><a className="primary" href={base + 'workshop/'}>{locale === 'it' ? 'Apri laboratorio' : 'Open workshop'}</a></section>
+
             <section className="metric-strip">
               <div><strong>9</strong><span>dice types</span></div>
               <div><strong>∞</strong><span>custom rolls</span></div>
@@ -156,6 +161,7 @@ export default function App() {
           </>
         )}
 
+        {page === 'workshop' && <CharacterWorkshop locale={locale} />}
         {page === 'privacy' && <Legal title={copy.privacyTitle} body={copy.privacyBody} />}
         {page === 'terms' && <Legal title={copy.termsTitle} body={copy.termsBody} />}
         {page === 'contact' && (
