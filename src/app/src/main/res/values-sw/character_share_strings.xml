@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">Shiriki mhusika</string>
+    <string name="share_character_warning">Mtu yeyote mwenye kiungo hiki au QR anaweza kusoma mhusika na sheria za kurusha kete. Picha, historia na data za wingu hazijajumuishwa.</string>
+    <string name="share_character_qr_alt">Msimbo wa QR wa kushiriki mhusika</string>
+    <string name="share_character_scan_hint">Changanua kuona hakikisho kwenye tovuti.</string>
+    <string name="share_character_share_link">Shiriki kiungo</string>
+    <string name="share_character_copy_link">Nakili kiungo</string>
+    <string name="share_character_file_only">Mhusika ni mkubwa sana kwa QR ya kuaminika. Hamisha faili ya JSON.</string>
+    <string name="share_character_error">Imeshindikana kushiriki au kuhamisha mhusika.</string>
+    <string name="share_character_export_json">Hamisha JSON ya mhusika</string>
+    <string name="share_character_exported">Faili ya mhusika imehamishwa</string>
+</resources>
