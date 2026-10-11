@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">Raba jarumi</string>
+    <string name="share_character_warning">Duk wanda yake da wannan hanyar haɗi ko QR zai iya karanta jarumin da dokokin jefa ƙwallo. Ba a haɗa hotuna, tarihi ko bayanan gajimare ba.</string>
+    <string name="share_character_qr_alt">Lambar QR ta raba jarumi</string>
+    <string name="share_character_scan_hint">Duba QR don ganin samfurin a shafin yanar gizo.</string>
+    <string name="share_character_share_link">Raba hanyar haɗi</string>
+    <string name="share_character_copy_link">Kwafi hanyar haɗi</string>
+    <string name="share_character_file_only">Jarumin ya yi girma sosai don QR mai kyau. Fitar da fayil na JSON.</string>
+    <string name="share_character_error">Ba a iya raba ko fitar da jarumin ba.</string>
+    <string name="share_character_export_json">Fitar da JSON na jarumi</string>
+    <string name="share_character_exported">An fitar da fayil ɗin jarumi</string>
+</resources>
