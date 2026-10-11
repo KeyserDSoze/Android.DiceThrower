@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">Ungependa kuingiza mhusika aliyeshirikiwa?</string>
+    <string name="import_character_message">Ongeza nakala tofauti ya %1$s (kiwango %2$d, mirusho %3$d) kwenye kifaa hiki? Wahusika waliopo hawatabadilishwa.</string>
+    <string name="import_character_confirm">Ingiza mhusika</string>
+    <string name="import_character_error_title">Imeshindikana kuingiza mhusika</string>
+    <string name="import_character_error_message">Kiungo si halali, hakitumiki au kina data zisizolingana.</string>
+</resources>
