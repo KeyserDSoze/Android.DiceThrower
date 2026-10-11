@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">Impor karakter yang dibagikan?</string>
+    <string name="import_character_message">Tambahkan salinan terpisah %1$s (level %2$d, %3$d lemparan) ke perangkat ini? Karakter yang ada tidak akan berubah.</string>
+    <string name="import_character_confirm">Impor karakter</string>
+    <string name="import_character_error_title">Tidak dapat mengimpor karakter</string>
+    <string name="import_character_error_message">Tautan tidak valid, tidak didukung, atau berisi data yang tidak konsisten.</string>
+</resources>
