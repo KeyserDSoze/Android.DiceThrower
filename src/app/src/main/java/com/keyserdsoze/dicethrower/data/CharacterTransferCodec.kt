@@ -50,8 +50,8 @@ object CharacterTransferCodec {
         val contents = envelope.optJSONObject("data")
             ?: throw IllegalArgumentException("Character data is missing")
         require(contents.optJSONArray("characters")?.length() == 1) { "Expected one character" }
-        require(contents.optJSONArray("logs")?.length() ?: 0 == 0) { "Roll history cannot be imported" }
-        require(contents.optJSONArray("characterSyncMetadata")?.length() ?: 0 == 0) {
+        require((contents.optJSONArray("logs")?.length() ?: 0) == 0) { "Roll history cannot be imported" }
+        require((contents.optJSONArray("characterSyncMetadata")?.length() ?: 0) == 0) {
             "Cloud metadata cannot be imported"
         }
         val characterJson = contents.getJSONArray("characters").getJSONObject(0)
