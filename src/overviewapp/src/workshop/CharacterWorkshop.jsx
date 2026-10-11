@@ -267,7 +267,18 @@ export default function CharacterWorkshop({ locale = 'en' }) {
                 <Field label={t.styles} value={style.name} onChange={v => edit(x => x.diceStyles[i].name = v)} />
                 <select value={style.material} onChange={e => edit(x => x.diceStyles[i].material = e.target.value)}>
                   {['GLOSSY_RESIN','MATTE_RESIN','METAL','GEMSTONE'].map(s => <option key={s}>{s}</option>)}</select>
-                <button onClick={() => edit(x => { x.diceStyles.splice(i,1); x.character.defaultDiceStyleId = null; x.rolls.forEach(r => r.diceAppearance = { mode:'CHARACTER_DEFAULT' }); })}>×</button>
+                <button onClick={() => edit(x => { x.diceStyles.splice(i, 1);
+                  const fallback = 'preset:arcane-blue';
+                  const fix = id => id === style.id ? fallback : id;
+                  x.character.defaultDiceStyleId = fix(x.character.defaultDiceStyleId);
+                  x.character.secondaryDiceStyleId = fix(x.character.secondaryDiceStyleId);
+                  x.rolls.forEach(r => {
+                    const a = r.diceAppearance || {};
+                    if (a.styleId) a.styleId = fix(a.styleId);
+                    if (a.subgroupStyleIds) a.subgroupStyleIds = a.subgroupStyleIds.map(v => ({ ...v, styleId: fix(v.styleId) }));
+                    if (a.perDieStyleIds) a.perDieStyleIds = a.perDieStyleIds.map(v => ({ ...v, styleId: fix(v.styleId) }));
+                    if (a.randomStyleIds) a.randomStyleIds = [...new Set(a.randomStyleIds.map(fix))];
+                  }); })}>×</button>
               </div>
               <div className="workshop-inline">
                 {['primaryColorArgb','secondaryColorArgb'].map(field => <label className="workshop-field" key={field}><span>{field}</span>
