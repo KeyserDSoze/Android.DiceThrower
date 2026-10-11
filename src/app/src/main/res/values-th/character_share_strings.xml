@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">แชร์ตัวละคร</string>
+    <string name="share_character_warning">ผู้ที่มีลิงก์หรือรหัส QR นี้สามารถอ่านตัวละครและกฎการทอยลูกเต๋าได้ ไม่รวมรูปภาพ ประวัติ และข้อมูลคลาวด์</string>
+    <string name="share_character_qr_alt">รหัส QR สำหรับแชร์ตัวละคร</string>
+    <string name="share_character_scan_hint">สแกนเพื่อดูตัวอย่างบนเว็บไซต์</string>
+    <string name="share_character_share_link">แชร์ลิงก์</string>
+    <string name="share_character_copy_link">คัดลอกลิงก์</string>
+    <string name="share_character_file_only">ตัวละครมีข้อมูลมากเกินไปสำหรับ QR ที่เชื่อถือได้ โปรดส่งออกไฟล์ JSON</string>
+    <string name="share_character_error">ไม่สามารถแชร์หรือส่งออกตัวละคร</string>
+    <string name="share_character_export_json">ส่งออก JSON ตัวละคร</string>
+    <string name="share_character_exported">ส่งออกไฟล์ตัวละครแล้ว</string>
+</resources>
