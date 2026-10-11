@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">Megosztott karakter importálása?</string>
+    <string name="import_character_message">Hozzáadja %1$s (szint: %2$d, dobások: %3$d) külön példányát az eszközhöz? A meglévő karakterek nem változnak.</string>
+    <string name="import_character_confirm">Karakter importálása</string>
+    <string name="import_character_error_title">Nem sikerült a karakter importálása</string>
+    <string name="import_character_error_message">A hivatkozás érvénytelen, nem támogatott, vagy ellentmondó adatokat tartalmaz.</string>
+</resources>
