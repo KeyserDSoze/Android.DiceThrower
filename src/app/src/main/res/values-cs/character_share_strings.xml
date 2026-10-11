@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">Sdílet postavu</string>
+    <string name="share_character_warning">Každý s tímto odkazem nebo QR kódem může číst postavu a její pravidla hodů. Obrázky, historie ani cloudová data nejsou zahrnuty.</string>
+    <string name="share_character_qr_alt">QR kód pro sdílení postavy</string>
+    <string name="share_character_scan_hint">Naskenujte pro náhled na webu.</string>
+    <string name="share_character_share_link">Sdílet odkaz</string>
+    <string name="share_character_copy_link">Kopírovat odkaz</string>
+    <string name="share_character_file_only">Postava je příliš velká pro spolehlivý QR kód. Exportujte soubor JSON.</string>
+    <string name="share_character_error">Postavu nelze sdílet ani exportovat.</string>
+    <string name="share_character_export_json">Exportovat JSON postavy</string>
+    <string name="share_character_exported">Soubor postavy exportován</string>
+</resources>
