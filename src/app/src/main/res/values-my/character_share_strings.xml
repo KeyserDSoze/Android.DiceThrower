@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">ဇာတ်ကောင်ကို မျှဝေမည်</string>
+    <string name="share_character_warning">ဤလင့်ခ် သို့မဟုတ် QR ရှိသူတိုင်း ဇာတ်ကောင်နှင့် အန်စာတုံး စည်းမျဉ်းများကို ဖတ်နိုင်သည်။ ရုပ်ပုံ၊ မှတ်တမ်းနှင့် cloud အချက်အလက် မပါဝင်ပါ။</string>
+    <string name="share_character_qr_alt">ဇာတ်ကောင် မျှဝေ QR ကုဒ်</string>
+    <string name="share_character_scan_hint">ဝဘ်တွင် အစမ်းကြည့်ရန် စကင်ဖတ်ပါ။</string>
+    <string name="share_character_share_link">လင့်ခ်မျှဝေမည်</string>
+    <string name="share_character_copy_link">လင့်ခ်ကူးယူမည်</string>
+    <string name="share_character_file_only">ယုံကြည်ရသော QR အတွက် ဇာတ်ကောင် အလွန်ကြီးသည်။ JSON ဖိုင်ထုတ်ပါ။</string>
+    <string name="share_character_error">ဇာတ်ကောင် မျှဝေခြင်း သို့မဟုတ် ဖိုင်ထုတ်ခြင်း မအောင်မြင်ပါ။</string>
+    <string name="share_character_export_json">ဇာတ်ကောင် JSON ထုတ်မည်</string>
+    <string name="share_character_exported">ဇာတ်ကောင်ဖိုင် ထုတ်ပြီးပါပြီ</string>
+</resources>
