@@ -60,6 +60,34 @@ class MainActivity : ComponentActivity() {
     private var pendingCharacterImport by mutableStateOf<AppData?>(null)
     private var characterImportError by mutableStateOf(false)
 
+    private val characterFileImportLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) {
+            try {
+                val output = java.io.ByteArrayOutputStream()
+                val stream = contentResolver.openInputStream(uri)
+                    ?: throw IllegalArgumentException("Unable to open character file")
+                stream.use { input ->
+                    val buffer = ByteArray(4096)
+                    while (true) {
+                        val length = input.read(buffer)
+                        if (length == -1) break
+                        require(output.size() + length <= 128 * 1024) { "Character file too large" }
+                        output.write(buffer, 0, length)
+                    }
+                }
+                pendingCharacterImport = CharacterTransferCodec.decodeJson(
+                    output.toString(Charsets.UTF_8.name()),
+                )
+                characterImportError = false
+            } catch (_: Exception) {
+                pendingCharacterImport = null
+                characterImportError = true
+            }
+        }
+    }
+
     private val driveAuthorizationLauncher = registerForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult(),
     ) { result ->
@@ -109,6 +137,9 @@ class MainActivity : ComponentActivity() {
                         cloudDeleteBusy = cloudDeleteBusy,
                         cloudDeleteFailed = cloudDeleteFailed,
                         dataRefreshVersion = dataRefreshVersion,
+                        onImportCharacterFile = {
+                            characterFileImportLauncher.launch(arrayOf("application/json", "text/plain"))
+                        },
                         onSettingsChanged = {
                             settings = it
                             store.saveSettings(it)
