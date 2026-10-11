@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">Udostępnij postać</string>
+    <string name="share_character_warning">Każdy, kto ma link lub kod QR, może odczytać postać i jej zasady rzutów. Zdjęcia, historia i dane w chmurze nie są dołączone.</string>
+    <string name="share_character_qr_alt">Kod QR udostępniania postaci</string>
+    <string name="share_character_scan_hint">Zeskanuj, aby otworzyć podgląd w witrynie.</string>
+    <string name="share_character_share_link">Udostępnij link</string>
+    <string name="share_character_copy_link">Kopiuj link</string>
+    <string name="share_character_file_only">Postać jest za duża na niezawodny kod QR. Wyeksportuj plik JSON.</string>
+    <string name="share_character_error">Nie można udostępnić ani wyeksportować postaci.</string>
+    <string name="share_character_export_json">Eksportuj JSON postaci</string>
+    <string name="share_character_exported">Plik postaci wyeksportowany</string>
+</resources>
