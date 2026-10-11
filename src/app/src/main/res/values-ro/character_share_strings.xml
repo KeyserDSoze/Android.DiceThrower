@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">Distribuie personajul</string>
+    <string name="share_character_warning">Oricine are acest link sau cod QR poate citi personajul și regulile de aruncare. Imaginile, istoricul și datele din cloud nu sunt incluse.</string>
+    <string name="share_character_qr_alt">Cod QR pentru distribuirea personajului</string>
+    <string name="share_character_scan_hint">Scanați pentru previzualizare pe site.</string>
+    <string name="share_character_share_link">Distribuie linkul</string>
+    <string name="share_character_copy_link">Copiază linkul</string>
+    <string name="share_character_file_only">Personajul este prea mare pentru un QR fiabil. Exportați fișierul JSON.</string>
+    <string name="share_character_error">Nu s-a putut distribui sau exporta personajul.</string>
+    <string name="share_character_export_json">Exportă JSON-ul personajului</string>
+    <string name="share_character_exported">Fișierul personajului a fost exportat</string>
+</resources>

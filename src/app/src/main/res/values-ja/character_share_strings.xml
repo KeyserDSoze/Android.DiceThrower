@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">キャラクターを共有</string>
+    <string name="share_character_warning">このリンクやQRコードを持つ人はキャラクターとロールルールを読めます。画像、履歴、クラウドデータは含まれません。</string>
+    <string name="share_character_qr_alt">キャラクター共有QRコード</string>
+    <string name="share_character_scan_hint">スキャンするとWebでプレビューできます。</string>
+    <string name="share_character_share_link">リンクを共有</string>
+    <string name="share_character_copy_link">リンクをコピー</string>
+    <string name="share_character_file_only">キャラクターが大きすぎてQRコードに収まりません。JSONファイルを書き出してください。</string>
+    <string name="share_character_error">共有または書き出しに失敗しました。</string>
+    <string name="share_character_export_json">キャラクターのJSONを書き出す</string>
+    <string name="share_character_exported">キャラクターファイルを書き出しました</string>
+</resources>

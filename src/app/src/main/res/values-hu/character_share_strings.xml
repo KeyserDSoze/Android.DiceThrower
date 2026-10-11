@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">Karakter megosztása</string>
+    <string name="share_character_warning">A link vagy QR-kód birtokában bárki megtekintheti a karaktert és a dobási szabályokat. Képek, előzmények és felhőadatok nem szerepelnek benne.</string>
+    <string name="share_character_qr_alt">Karaktermegosztó QR-kód</string>
+    <string name="share_character_scan_hint">Olvasd be a webes előnézethez.</string>
+    <string name="share_character_share_link">Link megosztása</string>
+    <string name="share_character_copy_link">Link másolása</string>
+    <string name="share_character_file_only">A karakter túl nagy a megbízható QR-hez. Exportálj JSON-fájlt.</string>
+    <string name="share_character_error">A karakter megosztása vagy exportálása sikertelen.</string>
+    <string name="share_character_export_json">Karakter JSON exportálása</string>
+    <string name="share_character_exported">Karakterfájl exportálva</string>
+</resources>

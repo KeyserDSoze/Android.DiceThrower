@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">مشاركة الشخصية</string>
+    <string name="share_character_warning">يمكن لأي شخص لديه الرابط أو رمز QR قراءة الشخصية وقواعد الرمي. لا تُضمّن الصور أو السجل أو بيانات السحابة.</string>
+    <string name="share_character_qr_alt">رمز QR لمشاركة الشخصية</string>
+    <string name="share_character_scan_hint">امسح الرمز لعرض الشخصية على الموقع.</string>
+    <string name="share_character_share_link">مشاركة الرابط</string>
+    <string name="share_character_copy_link">نسخ الرابط</string>
+    <string name="share_character_file_only">الشخصية كبيرة جدًا لرمز QR موثوق. صدّر ملف JSON بدلاً من ذلك.</string>
+    <string name="share_character_error">تعذرت مشاركة الشخصية أو تصديرها.</string>
+    <string name="share_character_export_json">تصدير ملف JSON للشخصية</string>
+    <string name="share_character_exported">تم تصدير ملف الشخصية</string>
+</resources>

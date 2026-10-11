@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">کردار شیئر کریں</string>
+    <string name="share_character_warning">اس لنک یا QR کے حامل ہر شخص کردار اور ڈائس کے اصول پڑھ سکتا ہے۔ تصاویر، تاریخ اور کلاؤڈ ڈیٹا شامل نہیں۔</string>
+    <string name="share_character_qr_alt">کردار شیئر کرنے کا QR کوڈ</string>
+    <string name="share_character_scan_hint">ویب سائٹ پر پیش نظارہ کھولنے کے لیے اسکین کریں۔</string>
+    <string name="share_character_share_link">لنک شیئر کریں</string>
+    <string name="share_character_copy_link">لنک کاپی کریں</string>
+    <string name="share_character_file_only">کردار قابل اعتماد QR کے لیے بہت بڑا ہے۔ JSON فائل برآمد کریں۔</string>
+    <string name="share_character_error">کردار شیئر یا برآمد نہیں ہو سکا۔</string>
+    <string name="share_character_export_json">کردار کا JSON برآمد کریں</string>
+    <string name="share_character_exported">کردار کی فائل برآمد ہو گئی</string>
+</resources>

@@ -14,11 +14,19 @@ import java.util.Base64
 import java.util.zip.DeflaterOutputStream
 import org.json.JSONArray
 import org.json.JSONObject
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
+import com.google.zxing.BinaryBitmap
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.RGBLuminanceSource
+import com.google.zxing.common.HybridBinarizer
+import com.google.zxing.qrcode.QRCodeReader
+import com.google.zxing.qrcode.QRCodeWriter
 
 class CharacterTransferCodecTest {
     private fun sample() = AppData(
@@ -79,6 +87,95 @@ class CharacterTransferCodecTest {
         val json = packet(sample())
         json.getJSONObject("data").getJSONArray("groups").getJSONObject(0).put("characterId", "foreign")
         expectFailure { CharacterTransferCodec.decodeJson(json.toString()) }
+    }
+
+
+
+    @Test fun outgoingQrIsReadableByQrDecoder() {
+        val url = requireNotNull(CharacterTransferCodec.shareUrlOrNull(sample(), "fighter"))
+        val matrix = QRCodeWriter().encode(url, BarcodeFormat.QR_CODE, 700, 700)
+        val pixels = IntArray(matrix.width * matrix.height) { index ->
+            val x = index % matrix.width
+            val y = index / matrix.width
+            if (matrix[x, y]) 0xff000000.toInt() else 0xffffffff.toInt()
+        }
+        val image = RGBLuminanceSource(matrix.width, matrix.height, pixels)
+        val decoded = QRCodeReader().decode(BinaryBitmap(HybridBinarizer(image)))
+        assertEquals(url, decoded.text)
+    }
+
+    @Test fun androidOutgoingShareUrlOpensWebWorkshopAndDecodes() {
+        val original = sample()
+        val url = CharacterTransferCodec.shareUrlOrNull(original, "fighter")
+        requireNotNull(url)
+        assertTrue(url.startsWith(CharacterTransferCodec.WORKSHOP_URL + "#character=v1."))
+        assertTrue(url.length <= CharacterTransferCodec.MAX_SHARE_URL_LENGTH)
+        val token = url.substringAfter("#character=")
+        assertEquals(original, CharacterTransferCodec.decodeToken(token))
+    }
+
+    @Test fun exportExcludesOtherCharactersUnusedStylesAndPrivateData() {
+        val first = sample()
+        val other = CharacterProfile("other", "Private hero")
+        val full = first.copy(
+            characters = first.characters + other,
+            diceStyles = first.diceStyles + DiceStyle(
+                id = "unused-style", characterId = null, name = "Private color",
+                primaryColorArgb = -3, secondaryColorArgb = -4,
+            ),
+            modifiers = first.modifiers + CharacterModifier("hidden", "other", "Secret", 7),
+            groups = first.groups + RollGroup("hidden-group", "other", "Private"),
+            rolls = first.rolls + RollDefinition("hidden-roll", "other", "Private", "2d6"),
+        )
+        val json = CharacterTransferCodec.encodeJson(full, "fighter")
+        val transferred = CharacterTransferCodec.decodeJson(json)
+        assertEquals(listOf("fighter"), transferred.characters.map { it.id })
+        assertEquals(listOf("style-1"), transferred.diceStyles.map { it.id })
+        assertEquals(listOf("attack"), transferred.rolls.map { it.id })
+        assertEquals(listOf("str"), transferred.modifiers.map { it.id })
+        assertFalse(json.contains("Private hero"))
+        assertFalse(json.contains("Private color"))
+        assertFalse(json.contains("hidden-group"))
+        assertTrue(transferred.logs.isEmpty())
+        assertTrue(transferred.characterSyncMetadata.isEmpty())
+    }
+
+    @Test fun exportStripsLocalImagesAndPreservesOriginalCharacter() {
+        val modified = sample().let { data ->
+            data.copy(characters = listOf(data.characters.single().copy(
+                imageUri = "content://private/photos/secret",
+                tag = "Travel notes",
+            )))
+        }
+        val raw = CharacterTransferCodec.encodeJson(modified, "fighter")
+        assertFalse(raw.contains("content://private/"))
+        val decoded = CharacterTransferCodec.decodeJson(raw)
+        assertNull(decoded.characters.single().imageUri)
+        assertEquals("content://private/photos/secret", modified.characters.single().imageUri)
+    }
+
+    @Test fun oversizeUrlOffersFileExportWithoutTruncation() {
+        val random = java.util.Random(1234L)
+        val text = ByteArray(4096).also(random::nextBytes)
+        val opaqueTag = Base64.getUrlEncoder().encodeToString(text)
+        val data = sample().let {
+            it.copy(characters = listOf(it.characters.single().copy(tag = opaqueTag)))
+        }
+        val raw = CharacterTransferCodec.encodeJson(data, "fighter")
+        assertEquals(data.characters.single().tag, CharacterTransferCodec.decodeJson(raw).characters.single().tag)
+        assertNull(CharacterTransferCodec.shareUrlOrNull(data, "fighter"))
+    }
+
+    @Test fun exportedDataCanImportAsFreshIndependentCopy() {
+        val source = sample()
+        val payload = CharacterTransferCodec.decodeJson(CharacterTransferCodec.encodeJson(source, "fighter"))
+        val copied = CharacterTransferCodec.importCopy(source, payload)
+        assertEquals(2, copied.characters.size)
+        val importedId = copied.characters.last().id
+        assertNotEquals(source.characters.single().id, importedId)
+        assertEquals(source.rolls.single(), copied.rolls.first())
+        assertEquals(source.characters.single().defaultDiceStyleId, copied.characters.first().defaultDiceStyleId)
+        assertTrue(AppDataValidator.validate(copied).isEmpty())
     }
 
     private fun expectFailure(action: () -> Unit) {

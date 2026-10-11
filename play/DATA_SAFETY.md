@@ -68,3 +68,5 @@ Review this document and the Play Console Data Safety form before shipping any c
 ### User-directed character imports (web workshop)
 
 The web workshop can hand a user-chosen character to the installed Android application through a local deep link (`dicethrower://import`). The payload includes only selected character configuration (name/tag/level, variables, rolls/rules and dice styles) and is stored locally only after user confirmation. QR/share links may expose those selected fields to whoever receives the link; no Dice Thrower-hosted sharing backend is introduced. Recheck Play disclosure if a future web cloud service or account sync is implemented.
+
+The Android character sharing feature creates the QR on-device and opens a system sharesheet only on explicit user request. The link/portable JSON includes character configuration but excludes images, play history and Google tokens. Recipients of user-supplied URLs and third-party messaging clients can read the shared fields; no Dice Thrower-managed sharing backend is introduced. The Google account data/sync behavior is unchanged.

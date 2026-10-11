@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">分享角色</string>
+    <string name="share_character_warning">任何获得此链接或二维码的人都可以读取角色与掷骰规则。不包含图片、历史记录或云数据。</string>
+    <string name="share_character_qr_alt">角色分享二维码</string>
+    <string name="share_character_scan_hint">扫码在网页编辑器中预览。</string>
+    <string name="share_character_share_link">分享链接</string>
+    <string name="share_character_copy_link">复制链接</string>
+    <string name="share_character_file_only">角色数据过大，不适合可靠扫码。请导出 JSON 文件。</string>
+    <string name="share_character_error">无法分享或导出角色。</string>
+    <string name="share_character_export_json">导出角色 JSON</string>
+    <string name="share_character_exported">角色文件已导出</string>
+</resources>

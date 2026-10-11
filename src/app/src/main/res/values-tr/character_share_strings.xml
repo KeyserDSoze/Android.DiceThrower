@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">Karakteri paylaş</string>
+    <string name="share_character_warning">Bu bağlantıya veya QR koduna sahip herkes karakteri ve zar kurallarını okuyabilir. Resimler, geçmiş ve bulut verileri dahil değildir.</string>
+    <string name="share_character_qr_alt">Karakter paylaşım QR kodu</string>
+    <string name="share_character_scan_hint">Web önizlemesini açmak için tarayın.</string>
+    <string name="share_character_share_link">Bağlantıyı paylaş</string>
+    <string name="share_character_copy_link">Bağlantıyı kopyala</string>
+    <string name="share_character_file_only">Karakter güvenilir bir QR için fazla büyük. JSON dosyası dışa aktarın.</string>
+    <string name="share_character_error">Karakter paylaşılamadı veya dışa aktarılamadı.</string>
+    <string name="share_character_export_json">Karakter JSON dışa aktar</string>
+    <string name="share_character_exported">Karakter dosyası dışa aktarıldı</string>
+</resources>

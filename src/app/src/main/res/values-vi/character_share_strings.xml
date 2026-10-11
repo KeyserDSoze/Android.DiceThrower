@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">Chia sẻ nhân vật</string>
+    <string name="share_character_warning">Bất kỳ ai có liên kết hoặc QR đều có thể đọc nhân vật và quy tắc tung xúc xắc. Không bao gồm ảnh, lịch sử và dữ liệu đám mây.</string>
+    <string name="share_character_qr_alt">Mã QR chia sẻ nhân vật</string>
+    <string name="share_character_scan_hint">Quét để xem trước trên trang web.</string>
+    <string name="share_character_share_link">Chia sẻ liên kết</string>
+    <string name="share_character_copy_link">Sao chép liên kết</string>
+    <string name="share_character_file_only">Nhân vật quá lớn để tạo QR tin cậy. Hãy xuất tệp JSON.</string>
+    <string name="share_character_error">Không thể chia sẻ hoặc xuất nhân vật.</string>
+    <string name="share_character_export_json">Xuất JSON nhân vật</string>
+    <string name="share_character_exported">Đã xuất tệp nhân vật</string>
+</resources>

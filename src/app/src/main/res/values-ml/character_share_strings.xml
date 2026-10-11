@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">കഥാപാത്രം പങ്കിടുക</string>
+    <string name="share_character_warning">ഈ ലിങ്കോ QR കോഡോ ലഭിക്കുന്ന ആർക്കും കഥാപാത്രവും ഡൈസ് നിയമങ്ങളും വായിക്കാം. ചിത്രങ്ങൾ, ചരിത്രം, ക്ലൗഡ് ഡാറ്റ എന്നിവ ഉൾപ്പെടുത്തിയിട്ടില്ല.</string>
+    <string name="share_character_qr_alt">കഥാപാത്രം പങ്കിടാനുള്ള QR കോഡ്</string>
+    <string name="share_character_scan_hint">വെബ് പ്രിവ്യൂ തുറക്കാൻ സ്കാൻ ചെയ്യുക.</string>
+    <string name="share_character_share_link">ലിങ്ക് പങ്കിടുക</string>
+    <string name="share_character_copy_link">ലിങ്ക് പകർത്തുക</string>
+    <string name="share_character_file_only">വിശ്വസനീയ QR-ന് കഥാപാത്രം വളരെ വലുതാണ്. JSON ഫയൽ എക്സ്പോർട്ട് ചെയ്യുക.</string>
+    <string name="share_character_error">കഥാപാത്രം പങ്കിടാനോ എക്സ്പോർട്ട് ചെയ്യാനോ കഴിഞ്ഞില്ല.</string>
+    <string name="share_character_export_json">കഥാപാത്ര JSON എക്സ്പോർട്ട്</string>
+    <string name="share_character_exported">കഥാപാത്ര ഫയൽ എക്സ്പോർട്ട് ചെയ്തു</string>
+</resources>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">Dela karaktär</string>
+    <string name="share_character_warning">Alla med den här länken eller QR-koden kan läsa karaktären och kastreglerna. Bilder, historik och molndata ingår inte.</string>
+    <string name="share_character_qr_alt">QR-kod för att dela karaktären</string>
+    <string name="share_character_scan_hint">Skanna för att förhandsvisa på webben.</string>
+    <string name="share_character_share_link">Dela länk</string>
+    <string name="share_character_copy_link">Kopiera länk</string>
+    <string name="share_character_file_only">Karaktären är för stor för en tillförlitlig QR-kod. Exportera en JSON-fil.</string>
+    <string name="share_character_error">Det gick inte att dela eller exportera karaktären.</string>
+    <string name="share_character_export_json">Exportera karaktärs-JSON</string>
+    <string name="share_character_exported">Karaktärsfil exporterad</string>
+</resources>

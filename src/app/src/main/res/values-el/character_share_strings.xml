@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">Κοινή χρήση χαρακτήρα</string>
+    <string name="share_character_warning">Όποιος έχει τον σύνδεσμο ή το QR μπορεί να διαβάσει τον χαρακτήρα και τους κανόνες ρίψης. Εικόνες, ιστορικό και δεδομένα cloud δεν περιλαμβάνονται.</string>
+    <string name="share_character_qr_alt">Κωδικός QR κοινής χρήσης χαρακτήρα</string>
+    <string name="share_character_scan_hint">Σαρώστε για προεπισκόπηση στον ιστότοπο.</string>
+    <string name="share_character_share_link">Κοινή χρήση συνδέσμου</string>
+    <string name="share_character_copy_link">Αντιγραφή συνδέσμου</string>
+    <string name="share_character_file_only">Ο χαρακτήρας είναι υπερβολικά μεγάλος για αξιόπιστο QR. Εξαγάγετε αρχείο JSON.</string>
+    <string name="share_character_error">Αδύνατη η κοινή χρήση ή εξαγωγή χαρακτήρα.</string>
+    <string name="share_character_export_json">Εξαγωγή JSON χαρακτήρα</string>
+    <string name="share_character_exported">Το αρχείο χαρακτήρα εξήχθη</string>
+</resources>

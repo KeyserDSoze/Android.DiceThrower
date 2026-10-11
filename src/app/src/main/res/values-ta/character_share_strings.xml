@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">கதாபாத்திரத்தைப் பகிர்</string>
+    <string name="share_character_warning">இந்த இணைப்பு அல்லது QR உள்ளவர்கள் கதாபாத்திரத்தையும் பகடை விதிகளையும் படிக்கலாம். படங்கள், வரலாறு மற்றும் கிளவுட் தரவு சேர்க்கப்படவில்லை.</string>
+    <string name="share_character_qr_alt">கதாபாத்திர பகிர்வு QR குறியீடு</string>
+    <string name="share_character_scan_hint">இணையதளத்தில் முன்னோட்டம் காண ஸ்கேன் செய்க.</string>
+    <string name="share_character_share_link">இணைப்பைப் பகிர்</string>
+    <string name="share_character_copy_link">இணைப்பை நகலெடு</string>
+    <string name="share_character_file_only">நம்பகமான QR-க்கு கதாபாத்திரம் மிகப் பெரியது. JSON கோப்பை ஏற்றுமதி செய்க.</string>
+    <string name="share_character_error">பகிரவோ ஏற்றுமதி செய்யவோ முடியவில்லை.</string>
+    <string name="share_character_export_json">கதாபாத்திர JSON ஏற்றுமதி</string>
+    <string name="share_character_exported">கதாபாத்திர கோப்பு ஏற்றுமதி செய்யப்பட்டது</string>
+</resources>

@@ -45,6 +45,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.Casino
+import androidx.compose.material.icons.rounded.FileOpen
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.Delete
@@ -54,6 +55,7 @@ import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.AlertDialog
@@ -285,6 +287,7 @@ fun DiceThrowerAppV2(
     dataRefreshVersion: Int,
     onSettingsChanged: (AppSettings) -> Unit,
     onLocalDataChanged: () -> Unit,
+    onImportCharacterFile: () -> Unit,
     onSyncNow: () -> Unit,
     onResolveConflict: (SyncConflict, SyncConflictResolution) -> Unit,
     onUseStandalone: () -> Unit,
@@ -384,6 +387,7 @@ fun DiceThrowerAppV2(
                 persist(data.copy(characters = data.characters + character))
             },
             onSettings = { route = RouteV2.SETTINGS },
+            onImportCharacterFile = onImportCharacterFile,
             onCustomizeDice = {
                 selectedCharacterId = data.characters.firstOrNull { it.id == selectedCharacterId }?.id
                     ?: data.characters.firstOrNull()?.id
@@ -618,6 +622,7 @@ private fun CharactersScreenV2(
     onOpenCharacter: (String) -> Unit,
     onAddCharacter: (CharacterProfile) -> Unit,
     onSettings: () -> Unit,
+    onImportCharacterFile: () -> Unit,
     onCustomizeDice: () -> Unit,
 ) {
     var showAdd by remember { mutableStateOf(false) }
@@ -646,6 +651,9 @@ private fun CharactersScreenV2(
                         }
                     },
                     actions = {
+                        IconButton(onClick = onImportCharacterFile) {
+                            Icon(Icons.Rounded.FileOpen, contentDescription = stringResource(R.string.import_character_confirm))
+                        }
                         IconButton(onClick = onSettings) {
                             Icon(Icons.Rounded.Settings, contentDescription = stringResource(R.string.settings))
                         }
@@ -814,6 +822,10 @@ private fun CharacterScreenV2(
     onDataChanged: (AppData) -> Unit,
  ) {
     var childEditorVisible by remember(character.id) { mutableStateOf(false) }
+    var showShare by remember(character.id) { mutableStateOf(false) }
+    if (showShare) {
+        CharacterShareDialog(character = character, data = data, onDismiss = { showShare = false })
+    }
     ArcaneBackground {
         Scaffold(
             containerColor = Color.Transparent,
@@ -854,6 +866,9 @@ private fun CharacterScreenV2(
                         }
                     },
                     actions = {
+                        IconButton(onClick = { showShare = true }) {
+                            Icon(Icons.Rounded.Share, contentDescription = stringResource(R.string.share_character_title))
+                        }
                         IconButton(onClick = onOpenLogs) {
                             Icon(Icons.Rounded.History, contentDescription = stringResource(R.string.logs))
                         }

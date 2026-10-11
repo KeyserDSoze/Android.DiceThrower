@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">ಪಾತ್ರವನ್ನು ಹಂಚಿಕೊಳ್ಳಿ</string>
+    <string name="share_character_warning">ಈ ಲಿಂಕ್ ಅಥವಾ QR ಹೊಂದಿರುವ ಯಾರಾದರೂ ಪಾತ್ರ ಮತ್ತು ದಾಳದ ನಿಯಮಗಳನ್ನು ಓದಬಹುದು. ಚಿತ್ರಗಳು, ಇತಿಹಾಸ ಮತ್ತು ಕ್ಲೌಡ್ ಡೇಟಾ ಸೇರಿಲ್ಲ.</string>
+    <string name="share_character_qr_alt">ಪಾತ್ರ ಹಂಚಿಕೆ QR ಕೋಡ್</string>
+    <string name="share_character_scan_hint">ವೆಬ್ ಪೂರ್ವವೀಕ್ಷಣೆಗೆ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ.</string>
+    <string name="share_character_share_link">ಲಿಂಕ್ ಹಂಚಿಕೊಳ್ಳಿ</string>
+    <string name="share_character_copy_link">ಲಿಂಕ್ ನಕಲಿಸಿ</string>
+    <string name="share_character_file_only">ವಿಶ್ವಾಸಾರ್ಹ QR ಗಾಗಿ ಪಾತ್ರ ತುಂಬಾ ದೊಡ್ಡದು. JSON ಫೈಲ್ ರಫ್ತು ಮಾಡಿ.</string>
+    <string name="share_character_error">ಪಾತ್ರ ಹಂಚಿಕೆ ಅಥವಾ ರಫ್ತು ವಿಫಲವಾಗಿದೆ.</string>
+    <string name="share_character_export_json">ಪಾತ್ರ JSON ರಫ್ತು</string>
+    <string name="share_character_exported">ಪಾತ್ರ ಫೈಲ್ ರಫ್ತಾಯಿತು</string>
+</resources>

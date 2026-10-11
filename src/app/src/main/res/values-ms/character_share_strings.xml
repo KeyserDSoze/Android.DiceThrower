@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">Kongsi watak</string>
+    <string name="share_character_warning">Sesiapa yang mempunyai pautan atau QR ini boleh membaca watak dan peraturan balingannya. Imej, sejarah dan data awan tidak disertakan.</string>
+    <string name="share_character_qr_alt">Kod QR perkongsian watak</string>
+    <string name="share_character_scan_hint">Imbas untuk pratonton di laman web.</string>
+    <string name="share_character_share_link">Kongsi pautan</string>
+    <string name="share_character_copy_link">Salin pautan</string>
+    <string name="share_character_file_only">Watak terlalu besar untuk QR yang boleh dipercayai. Eksport fail JSON.</string>
+    <string name="share_character_error">Tidak dapat berkongsi atau mengeksport watak.</string>
+    <string name="share_character_export_json">Eksport JSON watak</string>
+    <string name="share_character_exported">Fail watak telah dieksport</string>
+</resources>

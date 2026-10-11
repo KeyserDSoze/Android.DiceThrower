@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">પાત્ર શેર કરો</string>
+    <string name="share_character_warning">આ લિંક અથવા QR ધરાવનાર કોઈપણ પાત્ર અને પાસાના નિયમો વાંચી શકે છે. છબીઓ, ઇતિહાસ અને ક્લાઉડ ડેટા સામેલ નથી.</string>
+    <string name="share_character_qr_alt">પાત્ર શેરિંગ QR કોડ</string>
+    <string name="share_character_scan_hint">વેબ પર પૂર્વાવલોકન માટે સ્કેન કરો.</string>
+    <string name="share_character_share_link">લિંક શેર કરો</string>
+    <string name="share_character_copy_link">લિંક નકલ કરો</string>
+    <string name="share_character_file_only">વિશ્વસનીય QR માટે પાત્ર બહુ મોટું છે. JSON ફાઇલ નિકાસ કરો.</string>
+    <string name="share_character_error">પાત્ર શેર કે નિકાસ કરી શકાયું નથી.</string>
+    <string name="share_character_export_json">પાત્ર JSON નિકાસ</string>
+    <string name="share_character_exported">પાત્ર ફાઇલ નિકાસ થઈ</string>
+</resources>

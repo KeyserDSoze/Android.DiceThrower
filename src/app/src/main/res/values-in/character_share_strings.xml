@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">Bagikan karakter</string>
+    <string name="share_character_warning">Siapa pun yang memiliki tautan atau QR ini dapat membaca karakter dan aturan lemparannya. Gambar, riwayat, dan data cloud tidak disertakan.</string>
+    <string name="share_character_qr_alt">Kode QR berbagi karakter</string>
+    <string name="share_character_scan_hint">Pindai untuk melihat pratinjau di web.</string>
+    <string name="share_character_share_link">Bagikan tautan</string>
+    <string name="share_character_copy_link">Salin tautan</string>
+    <string name="share_character_file_only">Karakter terlalu besar untuk QR yang andal. Ekspor file JSON.</string>
+    <string name="share_character_error">Tidak dapat berbagi atau mengekspor karakter.</string>
+    <string name="share_character_export_json">Ekspor JSON karakter</string>
+    <string name="share_character_exported">File karakter diekspor</string>
+</resources>

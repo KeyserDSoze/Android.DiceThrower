@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">Share character</string>
+    <string name="share_character_warning">Anyone with this link or QR can read this character and its roll rules. Images, history and cloud data are not included.</string>
+    <string name="share_character_qr_alt">QR code for the character share link</string>
+    <string name="share_character_scan_hint">Scan to open a preview in the web workshop.</string>
+    <string name="share_character_share_link">Share link</string>
+    <string name="share_character_copy_link">Copy link</string>
+    <string name="share_character_file_only">This character is too large for a reliable QR link. Export it to a JSON file instead.</string>
+    <string name="share_character_error">Could not share or export the character.</string>
+    <string name="share_character_export_json">Export character JSON</string>
+    <string name="share_character_exported">Character file exported</string>
+</resources>
