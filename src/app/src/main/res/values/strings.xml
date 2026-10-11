@@ -205,4 +205,9 @@
     <string name="random_style_pool">Random style pool</string>
     <string name="random_style_pool_help">Use all character styles or restrict random selection to a subset.</string>
     <string name="all_character_styles">All character styles</string>
+    <string name="import_character_title">Import shared character?</string>
+    <string name="import_character_message">Add a separate copy of %1$s (level %2$d, %3$d rolls) to this device? Existing characters will not be changed.</string>
+    <string name="import_character_confirm">Import character</string>
+    <string name="import_character_error_title">Cannot import character</string>
+    <string name="import_character_error_message">The link is invalid, unsupported, or contains inconsistent character data.</string>
 </resources>
