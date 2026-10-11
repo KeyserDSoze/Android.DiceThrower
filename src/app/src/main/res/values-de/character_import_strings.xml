@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">Geteilten Charakter importieren?</string>
+    <string name="import_character_message">Eine separate Kopie von %1$s (Stufe %2$d, %3$d Würfe) auf diesem Gerät hinzufügen? Vorhandene Charaktere bleiben unverändert.</string>
+    <string name="import_character_confirm">Charakter importieren</string>
+    <string name="import_character_error_title">Charakter kann nicht importiert werden</string>
+    <string name="import_character_error_message">Der Link ist ungültig, wird nicht unterstützt oder enthält widersprüchliche Daten.</string>
+</resources>
