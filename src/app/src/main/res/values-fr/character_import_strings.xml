@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">Importer le personnage partagé ?</string>
+    <string name="import_character_message">Ajouter une copie indépendante de %1$s (niveau %2$d, %3$d jets) sur cet appareil ? Les personnages existants ne seront pas modifiés.</string>
+    <string name="import_character_confirm">Importer le personnage</string>
+    <string name="import_character_error_title">Impossible d\'importer le personnage</string>
+    <string name="import_character_error_message">Le lien est invalide, non pris en charge ou contient des données incohérentes.</string>
+</resources>
