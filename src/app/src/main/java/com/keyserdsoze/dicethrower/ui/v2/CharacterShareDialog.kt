@@ -54,6 +54,7 @@ internal fun CharacterShareDialog(
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
+    val shareChooserTitle = stringResource(R.string.share_character_share_link)
     val json = remember(data, character.id) {
         runCatching { CharacterTransferCodec.encodeJson(data, character.id) }.getOrNull()
     }
@@ -109,7 +110,7 @@ internal fun CharacterShareDialog(
                             }
                             runCatching {
                                 context.startActivity(Intent.createChooser(
-                                    intent, context.getString(R.string.share_character_share_link),
+                                    intent, shareChooserTitle,
                                 ))
                             }.onFailure { exportFailed = true }
                         }) { Text(stringResource(R.string.share_character_share_link)) }
