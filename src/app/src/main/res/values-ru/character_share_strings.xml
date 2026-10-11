@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="share_character_title">Поделиться персонажем</string>
+    <string name="share_character_warning">Любой, у кого есть ссылка или QR-код, сможет прочитать данные персонажа и правила бросков. Изображения, история и облачные данные не включены.</string>
+    <string name="share_character_qr_alt">QR-код персонажа</string>
+    <string name="share_character_scan_hint">Сканируйте, чтобы открыть предварительный просмотр на сайте.</string>
+    <string name="share_character_share_link">Поделиться ссылкой</string>
+    <string name="share_character_copy_link">Копировать ссылку</string>
+    <string name="share_character_file_only">Персонаж слишком большой для QR-кода. Экспортируйте файл JSON.</string>
+    <string name="share_character_error">Не удалось поделиться персонажем или экспортировать его.</string>
+    <string name="share_character_export_json">Экспортировать JSON</string>
+    <string name="share_character_exported">Файл персонажа экспортирован</string>
+</resources>
