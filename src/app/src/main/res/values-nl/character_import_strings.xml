@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">Gedeeld personage importeren?</string>
+    <string name="import_character_message">Een aparte kopie van %1$s (niveau %2$d, %3$d worpen) toevoegen op dit apparaat? Bestaande personages blijven ongewijzigd.</string>
+    <string name="import_character_confirm">Personage importeren</string>
+    <string name="import_character_error_title">Kan personage niet importeren</string>
+    <string name="import_character_error_message">De link is ongeldig, wordt niet ondersteund of bevat tegenstrijdige gegevens.</string>
+</resources>
