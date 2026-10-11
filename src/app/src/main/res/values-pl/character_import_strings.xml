@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="import_character_title">Zaimportować udostępnioną postać?</string>
+    <string name="import_character_message">Dodać osobną kopię %1$s (poziom %2$d, rzuty: %3$d) na to urządzenie? Istniejące postacie nie zostaną zmienione.</string>
+    <string name="import_character_confirm">Importuj postać</string>
+    <string name="import_character_error_title">Nie można zaimportować postaci</string>
+    <string name="import_character_error_message">Link jest nieprawidłowy, nieobsługiwany lub zawiera niespójne dane.</string>
+</resources>
