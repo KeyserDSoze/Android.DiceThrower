@@ -273,19 +273,125 @@ export function importAsCopy(document) {
 const starterSpecs = [
   ['D&D 5e · Fighter', 'Aric · Level 1 Fighter', 'D&D 5e sample, Strength +3 and proficiency +2', 1,
     [['Strength', 3], ['Dexterity', 1], ['Constitution', 2], ['Proficiency', 2]],
-    [['Combat', [['Longsword · attack', '1d20+{Strength}+{Proficiency}'], ['Longsword · damage', '1d8+{Strength}'], ['Initiative', '1d20+{Dexterity}']]],
+    [['Combat', [['Longsword', [['Attack', '1d20+{Strength}+{Proficiency}'], ['Damage', '1d8+{Strength}']], 'DND5E_CRITICAL'], ['Initiative', '1d20+{Dexterity}']]],
      ['Skills & saves', [['Athletics', '1d20+{Strength}+{Proficiency}'], ['Strength save', '1d20+{Strength}+{Proficiency}'], ['Constitution save', '1d20+{Constitution}+{Proficiency}']]],
      ['Recovery', [['Second Wind · heal', '1d10+{level}']]]]],
   ['Fantasy · Rogue', 'Nim · Shadow Rogue', 'A nimble adventurer', 1, [['Agility', 3], ['Skill', 2]], [['Combat', [['Quick strike', '1d20+{Agility}+{Skill}'], ['Sneak damage', '1d6+{Agility}']]], ['Skills', [['Stealth', '1d20+{Agility}+{Skill}']]]]],
   ['Fantasy · Mage', 'Lyra · Spellcaster', 'An elemental mage', 1, [['Magic', 3]], [['Spells', [['Arcane bolt', '1d20+{Magic}'], ['Fire spark', '2d6+{Magic}']]], ['Checks', [['Arcana', '1d20+{Magic}']]]]],
-  ['Fantasy · Ranger', 'Bryn · Ranger', 'A woodland explorer', 1, [['Agility', 2], ['Tracking', 3]], [['Combat', [['Bow shot', '1d20+{Agility}'], ['Bow damage', '1d8+{Agility}']]], ['Exploration', [['Track', '1d20+{Tracking}']]]]],
+  ['Fantasy · Ranger', 'Bryn · Ranger', 'A woodland explorer', 1, [['Agility', 2], ['Tracking', 3]], [['Combat', [['Bow', [['Attack', '1d20+{Agility}'], ['Damage', '1d8+{Agility}']]]], ['Exploration', [['Track', '1d20+{Tracking}']]]]],
   ['Fantasy · Cleric', 'Sol · Healer', 'A protective spellcaster', 1, [['Faith', 3]], [['Magic', [['Healing word', '1d4+{Faith}'], ['Radiant strike', '1d8+{Faith}']]], ['Checks', [['Insight', '1d20+{Faith}']]]]],
-  ['Fantasy · Paladin', 'Thane · Guardian', 'A steadfast champion', 1, [['Might', 3]], [['Combat', [['Sword attack', '1d20+{Might}'], ['Sword damage', '1d8+{Might}']]], ['Defense', [['Resolve', '1d20+{Might}']]]]],
+  ['Fantasy · Paladin', 'Thane · Guardian', 'A steadfast champion', 1, [['Might', 3]], [['Combat', [['Sword', [['Attack', '1d20+{Might}'], ['Damage', '1d8+{Might}']]]], ['Defense', [['Resolve', '1d20+{Might}']]]]],
   ['Sci-fi · Pilot', 'Nova · Pilot', 'Spacefaring character template', 1, [['Piloting', 4], ['Tech', 2]], [['Flight', [['Hard maneuver', '1d20+{Piloting}'], ['Evasive action', '2d6+{Piloting}']]], ['Systems', [['Repair', '1d20+{Tech}']]]]],
   ['Sci-fi · Engineer', 'Echo · Engineer', 'Systems specialist', 1, [['Tech', 4]], [['Engineering', [['Diagnose', '1d20+{Tech}'], ['Field repair', '2d6+{Tech}']]]]],
   ['Adventure · Explorer', 'Iris · Explorer', 'General purpose exploration', 1, [['Perception', 3], ['Agility', 2]], [['Exploration', [['Notice', '1d20+{Perception}'], ['Climb', '1d20+{Agility}']]]]],
   ['Adventure · Bard', 'Orin · Performer', 'Creative social adventurer', 1, [['Charm', 3], ['Art', 2]], [['Social', [['Persuade', '1d20+{Charm}'], ['Performance', '1d20+{Art}']]], ['Support', [['Encourage', '1d6+{Charm}']]]]],
 ];
+/**
+ * Dice Thrower is game-agnostic: only the explicitly labelled D&D 5e fighter
+ * gets this game-specific critical rule. Attack is checked on its unmodified
+ * d20 face (DICE_ONLY), not on 1d20 + Strength + Proficiency.
+ *
+ * A 5e critical rolls another damage die; it never multiplies the already
+ * rolled value or the Strength modifier. ROLL_AFTER samples independently in
+ * Android's logical engine and adds only the sampled dice to Damage.
+ */
+export function createDnd5eCriticalEffect(attackPartId, damagePartId, damageDieExpression = '1d8') {
+  return {
+    id: uid(), name: 'Critical hit (natural 20)', type: 'BONUS',
+    order: 0, enabled: true, stopFollowingEffects: false,
+    activationGroups: [{
+      id: uid(),
+      conditions: [{
+        id: uid(), source: 'PART', partId: attackPartId, variableName: null,
+        scope: 'DICE_ONLY', comparison: 'EQUAL', threshold: '20',
+      }],
+    }],
+    actions: [{
+      id: uid(), kind: 'ROLL_AFTER', targetPartId: damagePartId,
+      scope: 'DICE_ONLY', expression: damageDieExpression,
+    }],
+  };
+}
+
+function createStarterRoll(characterId, groupId, name, formulaOrParts, rule, order) {
+  const roll = { ...newRoll(characterId, groupId), name, order };
+  if (typeof formulaOrParts === 'string') {
+    roll.expression = formulaOrParts;
+    return roll;
+  }
+  const parts = formulaOrParts.map(([partName, expression]) => ({
+    ...newPart(), name: partName, expression,
+  }));
+  roll.subgroups = parts;
+  roll.expression = normalFormula(parts);
+  if (rule === 'DND5E_CRITICAL') {
+    const damageDice = '1d8'; // one-handed level-one longsword
+    roll.effects = [createDnd5eCriticalEffect(parts[0].id, parts[1].id, damageDice)];
+  }
+  return roll;
+}
+
+/**
+ * Conservative, opt-in migration for pre-fix starter characters saved in
+ * IndexedDB. Only the exact original pair with no customized Part, effect,
+ * appearance, or level rules is eligible. Never change data just by loading it.
+ * Other character fields, group IDs and unrelated Rolls are left untouched.
+ */
+const legacyWeaponPairs = [
+  { tag: 'D&D 5e sample, Strength +3 and proficiency +2',
+    attack: 'Longsword · attack', damage: 'Longsword · damage', name: 'Longsword',
+    attackExpr: '1d20+{Strength}+{Proficiency}', damageExpr: '1d8+{Strength}', rule: 'DND5E_CRITICAL' },
+  { tag: 'A woodland explorer',
+    attack: 'Bow shot', damage: 'Bow damage', name: 'Bow',
+    attackExpr: '1d20+{Agility}', damageExpr: '1d8+{Agility}' },
+  { tag: 'A steadfast champion',
+    attack: 'Sword attack', damage: 'Sword damage', name: 'Sword',
+    attackExpr: '1d20+{Might}', damageExpr: '1d8+{Might}' },
+];
+function matchingLegacyPair(doc) {
+  if (!doc?.character || !Array.isArray(doc.rolls)) return null;
+  for (const definition of legacyWeaponPairs) {
+    if (doc.character.tag !== definition.tag) continue;
+    const attack = doc.rolls.filter(r => r.name === definition.attack);
+    const damage = doc.rolls.filter(r => r.name === definition.damage);
+    if (attack.length !== 1 || damage.length !== 1) continue;
+    const [a] = attack, [d] = damage;
+    if (a.characterId !== doc.character.id || d.characterId !== doc.character.id ||
+        a.groupId == null || a.groupId !== d.groupId ||
+        a.expression !== definition.attackExpr || d.expression !== definition.damageExpr) continue;
+    const unmodified = r => r.enabled !== false && !r.doubleRollEnabled &&
+      (r.minimumLevel ?? 1) === 1 &&
+      (!r.subgroups || r.subgroups.length === 0) &&
+      (!r.levelRules || r.levelRules.length === 0) &&
+      (!r.effects || r.effects.length === 0) &&
+      (!r.diceAppearance || (
+        r.diceAppearance.mode === 'CHARACTER_DEFAULT' &&
+        !r.diceAppearance.styleId &&
+        !r.diceAppearance.subgroupStyleIds?.length &&
+        !r.diceAppearance.perDieStyleIds?.length &&
+        !r.diceAppearance.randomStyleIds?.length
+      ));
+    if (unmodified(a) && unmodified(d)) return { definition, attackId:a.id, damageId:d.id };
+  }
+  return null;
+}
+export const canUpgradeLegacyStarterWeaponRolls = doc => matchingLegacyPair(doc) !== null;
+export function upgradeLegacyStarterWeaponRolls(doc) {
+  const match = matchingLegacyPair(doc);
+  if (!match) return null;
+  const upgraded = structuredClone(doc);
+  const attackIndex = upgraded.rolls.findIndex(r => r.id === match.attackId);
+  const oldAttack = upgraded.rolls[attackIndex];
+  const fresh = createStarterRoll(upgraded.character.id, oldAttack.groupId,
+    match.definition.name,
+    [['Attack', match.definition.attackExpr], ['Damage', match.definition.damageExpr]],
+    match.definition.rule, oldAttack.order);
+  // Keep the original attack Roll ID and all unrelated character data.
+  upgraded.rolls[attackIndex] = { ...oldAttack, ...fresh, id: oldAttack.id };
+  upgraded.rolls = upgraded.rolls.filter(r => r.id !== match.damageId);
+  return validateDocument(upgraded);
+}
+
 export const templates = starterSpecs.map(([category, name, description], index) => ({ category, name, description, index }));
 export function instantiateTemplate(index) {
   const spec = starterSpecs[index];
@@ -297,8 +403,9 @@ export function instantiateTemplate(index) {
   sections.forEach(([groupName, definitions], order) => {
     const group = { id: uid(), characterId: doc.character.id, name: groupName, order };
     doc.groups.push(group);
-    definitions.forEach(([rollName, formula], indexInGroup) => {
-      doc.rolls.push({ ...newRoll(doc.character.id, group.id), name: rollName, expression: formula, order: doc.rolls.length + indexInGroup });
+    definitions.forEach(([rollName, formulaOrParts, rule]) => {
+      doc.rolls.push(createStarterRoll(doc.character.id, group.id, rollName,
+        formulaOrParts, rule, doc.rolls.length));
     });
   });
   return validateDocument(doc);
