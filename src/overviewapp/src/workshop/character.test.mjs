@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   templates, instantiateTemplate, validateDocument, envelope, documentFromEnvelope,
   encodeToken, decodeToken, importAsCopy, normalFormula, newPart, newRoll, shareUrl,
-  canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls,
+  canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences, androidUrl,
 } from './character.js';
 
 test('all ten starter templates validate and survive the versioned compressed link', () => {
@@ -186,4 +186,34 @@ test('legacy Ranger and Paladin weapon pairs can be upgraded without D&D-only cr
     assert.equal(weapon.effects.length, 0);
     assert.deepEqual(weapon.subgroups.map(x => x.name), ['Attack','Damage']);
   }
+});
+
+test('QR recipient can independently rename/relevel shared Fighter without changing source or rolls', () => {
+  const source = instantiateTemplate(0);
+  const payload = decodeToken(encodeToken(source));
+  const adjusted = withImportPreferences(payload, '  New party fighter  ', 8);
+  assert.equal(adjusted.character.name, 'New party fighter');
+  assert.equal(adjusted.character.level, 8);
+  assert.equal(source.character.level, 1);
+  assert.equal(payload.character.name, source.character.name);
+  assert.deepEqual(adjusted.rolls, source.rolls);
+  assert.ok(adjusted.rolls.some(r => r.minimumLevel > adjusted.character.level));
+  const appUri = androidUrl(adjusted);
+  assert.match(appUri, /^dicethrower:\/\/import\?data=v1\./);
+  const decoded = decodeToken(decodeURIComponent(appUri.split('data=')[1]));
+  assert.deepEqual(decoded, adjusted);
+  const copied = importAsCopy(adjusted);
+  assert.notEqual(copied.character.id, adjusted.character.id);
+  assert.equal(copied.character.level, 8);
+});
+
+test('recipient overrides are validated before import, preserving the shared original', () => {
+  const source = instantiateTemplate(0);
+  for (const [name, level] of [['', 1], [' '.repeat(5), 1],
+    ['A'.repeat(161), 1], ['Valid', 0], ['Valid', -1],
+    ['Valid', 10000], ['Valid', 1.5], ['Valid', 'abc']]) {
+    assert.throws(() => withImportPreferences(source, name, level));
+  }
+  assert.equal(source.character.level, 1);
+  assert.equal(source.character.name, 'Aric · Level 1 Fighter');
 });
