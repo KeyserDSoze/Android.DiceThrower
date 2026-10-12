@@ -190,6 +190,8 @@ test('legacy Ranger and Paladin weapon pairs can be upgraded without D&D-only cr
 
 test('QR recipient can independently rename/relevel shared Fighter without changing source or rolls', () => {
   const source = instantiateTemplate(0);
+  // A future gated roll must survive recipient name/level edits.
+  source.rolls.find(r => r.name === 'Longsword').minimumLevel = 15;
   const payload = decodeToken(encodeToken(source));
   const adjusted = withImportPreferences(payload, '  New party fighter  ', 8);
   assert.equal(adjusted.character.name, 'New party fighter');
