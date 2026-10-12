@@ -1,4 +1,5 @@
 import pako from 'pako';
+import { SYSTEM_STYLES, validateGuidedRoll } from './guided.js';
 
 /**
  * Browser data stays in IndexedDB. A share link contains a compressed, versioned
@@ -82,7 +83,7 @@ export function validateDocument(doc) {
   }
   const groupIds = new Set(doc.groups.map(g => g.id));
   const styleIds = new Set(doc.diceStyles.map(s => s.id));
-  const allStyles = new Set([...styleIds, ...['arcane-blue','inferno-forged','emerald-aether','violet-star','obsidian-rune','lunar-frost','sunlit-brass','celestial-pearl','deep-ocean','ancient-copper'].map(s => 'preset:' + s)]);
+  const allStyles = new Set([...styleIds, ...SYSTEM_STYLES.map(s => s.id)]);
   const checkStyle = id => assert(id == null || allStyles.has(id), 'Unknown dice style');
   checkStyle(c.defaultDiceStyleId); checkStyle(c.secondaryDiceStyleId);
   const names = new Set(['level']);
@@ -130,6 +131,7 @@ export function validateDocument(doc) {
     }
     for (const item of appearance.perDieStyleIds || []) checkStyle(item.styleId);
     for (const id of appearance.randomStyleIds || []) checkStyle(id);
+    validateGuidedRoll(roll, doc.modifiers.map(m => m.name), allStyles);
   }
   assert(new TextEncoder().encode(JSON.stringify(doc)).length <= MAX_RAW_LENGTH, 'Character too large');
   return doc;
