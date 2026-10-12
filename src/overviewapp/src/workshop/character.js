@@ -96,7 +96,13 @@ export function validateDocument(doc) {
   const formula = text => {
     assert(typeof text === 'string' && text.length > 0 && text.length <= 1500 && exprPattern.test(text), 'Invalid dice expression');
     for (const match of text.matchAll(/\{([^{}]+)\}/g)) {
-      assert(names.has(match[1].trim().toLowerCase()) || match[1].startsWith('partId:'), 'Missing variable: ' + match[1]);
+      const token = match[1].trim().toLowerCase();
+      const segments = token.startsWith('levelstep:') ? token.slice('levelstep:'.length).split(':') : null;
+      const milestoneValid = segments && segments.length >= 1 && segments.length <= 20 &&
+        segments.every((value, i) => /^([2-9]|[1-9][0-9]{1,3})$/.test(value) &&
+          Number(value) <= 9999 && (i === 0 || Number(value) > Number(segments[i-1])));
+      assert(names.has(token) || token.startsWith('partId:') || milestoneValid,
+        'Missing variable or invalid level milestone: ' + match[1]);
     }
   };
   const nestedIds = new Set();
@@ -189,16 +195,70 @@ export function decodeToken(token) {
   for (const chunk of chunks) { bytes.set(chunk, position); position += chunk.length; }
   return documentFromEnvelope(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)));
 }
+/**
+ * Canonical shape fingerprint for version-pinned, unmodified local starter
+ * presets. All IDs (including nested references) are normalized by definition
+ * order. Any changed rule/style/variable/description prevents short-template
+ * sharing, never silently drops edits from a receiver's payload.
+ */
+function canonicalPresetShape(doc) {
+  const aliases = new Map();
+  const record = (item, label) => {
+    if (item?.id) aliases.set(item.id, label);
+  };
+  record(doc.character, 'character-one');
+  for (const field of ['modifiers', 'groups', 'rolls', 'diceStyles'])
+    (doc[field] || []).forEach((item, index) => record(item, field + '-' + index));
+  (doc.rolls || []).forEach((roll, rollIndex) => {
+    (roll.subgroups || []).forEach((part, index) => record(part, 'part-' + rollIndex + '-' + index));
+    (roll.levelRules || []).forEach((rule, index) => record(rule, 'rule-' + rollIndex + '-' + index));
+    (roll.effects || []).forEach((effect, index) => {
+      record(effect, 'effect-' + rollIndex + '-' + index);
+      (effect.activationGroups || []).forEach((group, g) => {
+        record(group, 'condition-group-' + rollIndex + '-' + index + '-' + g);
+        (group.conditions || []).forEach((condition, c) =>
+          record(condition, 'condition-' + rollIndex + '-' + index + '-' + g + '-' + c));
+      });
+      (effect.actions || []).forEach((action, a) =>
+        record(action, 'action-' + rollIndex + '-' + index + '-' + a));
+    });
+  });
+  const visit = value => {
+    if (typeof value === 'string') return aliases.get(value) || value;
+    if (Array.isArray(value)) return value.map(visit);
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, visit(entry)]));
+    }
+    return value;
+  };
+  const copy = structuredClone(doc);
+  copy.character.name = '';
+  copy.character.level = 1;
+  return JSON.stringify(visit(copy));
+}
+function isUnmodifiedFighterPreset(doc) {
+  if (!doc?.character?.tag?.startsWith('D&D 5e sample')) return false;
+  try { return canonicalPresetShape(doc) === canonicalPresetShape(instantiateTemplate(0)); }
+  catch { return false; }
+}
 export function shareUrl(doc, base = window.location.href) {
+  validateDocument(doc);
   const url = new URL(base);
   url.hash = 'character=' + encodeToken(doc);
-  if (url.href.length > MAX_LINK_LENGTH) throw new Error('Link too long for a reliable QR code. Export the JSON file instead.');
-  return url.href;
+  if (url.href.length <= MAX_LINK_LENGTH) return url.href;
+  if (isUnmodifiedFighterPreset(doc)) {
+    url.hash = 'template=fighter2014v1&name=' +
+      encodeURIComponent(doc.character.name) + '&level=' + doc.character.level;
+    if (url.href.length <= MAX_LINK_LENGTH) return url.href;
+  }
+  throw new Error('Link too long for a reliable QR code. Export the JSON file instead.');
 }
 export function readShareHash(hash = window.location.hash) {
+  const preset = hash.match(/^#template=fighter2014v1&name=([^&]+)&level=([0-9]+)$/);
+  if (preset) return withImportPreferences(
+    instantiateTemplate(0), decodeURIComponent(preset[1]), Number(preset[2]));
   const match = hash.match(/^#character=(v1\.[A-Za-z0-9_-]+)$/);
-  if (!match) return null;
-  return decodeToken(match[1]);
+  return match ? decodeToken(match[1]) : null;
 }
 export function androidUrl(doc) { return 'dicethrower://import?data=' + encodeURIComponent(encodeToken(doc)); }
 
@@ -281,7 +341,7 @@ export function importAsCopy(document) {
 }
 
 const starterSpecs = [
-  ['D&D 5e · Fighter', 'Aric · Level 1 Fighter',
+  ['D&D 5e (2014) · Fighter', 'Aric · Level 1 Fighter',
     'D&D 5e sample, Strength +3 and proficiency +2', 1,
     [['Strength', 3], ['Dexterity', 1], ['Constitution', 2], ['Proficiency', 2]],
     [
@@ -451,6 +511,77 @@ export function upgradeLegacyStarterWeaponRolls(doc) {
   return validateDocument(upgraded);
 }
 
+/**
+ * Explicit D&D Fifth Edition (2014) class progression only. These class-feature
+ * descriptions are editorial reference data for the website, never dice RNG rules.
+ * Player-selected subclass/ASI and Fighting Style choices are intentionally not
+ * predetermined, since all Fighters need to make those decisions themselves.
+ */
+export const FIGHTER_2014_PROFICIENCY_STEPS = 'levelstep:5:9:13:17';
+export const FIGHTER_2014_LEVELS = [
+  ['Fighting Style, Second Wind'],
+  ['Action Surge (1 use)'],
+  ['Martial Archetype (choose a subclass)'],
+  ['Ability Score Improvement (player chooses)'],
+  ['Extra Attack (2 attacks per Attack action)'],
+  ['Ability Score Improvement (player chooses)'],
+  ['Martial Archetype feature (subclass choice)'],
+  ['Ability Score Improvement (player chooses)'],
+  ['Indomitable (1 use)'],
+  ['Martial Archetype feature (subclass choice)'],
+  ['Extra Attack (3 attacks per Attack action)'],
+  ['Ability Score Improvement (player chooses)'],
+  ['Indomitable (2 uses)'],
+  ['Ability Score Improvement (player chooses)'],
+  ['Martial Archetype feature (subclass choice)'],
+  ['Ability Score Improvement (player chooses)'],
+  ['Action Surge (2 uses), Indomitable (3 uses)'],
+  ['Martial Archetype feature (subclass choice)'],
+  ['Ability Score Improvement (player chooses)'],
+  ['Extra Attack (4 attacks per Attack action)'],
+].map(([features], index) => ({
+  level: index + 1,
+  proficiency: 2 + [5, 9, 13, 17].filter(start => index + 1 >= start).length,
+  features,
+}));
+export function buildFighter2014Progression(doc) {
+  const fighter = structuredClone(doc);
+  const longsword = fighter.rolls.find(r => r.name === 'Longsword');
+  if (!longsword || longsword.subgroups.length !== 2 || !longsword.effects.length)
+    throw new Error('Not a supported level-one Fighter template');
+  const marker = '{' + FIGHTER_2014_PROFICIENCY_STEPS + '}';
+  const enhance = expression => expression.replaceAll('{Proficiency}', '{Proficiency}+' + marker);
+  longsword.subgroups[0].expression = enhance(longsword.subgroups[0].expression);
+  longsword.expression = normalFormula(longsword.subgroups);
+  for (const roll of fighter.rolls.filter(r => ['Athletics','Strength save','Constitution save'].includes(r.name))) {
+    roll.expression = enhance(roll.expression);
+  }
+  // Four attacks at level 20: each attack/damage pair has its own independent
+  // natural-20 effect, so no dice/result is ever multiplied incorrectly.
+  for (const [minimumLevel, count] of [[5, 2], [11, 3], [20, 4]]) {
+    const roll = {
+      ...newRoll(fighter.character.id, longsword.groupId),
+      name: 'Longsword · ' + count + ' attacks',
+      minimumLevel, order: fighter.rolls.length,
+    };
+    for (let index = 1; index <= count; index++) {
+      const attack = { ...newPart(), name: 'Attack ' + index,
+        expression: longsword.subgroups[0].expression };
+      const damage = { ...newPart(), name: 'Damage ' + index,
+        expression: longsword.subgroups[1].expression };
+      roll.subgroups.push(attack, damage);
+      const critical = createDnd5eCriticalEffect(attack.id, damage.id, '1d8');
+      critical.order = index - 1;
+      critical.name = 'Critical hit · Attack ' + index;
+      roll.effects.push(critical);
+    }
+    roll.expression = normalFormula(roll.subgroups);
+    fighter.rolls.push(roll);
+  }
+  return validateDocument(fighter);
+}
+
+/** New templates have all future gated Rolls prepared; existing saves are never rewritten. */
 export const templates = starterSpecs.map(([category, name, description], index) => ({ category, name, description, index }));
 export function instantiateTemplate(index) {
   const spec = starterSpecs[index];
@@ -467,5 +598,5 @@ export function instantiateTemplate(index) {
         formulaOrParts, rule, doc.rolls.length));
     });
   });
-  return validateDocument(doc);
+  return index === 0 ? buildFighter2014Progression(doc) : validateDocument(doc);
 }
