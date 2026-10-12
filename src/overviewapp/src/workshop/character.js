@@ -287,7 +287,7 @@ export function importAsCopy(document) {
 }
 
 const starterSpecs = [
-  ['D&D 5e · Fighter', 'Aric · Level 1 Fighter',
+  ['D&D 5e (2014) · Fighter', 'Aric · Level 1 Fighter',
     'D&D 5e sample, Strength +3 and proficiency +2', 1,
     [['Strength', 3], ['Dexterity', 1], ['Constitution', 2], ['Proficiency', 2]],
     [
@@ -457,6 +457,77 @@ export function upgradeLegacyStarterWeaponRolls(doc) {
   return validateDocument(upgraded);
 }
 
+/**
+ * Explicit D&D Fifth Edition (2014) class progression only. These class-feature
+ * descriptions are editorial reference data for the website, never dice RNG rules.
+ * Player-selected subclass/ASI and Fighting Style choices are intentionally not
+ * predetermined, since all Fighters need to make those decisions themselves.
+ */
+export const FIGHTER_2014_PROFICIENCY_STEPS = 'levelstep:5:9:13:17';
+export const FIGHTER_2014_LEVELS = [
+  ['Fighting Style, Second Wind'],
+  ['Action Surge (1 use)'],
+  ['Martial Archetype (choose a subclass)'],
+  ['Ability Score Improvement (player chooses)'],
+  ['Extra Attack (2 attacks per Attack action)'],
+  ['Ability Score Improvement (player chooses)'],
+  ['Martial Archetype feature (subclass choice)'],
+  ['Ability Score Improvement (player chooses)'],
+  ['Indomitable (1 use)'],
+  ['Martial Archetype feature (subclass choice)'],
+  ['Extra Attack (3 attacks per Attack action)'],
+  ['Ability Score Improvement (player chooses)'],
+  ['Indomitable (2 uses)'],
+  ['Ability Score Improvement (player chooses)'],
+  ['Martial Archetype feature (subclass choice)'],
+  ['Ability Score Improvement (player chooses)'],
+  ['Action Surge (2 uses), Indomitable (3 uses)'],
+  ['Martial Archetype feature (subclass choice)'],
+  ['Ability Score Improvement (player chooses)'],
+  ['Extra Attack (4 attacks per Attack action)'],
+].map(([features], index) => ({
+  level: index + 1,
+  proficiency: 2 + [5, 9, 13, 17].filter(start => index + 1 >= start).length,
+  features,
+}));
+export function buildFighter2014Progression(doc) {
+  const fighter = structuredClone(doc);
+  const longsword = fighter.rolls.find(r => r.name === 'Longsword');
+  if (!longsword || longsword.subgroups.length !== 2 || !longsword.effects.length)
+    throw new Error('Not a supported level-one Fighter template');
+  const marker = '{' + FIGHTER_2014_PROFICIENCY_STEPS + '}';
+  const enhance = expression => expression.replaceAll('{Proficiency}', '{Proficiency}+' + marker);
+  longsword.subgroups[0].expression = enhance(longsword.subgroups[0].expression);
+  longsword.expression = normalFormula(longsword.subgroups);
+  for (const roll of fighter.rolls.filter(r => ['Athletics','Strength save','Constitution save'].includes(r.name))) {
+    roll.expression = enhance(roll.expression);
+  }
+  // Four attacks at level 20: each attack/damage pair has its own independent
+  // natural-20 effect, so no dice/result is ever multiplied incorrectly.
+  for (const [minimumLevel, count] of [[5, 2], [11, 3], [20, 4]]) {
+    const roll = {
+      ...newRoll(fighter.character.id, longsword.groupId),
+      name: 'Longsword · ' + count + ' attacks',
+      minimumLevel, order: fighter.rolls.length,
+    };
+    for (let index = 1; index <= count; index++) {
+      const attack = { ...newPart(), name: 'Attack ' + index,
+        expression: longsword.subgroups[0].expression };
+      const damage = { ...newPart(), name: 'Damage ' + index,
+        expression: longsword.subgroups[1].expression };
+      roll.subgroups.push(attack, damage);
+      const critical = createDnd5eCriticalEffect(attack.id, damage.id, '1d8');
+      critical.order = index - 1;
+      critical.name = 'Critical hit · Attack ' + index;
+      roll.effects.push(critical);
+    }
+    roll.expression = normalFormula(roll.subgroups);
+    fighter.rolls.push(roll);
+  }
+  return validateDocument(fighter);
+}
+
+/** New templates have all future gated Rolls prepared; existing saves are never rewritten. */
 export const templates = starterSpecs.map(([category, name, description], index) => ({ category, name, description, index }));
 export function instantiateTemplate(index) {
   const spec = starterSpecs[index];
@@ -473,5 +544,5 @@ export function instantiateTemplate(index) {
         formulaOrParts, rule, doc.rolls.length));
     });
   });
-  return validateDocument(doc);
+  return index === 0 ? buildFighter2014Progression(doc) : validateDocument(doc);
 }
