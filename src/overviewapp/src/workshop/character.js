@@ -96,7 +96,13 @@ export function validateDocument(doc) {
   const formula = text => {
     assert(typeof text === 'string' && text.length > 0 && text.length <= 1500 && exprPattern.test(text), 'Invalid dice expression');
     for (const match of text.matchAll(/\{([^{}]+)\}/g)) {
-      assert(names.has(match[1].trim().toLowerCase()) || match[1].startsWith('partId:'), 'Missing variable: ' + match[1]);
+      const token = match[1].trim().toLowerCase();
+      const segments = token.startsWith('levelstep:') ? token.slice('levelstep:'.length).split(':') : null;
+      const milestoneValid = segments && segments.length >= 1 && segments.length <= 20 &&
+        segments.every((value, i) => /^([2-9]|[1-9][0-9]{1,3})$/.test(value) &&
+          Number(value) <= 9999 && (i === 0 || Number(value) > Number(segments[i-1])));
+      assert(names.has(token) || token.startsWith('partId:') || milestoneValid,
+        'Missing variable or invalid level milestone: ' + match[1]);
     }
   };
   const nestedIds = new Set();
