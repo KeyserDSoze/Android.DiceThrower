@@ -148,6 +148,27 @@ object CharacterTransferCodec {
         return data
     }
 
+    /**
+     * Apply explicit recipient preferences before import. The source document remains
+     * untouched; its roll templates and future level gates are never discarded.
+     */
+    fun withRecipientPreferences(incoming: AppData, name: String, level: Int): AppData {
+        val normalizedName = name.trim()
+        require(normalizedName.isNotEmpty() && normalizedName.length <= 160) {
+            "Character name must be 1..160 characters"
+        }
+        require(level in 1..9999) { "Invalid character level" }
+        require(incoming.characters.size == 1) { "Expected exactly one character" }
+        val changed = incoming.copy(
+            characters = listOf(incoming.characters.single().copy(
+                name = normalizedName,
+                level = level,
+            )),
+        )
+        AppDataValidator.requireValid(changed)
+        return changed
+    }
+
     /** Append a completely independent character, preserving existing data and sync metadata. */
     fun importCopy(existing: AppData, incoming: AppData): AppData {
         AppDataValidator.requireValid(incoming)
