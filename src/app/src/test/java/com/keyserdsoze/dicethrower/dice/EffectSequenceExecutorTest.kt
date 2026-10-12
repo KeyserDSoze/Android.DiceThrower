@@ -4,6 +4,7 @@ import com.keyserdsoze.dicethrower.model.EffectAction
 import com.keyserdsoze.dicethrower.model.EffectActionType
 import com.keyserdsoze.dicethrower.model.EffectActivationGroup
 import com.keyserdsoze.dicethrower.model.EffectCondition
+import com.keyserdsoze.dicethrower.model.EffectComparison
 import com.keyserdsoze.dicethrower.model.EffectType
 import com.keyserdsoze.dicethrower.model.EffectValueScope
 import com.keyserdsoze.dicethrower.model.RollEffect
@@ -48,6 +49,68 @@ class EffectSequenceExecutorTest {
         ))),
         actions = listOf(action),
     )
+
+    @Test
+    fun naturalTwentyCriticalRollsAdditionalDamageDieNotStrength() {
+        // Mirrors the v1 Fighter starter's serialized condition/action from
+        // the web workshop: Attack / d20 == 20 -> Damage ROLL_AFTER 1d8, DICE_ONLY.
+        val critical = RollEffect(
+            id = "fighter-critical",
+            name = "Critical hit (natural 20)",
+            type = EffectType.BONUS,
+            activationGroups = listOf(EffectActivationGroup(
+                "crit-activation",
+                listOf(EffectCondition(
+                    id = "natural-20",
+                    partId = "attack",
+                    scope = EffectValueScope.DICE_ONLY,
+                    comparison = EffectComparison.EQUAL,
+                    threshold = "20",
+                )),
+            )),
+            actions = listOf(EffectAction(
+                id = "second-d8",
+                kind = EffectActionType.ROLL_AFTER,
+                targetPartId = "damage",
+                scope = EffectValueScope.DICE_ONLY,
+                expression = "1d8",
+            )),
+        )
+        fun snapshot(natural: Int) = EffectRollSnapshot(
+            roll = null,
+            partsById = mapOf(
+                "attack" to result(natural, modifier = 5, sides = 20),
+                "damage" to result(4, modifier = 3, sides = 8),
+            ),
+            variables = mapOf("Strength" to 3, "Proficiency" to 2),
+        )
+        val resolved = mapOf(
+            "attack" to "1d20+5",
+            "damage" to "1d8+3",
+        )
+
+        val normal = EffectSequenceExecutor.execute(snapshot(15), listOf(critical),
+            resolved, Random(7))
+        assertEquals(20, normal.original.partsById.getValue("attack").total)
+        assertEquals(7, normal.finalSnapshot.parts.getValue("damage").total)
+        assertTrue(normal.generatedDice.isEmpty())
+        assertFalse(normal.steps.single().activation.activated)
+
+        val hit = EffectSequenceExecutor.execute(snapshot(20), listOf(critical),
+            resolved, Random(7))
+        assertTrue(hit.steps.single().activation.activated)
+        assertTrue(hit.steps.single().actions.single().applied)
+        assertEquals(1, hit.generatedDice.size)
+        val extra = hit.generatedDice.single().result
+        assertEquals(listOf(8), extra.components.map { it.sides })
+        val extraDieValue = extra.components.single().rolls.single()
+        assertTrue(extraDieValue in 1..8)
+        val damage = hit.finalSnapshot.parts.getValue("damage")
+        assertEquals(4 + extraDieValue, damage.dice)
+        assertEquals(3, damage.modifiers) // Strength is added exactly once
+        assertEquals(4 + extraDieValue + 3, damage.total)
+        assertEquals(7, hit.original.partsById.getValue("damage").total)
+    }
 
     @Test
     fun priorityAndStopFollowingPreventLowerPriorityEffect() {
