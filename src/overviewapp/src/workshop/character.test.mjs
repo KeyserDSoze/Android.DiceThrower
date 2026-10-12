@@ -40,12 +40,19 @@ test('importing twice makes independent copies with fresh local IDs', () => {
 test('subgroup formula and style IDs are remapped during browser import', () => {
   const x = instantiateTemplate(0);
   const part = newPart();
-  x.rolls[0].subgroups = [part];
-  x.rolls[0].expression = normalFormula([part]);
+  // Use a simple starter Roll, not Longsword: its critical effect refers
+  // to the original Attack and Damage Part IDs and must stay intact.
+  const roll = x.rolls.find(r => r.name === 'Initiative');
+  roll.subgroups = [part];
+  roll.expression = normalFormula([part]);
   const decoded = documentFromEnvelope(envelope(x));
   const copy = importAsCopy(decoded);
-  assert.notEqual(copy.rolls[0].subgroups[0].id, part.id);
-  assert.equal(copy.rolls[0].expression, x.rolls[0].expression);
+  const imported = copy.rolls.find(r => r.name === 'Initiative');
+  assert.notEqual(imported.subgroups[0].id, part.id);
+  assert.equal(imported.expression, roll.expression);
+  // Longsword's native D&D 5e rule still points to its remapped Parts.
+  const longsword = copy.rolls.find(r => r.name === 'Longsword');
+  assert.equal(longsword.effects[0].actions[0].targetPartId, longsword.subgroups[1].id);
 });
 
 test('invalid links, format versions and private history are rejected', () => {
