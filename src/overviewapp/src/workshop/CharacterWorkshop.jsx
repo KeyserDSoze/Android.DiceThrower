@@ -175,7 +175,7 @@ export default function CharacterWorkshop({ locale = 'en' }) {
   }
   useEffect(() => {
     refresh();
-    if (window.location.hash.startsWith('#character=')) {
+    if (window.location.hash.startsWith('#character=') || window.location.hash.startsWith('#template=')) {
       try { setPreview(readShareHash()); } catch (e) { setError(e.message); }
     }
   }, []);
