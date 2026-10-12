@@ -191,9 +191,9 @@ export default function GuidedRollEditor({ roll, doc, t, onEdit }) {
     <div className="workshop-guided-section">
       <div className="workshop-row-head"><h3>{t.effects}</h3>
         <div className="workshop-inline">
-          <button type="button" onClick={() => onEdit(r => { const e = newEffect('BONUS', r.subgroups || [], r.effects.length); e.name = t.bonus; r.effects.push(e); })}>
+          <button type="button" disabled={!roll.subgroups?.length} title={!roll.subgroups?.length ? t.createPartFirst : undefined} onClick={() => onEdit(r => { const e = newEffect('BONUS', r.subgroups || [], r.effects.length); e.name = t.bonus; r.effects.push(e); })}>
             + {t.bonus}</button>
-          <button type="button" onClick={() => onEdit(r => { const e = newEffect('MALUS', r.subgroups || [], r.effects.length); e.name = t.malus; r.effects.push(e); })}>
+          <button type="button" disabled={!roll.subgroups?.length} title={!roll.subgroups?.length ? t.createPartFirst : undefined} onClick={() => onEdit(r => { const e = newEffect('MALUS', r.subgroups || [], r.effects.length); e.name = t.malus; r.effects.push(e); })}>
             + {t.malus}</button>
         </div>
       </div>
