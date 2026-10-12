@@ -4,6 +4,7 @@ import {
   androidUrl, decodeToken, documentFromEnvelope, envelope, importAsCopy, instantiateTemplate,
   listSaved, newCharacter, newGroup, newLevelRule, newModifier, newPart, newRoll, newStyle,
   normalFormula, readShareHash, removeDocument, saveDocument, shareUrl, templates, validateDocument,
+  canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls,
 } from './character.js';
 import GuidedRollEditor from './GuidedRollEditor.jsx';
 import { isPartUsed, removePartSafely, SYSTEM_STYLES } from './guided.js';
@@ -47,6 +48,7 @@ const dictionary = {
     partUsed: 'This Part is referenced by an effect. Remove or edit its effect first.',
     createPartFirst: 'Create at least one Roll Part before adding effects.', defaultStyle: 'Default dice style',
     expertJson: 'Advanced native JSON (optional)', expertHelp: 'Only edit this if you know the Android schema. Guided controls preserve existing fields.',
+    upgradeLegacy: 'Update old starter weapon rolls', upgradeConfirm: 'Replace the two original weapon Rolls with Attack and Damage Parts? Your other character data will be preserved and the result saved locally.', upgradeComplete: 'Starter weapon rolls updated and saved.',
     download: 'Download / keep backup', select: 'Open a character or create one.', saved: 'Saved locally.', ready: 'Link ready.',
   },
   it: {
@@ -88,6 +90,7 @@ const dictionary = {
     partUsed: 'Questa parte è usata da un effetto: modifica o rimuovi prima l’effetto.',
     createPartFirst: 'Crea almeno una parte del tiro prima di aggiungere effetti.', defaultStyle: 'Stile dado predefinito',
     expertJson: 'JSON nativo avanzato (facoltativo)', expertHelp: 'Modificalo solo se conosci il formato Android. I controlli guidati preservano i campi esistenti.',
+    upgradeLegacy: 'Aggiorna i vecchi tiri del modello', upgradeConfirm: 'Sostituire i due vecchi tiri dell’arma con le parti Attacco e Danno? Gli altri dati del personaggio saranno conservati e il risultato salvato in locale.', upgradeComplete: 'Tiri del modello aggiornati e salvati.',
     download: 'Scarica un backup', select: 'Apri un personaggio o creane uno.', saved: 'Salvato nel browser.', ready: 'Link pronto.',
   },
 };
@@ -152,6 +155,17 @@ export default function CharacterWorkshop({ locale = 'en' }) {
   async function save() {
     try { validateDocument(doc); await saveDocument(doc); await refresh(); setMessage(t.saved); setError(''); }
     catch (e) { setError(e.message); }
+  }
+  async function upgradeStarter() {
+    if (!doc || !canUpgradeLegacyStarterWeaponRolls(doc) || !window.confirm(t.upgradeConfirm)) return;
+    try {
+      const upgraded = upgradeLegacyStarterWeaponRolls(doc);
+      if (!upgraded) return;
+      await saveDocument(upgraded);
+      setDoc(upgraded); setUrl(''); setQr(''); setError('');
+      await refresh();
+      setMessage(t.upgradeComplete);
+    } catch (e) { setError(e.message); }
   }
   async function deleteSaved(id) {
     if (!window.confirm(t.delete + '?')) return;
@@ -239,6 +253,8 @@ export default function CharacterWorkshop({ locale = 'en' }) {
             </div>
             <div className="workshop-actions">
               <button className="primary" onClick={save}>{t.save}</button>
+              {canUpgradeLegacyStarterWeaponRolls(doc) && <button type="button"
+                onClick={upgradeStarter}>{t.upgradeLegacy}</button>}
               <button onClick={createShare}>{t.share}</button>
               <button onClick={() => downloadDocument(doc)}>{t.export}</button>
             </div>

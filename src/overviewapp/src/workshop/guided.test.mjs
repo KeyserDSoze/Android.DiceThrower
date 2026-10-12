@@ -10,6 +10,9 @@ import {
 function configuredCharacter() {
   const doc = instantiateTemplate(0);
   const attack = doc.rolls[0];
+  // Generic rule tests replace Longsword's Parts deliberately; first remove
+  // the starter-specific critical rule that refers to the original Parts.
+  attack.effects = [];
   const a = newPart(); a.name = 'Attack'; a.expression = '1d20+{Strength}';
   const b = newPart(); b.name = 'Damage'; b.expression = '1d8+{Strength}'; b.includeInDoubleRoll = true;
   attack.subgroups = [a, b]; attack.expression = normalFormula(attack.subgroups);
