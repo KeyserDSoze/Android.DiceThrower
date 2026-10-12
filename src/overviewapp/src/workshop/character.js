@@ -271,16 +271,52 @@ export function importAsCopy(document) {
 }
 
 const starterSpecs = [
-  ['D&D 5e · Fighter', 'Aric · Level 1 Fighter', 'D&D 5e sample, Strength +3 and proficiency +2', 1,
+  ['D&D 5e · Fighter', 'Aric · Level 1 Fighter',
+    'D&D 5e sample, Strength +3 and proficiency +2', 1,
     [['Strength', 3], ['Dexterity', 1], ['Constitution', 2], ['Proficiency', 2]],
-    [['Combat', [['Longsword', [['Attack', '1d20+{Strength}+{Proficiency}'], ['Damage', '1d8+{Strength}']], 'DND5E_CRITICAL'], ['Initiative', '1d20+{Dexterity}']]],
-     ['Skills & saves', [['Athletics', '1d20+{Strength}+{Proficiency}'], ['Strength save', '1d20+{Strength}+{Proficiency}'], ['Constitution save', '1d20+{Constitution}+{Proficiency}']]],
-     ['Recovery', [['Second Wind · heal', '1d10+{level}']]]]],
+    [
+      ['Combat', [
+        ['Longsword', [
+          ['Attack', '1d20+{Strength}+{Proficiency}'],
+          ['Damage', '1d8+{Strength}'],
+        ], 'DND5E_CRITICAL'],
+        ['Initiative', '1d20+{Dexterity}'],
+      ]],
+      ['Skills & saves', [
+        ['Athletics', '1d20+{Strength}+{Proficiency}'],
+        ['Strength save', '1d20+{Strength}+{Proficiency}'],
+        ['Constitution save', '1d20+{Constitution}+{Proficiency}'],
+      ]],
+      ['Recovery', [['Second Wind · heal', '1d10+{level}']]],
+    ],
+  ],
   ['Fantasy · Rogue', 'Nim · Shadow Rogue', 'A nimble adventurer', 1, [['Agility', 3], ['Skill', 2]], [['Combat', [['Quick strike', '1d20+{Agility}+{Skill}'], ['Sneak damage', '1d6+{Agility}']]], ['Skills', [['Stealth', '1d20+{Agility}+{Skill}']]]]],
   ['Fantasy · Mage', 'Lyra · Spellcaster', 'An elemental mage', 1, [['Magic', 3]], [['Spells', [['Arcane bolt', '1d20+{Magic}'], ['Fire spark', '2d6+{Magic}']]], ['Checks', [['Arcana', '1d20+{Magic}']]]]],
-  ['Fantasy · Ranger', 'Bryn · Ranger', 'A woodland explorer', 1, [['Agility', 2], ['Tracking', 3]], [['Combat', [['Bow', [['Attack', '1d20+{Agility}'], ['Damage', '1d8+{Agility}']]]], ['Exploration', [['Track', '1d20+{Tracking}']]]]],
+  ['Fantasy · Ranger', 'Bryn · Ranger', 'A woodland explorer', 1,
+    [['Agility', 2], ['Tracking', 3]],
+    [
+      ['Combat', [
+        ['Bow', [
+          ['Attack', '1d20+{Agility}'],
+          ['Damage', '1d8+{Agility}'],
+        ]],
+      ]],
+      ['Exploration', [['Track', '1d20+{Tracking}']]],
+    ],
+  ],
   ['Fantasy · Cleric', 'Sol · Healer', 'A protective spellcaster', 1, [['Faith', 3]], [['Magic', [['Healing word', '1d4+{Faith}'], ['Radiant strike', '1d8+{Faith}']]], ['Checks', [['Insight', '1d20+{Faith}']]]]],
-  ['Fantasy · Paladin', 'Thane · Guardian', 'A steadfast champion', 1, [['Might', 3]], [['Combat', [['Sword', [['Attack', '1d20+{Might}'], ['Damage', '1d8+{Might}']]]], ['Defense', [['Resolve', '1d20+{Might}']]]]],
+  ['Fantasy · Paladin', 'Thane · Guardian', 'A steadfast champion', 1,
+    [['Might', 3]],
+    [
+      ['Combat', [
+        ['Sword', [
+          ['Attack', '1d20+{Might}'],
+          ['Damage', '1d8+{Might}'],
+        ]],
+      ]],
+      ['Defense', [['Resolve', '1d20+{Might}']]],
+    ],
+  ],
   ['Sci-fi · Pilot', 'Nova · Pilot', 'Spacefaring character template', 1, [['Piloting', 4], ['Tech', 2]], [['Flight', [['Hard maneuver', '1d20+{Piloting}'], ['Evasive action', '2d6+{Piloting}']]], ['Systems', [['Repair', '1d20+{Tech}']]]]],
   ['Sci-fi · Engineer', 'Echo · Engineer', 'Systems specialist', 1, [['Tech', 4]], [['Engineering', [['Diagnose', '1d20+{Tech}'], ['Field repair', '2d6+{Tech}']]]]],
   ['Adventure · Explorer', 'Iris · Explorer', 'General purpose exploration', 1, [['Perception', 3], ['Agility', 2]], [['Exploration', [['Notice', '1d20+{Perception}'], ['Climb', '1d20+{Agility}']]]]],
