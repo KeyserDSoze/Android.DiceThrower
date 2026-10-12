@@ -4,7 +4,7 @@ import {
   androidUrl, decodeToken, documentFromEnvelope, envelope, importAsCopy, instantiateTemplate,
   listSaved, newCharacter, newGroup, newLevelRule, newModifier, newPart, newRoll, newStyle,
   normalFormula, readShareHash, removeDocument, saveDocument, shareUrl, templates, validateDocument,
-  canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls,
+  canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences,
 } from './character.js';
 import GuidedRollEditor from './GuidedRollEditor.jsx';
 import { isPartUsed, removePartSafely, SYSTEM_STYLES } from './guided.js';
@@ -16,6 +16,11 @@ const dictionary = {
     library: 'Your characters', starter: 'Starter characters', create: 'New character', load: 'Edit', delete: 'Delete', use: 'Use template',
     save: 'Save in browser', share: 'Share link & QR', export: 'Export JSON', import: 'Import JSON', copy: 'Copy link',
     openApp: 'Open in Android app', preview: 'Character shared with you', add: 'Add to my browser', discard: 'Dismiss',
+    importCheck: 'Review before adding', importSource: 'Shared character', importSettings: 'Choose name and level before importing',
+    importExisting: 'Import a new independent copy. Your existing characters remain untouched.',
+    appDirect: 'Send this character to the Android app', appDirectHint: 'Opens Dice Thrower if it is installed and supports character import.',
+    appLarge: 'Character too large for reliable app handoff. Export the JSON file and import it inside Dice Thrower instead.',
+    unlockedAt: 'Unlocked at level',
     details: 'Character details', characterName: 'Character name', level: 'Level', tag: 'Description', modifiers: 'Variables & modifiers',
     groups: 'Roll groups', rolls: 'Rolls', styles: 'Custom dice styles', group: 'Group', formula: 'Formula',
     parts: 'Roll Parts', rules: 'Level rules', effects: 'Bonus & malus effects', appearance: 'Dice appearance',
@@ -57,6 +62,11 @@ const dictionary = {
     library: 'I tuoi personaggi', starter: 'Personaggi preimpostati', create: 'Nuovo personaggio', load: 'Modifica', delete: 'Elimina', use: 'Usa modello',
     save: 'Salva nel browser', share: 'Condividi link e QR', export: 'Esporta JSON', import: 'Importa JSON', copy: 'Copia link',
     openApp: "Apri nell'app Android", preview: 'Personaggio ricevuto', add: 'Aggiungi al browser', discard: 'Chiudi',
+    importCheck: 'Controlla prima di aggiungere', importSource: 'Personaggio condiviso', importSettings: 'Scegli nome e livello prima dell’importazione',
+    importExisting: 'Importa una nuova copia indipendente. I personaggi esistenti non cambieranno.',
+    appDirect: 'Invia questo personaggio all’app Android', appDirectHint: 'Apre Dice Thrower se è installata e supporta l’importazione dei personaggi.',
+    appLarge: 'Personaggio troppo grande per il passaggio diretto all’app. Esporta il JSON e importalo da Dice Thrower.',
+    unlockedAt: 'Disponibile dal livello',
     details: 'Dettagli personaggio', characterName: 'Nome personaggio', level: 'Livello', tag: 'Descrizione', modifiers: 'Variabili e modificatori',
     groups: 'Gruppi di tiri', rolls: 'Tiri', styles: 'Stili dadi personalizzati', group: 'Gruppo', formula: 'Formula',
     parts: 'Parti del tiro', rules: 'Regole di livello', effects: 'Effetti bonus e malus', appearance: 'Aspetto dei dadi',
@@ -127,6 +137,8 @@ export default function CharacterWorkshop({ locale = 'en' }) {
   const [items, setItems] = useState([]);
   const [doc, setDoc] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [previewName, setPreviewName] = useState('');
+  const [previewLevel, setPreviewLevel] = useState(1);
   const [url, setUrl] = useState('');
   const [qr, setQr] = useState('');
   const [message, setMessage] = useState('');
@@ -142,6 +154,33 @@ export default function CharacterWorkshop({ locale = 'en' }) {
       try { setPreview(readShareHash()); } catch (e) { setError(e.message); }
     }
   }, []);
+  useEffect(() => {
+    if (preview) {
+      setPreviewName(preview.character.name);
+      setPreviewLevel(preview.character.level);
+    }
+  }, [preview]);
+
+  const importCandidate = useMemo(() => {
+    if (!preview) return null;
+    try { return withImportPreferences(preview, previewName, previewLevel); }
+    catch { return null; }
+  }, [preview, previewName, previewLevel]);
+  const importAppLink = useMemo(() => {
+    if (!importCandidate) return null;
+    try {
+      const link = androidUrl(importCandidate);
+      return link.length <= 8000 ? link : null;
+    } catch { return null; }
+  }, [importCandidate]);
+  const editorAppLink = useMemo(() => {
+    if (!doc) return null;
+    try {
+      const link = androidUrl(doc);
+      return link.length <= 8000 ? link : null;
+    } catch { return null; }
+  }, [doc]);
+
 
   function edit(mutator) {
     setDoc(previous => {
@@ -181,7 +220,8 @@ export default function CharacterWorkshop({ locale = 'en' }) {
   }
   async function addShared() {
     try {
-      const copy = importAsCopy(preview);
+      if (!importCandidate) throw new Error(t.invalid);
+      const copy = importAsCopy(importCandidate);
       await saveDocument(copy); await refresh(); setPreview(null); setDoc(copy);
       history.replaceState(null, '', location.pathname); setMessage(t.saved); setError('');
     } catch (e) { setError(e.message); }
@@ -192,8 +232,11 @@ export default function CharacterWorkshop({ locale = 'en' }) {
     try {
       if (file.size > 128 * 1024) throw new Error('File too large');
       const packet = JSON.parse(await file.text());
-      const copy = importAsCopy(documentFromEnvelope(packet));
-      await saveDocument(copy); setDoc(copy); await refresh(); setError(''); setMessage(t.saved);
+      const imported = documentFromEnvelope(packet);
+      setPreview(imported);
+      setError(''); setMessage('');
+      // The same explicit preview and confirmation now handles QR, link and file.
+
     } catch (e) { setError(e.message); }
     event.target.value = '';
   }
@@ -206,16 +249,40 @@ export default function CharacterWorkshop({ locale = 'en' }) {
     </div>
     {error && <p className="workshop-error" role="alert">{error}</p>}
     {message && <p className="workshop-success" role="status">{message}</p>}
-    {preview && <section className="premium-panel workshop-preview">
-      <h2>{t.preview}</h2><h3>{preview.character.name} · Lv {preview.character.level}</h3>
-      <p>{preview.character.tag}</p>
-      <p>{preview.modifiers.length} modifiers · {preview.groups.length} groups · {preview.rolls.length} rolls</p>
-      <p className="workshop-hint">{t.warning}</p>
+    {preview && <section className="premium-panel workshop-preview" aria-label={t.preview}>
+      <div className="workshop-row-head"><h2>{t.importCheck}</h2><span className="eyebrow">{t.importSource}</span></div>
+      <div className="workshop-character-card">
+        <div className="workshop-character-top">
+          <div className="workshop-character-avatar" aria-hidden="true">{preview.character.name.slice(0,1).toUpperCase()}</div>
+          <div><h3>{preview.character.name}</h3><p>{t.level} {preview.character.level} · {preview.character.tag}</p></div>
+        </div>
+        <div className="workshop-preview-stats">
+          <span>{preview.modifiers.length} {t.modifiers}</span>
+          <span>{preview.groups.length} {t.groups}</span>
+          <span>{preview.rolls.length} {t.rolls}</span>
+        </div>
+        <details className="workshop-preview-rolls"><summary>{t.rolls}</summary>
+          <div className="workshop-preview-list">
+            {preview.rolls.map(roll => <div key={roll.id} className="workshop-preview-roll">
+              <strong>{roll.name}</strong>
+              {roll.minimumLevel > 1 && <small>{t.unlockedAt} {roll.minimumLevel}</small>}
+              {!!roll.subgroups?.length && <small>{roll.subgroups.map(part => part.name).join(' · ')}</small>}
+            </div>)}
+          </div>
+        </details>
+      </div>
+      <p className="workshop-hint">{t.importSettings}</p>
+      <div className="workshop-fields">
+        <Field label={t.characterName} value={previewName} onChange={setPreviewName} />
+        <Field label={t.level} type="number" min={1} max={9999} value={previewLevel} onChange={setPreviewLevel} />
+      </div>
+      <p className="workshop-hint">{t.importExisting} {t.warning}</p>
       <div className="workshop-actions">
-        <button className="primary" onClick={addShared}>{t.add}</button>
-        <a className="secondary" href={androidUrl(preview)}>{t.openApp}</a>
+        <button className="primary" disabled={!importCandidate} onClick={addShared}>{t.add}</button>
+        {importAppLink && <a className="secondary" href={importAppLink}>{t.openApp}</a>}
         <button onClick={() => { setPreview(null); history.replaceState(null, '', location.pathname); }}>{t.discard}</button>
       </div>
+      <p className="workshop-hint">{importAppLink ? t.appDirectHint : t.appLarge}</p>
     </section>}
     <div className="workshop-layout">
       <aside className="workshop-sidebar">
@@ -256,8 +323,10 @@ export default function CharacterWorkshop({ locale = 'en' }) {
               {canUpgradeLegacyStarterWeaponRolls(doc) && <button type="button"
                 onClick={upgradeStarter}>{t.upgradeLegacy}</button>}
               <button onClick={createShare}>{t.share}</button>
+              {editorAppLink && <a className="secondary" href={editorAppLink}>{t.openApp}</a>}
               <button onClick={() => downloadDocument(doc)}>{t.export}</button>
             </div>
+            <p className="workshop-hint">{editorAppLink ? t.appDirectHint : t.appLarge}</p>
             {url && <div className="workshop-share">
               <p className="workshop-hint">{t.warning}</p>
               <img src={qr} alt="QR code: character share URL" width="260" height="260"/>

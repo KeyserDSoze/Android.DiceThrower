@@ -401,3 +401,35 @@ footer {
   .workshop-guided-clause { padding:9px; }
   .workshop-style-pool { grid-template-columns:1fr; }
 }
+
+/* Import review: legible premium profile from QR/deep-link/JSON (no remote artwork). */
+.workshop-character-card {
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:clamp(15px,2.2vw,24px);
+  margin:12px 0 18px;
+  background:linear-gradient(145deg,color-mix(in srgb,var(--accent) 13%,var(--surface)),
+    color-mix(in srgb,var(--surface2) 90%,transparent));
+  color:var(--text);
+}
+.workshop-character-top {display:flex;align-items:center;gap:18px;min-width:0;}
+.workshop-character-top h3 {margin:0 0 6px;overflow-wrap:anywhere;}
+.workshop-character-top p {margin:0;color:var(--muted);overflow-wrap:anywhere;}
+.workshop-character-avatar {
+  display:grid;place-items:center;flex:none;width:68px;height:68px;
+  border:1px solid var(--line);border-radius:20px;
+  background:color-mix(in srgb,var(--accent) 30%,var(--surface2));
+  color:var(--text);font-size:2rem;font-weight:800;box-shadow:inset 0 0 18px color-mix(in srgb,var(--accent) 20%,transparent);
+}
+.workshop-preview-stats {display:flex;flex-wrap:wrap;gap:8px;margin:16px 0;}
+.workshop-preview-stats span {padding:6px 10px;border:1px solid var(--line);border-radius:30px;background:var(--surface);color:var(--text);font-size:.8rem;}
+.workshop-preview-rolls {padding:12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);}
+.workshop-preview-rolls summary {cursor:pointer;font-weight:700;color:var(--text);}
+.workshop-preview-list {margin-top:12px;display:grid;gap:7px;max-height:300px;overflow-y:auto;}
+.workshop-preview-roll {display:grid;gap:3px;padding:10px;border:1px solid var(--line);border-radius:10px;color:var(--text);}
+.workshop-preview-roll small {color:var(--muted);}
+.workshop-preview-rolls summary:focus-visible {outline:2px solid var(--accent);outline-offset:4px;}
+@media(max-width:450px) {
+  .workshop-character-avatar {width:52px;height:52px;font-size:1.5rem;}
+  .workshop-character-top {gap:10px;}
+}
