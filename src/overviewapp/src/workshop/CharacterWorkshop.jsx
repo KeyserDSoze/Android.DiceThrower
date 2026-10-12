@@ -5,6 +5,7 @@ import {
   listSaved, newCharacter, newGroup, newLevelRule, newModifier, newPart, newRoll, newStyle,
   normalFormula, readShareHash, removeDocument, saveDocument, shareUrl, templates, validateDocument,
   canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences,
+  FIGHTER_2014_LEVELS,
 } from './character.js';
 import GuidedRollEditor from './GuidedRollEditor.jsx';
 import { isPartUsed, removePartSafely, SYSTEM_STYLES } from './guided.js';
@@ -21,6 +22,18 @@ const dictionary = {
     appDirect: 'Send this character to the Android app', appDirectHint: 'Opens Dice Thrower if it is installed and supports character import.',
     appLarge: 'Character too large for reliable app handoff. Export the JSON file and import it inside Dice Thrower instead.',
     unlockedAt: 'Unlocked at level',
+    fighterProgression: 'Fighter 2014 · levels 1–20', fighterProficiency: 'Proficiency',
+    fighterChoiceNote: 'Ability Score Improvements, feats, Fighting Style and Martial Archetype are player choices. Edit the relevant modifiers and rolls after choosing. Resource uses are not tracked by the dice engine.',
+    fighterEvents: [
+      'Fighting Style, Second Wind', 'Action Surge (1 use)', 'Choose Martial Archetype',
+      'Ability Score Improvement (choice)', 'Extra Attack: 2 attacks',
+      'Ability Score Improvement (choice)', 'Martial Archetype feature', 'Ability Score Improvement (choice)',
+      'Indomitable (1 use)', 'Martial Archetype feature', 'Extra Attack: 3 attacks',
+      'Ability Score Improvement (choice)', 'Indomitable (2 uses)', 'Ability Score Improvement (choice)',
+      'Martial Archetype feature', 'Ability Score Improvement (choice)',
+      'Action Surge (2 uses), Indomitable (3 uses)', 'Martial Archetype feature',
+      'Ability Score Improvement (choice)', 'Extra Attack: 4 attacks',
+    ],
     details: 'Character details', characterName: 'Character name', level: 'Level', tag: 'Description', modifiers: 'Variables & modifiers',
     groups: 'Roll groups', rolls: 'Rolls', styles: 'Custom dice styles', group: 'Group', formula: 'Formula',
     parts: 'Roll Parts', rules: 'Level rules', effects: 'Bonus & malus effects', appearance: 'Dice appearance',
@@ -67,6 +80,18 @@ const dictionary = {
     appDirect: 'Invia questo personaggio all’app Android', appDirectHint: 'Apre Dice Thrower se è installata e supporta l’importazione dei personaggi.',
     appLarge: 'Personaggio troppo grande per il passaggio diretto all’app. Esporta il JSON e importalo da Dice Thrower.',
     unlockedAt: 'Disponibile dal livello',
+    fighterProgression: 'Guerriero 2014 · livelli 1–20', fighterProficiency: 'Competenza',
+    fighterChoiceNote: 'Aumenti di caratteristica, talenti, Stile di Combattimento e Archetipo Marziale sono scelte del giocatore. Modifica i relativi valori e tiri dopo aver scelto. L’uso delle risorse non è tracciato dal motore dei dadi.',
+    fighterEvents: [
+      'Stile di Combattimento, Recuperare Energie', 'Azione Impetuosa (1 uso)', 'Scegli Archetipo Marziale',
+      'Aumento delle caratteristiche (scelta)', 'Attacco Extra: 2 attacchi',
+      'Aumento delle caratteristiche (scelta)', 'Privilegio di Archetipo', 'Aumento delle caratteristiche (scelta)',
+      'Indomito (1 uso)', 'Privilegio di Archetipo', 'Attacco Extra: 3 attacchi',
+      'Aumento delle caratteristiche (scelta)', 'Indomito (2 usi)', 'Aumento delle caratteristiche (scelta)',
+      'Privilegio di Archetipo', 'Aumento delle caratteristiche (scelta)',
+      'Azione Impetuosa (2 usi), Indomito (3 usi)', 'Privilegio di Archetipo',
+      'Aumento delle caratteristiche (scelta)', 'Attacco Extra: 4 attacchi',
+    ],
     details: 'Dettagli personaggio', characterName: 'Nome personaggio', level: 'Livello', tag: 'Descrizione', modifiers: 'Variabili e modificatori',
     groups: 'Gruppi di tiri', rolls: 'Tiri', styles: 'Stili dadi personalizzati', group: 'Gruppo', formula: 'Formula',
     parts: 'Parti del tiro', rules: 'Regole di livello', effects: 'Effetti bonus e malus', appearance: 'Aspetto dei dadi',
@@ -150,7 +175,7 @@ export default function CharacterWorkshop({ locale = 'en' }) {
   }
   useEffect(() => {
     refresh();
-    if (window.location.hash.startsWith('#character=')) {
+    if (window.location.hash.startsWith('#character=') || window.location.hash.startsWith('#template=')) {
       try { setPreview(readShareHash()); } catch (e) { setError(e.message); }
     }
   }, []);
@@ -318,6 +343,18 @@ export default function CharacterWorkshop({ locale = 'en' }) {
               <Field label={t.level} type="number" min={1} max={9999} value={doc.character.level} onChange={value => edit(x => x.character.level = value)} />
               <Field label={t.tag} value={doc.character.tag} onChange={value => edit(x => x.character.tag = value)} />
             </div>
+            {doc.character.tag.startsWith('D&D 5e sample') && <details className="workshop-fighter-timeline">
+              <summary>{t.fighterProgression}</summary>
+              <p className="workshop-hint">{t.fighterChoiceNote}</p>
+              <div className="workshop-level-grid">
+                {FIGHTER_2014_LEVELS.map((step, index) =>
+                  <div className={step.level === doc.character.level ? 'workshop-level-row current' : 'workshop-level-row'} key={step.level}>
+                    <strong>{t.level} {step.level}</strong>
+                    <span>+{step.proficiency} {t.fighterProficiency}</span>
+                    <span>{t.fighterEvents[index]}</span>
+                  </div>)}
+              </div>
+            </details>}
             <div className="workshop-actions">
               <button className="primary" onClick={save}>{t.save}</button>
               {canUpgradeLegacyStarterWeaponRolls(doc) && <button type="button"
