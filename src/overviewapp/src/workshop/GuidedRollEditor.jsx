@@ -109,7 +109,7 @@ function EffectEditor({ effect, index, roll, doc, t, onUpdate, onRemove }) {
     {effect.actions.map((action, actionIndex) => <div className="workshop-guided-clause" key={action.id}>
       <div className="workshop-fields">
         <Choice label={t.actionType} value={action.kind}
-          options={ACTION_KINDS.map(id => ({ id, name: ({ REROLL:t.reroll, ROLL_AFTER:t.rollAfter, REPLACE:t.replace })[id] ||
+          options={ACTION_KINDS.map(id => ({ id, name: ({ ADD:t.actionAdd, SUBTRACT:t.actionSubtract, MULTIPLY:t.actionMultiply, REROLL:t.reroll, ROLL_AFTER:t.rollAfter, REPLACE:t.replace })[id] ||
             id.replaceAll('_', ' ').toLowerCase() }))}
           onChange={kind => mutate(e => { e.actions[actionIndex] = setActionKind(e.actions[actionIndex], kind); })} />
         <Choice label={t.targetPart} value={action.targetPartId || ''}
@@ -191,9 +191,9 @@ export default function GuidedRollEditor({ roll, doc, t, onEdit }) {
     <div className="workshop-guided-section">
       <div className="workshop-row-head"><h3>{t.effects}</h3>
         <div className="workshop-inline">
-          <button type="button" onClick={() => onEdit(r => r.effects.push(newEffect('BONUS', r.subgroups || [], r.effects.length)))}>
+          <button type="button" onClick={() => onEdit(r => { const e = newEffect('BONUS', r.subgroups || [], r.effects.length); e.name = t.bonus; r.effects.push(e); })}>
             + {t.bonus}</button>
-          <button type="button" onClick={() => onEdit(r => r.effects.push(newEffect('MALUS', r.subgroups || [], r.effects.length)))}>
+          <button type="button" onClick={() => onEdit(r => { const e = newEffect('MALUS', r.subgroups || [], r.effects.length); e.name = t.malus; r.effects.push(e); })}>
             + {t.malus}</button>
         </div>
       </div>
