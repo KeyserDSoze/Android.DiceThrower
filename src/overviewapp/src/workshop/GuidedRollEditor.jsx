@@ -29,7 +29,7 @@ const styleChoice = (doc, t) => [{ id: '', name: t.styleAuto }, ...SYSTEM_STYLES
 function StylePicker({ label, value, doc, t, onChange }) {
   return <Choice label={label} value={value || ''} options={styleChoice(doc, t)} onChange={v => onChange(v || null)} />;
 }
-function ConditionEditor({ condition, roll, doc, t, onUpdate, onRemove }) {
+function ConditionEditor({ condition, roll, doc, t, onUpdate, onRemove, disabledRemove = false }) {
   const parts = roll.subgroups || [];
   return <div className="workshop-guided-clause">
     <div className="workshop-fields">
@@ -54,7 +54,7 @@ function ConditionEditor({ condition, roll, doc, t, onUpdate, onRemove }) {
       <Input label={t.threshold} value={condition.threshold}
         onChange={v => onUpdate(c => c.threshold = v)} />
     </div>
-    <button type="button" className="workshop-remove" onClick={onRemove} aria-label={t.removeCondition}>{t.removeCondition}</button>
+    <button type="button" className="workshop-remove" disabled={disabledRemove} onClick={onRemove} aria-label={t.removeCondition}>{t.removeCondition}</button>
   </div>;
 }
 function EffectEditor({ effect, index, roll, doc, t, onUpdate, onRemove }) {
@@ -91,6 +91,7 @@ function EffectEditor({ effect, index, roll, doc, t, onUpdate, onRemove }) {
       {group.conditions.map((condition, conditionIndex) => <div key={condition.id}>
         {conditionIndex > 0 && <small className="workshop-logic">AND</small>}
         <ConditionEditor condition={condition} roll={roll} doc={doc} t={t}
+          disabledRemove={effect.activationGroups.length === 1 && group.conditions.length === 1}
           onUpdate={f => mutate(e => f(e.activationGroups[groupIndex].conditions[conditionIndex]))}
           onRemove={() => mutate(e => {
             if (e.activationGroups.length === 1 && e.activationGroups[0].conditions.length === 1) return;
@@ -112,7 +113,7 @@ function EffectEditor({ effect, index, roll, doc, t, onUpdate, onRemove }) {
             id.replaceAll('_', ' ').toLowerCase() }))}
           onChange={kind => mutate(e => { e.actions[actionIndex] = setActionKind(e.actions[actionIndex], kind); })} />
         <Choice label={t.targetPart} value={action.targetPartId || ''}
-          options={[{ id:'', name:t.choosePart }, ...parts.map(p => ({ id:p.id, name:p.name || p.expression }))]}
+          options={parts.map(p => ({ id:p.id, name:p.name || p.expression }))}
           onChange={v => mutate(e => e.actions[actionIndex].targetPartId = v || null)} />
         <Choice label={t.effectScope} value={action.scope} options={scopeOptions(t)}
           onChange={v => mutate(e => e.actions[actionIndex].scope = v)} />
