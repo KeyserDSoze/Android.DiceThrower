@@ -202,6 +202,16 @@ export function readShareHash(hash = window.location.hash) {
 }
 export function androidUrl(doc) { return 'dicethrower://import?data=' + encodeURIComponent(encodeToken(doc)); }
 
+/** Recipients can rename/relevel a copy without altering a sender's document. */
+export function withImportPreferences(source, name, level) {
+  validateDocument(source);
+  const copy = structuredClone(source);
+  copy.character.name = typeof name === 'string' ? name.trim() : '';
+  copy.character.level = Number(level);
+  return validateDocument(copy);
+}
+
+
 function db() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, 1);
