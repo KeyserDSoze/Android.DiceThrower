@@ -29,6 +29,44 @@ class RollFormulaResolverTest {
     )
 
     @Test
+    fun deterministicGenericLevelMilestonesScale2014FighterProficiencyAcrossAllLevels() {
+        val stats = listOf(
+            CharacterModifier("str", "hero", "Strength", 3),
+            CharacterModifier("prof", "hero", "Proficiency", 2),
+        )
+        for (level in 1..20) {
+            val expression = RollFormulaResolver.resolveTemplate(
+                "1d20+{Strength}+{Proficiency}+{levelstep:5:9:13:17}",
+                level, stats,
+            )
+            val parsed = DiceExpression.parse(expression)
+            val expectedProficiency = 2 + listOf(5, 9, 13, 17).count { level >= it }
+            assertEquals(3 + expectedProficiency, parsed.constantTotal())
+            assertEquals(1, parsed.diceShape().single().count)
+            assertEquals(20, parsed.diceShape().single().sides)
+        }
+    }
+
+    @Test
+    fun invalidLevelMilestonesFailInsteadOfSilentlyChangingRollResults() {
+        val invalid = listOf(
+            "{levelstep:}", "{levelstep:0}", "{levelstep:1}",
+            "{levelstep:5:5}", "{levelstep:9:5}",
+            "{levelstep:50000}", "{levelstep:5:-1}",
+            "{levelstep:5:09}", "{levelstep:foo}",
+        )
+        invalid.forEach { expression ->
+            assertFalse(
+                "Accepted invalid level milestone: $expression",
+                RollFormulaResolver.validateTemplate("1d20+$expression", 10, emptyList()),
+            )
+        }
+        assertFalse(RollFormulaResolver.validateTemplate(
+            "1d20+{levelstep:5:9:13:17:unknown}", 20, emptyList(),
+        ))
+    }
+
+    @Test
     fun resolvesNamedModifierAndLevel() {
         val resolved = RollFormulaResolver.resolveTemplate(
             expression = "1d6+{Intelligenza}+{level}",
