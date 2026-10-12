@@ -164,6 +164,10 @@ test('legacy starter upgrade must not overwrite already customized rules', () =>
   attack.effects = [{ id: 'custom-effect' }];
   assert.equal(canUpgradeLegacyStarterWeaponRolls(doc), false);
   assert.equal(upgradeLegacyStarterWeaponRolls(doc), null);
+  attack.effects = [];
+  attack.visualEffects = { animationSpeed: 'custom' };
+  assert.equal(canUpgradeLegacyStarterWeaponRolls(doc), false);
+  assert.equal(upgradeLegacyStarterWeaponRolls(doc), null);
 });
 
 test('legacy Ranger and Paladin weapon pairs can be upgraded without D&D-only crit', () => {
