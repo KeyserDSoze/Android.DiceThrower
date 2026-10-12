@@ -85,7 +85,7 @@ function EffectEditor({ effect, index, roll, doc, t, onUpdate, onRemove }) {
     {!effect.activationGroups.length && <p className="workshop-hint">{t.unconditional}</p>}
     {effect.activationGroups.map((group, groupIndex) => <div className="workshop-rule-group" key={group.id}>
       <div className="workshop-row-head"><strong>{t.orGroup} {groupIndex + 1}</strong>
-        <button type="button" onClick={() => mutate(e => e.activationGroups.splice(groupIndex, 1))}>
+        <button type="button" disabled={effect.activationGroups.length <= 1} onClick={() => mutate(e => e.activationGroups.splice(groupIndex, 1))}>
           {t.removeGroup}</button>
       </div>
       {group.conditions.map((condition, conditionIndex) => <div key={condition.id}>
@@ -93,6 +93,7 @@ function EffectEditor({ effect, index, roll, doc, t, onUpdate, onRemove }) {
         <ConditionEditor condition={condition} roll={roll} doc={doc} t={t}
           onUpdate={f => mutate(e => f(e.activationGroups[groupIndex].conditions[conditionIndex]))}
           onRemove={() => mutate(e => {
+            if (e.activationGroups.length === 1 && e.activationGroups[0].conditions.length === 1) return;
             const g = e.activationGroups[groupIndex];
             g.conditions.splice(conditionIndex, 1);
             if (!g.conditions.length) e.activationGroups.splice(groupIndex, 1);
@@ -111,7 +112,7 @@ function EffectEditor({ effect, index, roll, doc, t, onUpdate, onRemove }) {
             id.replaceAll('_', ' ').toLowerCase() }))}
           onChange={kind => mutate(e => { e.actions[actionIndex] = setActionKind(e.actions[actionIndex], kind); })} />
         <Choice label={t.targetPart} value={action.targetPartId || ''}
-          options={[{ id:'', name:t.wholeRoll }, ...parts.map(p => ({ id:p.id, name:p.name || p.expression }))]}
+          options={[{ id:'', name:t.choosePart }, ...parts.map(p => ({ id:p.id, name:p.name || p.expression }))]}
           onChange={v => mutate(e => e.actions[actionIndex].targetPartId = v || null)} />
         <Choice label={t.effectScope} value={action.scope} options={scopeOptions(t)}
           onChange={v => mutate(e => e.actions[actionIndex].scope = v)} />
