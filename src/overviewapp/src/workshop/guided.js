@@ -27,7 +27,7 @@ export const newEffect = (type, parts, order = 0) => ({
   id: id(), name: type === 'MALUS' ? 'New malus' : 'New bonus', type, order,
   enabled: true, stopFollowingEffects: false,
   activationGroups: [newActivationGroup(parts)],
-  actions: [newAction(parts)],
+  actions: [{ ...newAction(parts), kind: type === 'MALUS' ? 'SUBTRACT' : 'ADD' }],
 });
 export function setActionKind(action, kind) {
   if (!ACTION_KINDS.includes(kind)) throw new Error('Unknown effect action');
@@ -99,7 +99,8 @@ export function validateGuidedRoll(roll, modifierNames, styleIds) {
     requireValid(typeof effect.name === 'string' && effect.name.trim(), 'Effect needs a name');
     requireValid(EFFECT_TYPES.includes(effect.type), 'Unknown bonus/malus type');
     requireValid(Array.isArray(effect.activationGroups) && Array.isArray(effect.actions) &&
-      effect.activationGroups.length <= 30 && effect.actions.length >= 1 && effect.actions.length <= 30,
+      effect.activationGroups.length >= 1 && effect.activationGroups.length <= 30 &&
+      effect.actions.length >= 1 && effect.actions.length <= 30,
       'Invalid effect groups or actions');
     for (const group of effect.activationGroups) {
       unique(group, 'condition group');
@@ -121,7 +122,7 @@ export function validateGuidedRoll(roll, modifierNames, styleIds) {
     for (const action of effect.actions) {
       unique(action, 'action');
       requireValid(ACTION_KINDS.includes(action.kind) && SCOPES.includes(action.scope), 'Unsupported action');
-      requireValid(action.targetPartId == null || partIds.has(action.targetPartId), 'Action targets a missing Part');
+      requireValid(partIds.has(action.targetPartId), 'Action targets a missing Part');
       requireValid(action.kind === 'REROLL' || action.kind === 'ROLL_AFTER' ||
         (typeof action.expression === 'string' && action.expression.trim().length > 0),
         'Action expression required');
