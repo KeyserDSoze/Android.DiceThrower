@@ -395,7 +395,20 @@ function matchingLegacyPair(doc) {
     if (a.characterId !== doc.character.id || d.characterId !== doc.character.id ||
         a.groupId == null || a.groupId !== d.groupId ||
         a.expression !== definition.attackExpr || d.expression !== definition.damageExpr) continue;
-    const unmodified = r => r.enabled !== false && !r.doubleRollEnabled &&
+    // Reject unknown/native-only Roll fields rather than discarding settings
+    // from an imported or hand-edited legacy Roll during the upgrade.
+    const legacyFields = new Set([
+      'id', 'characterId', 'groupId', 'name', 'expression', 'enabled', 'order',
+      'minimumLevel', 'doubleRollEnabled', 'subgroups', 'levelRules', 'effects',
+      'diceAppearance',
+    ]);
+    const appearanceFields = new Set([
+      'mode', 'styleId', 'subgroupStyleIds', 'perDieStyleIds', 'randomStyleIds',
+    ]);
+    const unmodified = r => Object.keys(r).every(key => legacyFields.has(key)) &&
+      (!r.diceAppearance || Object.keys(r.diceAppearance)
+        .every(key => appearanceFields.has(key))) &&
+      r.enabled !== false && !r.doubleRollEnabled &&
       (r.minimumLevel ?? 1) === 1 &&
       (!r.subgroups || r.subgroups.length === 0) &&
       (!r.levelRules || r.levelRules.length === 0) &&
