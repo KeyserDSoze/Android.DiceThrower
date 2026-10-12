@@ -44,6 +44,7 @@ const dictionary = {
     initialThrow: 'Included in initial throw', doubleCandidate: 'Available in double roll (A/B)',
     formulaFromParts: 'Formula is generated from Roll Parts. Edit the Parts below.',
     partUsed: 'This Part is referenced by an effect. Remove or edit its effect first.',
+    createPartFirst: 'Create at least one Roll Part before adding effects.', defaultStyle: 'Default dice style',
     expertJson: 'Advanced native JSON (optional)', expertHelp: 'Only edit this if you know the Android schema. Guided controls preserve existing fields.',
     download: 'Download / keep backup', select: 'Open a character or create one.', saved: 'Saved locally.', ready: 'Link ready.',
   },
@@ -83,6 +84,7 @@ const dictionary = {
     initialThrow: 'Inclusa nel tiro iniziale', doubleCandidate: 'Disponibile nel doppio tiro (A/B)',
     formulaFromParts: 'La formula deriva dalle parti: modificale qui sotto.',
     partUsed: 'Questa parte è usata da un effetto: modifica o rimuovi prima l’effetto.',
+    createPartFirst: 'Crea almeno una parte del tiro prima di aggiungere effetti.', defaultStyle: 'Stile dado predefinito',
     expertJson: 'JSON nativo avanzato (facoltativo)', expertHelp: 'Modificalo solo se conosci il formato Android. I controlli guidati preservano i campi esistenti.',
     download: 'Scarica un backup', select: 'Apri un personaggio o creane uno.', saved: 'Salvato nel browser.', ready: 'Link pronto.',
   },
@@ -295,7 +297,7 @@ export default function CharacterWorkshop({ locale = 'en' }) {
                 <div className="workshop-inline">
                   <select value={p.operator || 'ADD'} onChange={e => edit(x => { const roll = x.rolls[i]; roll.subgroups[j].operator = e.target.value; roll.expression = normalFormula(roll.subgroups); })}>
                     <option value="ADD">+</option><option value="SUBTRACT">−</option></select>
-                  <label className="workshop-check"><input type="checkbox" checked={p.includeInNormalRoll !== false} onChange={e => edit(x => { const roll = x.rolls[i]; roll.subgroups[j].includeInNormalRoll = e.target.checked; roll.expression = normalFormula(roll.subgroups); })} /> {t.initialThrow}</label>
+                  <label className="workshop-check"><input type="checkbox" checked={p.includeInNormalRoll !== false} disabled={p.includeInNormalRoll !== false && r.subgroups.filter(q => q.includeInNormalRoll !== false).length === 1} onChange={e => edit(x => { const roll = x.rolls[i]; roll.subgroups[j].includeInNormalRoll = e.target.checked; roll.expression = normalFormula(roll.subgroups); })} /> {t.initialThrow}</label>
                                     <label className="workshop-check"><input type="checkbox" checked={!!p.includeInDoubleRoll} onChange={e => edit(x => x.rolls[i].subgroups[j].includeInDoubleRoll = e.target.checked)} /> {t.doubleCandidate}</label>
                 </div>
               </div>)}
@@ -342,7 +344,7 @@ export default function CharacterWorkshop({ locale = 'en' }) {
                 </label>)}
               </div>
             </div>)}
-            <label className="workshop-field"><span>Default dice style</span><select value={doc.character.defaultDiceStyleId || ''} onChange={e => edit(x => x.character.defaultDiceStyleId = e.target.value || null)}>
+            <label className="workshop-field"><span>{t.defaultStyle}</span><select value={doc.character.defaultDiceStyleId || ''} onChange={e => edit(x => x.character.defaultDiceStyleId = e.target.value || null)}>
               <option value="">System default</option>
               {SYSTEM_STYLES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               {doc.diceStyles.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
