@@ -165,31 +165,24 @@ class MainActivity : ComponentActivity() {
                     )
 
                     pendingCharacterImport?.let { incoming ->
-                        val character = incoming.characters.single()
-                        AlertDialog(
-                            onDismissRequest = { pendingCharacterImport = null },
-                            title = { Text(stringResource(R.string.import_character_title)) },
-                            text = { Text(stringResource(
-                                R.string.import_character_message,
-                                character.name, character.level, incoming.rolls.size,
-                            )) },
-                            confirmButton = {
-                                TextButton(onClick = {
-                                    try {
-                                        val merged = CharacterTransferCodec.importCopy(store.loadData(), incoming)
-                                        store.saveData(merged)
-                                        dataRefreshVersion++
-                                        refreshPendingStatus()
-                                    } catch (_: Exception) {
-                                        characterImportError = true
-                                    }
-                                    pendingCharacterImport = null
-                                }) { Text(stringResource(R.string.import_character_confirm)) }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = { pendingCharacterImport = null }) {
-                                    Text(stringResource(R.string.cancel))
+                        CharacterImportPreviewDialog(
+                            incoming = incoming,
+                            onDismiss = { pendingCharacterImport = null },
+                            onImport = { name, level ->
+                                try {
+                                    val configured = CharacterTransferCodec.withRecipientPreferences(
+                                        incoming, name, level,
+                                    )
+                                    val merged = CharacterTransferCodec.importCopy(
+                                        store.loadData(), configured,
+                                    )
+                                    store.saveData(merged)
+                                    dataRefreshVersion++
+                                    refreshPendingStatus()
+                                } catch (_: Exception) {
+                                    characterImportError = true
                                 }
+                                pendingCharacterImport = null
                             },
                         )
                     }
