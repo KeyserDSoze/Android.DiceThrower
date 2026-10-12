@@ -4,7 +4,7 @@ import {
   templates, instantiateTemplate, validateDocument, envelope, documentFromEnvelope,
   encodeToken, decodeToken, importAsCopy, normalFormula, newPart, newRoll, shareUrl,
   canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences, androidUrl,
-  FIGHTER_2014_LEVELS, FIGHTER_2014_PROFICIENCY_STEPS,
+  FIGHTER_2014_LEVELS, FIGHTER_2014_PROFICIENCY_STEPS, readShareHash,
 } from './character.js';
 
 test('all ten starter templates validate and survive the versioned compressed link', () => {
@@ -282,4 +282,40 @@ test('2014 Fighter automatically scales proficient roll formulas but does not in
   const healing=fighter.rolls.find(r=>r.name==='Second Wind · heal');
   assert.equal(healing.expression,'1d10+{level}');
   assert.ok(!fighter.rolls.some(r=>/subclass|ability score improvement/i.test(r.name)));
+});
+
+test('unmodified 2014 Fighter with future attacks fits a QR through a versioned offline preset link', () => {
+  const fighter=instantiateTemplate(0);
+  fighter.character.name='Arianna · Fighter';
+  fighter.character.level=18;
+  const url=shareUrl(fighter,'https://example.com/Android.DiceThrower/workshop/');
+  assert.match(url,/#template=fighter2014v1&name=/);
+  assert.ok(url.length<=2600);
+  const recipient=readShareHash(new URL(url).hash);
+  assert.equal(recipient.character.name,fighter.character.name);
+  assert.equal(recipient.character.level,18);
+  assert.equal(recipient.rolls.length,fighter.rolls.length);
+  assert.deepEqual(recipient.rolls.map(r=>r.minimumLevel),fighter.rolls.map(r=>r.minimumLevel));
+  assert.equal(recipient.rolls.find(r=>r.name==='Longsword · 4 attacks').effects.length,4);
+  // Site -> installed Android still transfers complete versioned JSON after preview.
+  const app=androidUrl(recipient);
+  assert.ok(app.length<=8000,'Android app handoff too long');
+  assert.deepEqual(decodeToken(decodeURIComponent(app.split('data=')[1])),recipient);
+});
+
+test('short preset URL cannot silently discard a customized roll, condition, style, or stat', () => {
+  const original=instantiateTemplate(0);
+  for(const change of [
+    doc=>doc.modifiers.find(x=>x.name==='Strength').value=4,
+    doc=>doc.rolls.find(x=>x.name==='Longsword').effects[0].actions[0].expression='2d8',
+    doc=>doc.rolls.find(x=>x.name==='Longsword').name='Magic sword',
+    doc=>doc.character.tag='A different campaign',
+  ]) {
+    const custom=structuredClone(original);
+    change(custom);
+    validateDocument(custom);
+    assert.throws(()=>shareUrl(custom,'https://example.com/Android.DiceThrower/workshop/'),/Link too long/);
+  }
+  assert.throws(()=>readShareHash('#template=fighter2014v1&name=Good&level=0'),/Invalid/);
+  assert.equal(readShareHash('#template=not-supported&name=Someone&level=1'),null);
 });
