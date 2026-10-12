@@ -367,3 +367,37 @@ footer {
 .workshop-success { color:var(--accent); }
 @media(max-width:850px) { .workshop-layout { grid-template-columns:1fr; } .workshop-cta { flex-direction:column; align-items:flex-start; } }
 @media(max-width:550px) { .workshop-fields { grid-template-columns:1fr; } .workshop-roll summary { align-items:start; flex-direction:column; } .workshop .premium-panel { padding:16px; } }
+
+
+/* Guided character rules: semantic controls, visible groups and high-contrast surfaces. */
+.workshop-guided-section {
+  margin-top: 18px;
+  padding: clamp(12px, 2vw, 20px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface2) 66%, transparent);
+}
+.workshop-guided-section h3, .workshop-guided-section h4 { margin:0; font-size:1rem; color:var(--text); }
+.workshop-effect { border:1px solid var(--line); border-radius:12px; padding:14px; margin:12px 0; background:var(--surface); }
+.workshop-effect > summary { cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:10px; color:var(--text); }
+.workshop-effect > summary small { color:var(--muted); }
+.workshop-effect[open] > summary { padding-bottom:14px; }
+.workshop-rule-group { padding:12px; margin:12px 0; border:1px solid var(--line); border-radius:12px; background:var(--surface2); }
+.workshop-guided-clause { padding:12px; margin:10px 0; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+.workshop-logic { display:inline-block; padding:4px 10px; border:1px solid var(--accent); border-radius:10px; color:var(--accent); margin:8px 0; font-weight:800; letter-spacing:.08em; }
+.workshop-subtle { min-width:95px; font-size:.84rem; color:var(--text); }
+.workshop-die-details, .workshop-expert { border:1px dashed var(--line); border-radius:12px; padding:12px; margin-top:14px; color:var(--text); }
+.workshop-die-details > summary, .workshop-expert > summary { cursor:pointer; font-weight:700; }
+.workshop-style-pool { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; }
+.workshop .workshop-guided-section button[disabled], .workshop button[disabled] { opacity:.42; cursor:not-allowed; }
+.workshop .workshop-guided-section button, .workshop .workshop-rule-group button { min-height:34px; }
+.workshop .workshop-guided-section input, .workshop .workshop-guided-section select { color:var(--text); }
+.workshop .workshop-guided-section .workshop-fields { margin-top:10px; }
+.workshop-roll summary:focus-visible, .workshop-effect summary:focus-visible, .workshop-expert summary:focus-visible {
+  outline:2px solid var(--accent); outline-offset:3px;
+}
+@media (max-width:550px) {
+  .workshop-effect > summary { flex-direction:column; align-items:flex-start; }
+  .workshop-guided-clause { padding:9px; }
+  .workshop-style-pool { grid-template-columns:1fr; }
+}
