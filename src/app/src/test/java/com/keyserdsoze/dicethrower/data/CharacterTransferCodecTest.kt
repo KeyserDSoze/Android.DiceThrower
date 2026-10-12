@@ -178,6 +178,35 @@ class CharacterTransferCodecTest {
         assertTrue(AppDataValidator.validate(copied).isEmpty())
     }
 
+    @Test fun recipientPreferencesAreExplicitValidatedAndCopyIndependent() {
+        val inbound = sample()
+        val adjusted = CharacterTransferCodec.withRecipientPreferences(
+            inbound, "  New fighter  ", 12,
+        )
+        assertEquals("New fighter", adjusted.characters.single().name)
+        assertEquals(12, adjusted.characters.single().level)
+        assertEquals("Aric", inbound.characters.single().name)
+        assertEquals(1, inbound.characters.single().level)
+        assertEquals(inbound.rolls, adjusted.rolls)
+        val merged = CharacterTransferCodec.importCopy(inbound, adjusted)
+        assertEquals(2, merged.characters.size)
+        assertEquals(12, merged.characters.last().level)
+        assertEquals("New fighter", merged.characters.last().name)
+        assertNotEquals(inbound.characters.single().id, merged.characters.last().id)
+        assertTrue(AppDataValidator.validate(merged).isEmpty())
+    }
+
+    @Test fun recipientPreferencesRejectInvalidLevelsAndNames() {
+        val inbound = sample()
+        listOf("", " ", "A".repeat(161)).forEach { name ->
+            expectFailure { CharacterTransferCodec.withRecipientPreferences(inbound, name, 2) }
+        }
+        listOf(0, -1, 10_000).forEach { level ->
+            expectFailure { CharacterTransferCodec.withRecipientPreferences(inbound, "New", level) }
+        }
+        assertEquals(inbound, sample())
+    }
+
     private fun expectFailure(action: () -> Unit) {
         try { action(); fail("Expected transfer validation failure") }
         catch (_: IllegalArgumentException) { /* expected */ }
