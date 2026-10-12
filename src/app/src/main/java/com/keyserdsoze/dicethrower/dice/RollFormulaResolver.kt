@@ -208,7 +208,8 @@ object RollFormulaResolver {
         require(steps.size in 1..20) { "Expected 1..20 level milestones" }
         val thresholds = steps.map { step ->
             val level = step.toIntOrNull()
-            require(level != null && level in 2..9999 && step == level.toString()) {
+                ?: throw IllegalArgumentException("Invalid level milestone")
+            require(level in 2..9999 && step == level.toString()) {
                 "Invalid level milestone"
             }
             level
