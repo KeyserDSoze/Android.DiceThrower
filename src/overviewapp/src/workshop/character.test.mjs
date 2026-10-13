@@ -4,7 +4,7 @@ import {
   templates, instantiateTemplate, validateDocument, envelope, documentFromEnvelope,
   encodeToken, decodeToken, importAsCopy, normalFormula, newPart, newRoll, newCharacter, newGroup, newModifier, shareUrl,
   canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences, androidUrl,
-  FIGHTER_2014_LEVELS, FIGHTER_2014_PROFICIENCY_STEPS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS, CLERIC_2014_LEVELS, readShareHash,
+  FIGHTER_2014_LEVELS, FIGHTER_2014_PROFICIENCY_STEPS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS, CLERIC_2014_LEVELS, PALADIN_2014_LEVELS, readShareHash,
 } from './character.js';
 
 test('all ten starter templates validate and survive the versioned compressed link', () => {
@@ -109,14 +109,12 @@ test('D&D critical checks the natural d20 and samples one extra independent dama
   assert.deepEqual(documentFromEnvelope(envelope(copied)), copied);
 });
 
-test('remaining generic weapon templates do not assume D&D criticals', () => {
-  for (const [templateIndex, name] of [[5, 'Sword']]) {
-    const doc = instantiateTemplate(templateIndex);
-    const roll = doc.rolls.find(r => r.name === name);
-    assert.ok(roll, name);
-    assert.deepEqual(roll.subgroups.map(p => p.name), ['Attack', 'Damage']);
-    assert.equal(roll.effects.length, 0, 'generic fantasy must not silently use D&D critical hit rules');
-    assert.deepEqual(decodeToken(encodeToken(doc)), doc);
+test('saved game-agnostic classes are not replaced when loading modern D&D presets', () => {
+  for (const index of [6,7,8,9]) {
+    const doc = instantiateTemplate(index);
+    assert.ok(!doc.character.tag.startsWith('D&D 5e'));
+    assert.ok(doc.rolls.every(roll => roll.effects.length===0));
+    assert.deepEqual(decodeToken(encodeToken(doc)),doc);
   }
 });
 
@@ -699,4 +697,100 @@ test('Cleric 2014 weapon crit uses its d6; import/remap and QR preserve rules', 
   let customUrl=null;
   try {customUrl=shareUrl(custom,'https://example.com/workshop/');}catch{}
   assert.ok(!customUrl||!customUrl.includes('#template=cleric2014v1'));
+});
+
+test('2014 Paladin class table gives 20 level features, official slots and lay on hands pool', () => {
+  assert.equal(templates[5].category,'D&D 5e (2014) · Paladin');
+  assert.equal(PALADIN_2014_LEVELS.length,20);
+  const slots=[[0,0,0,0,0],[2,0,0,0,0],[3,0,0,0,0],[3,0,0,0,0],
+    [4,2,0,0,0],[4,2,0,0,0],[4,3,0,0,0],[4,3,0,0,0],[4,3,2,0,0],
+    [4,3,2,0,0],[4,3,3,0,0],[4,3,3,0,0],[4,3,3,1,0],[4,3,3,1,0],
+    [4,3,3,2,0],[4,3,3,2,0],[4,3,3,3,1],[4,3,3,3,1],[4,3,3,3,2],[4,3,3,3,2]];
+  for(let level=1;level<=20;level++){
+    const row=PALADIN_2014_LEVELS[level-1];
+    assert.equal(row.level,level);
+    assert.equal(row.proficiency,2+[5,9,13,17].filter(th=>level>=th).length);
+    assert.deepEqual(row.slots,slots[level-1]);
+    assert.equal(row.layOnHandsPool,level*5);
+    assert.ok(!/Weapon Mastery|Epic Boon/.test(row.features));
+  }
+  assert.match(PALADIN_2014_LEVELS[1].features,/Divine Smite/);
+  assert.match(PALADIN_2014_LEVELS[4].features,/Extra Attack/);
+  assert.match(PALADIN_2014_LEVELS[10].features,/Improved Divine Smite/);
+  assert.match(PALADIN_2014_LEVELS[19].features,/Sacred Oath/);
+});
+
+test('Paladin longsword supports both independent attacks and level-11 Improved Smite crits', () => {
+  const paladin=instantiateTemplate(5);
+  assert.equal(paladin.character.level,1);
+  const simple=paladin.rolls.find(r=>r.name==='Longsword');
+  assert.equal(simple.subgroups[0].expression,'1d20+{Strength}+{Proficiency}+{levelstep:5:9:13:17}');
+  assert.equal(simple.subgroups[1].expression,'1d8+{Strength}');
+  assert.equal(simple.effects[0].actions[0].expression,'1d8');
+  const options=paladin.rolls.filter(r=>r.name.startsWith('Longsword · '));
+  assert.deepEqual(options.map(x=>x.minimumLevel),[5,11,11]);
+  for(const roll of options) {
+    assert.equal(roll.effects.length,roll.subgroups.length/2);
+    for(let i=0;i<roll.effects.length;i++){
+      const crit=roll.effects[i],attack=roll.subgroups[i*2],damage=roll.subgroups[i*2+1];
+      assert.equal(crit.activationGroups[0].conditions[0].partId,attack.id);
+      assert.equal(crit.activationGroups[0].conditions[0].scope,'DICE_ONLY');
+      assert.equal(crit.activationGroups[0].conditions[0].threshold,'20');
+      assert.equal(crit.actions[0].kind,'ROLL_AFTER');
+      assert.equal(crit.actions[0].scope,'DICE_ONLY');
+      assert.equal(crit.actions[0].targetPartId,damage.id);
+      assert.equal(crit.actions[0].expression,(roll.minimumLevel===11?'2d8':'1d8'));
+      assert.equal(damage.expression,(roll.minimumLevel===11?'2d8':'1d8')+'+{Strength}');
+    }
+  }
+  for(let level=1;level<=20;level++)
+    assert.deepEqual(options.filter(x=>x.minimumLevel<=level).map(x=>x.minimumLevel),
+      level>=11?[5,11,11]:level>=5?[5]:[]);
+});
+
+test('Divine Smite 2014 is an optional choice after melee hit: correct slot, enemy, crit dice', () => {
+  const doc=instantiateTemplate(5);
+  const variants=doc.rolls.filter(r=>r.name.startsWith('Divine Smite ·'));
+  assert.equal(variants.length,20);
+  for(const [slot,min] of [[1,2],[2,5],[3,9],[4,13],[5,17]]){
+    const count=Math.min(5,slot+1);
+    for(const [suffix,dice] of [
+      ['normal',count],['critical',count*2],
+      ['undead or fiend',count+1],['undead or fiend critical',(count+1)*2],
+    ]){
+      const roll=variants.find(r=>r.name==='Divine Smite · slot '+slot+' · '+suffix);
+      assert.ok(roll);
+      assert.equal(roll.minimumLevel,min);
+      assert.equal(roll.expression,dice+'d8');
+      assert.equal(roll.effects.length,0,'Smite must not be unconditionally applied to longsword');
+      assert.equal(roll.subgroups.length,0);
+    }
+  }
+  assert.equal(doc.rolls.find(r=>r.name==='Spell attack (if applicable)').minimumLevel,2);
+  for(const name of ['Athletics','Persuasion','Wisdom save','Charisma save'])
+    assert.match(doc.rolls.find(r=>r.name===name).expression,/\{Proficiency\}\+\{levelstep:5:9:13:17\}/);
+  assert.ok(!doc.rolls.some(r=>/Aura of Protection|Sacred Oath|ASI|Lay on Hands/.test(r.name)));
+});
+
+test('Paladin 2014 full v1 transfer, import references and stock-only QR', () => {
+  const doc=instantiateTemplate(5);
+  validateDocument(doc);
+  assert.deepEqual(decodeToken(encodeToken(doc)),doc);
+  const clone=importAsCopy(doc),two=clone.rolls.find(r=>r.name==='Longsword · 2 attacks + Improved Smite');
+  assert.equal(two.effects[1].activationGroups[0].conditions[0].partId,two.subgroups[2].id);
+  assert.equal(two.effects[1].actions[0].targetPartId,two.subgroups[3].id);
+  assert.deepEqual(documentFromEnvelope(envelope(clone)),clone);
+  const recipient=withImportPreferences(doc,'Thane Champion',20);
+  const link=shareUrl(recipient,'https://example.com/Android.DiceThrower/workshop/');
+  assert.ok(link.length<=2600);
+  const shared=readShareHash(new URL(link).hash);
+  assert.equal(shared.character.level,20);
+  assert.equal(shared.character.name,'Thane Champion');
+  assert.ok(androidUrl(shared).length<=8000);
+  const edited=structuredClone(doc);
+  edited.rolls.find(r=>r.name==='Divine Smite · slot 5 · critical').expression='9d8';
+  validateDocument(edited);
+  let editedUrl=null;
+  try {editedUrl=shareUrl(edited,'https://example.com/workshop/');}catch{}
+  assert.ok(!editedUrl||!editedUrl.includes('#template=paladin2014v1'));
 });
