@@ -450,7 +450,7 @@ const starterSpecs = [
   ],
   ['D&D 5e (2014) · Cleric', 'Sol · Level 1 Cleric',
     'D&D 5e (2014) Cleric sample; Wisdom +3, proficiency +2. Divine Domain, prepared spells and ASI are player choices.', 1,
-    [['Wisdom', 3], ['Charisma', 1], ['Strength', 1], ['Dexterity', 1], ['Proficiency', 2]],
+    [['Wisdom', 3], ['Charisma', 1], ['Strength', 1], ['Dexterity', 1], ['Intelligence', 1], ['Proficiency', 2]],
     [
       ['Combat', [
         ['Mace', [['Attack', '1d20+{Strength}+{Proficiency}'], ['Damage', '1d6+{Strength}']], 'DND5E_CRITICAL'],
@@ -468,7 +468,7 @@ const starterSpecs = [
       ]],
       ['Skills & saves', [
         ['Insight', '1d20+{Wisdom}+{Proficiency}'],
-        ['Religion', '1d20+{Wisdom}+{Proficiency}'],
+        ['Religion', '1d20+{Intelligence}+{Proficiency}'],
         ['Medicine', '1d20+{Wisdom}+{Proficiency}'],
         ['Wisdom save', '1d20+{Wisdom}+{Proficiency}'],
         ['Charisma save', '1d20+{Charisma}+{Proficiency}'],
