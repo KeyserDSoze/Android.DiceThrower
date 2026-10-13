@@ -242,6 +242,7 @@ const shortSharePresets = [
   { key: 'wizard2014v1', index: 2, tag: 'D&D 5e (2014) Wizard sample' },
   { key: 'ranger2014v1', index: 3, tag: 'D&D 5e (2014) Ranger sample' },
   { key: 'cleric2014v1', index: 4, tag: 'D&D 5e (2014) Cleric sample' },
+  { key: 'paladin2014v1', index: 5, tag: 'D&D 5e (2014) Paladin sample' },
 ];
 function matchingUnmodifiedSharePreset(doc) {
   for (const preset of shortSharePresets) {
@@ -266,7 +267,7 @@ export function shareUrl(doc, base = window.location.href) {
   throw new Error('Link too long for a reliable QR code. Export the JSON file instead.');
 }
 export function readShareHash(hash = window.location.hash) {
-  const preset = hash.match(/^#template=(fighter2014v1|rogue2014v1|wizard2014v1|ranger2014v1|cleric2014v1)&name=([^&]+)&level=([0-9]+)$/);
+  const preset = hash.match(/^#template=(fighter2014v1|rogue2014v1|wizard2014v1|ranger2014v1|cleric2014v1|paladin2014v1)&name=([^&]+)&level=([0-9]+)$/);
   if (preset) {
     const definition = shortSharePresets.find(item => item.key === preset[1]);
     return withImportPreferences(
@@ -475,16 +476,24 @@ const starterSpecs = [
       ]],
     ],
   ],
-  ['Fantasy · Paladin', 'Thane · Guardian', 'A steadfast champion', 1,
-    [['Might', 3]],
+  ['D&D 5e (2014) · Paladin', 'Thane · Level 1 Paladin',
+    'D&D 5e (2014) Paladin sample, Strength +3, Charisma +2, proficiency +2; configure Oath, style and ability choices.', 1,
+    [['Strength',3],['Charisma',2],['Wisdom',1],['Dexterity',0],['Proficiency',2]],
     [
       ['Combat', [
-        ['Sword', [
-          ['Attack', '1d20+{Might}'],
-          ['Damage', '1d8+{Might}'],
-        ]],
+        ['Longsword', [['Attack','1d20+{Strength}+{Proficiency}'],['Damage','1d8+{Strength}']], 'DND5E_CRITICAL'],
+        ['Initiative','1d20+{Dexterity}'],
       ]],
-      ['Defense', [['Resolve', '1d20+{Might}']]],
+      ['Divine Smite (optional)', []],
+      ['Spells (examples)', [
+        ['Spell attack (if applicable)','1d20+{Charisma}+{Proficiency}'],
+      ]],
+      ['Skills & saves', [
+        ['Athletics','1d20+{Strength}+{Proficiency}'],
+        ['Persuasion','1d20+{Charisma}+{Proficiency}'],
+        ['Wisdom save','1d20+{Wisdom}+{Proficiency}'],
+        ['Charisma save','1d20+{Charisma}+{Proficiency}'],
+      ]],
     ],
   ],
   ['Sci-fi · Pilot', 'Nova · Pilot', 'Spacefaring character template', 1, [['Piloting', 4], ['Tech', 2]], [['Flight', [['Hard maneuver', '1d20+{Piloting}'], ['Evasive action', '2d6+{Piloting}']]], ['Systems', [['Repair', '1d20+{Tech}']]]]],
@@ -984,6 +993,104 @@ export function buildCleric2014Progression(doc) {
   return validateDocument(cleric);
 }
 
+/** Official single-class D&D 5e 2014 Paladin slot table; resources are informational only. */
+const PALADIN_2014_SLOT_ROWS = [
+  [],[2],[3],[3],[4,2],[4,2],[4,3],[4,3],[4,3,2],[4,3,2],
+  [4,3,3],[4,3,3],[4,3,3,1],[4,3,3,1],[4,3,3,2],
+  [4,3,3,2],[4,3,3,3,1],[4,3,3,3,1],[4,3,3,3,2],[4,3,3,3,2],
+];
+const PALADIN_2014_FEATURES = [
+  'Divine Sense, Lay on Hands (5 HP per Paladin level)',
+  'Fighting Style, Spellcasting, Divine Smite',
+  'Divine Health, Sacred Oath (choose)',
+  'Ability Score Improvement (player chooses)',
+  'Extra Attack (2 attacks)',
+  'Aura of Protection',
+  'Sacred Oath feature (subclass choice)',
+  'Ability Score Improvement (player chooses)',
+  '3rd-level spell slots',
+  'Aura of Courage',
+  'Improved Divine Smite (+1d8 on each melee weapon hit)',
+  'Ability Score Improvement (player chooses)',
+  '4th-level spell slots',
+  'Cleansing Touch',
+  'Sacred Oath feature',
+  'Ability Score Improvement (player chooses)',
+  '5th-level spell slots',
+  'Aura improvements',
+  'Ability Score Improvement (player chooses)',
+  'Sacred Oath feature',
+];
+export const PALADIN_2014_LEVELS = PALADIN_2014_FEATURES.map((features,index) => ({
+  level:index+1,
+  proficiency:2+[5,9,13,17].filter(x=>index+1>=x).length,
+  slots:[...PALADIN_2014_SLOT_ROWS[index],...Array(5-PALADIN_2014_SLOT_ROWS[index].length).fill(0)],
+  layOnHandsPool:(index+1)*5,
+  features,
+}));
+export function buildPaladin2014Progression(doc) {
+  const paladin=structuredClone(doc);
+  if (!paladin.character.tag.startsWith('D&D 5e (2014) Paladin sample'))
+    throw new Error('Not a supported 2014 Paladin template');
+  const longsword=paladin.rolls.find(r=>r.name==='Longsword');
+  if(!longsword||longsword.subgroups.length!==2||longsword.effects.length!==1)
+    throw new Error('Missing base Paladin longsword');
+  const marker='{'+FIGHTER_2014_PROFICIENCY_STEPS+'}';
+  const enhance=x=>x.replaceAll('{Proficiency}','{Proficiency}+'+marker);
+  for(const roll of paladin.rolls){
+    if(roll.subgroups.length){
+      roll.subgroups.forEach(part=>part.expression=enhance(part.expression));
+      roll.expression=normalFormula(roll.subgroups);
+    }else roll.expression=enhance(roll.expression);
+  }
+  // Improved Divine Smite is automatically added on successful melee hits
+  // starting at 11; combine its 1d8 with weapon's 1d8 and never double STR.
+  const combat=paladin.groups.find(g=>g.name==='Combat');
+  for(const [minimumLevel,attacks,dice] of [[5,2,1],[11,2,2]]){
+    const roll={...newRoll(paladin.character.id,combat.id),
+      name:'Longsword · '+attacks+' attacks'+(minimumLevel===11?' + Improved Smite':''),
+      minimumLevel,order:paladin.rolls.length};
+    for(let i=1;i<=attacks;i++){
+      const attack={...newPart(),name:'Attack '+i,expression:longsword.subgroups[0].expression};
+      const damage={...newPart(),name:'Damage '+i,expression:dice+'d8+{Strength}'};
+      roll.subgroups.push(attack,damage);
+      const effect=createDnd5eCriticalEffect(attack.id,damage.id,dice+'d8');
+      effect.order=i-1;
+      effect.name='Critical hit · Attack '+i;
+      roll.effects.push(effect);
+    }
+    roll.expression=normalFormula(roll.subgroups);
+    paladin.rolls.push(roll);
+  }
+  // One-attack alternative remains relevant outside the Attack action.
+  const improved=createStarterRoll(paladin.character.id,combat.id,
+    'Longsword · Improved Smite (single attack)',
+    [['Attack',longsword.subgroups[0].expression],['Damage','2d8+{Strength}']],
+    'DND5E_CRITICAL',paladin.rolls.length);
+  improved.minimumLevel=11;
+  paladin.rolls.push(improved);
+  // Divine Smite is a CHOICE AFTER A HIT, costing a spell slot. Never add it
+  // unconditionally to the weapon Part or roll it twice. Critical and
+  // fiend/undead variants are exclusive alternatives with correctly doubled
+  // dice (all Smite dice, not STR or the weapon's damage).
+  const smites=paladin.groups.find(g=>g.name==='Divine Smite (optional)');
+  for(const [slot,min] of [[1,2],[2,5],[3,9],[4,13],[5,17]]){
+    const count=Math.min(5,slot+1);
+    for(const [variant,dice] of [
+      ['normal',count],['critical',count*2],
+      ['undead or fiend',count+1],['undead or fiend critical',2*(count+1)],
+    ]){
+      const roll=createStarterRoll(paladin.character.id,smites.id,
+        'Divine Smite · slot '+slot+' · '+variant,dice+'d8',null,paladin.rolls.length);
+      roll.minimumLevel=min;
+      paladin.rolls.push(roll);
+    }
+  }
+  const spellAttack=paladin.rolls.find(r=>r.name==='Spell attack (if applicable)');
+  spellAttack.minimumLevel=2;
+  return validateDocument(paladin);
+}
+
 /** New templates have all future gated Rolls prepared; existing saves are never rewritten. */
 export const templates = starterSpecs.map(([category, name, description], index) => ({ category, name, description, index }));
 export function instantiateTemplate(index) {
@@ -1006,5 +1113,6 @@ export function instantiateTemplate(index) {
   if (index === 2) return buildWizard2014Progression(doc);
   if (index === 3) return buildRanger2014Progression(doc);
   if (index === 4) return buildCleric2014Progression(doc);
+  if (index === 5) return buildPaladin2014Progression(doc);
   return validateDocument(doc);
 }
