@@ -4,7 +4,7 @@ import {
   templates, instantiateTemplate, validateDocument, envelope, documentFromEnvelope,
   encodeToken, decodeToken, importAsCopy, normalFormula, newPart, newRoll, shareUrl,
   canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences, androidUrl,
-  FIGHTER_2014_LEVELS, FIGHTER_2014_PROFICIENCY_STEPS, ROGUE_2014_LEVELS, readShareHash,
+  FIGHTER_2014_LEVELS, FIGHTER_2014_PROFICIENCY_STEPS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, readShareHash,
 } from './character.js';
 
 test('all ten starter templates validate and survive the versioned compressed link', () => {
@@ -410,4 +410,103 @@ test('Rogue 2014 preset roundtrips with level rules and valid import remapped ef
   const customLink = (() => { try { return shareUrl(custom,'https://example.com/workshop/'); } catch { return null; } })();
   assert.ok(!customLink || !customLink.includes('#template=rogue2014v1'),
     'Edited Sneak Attack must never produce a lossy preset QR');
+});
+
+test('Wizard 2014 class slots and cantrip known cover levels 1 through 20', () => {
+  assert.equal(templates[2].category, 'D&D 5e (2014) · Wizard');
+  assert.equal(WIZARD_2014_LEVELS.length, 20);
+  for (let level=1; level<=20; level++) {
+    const row=WIZARD_2014_LEVELS[level-1];
+    assert.equal(row.level, level);
+    assert.equal(row.proficiency, 2 + [5,9,13,17].filter(v=>level>=v).length);
+    assert.equal(row.cantripsKnown, level>=10 ? 5 : level>=4 ? 4 : 3);
+    assert.equal(row.slots.length,9);
+    assert.ok(row.slots.every(value => Number.isInteger(value) && value>=0));
+    assert.equal(row.slots.filter(v=>v>0).length, Math.min(9,Math.floor((level+1)/2)));
+  }
+  assert.deepEqual(WIZARD_2014_LEVELS[0].slots,[2,0,0,0,0,0,0,0,0]);
+  assert.deepEqual(WIZARD_2014_LEVELS[4].slots,[4,3,2,0,0,0,0,0,0]);
+  assert.deepEqual(WIZARD_2014_LEVELS[16].slots,[4,3,3,3,2,1,1,1,1]);
+  assert.deepEqual(WIZARD_2014_LEVELS[19].slots,[4,3,3,3,3,2,2,1,1]);
+  assert.match(WIZARD_2014_LEVELS[17].features,/Spell Mastery/);
+  assert.match(WIZARD_2014_LEVELS[19].features,/Signature Spells/);
+});
+
+test('Wizard Fire Bolt scaling and natural-20 critical use correct 2014 dice at each tier', () => {
+  const wizard=instantiateTemplate(2);
+  assert.equal(wizard.character.level,1);
+  const bolts=wizard.rolls.filter(r=>r.name.startsWith('Fire Bolt · '));
+  assert.deepEqual(bolts.map(r=>r.minimumLevel),[1,5,11,17]);
+  for(const [i,roll] of bolts.entries()){
+    const dice=i+1;
+    assert.equal(roll.subgroups.length,2);
+    assert.equal(roll.subgroups[0].expression,'1d20+{Intelligence}+{Proficiency}+{levelstep:5:9:13:17}');
+    assert.equal(roll.subgroups[1].expression,dice+'d10');
+    assert.equal(roll.effects.length,1);
+    assert.equal(roll.effects[0].activationGroups[0].conditions[0].partId,roll.subgroups[0].id);
+    assert.equal(roll.effects[0].activationGroups[0].conditions[0].scope,'DICE_ONLY');
+    assert.equal(roll.effects[0].activationGroups[0].conditions[0].threshold,'20');
+    assert.equal(roll.effects[0].actions[0].kind,'ROLL_AFTER');
+    assert.equal(roll.effects[0].actions[0].scope,'DICE_ONLY');
+    assert.equal(roll.effects[0].actions[0].targetPartId,roll.subgroups[1].id);
+    assert.equal(roll.effects[0].actions[0].expression,dice+'d10');
+  }
+  for(let level=1;level<=20;level++){
+    const selected=bolts.filter(r=>r.minimumLevel<=level).at(-1);
+    const expected=level>=17 ? 4 : level>=11 ? 3 : level>=5 ? 2 : 1;
+    assert.equal(selected.subgroups[1].expression,expected+'d10','Cantrip level '+level);
+  }
+  for(const name of ['Arcana','Investigation','Intelligence save','Wisdom save']){
+    const roll=wizard.rolls.find(r=>r.name===name);
+    assert.match(roll.expression,/\{Proficiency\}\+\{levelstep:5:9:13:17\}/);
+  }
+});
+
+test('Wizard Magic Missile has independent darts, no attack or critical and correct spell slot gates', () => {
+  const wizard=instantiateTemplate(2);
+  const spells=wizard.rolls.filter(r=>r.name.startsWith('Magic Missile · slot '));
+  assert.equal(spells.length,9);
+  for(let slot=1;slot<=9;slot++){
+    const roll=spells[slot-1],darts=slot+2;
+    assert.equal(roll.minimumLevel,2*slot-1);
+    assert.equal(roll.effects.length,0);
+    assert.equal(roll.subgroups.length,darts);
+    assert.deepEqual(roll.subgroups.map(p=>p.name),
+      Array.from({length:darts},(_,i)=>'Dart '+(i+1)));
+    assert.ok(roll.subgroups.every(p=>p.expression==='1d4+1'));
+    assert.equal(roll.expression,normalFormula(roll.subgroups));
+  }
+  for(let level=1;level<=20;level++){
+    const available=spells.filter(r=>r.minimumLevel<=level);
+    assert.equal(available.length,Math.min(9,Math.floor((level+1)/2)));
+  }
+  assert.ok(!wizard.rolls.some(r=>/Arcane Recovery|Tradition|Spell Mastery|Signature Spell|ASI/.test(r.name)));
+});
+
+test('Wizard 2014 QR recipe survives import; custom modifications cannot be lost', () => {
+  const wizard=instantiateTemplate(2);
+  validateDocument(wizard);
+  assert.deepEqual(decodeToken(encodeToken(wizard)),wizard);
+  const imported=importAsCopy(wizard);
+  assert.notEqual(imported.character.id,wizard.character.id);
+  const bolt=imported.rolls.find(r=>r.name==='Fire Bolt · 4d10');
+  assert.equal(bolt.effects[0].actions[0].targetPartId,bolt.subgroups[1].id);
+  assert.notEqual(bolt.subgroups[1].id,wizard.rolls.find(r=>r.name==='Fire Bolt · 4d10').subgroups[1].id);
+  assert.deepEqual(documentFromEnvelope(envelope(imported)),imported);
+  const recipient=withImportPreferences(wizard,'Lyra Master Wizard',20);
+  const url=shareUrl(recipient,'https://example.com/Android.DiceThrower/workshop/');
+  assert.ok(url.length<=2600,'Wizard template QR fits');
+  assert.match(url,/#template=wizard2014v1&/);
+  const decoded=readShareHash(new URL(url).hash);
+  assert.equal(decoded.character.name,'Lyra Master Wizard');
+  assert.equal(decoded.character.level,20);
+  assert.deepEqual(decoded.rolls.map(r=>r.minimumLevel),wizard.rolls.map(r=>r.minimumLevel));
+  assert.ok(androidUrl(decoded).length<=8000,'Android app handoff supported');
+  const custom=structuredClone(wizard);
+  custom.rolls.find(r=>r.name==='Fire Bolt · 4d10').effects[0].actions[0].expression='3d10';
+  validateDocument(custom);
+  let customUrl=null;
+  try { customUrl=shareUrl(custom,'https://example.com/workshop/'); }catch{}
+  assert.ok(!customUrl || !customUrl.includes('#template=wizard2014v1'),
+    'Modified wizard must not use a lossy QR recipe');
 });
