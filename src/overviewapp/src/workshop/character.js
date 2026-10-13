@@ -468,7 +468,8 @@ function createStarterRoll(characterId, groupId, name, formulaOrParts, rule, ord
   roll.subgroups = parts;
   roll.expression = normalFormula(parts);
   if (rule === 'DND5E_CRITICAL') {
-    const damageDice = '1d8'; // one-handed level-one longsword
+    const damageDice = parts[1].expression.match(/^(\d+d\d+)(?:\+|$)/i)?.[1];
+    if (!damageDice) throw new Error('Critical preset needs leading weapon damage dice');
     roll.effects = [createDnd5eCriticalEffect(parts[0].id, parts[1].id, damageDice)];
   }
   return roll;
