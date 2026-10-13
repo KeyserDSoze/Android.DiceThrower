@@ -243,6 +243,7 @@ const shortSharePresets = [
   { key: 'ranger2014v1', index: 3, tag: 'D&D 5e (2014) Ranger sample' },
   { key: 'cleric2014v1', index: 4, tag: 'D&D 5e (2014) Cleric sample' },
   { key: 'paladin2014v1', index: 5, tag: 'D&D 5e (2014) Paladin sample' },
+  { key: 'bard2014v1', index: 9, tag: 'D&D 5e (2014) Bard sample' },
 ];
 function matchingUnmodifiedSharePreset(doc) {
   for (const preset of shortSharePresets) {
@@ -267,7 +268,7 @@ export function shareUrl(doc, base = window.location.href) {
   throw new Error('Link too long for a reliable QR code. Export the JSON file instead.');
 }
 export function readShareHash(hash = window.location.hash) {
-  const preset = hash.match(/^#template=(fighter2014v1|rogue2014v1|wizard2014v1|ranger2014v1|cleric2014v1|paladin2014v1)&name=([^&]+)&level=([0-9]+)$/);
+  const preset = hash.match(/^#template=(fighter2014v1|rogue2014v1|wizard2014v1|ranger2014v1|cleric2014v1|paladin2014v1|bard2014v1)&name=([^&]+)&level=([0-9]+)$/);
   if (preset) {
     const definition = shortSharePresets.find(item => item.key === preset[1]);
     return withImportPreferences(
@@ -499,7 +500,33 @@ const starterSpecs = [
   ['Sci-fi · Pilot', 'Nova · Pilot', 'Spacefaring character template', 1, [['Piloting', 4], ['Tech', 2]], [['Flight', [['Hard maneuver', '1d20+{Piloting}'], ['Evasive action', '2d6+{Piloting}']]], ['Systems', [['Repair', '1d20+{Tech}']]]]],
   ['Sci-fi · Engineer', 'Echo · Engineer', 'Systems specialist', 1, [['Tech', 4]], [['Engineering', [['Diagnose', '1d20+{Tech}'], ['Field repair', '2d6+{Tech}']]]]],
   ['Adventure · Explorer', 'Iris · Explorer', 'General purpose exploration', 1, [['Perception', 3], ['Agility', 2]], [['Exploration', [['Notice', '1d20+{Perception}'], ['Climb', '1d20+{Agility}']]]]],
-  ['Adventure · Bard', 'Orin · Performer', 'Creative social adventurer', 1, [['Charm', 3], ['Art', 2]], [['Social', [['Persuade', '1d20+{Charm}'], ['Performance', '1d20+{Art}']]], ['Support', [['Encourage', '1d6+{Charm}']]]]],
+  ['D&D 5e (2014) · Bard', 'Orin · Level 1 Bard',
+    'D&D 5e (2014) Bard sample; Charisma +3, Dexterity +2, proficiency +2. Choose Bard College, Expertise and spells.', 1,
+    [['Charisma',3],['Dexterity',2],['Wisdom',1],['Intelligence',1],['Proficiency',2]],
+    [
+      ['Combat', [
+        ['Rapier', [['Attack','1d20+{Dexterity}+{Proficiency}'], ['Damage','1d8+{Dexterity}']], 'DND5E_CRITICAL'],
+        ['Initiative','1d20+{Dexterity}'],
+      ]],
+      ['Cantrips (examples)', [
+        ['Vicious Mockery · 1d4 (target Wisdom save)','1d4'],
+      ]],
+      ['Class features (optional)', [
+        ['Bardic Inspiration · d6 (ally only)','1d6'],
+      ]],
+      ['Spells (examples)', [
+        ['Spell attack (if applicable)','1d20+{Charisma}+{Proficiency}'],
+        ['Healing Word · slot 1 (if known)','1d4+{Charisma}'],
+      ]],
+      ['Skills & saves', [
+        ['Performance','1d20+{Charisma}+{Proficiency}'],
+        ['Persuasion','1d20+{Charisma}+{Proficiency}'],
+        ['Deception','1d20+{Charisma}+{Proficiency}'],
+        ['Dexterity save','1d20+{Dexterity}+{Proficiency}'],
+        ['Charisma save','1d20+{Charisma}+{Proficiency}'],
+      ]],
+    ],
+  ],
 ];
 /**
  * Dice Thrower is game-agnostic: only explicitly labelled D&D 5e starter weapons
@@ -1091,6 +1118,98 @@ export function buildPaladin2014Progression(doc) {
   return validateDocument(paladin);
 }
 
+/**
+ * D&D 5e 2014 Bard table: class features and spell-slot resources are only
+ * editorial references and never consume anything automatically.
+ */
+const BARD_2014_FEATURES = [
+  'Spellcasting, Bardic Inspiration d6',
+  'Jack of All Trades, Song of Rest d6',
+  'Bard College (choose), Expertise (choose 2)',
+  'Ability Score Improvement (player chooses)',
+  'Bardic Inspiration d8, Font of Inspiration',
+  'Countercharm, Bard College feature',
+  '4th-level spell slots',
+  'Ability Score Improvement (player chooses)',
+  'Song of Rest d8',
+  'Bardic Inspiration d10, Expertise (choose 2 more), Magical Secrets',
+  '6th-level spell slots',
+  'Ability Score Improvement (player chooses)',
+  'Song of Rest d10, 7th-level spell slots',
+  'Magical Secrets, Bard College feature',
+  'Bardic Inspiration d12',
+  'Ability Score Improvement (player chooses)',
+  'Song of Rest d12, 9th-level spell slots',
+  'Magical Secrets',
+  'Ability Score Improvement (player chooses)',
+  'Superior Inspiration',
+];
+const BARD_2014_SPELLS_KNOWN = [4,5,6,7,8,9,10,11,12,14,15,15,16,18,19,19,20,22,22,22];
+export const BARD_2014_LEVELS = BARD_2014_FEATURES.map((features,index) => ({
+  level:index+1,
+  proficiency:2+[5,9,13,17].filter(l=>index+1>=l).length,
+  cantripsKnown:index+1>=10?4:index+1>=4?3:2,
+  spellsKnown:BARD_2014_SPELLS_KNOWN[index],
+  slots:[...WIZARD_2014_LEVELS[index].slots],
+  inspirationDie:index+1>=15?12:index+1>=10?10:index+1>=5?8:6,
+  songOfRestDie:index+1>=17?12:index+1>=13?10:index+1>=9?8:index+1>=2?6:0,
+  features,
+}));
+export function buildBard2014Progression(doc) {
+  const bard=structuredClone(doc);
+  if (!bard.character.tag.startsWith('D&D 5e (2014) Bard sample'))
+    throw new Error('Not a supported 2014 Bard template');
+  const rapier=bard.rolls.find(r=>r.name==='Rapier');
+  if(!rapier||rapier.subgroups.length!==2||rapier.effects.length!==1)
+    throw new Error('Missing Bard rapier critical');
+  const marker='{'+FIGHTER_2014_PROFICIENCY_STEPS+'}';
+  const enhance=x=>x.replaceAll('{Proficiency}','{Proficiency}+'+marker);
+  for(const roll of bard.rolls){
+    if(roll.subgroups.length){
+      roll.subgroups.forEach(p=>p.expression=enhance(p.expression));
+      roll.expression=normalFormula(roll.subgroups);
+    }else roll.expression=enhance(roll.expression);
+  }
+  // Vicious Mockery is a WIS saving throw spell, not a spell attack.
+  // It can never crit and its die upgrades at character levels 5/11/17.
+  const cantrips=bard.groups.find(g=>g.name==='Cantrips (examples)');
+  const features=bard.groups.find(g=>g.name==='Class features (optional)');
+  const spells=bard.groups.find(g=>g.name==='Spells (examples)');
+  if(!cantrips||!features||!spells)throw new Error('Missing Bard groups');
+  for(const [level,dice] of [[5,2],[11,3],[17,4]]){
+    const roll=createStarterRoll(bard.character.id,cantrips.id,
+      'Vicious Mockery · '+dice+'d4 (target Wisdom save)',dice+'d4',null,bard.rolls.length);
+    roll.minimumLevel=level;bard.rolls.push(roll);
+  }
+  // Bardic Inspiration is a consumable ally die, NOT an always-on +CHA.
+  for(const [level,die] of [[5,8],[10,10],[15,12]]){
+    const roll=createStarterRoll(bard.character.id,features.id,
+      'Bardic Inspiration · d'+die+' (ally only)','1d'+die,null,bard.rolls.length);
+    roll.minimumLevel=level;bard.rolls.push(roll);
+  }
+  // Song of Rest triggers only after a short rest when a creature spends hit
+  // dice; no automatic healing, no normal hit-point regeneration.
+  for(const [level,die] of [[2,6],[9,8],[13,10],[17,12]]){
+    const roll=createStarterRoll(bard.character.id,features.id,
+      'Song of Rest · bonus d'+die+' (if eligible)','1d'+die,null,bard.rolls.length);
+    roll.minimumLevel=level;bard.rolls.push(roll);
+  }
+  // Jack of All Trades: floor(proficiency / 2) on UNPROFICIENT ability checks.
+  // lv1=0, lv2..8=1, lv9..16=2, lv17..20=3.
+  const jack=createStarterRoll(bard.character.id,features.id,
+    'Jack of All Trades · unproficient Wisdom check',
+    '1d20+{Wisdom}+{levelstep:2:9:17}',null,bard.rolls.length);
+  jack.minimumLevel=2;bard.rolls.push(jack);
+  // Known/prepared status and spent slots are not tracked; upcast only when
+  // Healing Word is known and a slot of that level is actually spent.
+  for(const [slot,level] of [[2,3],[3,5],[4,7],[5,9],[6,11],[7,13],[8,15],[9,17]]){
+    const roll=createStarterRoll(bard.character.id,spells.id,
+      'Healing Word · slot '+slot+' (if known)',slot+'d4+{Charisma}',null,bard.rolls.length);
+    roll.minimumLevel=level;bard.rolls.push(roll);
+  }
+  return validateDocument(bard);
+}
+
 /** New templates have all future gated Rolls prepared; existing saves are never rewritten. */
 export const templates = starterSpecs.map(([category, name, description], index) => ({ category, name, description, index }));
 export function instantiateTemplate(index) {
@@ -1114,5 +1233,6 @@ export function instantiateTemplate(index) {
   if (index === 3) return buildRanger2014Progression(doc);
   if (index === 4) return buildCleric2014Progression(doc);
   if (index === 5) return buildPaladin2014Progression(doc);
+  if (index === 9) return buildBard2014Progression(doc);
   return validateDocument(doc);
 }
