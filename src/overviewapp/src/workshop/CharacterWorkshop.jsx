@@ -5,7 +5,7 @@ import {
   listSaved, newCharacter, newGroup, newLevelRule, newModifier, newPart, newRoll, newStyle,
   normalFormula, readShareHash, removeDocument, saveDocument, shareUrl, templates, validateDocument,
   canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences,
-  FIGHTER_2014_LEVELS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS, CLERIC_2014_LEVELS,
+  FIGHTER_2014_LEVELS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS, CLERIC_2014_LEVELS, PALADIN_2014_LEVELS,
 } from './character.js';
 import GuidedRollEditor from './GuidedRollEditor.jsx';
 import { isPartUsed, removePartSafely, SYSTEM_STYLES } from './guided.js';
@@ -28,6 +28,8 @@ const dictionary = {
     wizardProgression: 'Wizard 2014 · levels 1–20', wizardSlots: 'Slots (1–9)', wizardCantrips: 'cantrips known',
     rangerProgression: 'Ranger 2014 · levels 1–20', rangerSlots: 'Slots (1–5)',
     clericProgression: 'Cleric 2014 · levels 1–20', clericSlots: 'Slots (1–9)', clericCantrips: 'cantrips known',
+    paladinProgression: 'Paladin 2014 · levels 1–20', paladinSlots: 'Slots (1–5)', paladinLayOnHands: 'Lay on Hands HP',
+    paladinChoiceNote: 'At level 5 use Longsword · 2 attacks. At level 11 use its Improved Smite alternative: weapon hits gain another 1d8 radiant and a natural 20 doubles both the sword and this extra die, never Strength. Divine Smite is an optional separate damage Roll, usable only after a melee weapon hit and spending a spell slot: choose exactly one regular/critical and undead-or-fiend alternative. If a critical hit, double only its dice. Spell slots are not automatically spent. Lay on Hands (5 HP per class level), Fighting Style, Aura, subclass Oath, ASI and resources must be handled manually.',
     clericChoiceNote: 'Sacred Flame calls for the target’s Dexterity save: roll only the damage tier (1d8/2d8/3d8/4d8 at levels 1/5/11/17), never an attack/critical. Healing Word and Cure Wounds heal Nd4 or Nd8 + Wisdom when the spell is prepared and cast with an Nth-level slot (1–9). Guidance and Bless d4 are optional and only apply to eligible checks/attacks/saves. Spell save DC is 8 + Wisdom + proficiency. Spell preparation, chosen Divine Domain, Channel Divinity, Divine Intervention and expended slots remain manual.',
     rangerChoiceNote: 'Extra Attack: use Bow · 2 attacks from level 5 (each attack has its own natural-20 critical). Hunter’s Mark damage is optional and requires the spell to be known, an eligible marked target, an active concentration and a hit; on a critical choose its 2d6 variant INSTEAD of 1d6. Cure Wounds and spell attacks are optional examples, not automatic known spells; slots are reference values, not expended automatically. Favored Enemy, terrain, Fighting Style, ASI and Ranger Archetype remain player choices.',
     wizardChoiceNote: 'This is a 2014 Wizard example, not an automatic spellbook. Fire Bolt has a tier-specific attack/damage/critical preset at levels 1/5/11/17: use the highest currently unlocked tier. Magic Missile rolls list each dart separately with one extra dart per higher spell slot (3 through 11); the player assigns targets and chooses a spell/slot. Prepared spells, spent slots, Arcane Tradition, Arcane Recovery, Spell Mastery and Signature Spells are not auto-tracked. If your table rolls a single shared d4 for all Magic Missile darts, use one Dart Part and apply that result to all darts.',
@@ -85,6 +87,16 @@ const dictionary = {
       'Channel Divinity (3/rest)', 'Ability Score Improvement (choice)',
       'Divine Intervention improvement',
     ],
+    paladinEvents: [
+      'Divine Sense, Lay on Hands', 'Fighting Style, Spellcasting, Divine Smite',
+      'Divine Health, choose Sacred Oath', 'Ability Score Improvement (choice)',
+      'Extra Attack: 2 attacks', 'Aura of Protection', 'Sacred Oath feature',
+      'Ability Score Improvement (choice)', '3rd-level slots', 'Aura of Courage',
+      'Improved Divine Smite (+1d8/hit)', 'Ability Score Improvement (choice)',
+      '4th-level slots', 'Cleansing Touch', 'Sacred Oath feature',
+      'Ability Score Improvement (choice)', '5th-level slots',
+      'Aura improvements', 'Ability Score Improvement (choice)', 'Sacred Oath feature',
+    ],
     details: 'Character details', characterName: 'Character name', level: 'Level', tag: 'Description', modifiers: 'Variables & modifiers',
     groups: 'Roll groups', rolls: 'Rolls', styles: 'Custom dice styles', group: 'Group', formula: 'Formula',
     parts: 'Roll Parts', rules: 'Level rules', effects: 'Bonus & malus effects', appearance: 'Dice appearance',
@@ -137,6 +149,8 @@ const dictionary = {
     wizardProgression: 'Mago 2014 · livelli 1–20', wizardSlots: 'Slot (1–9)', wizardCantrips: 'trucchetti conosciuti',
     rangerProgression: 'Ranger 2014 · livelli 1–20', rangerSlots: 'Slot (1–5)',
     clericProgression: 'Chierico 2014 · livelli 1–20', clericSlots: 'Slot (1–9)', clericCantrips: 'trucchetti conosciuti',
+    paladinProgression: 'Paladino 2014 · livelli 1–20', paladinSlots: 'Slot (1–5)', paladinLayOnHands: 'Imposizione delle Mani PF',
+    paladinChoiceNote: 'Dal livello 5 usa Spada Lunga · 2 attacchi. Dal livello 11 usa la variante con Punizione Divina Migliorata: ogni colpo a segno aggiunge 1d8 radiante e sul 20 naturale si raddoppiano i dadi dell’arma e quello extra, mai Forza. La Punizione Divina opzionale va lanciata separatamente soltanto dopo un colpo in mischia e consumando uno slot: scegli UNA sola variante normale/critico e contro non morti o immondi. Su critico raddoppia solo i dadi. Gli slot non si consumano automaticamente. Imposizione delle Mani (5 PF per livello), Stile di Combattimento, Aure, Giuramento, caratteristiche e risorse sono gestiti manualmente.',
     clericChoiceNote: 'Fiamma Sacra richiede un tiro salvezza di Destrezza del bersaglio: usa soltanto il danno appropriato (1d8/2d8/3d8/4d8 ai livelli 1/5/11/17), non un tiro per colpire o critico. Parola Guaritrice e Cura Ferite curano Nd4 o Nd8 + Saggezza se preparati e lanciati con uno slot di livello N (1–9). Guida e Benedizione sono d4 opzionali applicabili solo a prove/attacchi/tiri salvezza idonei. CD degli incantesimi = 8 + Saggezza + competenza. Preparazione, Dominio Divino, Incanalare Divinità, Intervento Divino e slot spesi restano gestiti dal giocatore.',
     rangerChoiceNote: 'Attacco Extra: dal livello 5 usa Arco · 2 attacchi (ogni attacco ha un proprio critico con 20 naturale). Danno Marchio del Cacciatore solo se conosci l’incantesimo, mantieni concentrazione, il bersaglio è marchiato e il colpo va a segno; su critico usa 2d6 INVECE di 1d6. Cura Ferite e attacchi magici sono esempi opzionali, non incantesimi automaticamente conosciuti; gli slot sono valori di riferimento. Nemico Prescelto, terreno, Stile di Combattimento, caratteristiche e Archetipo sono scelte del giocatore.',
     wizardChoiceNote: 'Questo è un esempio di Mago 2014, non un grimorio automatico. Dardo di Fuoco ha attacco/danno/critico separato ai livelli 1/5/11/17: usa la variante sbloccata più alta. Dardo Incantato mostra ogni dardo con una Parte separata (3–11 dardi secondo lo slot): scegli il bersaglio e lo slot. Incantesimi preparati, slot spesi, Tradizione Arcana, Recupero Arcano, Padronanza Magica e Incantesimi Distintivi sono gestiti dal giocatore. Se il tavolo tira un unico d4 per tutti i dardi, tira una sola Parte e usa quel risultato per ciascun dardo.',
@@ -197,6 +211,16 @@ const dictionary = {
       'Distruggere Non Morti (GS 4), privilegio di Dominio, slot di 9° livello',
       'Incanalare Divinità (3/riposo)', 'Aumento delle caratteristiche (scelta)',
       'Miglioramento Intervento Divino',
+    ],
+    paladinEvents: [
+      'Senso Divino, Imposizione delle Mani', 'Stile di Combattimento, Incantesimi, Punizione Divina',
+      'Salute Divina, scegli Giuramento Sacro', 'Aumento delle caratteristiche (scelta)',
+      'Attacco Extra: 2 attacchi', 'Aura di Protezione', 'Privilegio di Giuramento',
+      'Aumento delle caratteristiche (scelta)', 'Slot di 3° livello', 'Aura di Coraggio',
+      'Punizione Divina Migliorata (+1d8/colpo)', 'Aumento delle caratteristiche (scelta)',
+      'Slot di 4° livello', 'Tocco Purificatore', 'Privilegio di Giuramento',
+      'Aumento delle caratteristiche (scelta)', 'Slot di 5° livello',
+      'Miglioramento delle Aure', 'Aumento delle caratteristiche (scelta)', 'Privilegio di Giuramento',
     ],
     details: 'Dettagli personaggio', characterName: 'Nome personaggio', level: 'Livello', tag: 'Descrizione', modifiers: 'Variabili e modificatori',
     groups: 'Gruppi di tiri', rolls: 'Tiri', styles: 'Stili dadi personalizzati', group: 'Gruppo', formula: 'Formula',
@@ -377,7 +401,8 @@ export default function CharacterWorkshop({ locale = 'en' }) {
   const isWizard2014 = doc?.character.tag.startsWith('D&D 5e (2014) Wizard sample');
   const isRanger2014 = doc?.character.tag.startsWith('D&D 5e (2014) Ranger sample');
   const isCleric2014 = doc?.character.tag.startsWith('D&D 5e (2014) Cleric sample');
-  const dndLevels = isCleric2014 ? CLERIC_2014_LEVELS : isRanger2014 ? RANGER_2014_LEVELS : isWizard2014 ? WIZARD_2014_LEVELS : isRogue2014 ? ROGUE_2014_LEVELS : FIGHTER_2014_LEVELS;
+  const isPaladin2014 = doc?.character.tag.startsWith('D&D 5e (2014) Paladin sample');
+  const dndLevels = isPaladin2014 ? PALADIN_2014_LEVELS : isCleric2014 ? CLERIC_2014_LEVELS : isRanger2014 ? RANGER_2014_LEVELS : isWizard2014 ? WIZARD_2014_LEVELS : isRogue2014 ? ROGUE_2014_LEVELS : FIGHTER_2014_LEVELS;
 
   return <section className="workshop">
     <div className="workshop-heading">
@@ -456,15 +481,15 @@ export default function CharacterWorkshop({ locale = 'en' }) {
               <Field label={t.level} type="number" min={1} max={9999} value={doc.character.level} onChange={value => edit(x => x.character.level = value)} />
               <Field label={t.tag} value={doc.character.tag} onChange={value => edit(x => x.character.tag = value)} />
             </div>
-            {(isFighter2014 || isRogue2014 || isWizard2014 || isRanger2014 || isCleric2014) && <details className="workshop-fighter-timeline">
-              <summary>{isCleric2014 ? t.clericProgression : isRanger2014 ? t.rangerProgression : isWizard2014 ? t.wizardProgression : isRogue2014 ? t.rogueProgression : t.fighterProgression}</summary>
-              <p className="workshop-hint">{isCleric2014 ? t.clericChoiceNote : isRanger2014 ? t.rangerChoiceNote : isWizard2014 ? t.wizardChoiceNote : isRogue2014 ? t.rogueChoiceNote : t.fighterChoiceNote}</p>
+            {(isFighter2014 || isRogue2014 || isWizard2014 || isRanger2014 || isCleric2014 || isPaladin2014) && <details className="workshop-fighter-timeline">
+              <summary>{isPaladin2014 ? t.paladinProgression : isCleric2014 ? t.clericProgression : isRanger2014 ? t.rangerProgression : isWizard2014 ? t.wizardProgression : isRogue2014 ? t.rogueProgression : t.fighterProgression}</summary>
+              <p className="workshop-hint">{isPaladin2014 ? t.paladinChoiceNote : isCleric2014 ? t.clericChoiceNote : isRanger2014 ? t.rangerChoiceNote : isWizard2014 ? t.wizardChoiceNote : isRogue2014 ? t.rogueChoiceNote : t.fighterChoiceNote}</p>
               <div className="workshop-level-grid">
                 {dndLevels.map((step, index) =>
                   <div className={step.level === doc.character.level ? 'workshop-level-row current' : 'workshop-level-row'} key={step.level}>
                     <strong>{t.level} {step.level}</strong>
                     <span>+{step.proficiency} {t.fighterProficiency}{isRogue2014 && <> · {step.sneakAttackDice}d6 {t.rogueSneak}</>}{isWizard2014 && <> · {step.cantripsKnown} {t.wizardCantrips}</>}{isCleric2014 && <> · {step.cantripsKnown} {t.clericCantrips}</>}</span>
-                    <span>{isCleric2014 ? t.clericEvents[index] + ' · ' + t.clericSlots + ': ' + step.slots.join('/') : isRanger2014 ? t.rangerEvents[index] + ' · ' + t.rangerSlots + ': ' + step.slots.join('/') : isWizard2014 ? t.wizardEvents[index] + ' · ' + t.wizardSlots + ': ' + step.slots.join('/') : isRogue2014 ? t.rogueEvents[index] : t.fighterEvents[index]}</span>
+                    <span>{isPaladin2014 ? t.paladinEvents[index] + ' · ' + t.paladinSlots + ': ' + step.slots.join('/') + ' · ' + t.paladinLayOnHands + ': ' + step.layOnHandsPool : isCleric2014 ? t.clericEvents[index] + ' · ' + t.clericSlots + ': ' + step.slots.join('/') : isRanger2014 ? t.rangerEvents[index] + ' · ' + t.rangerSlots + ': ' + step.slots.join('/') : isWizard2014 ? t.wizardEvents[index] + ' · ' + t.wizardSlots + ': ' + step.slots.join('/') : isRogue2014 ? t.rogueEvents[index] : t.fighterEvents[index]}</span>
                   </div>)}
               </div>
             </details>}
