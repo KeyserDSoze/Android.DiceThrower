@@ -4,7 +4,7 @@ import {
   templates, instantiateTemplate, validateDocument, envelope, documentFromEnvelope,
   encodeToken, decodeToken, importAsCopy, normalFormula, newPart, newRoll, newCharacter, newGroup, newModifier, shareUrl,
   canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences, androidUrl,
-  FIGHTER_2014_LEVELS, FIGHTER_2014_PROFICIENCY_STEPS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS, CLERIC_2014_LEVELS, PALADIN_2014_LEVELS, readShareHash,
+  FIGHTER_2014_LEVELS, FIGHTER_2014_PROFICIENCY_STEPS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS, CLERIC_2014_LEVELS, PALADIN_2014_LEVELS, BARD_2014_LEVELS, readShareHash,
 } from './character.js';
 
 test('all ten starter templates validate and survive the versioned compressed link', () => {
@@ -110,7 +110,7 @@ test('D&D critical checks the natural d20 and samples one extra independent dama
 });
 
 test('saved game-agnostic classes are not replaced when loading modern D&D presets', () => {
-  for (const index of [6,7,8,9]) {
+  for (const index of [6,7,8]) {
     const doc = instantiateTemplate(index);
     assert.ok(!doc.character.tag.startsWith('D&D 5e'));
     assert.ok(doc.rolls.every(roll => roll.effects.length===0));
@@ -793,4 +793,112 @@ test('Paladin 2014 full v1 transfer, import references and stock-only QR', () =>
   let editedUrl=null;
   try {editedUrl=shareUrl(edited,'https://example.com/workshop/');}catch{}
   assert.ok(!editedUrl||!editedUrl.includes('#template=paladin2014v1'));
+});
+
+test('2014 Bard class table has all 20 official slots, known spells and milestones', () => {
+  assert.equal(templates[9].category,'D&D 5e (2014) · Bard');
+  assert.equal(BARD_2014_LEVELS.length,20);
+  const expectedKnown=[4,5,6,7,8,9,10,11,12,14,15,15,16,18,19,19,20,22,22,22];
+  for(let level=1;level<=20;level++){
+    const row=BARD_2014_LEVELS[level-1];
+    assert.equal(row.level,level);
+    assert.equal(row.proficiency,2+[5,9,13,17].filter(l=>level>=l).length);
+    assert.equal(row.cantripsKnown,level>=10?4:level>=4?3:2);
+    assert.equal(row.spellsKnown,expectedKnown[level-1]);
+    assert.deepEqual(row.slots,WIZARD_2014_LEVELS[level-1].slots);
+    assert.equal(row.inspirationDie,level>=15?12:level>=10?10:level>=5?8:6);
+    assert.equal(row.songOfRestDie,level>=17?12:level>=13?10:level>=9?8:level>=2?6:0);
+    assert.ok(!/Weapon Mastery|Epic Boon/.test(row.features));
+  }
+  assert.match(BARD_2014_LEVELS[9].features,/Magical Secrets/);
+  assert.match(BARD_2014_LEVELS[19].features,/Superior Inspiration/);
+});
+
+test('Bard 2014 Vicious Mockery scales on failed Wisdom save and never generates critical', () => {
+  const doc=instantiateTemplate(9);
+  assert.equal(doc.character.level,1);
+  const options=doc.rolls.filter(r=>r.name.startsWith('Vicious Mockery ·'));
+  assert.deepEqual(options.map(x=>x.minimumLevel),[1,5,11,17]);
+  for(let i=0;i<options.length;i++){
+    assert.equal(options[i].expression,(i+1)+'d4');
+    assert.equal(options[i].subgroups.length,0);
+    assert.equal(options[i].effects.length,0);
+    assert.ok(!options[i].expression.includes('1d20'));
+  }
+  for(let level=1;level<=20;level++){
+    const expected=level>=17?4:level>=11?3:level>=5?2:1;
+    assert.equal(options.filter(r=>r.minimumLevel<=level).at(-1).expression,expected+'d4');
+  }
+  const rapier=doc.rolls.find(r=>r.name==='Rapier');
+  assert.equal(rapier.subgroups[0].expression,'1d20+{Dexterity}+{Proficiency}+{levelstep:5:9:13:17}');
+  assert.equal(rapier.subgroups[1].expression,'1d8+{Dexterity}');
+  assert.equal(rapier.effects[0].activationGroups[0].conditions[0].partId,rapier.subgroups[0].id);
+  assert.equal(rapier.effects[0].actions[0].targetPartId,rapier.subgroups[1].id);
+  assert.equal(rapier.effects[0].actions[0].expression,'1d8');
+});
+
+test('Bardic Inspiration, Song of Rest and Jack of All Trades never apply indiscriminately', () => {
+  const doc=instantiateTemplate(9);
+  for(const [min,die] of [[1,6],[5,8],[10,10],[15,12]]){
+    const roll=doc.rolls.find(r=>r.name==='Bardic Inspiration · d'+die+' (ally only)');
+    assert.ok(roll);
+    assert.equal(roll.minimumLevel,min);
+    assert.equal(roll.expression,'1d'+die);
+    assert.equal(roll.effects.length,0);
+  }
+  for(const [min,die] of [[2,6],[9,8],[13,10],[17,12]]){
+    const roll=doc.rolls.find(r=>r.name==='Song of Rest · bonus d'+die+' (if eligible)');
+    assert.ok(roll);
+    assert.equal(roll.minimumLevel,min);
+    assert.equal(roll.expression,'1d'+die);
+    assert.equal(roll.effects.length,0);
+  }
+  const jack=doc.rolls.find(r=>r.name==='Jack of All Trades · unproficient Wisdom check');
+  assert.equal(jack.minimumLevel,2);
+  assert.equal(jack.expression,'1d20+{Wisdom}+{levelstep:2:9:17}');
+  for(let level=1;level<=20;level++)
+    assert.equal([2,9,17].filter(v=>v<=level).length,
+      level<2?0:level<9?1:level<17?2:3);
+  for(const name of ['Performance','Persuasion','Deception','Dexterity save','Charisma save']){
+    const roll=doc.rolls.find(r=>r.name===name);
+    assert.match(roll.expression,/\{Proficiency\}\+\{levelstep:5:9:13:17\}/);
+    assert.ok(!roll.expression.includes('levelstep:2:9:17'),'Jack must not apply to proficient checks');
+  }
+});
+
+test('Bard 2014 upcast Healing Word is conditional and gated for 1st–9th spell slots', () => {
+  const doc=instantiateTemplate(9);
+  for(const [slot,min] of [[1,1],[2,3],[3,5],[4,7],[5,9],[6,11],[7,13],[8,15],[9,17]]){
+    const r=doc.rolls.find(r=>r.name==='Healing Word · slot '+slot+' (if known)');
+    assert.ok(r);
+    assert.equal(r.minimumLevel,min);
+    assert.equal(r.expression,slot+'d4+{Charisma}');
+    assert.equal(r.effects.length,0);
+  }
+  assert.ok(!doc.rolls.some(r=>/Expertise|Magical Secrets|Superior Inspiration|Bard College/.test(r.name)));
+});
+
+test('Bard 2014 exact QR preset and complete Android transfer preserve styles, rolls and ID references', () => {
+  const doc=instantiateTemplate(9);
+  validateDocument(doc);
+  assert.deepEqual(decodeToken(encodeToken(doc)),doc);
+  const clone=importAsCopy(doc), rapier=clone.rolls.find(r=>r.name==='Rapier');
+  assert.equal(rapier.effects[0].activationGroups[0].conditions[0].partId,rapier.subgroups[0].id);
+  assert.equal(rapier.effects[0].actions[0].targetPartId,rapier.subgroups[1].id);
+  assert.notEqual(rapier.subgroups[1].id,doc.rolls.find(r=>r.name==='Rapier').subgroups[1].id);
+  assert.deepEqual(documentFromEnvelope(envelope(clone)),clone);
+  const recipient=withImportPreferences(doc,'Orin Songweaver',20);
+  const link=shareUrl(recipient,'https://example.com/Android.DiceThrower/workshop/');
+  assert.ok(link.length<=2600);
+  const shared=readShareHash(new URL(link).hash);
+  assert.equal(shared.character.name,'Orin Songweaver');
+  assert.equal(shared.character.level,20);
+  assert.equal(shared.rolls.length,doc.rolls.length);
+  assert.ok(androidUrl(shared).length<=8000);
+  const altered=structuredClone(doc);
+  altered.rolls.find(r=>r.name==='Vicious Mockery · 4d4 (target Wisdom save)').expression='5d4';
+  validateDocument(altered);
+  let url=null;
+  try {url=shareUrl(altered,'https://example.com/workshop/');}catch{}
+  assert.ok(!url||!url.includes('#template=bard2014v1'),'Customized Bard cannot use lossy recipe');
 });
