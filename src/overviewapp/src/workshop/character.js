@@ -239,6 +239,7 @@ function canonicalPresetShape(doc) {
 const shortSharePresets = [
   { key: 'fighter2014v1', index: 0, tag: 'D&D 5e sample' },
   { key: 'rogue2014v1', index: 1, tag: 'D&D 5e (2014) Rogue sample' },
+  { key: 'wizard2014v1', index: 2, tag: 'D&D 5e (2014) Wizard sample' },
 ];
 function matchingUnmodifiedSharePreset(doc) {
   for (const preset of shortSharePresets) {
@@ -263,7 +264,7 @@ export function shareUrl(doc, base = window.location.href) {
   throw new Error('Link too long for a reliable QR code. Export the JSON file instead.');
 }
 export function readShareHash(hash = window.location.hash) {
-  const preset = hash.match(/^#template=(fighter2014v1|rogue2014v1)&name=([^&]+)&level=([0-9]+)$/);
+  const preset = hash.match(/^#template=(fighter2014v1|rogue2014v1|wizard2014v1)&name=([^&]+)&level=([0-9]+)$/);
   if (preset) {
     const definition = shortSharePresets.find(item => item.key === preset[1]);
     return withImportPreferences(
@@ -398,7 +399,26 @@ const starterSpecs = [
       ]],
     ],
   ],
-  ['Fantasy · Mage', 'Lyra · Spellcaster', 'An elemental mage', 1, [['Magic', 3]], [['Spells', [['Arcane bolt', '1d20+{Magic}'], ['Fire spark', '2d6+{Magic}']]], ['Checks', [['Arcana', '1d20+{Magic}']]]]],
+  ['D&D 5e (2014) · Wizard', 'Lyra · Level 1 Wizard',
+    'D&D 5e (2014) Wizard sample; Intelligence +3, proficiency +2. Spells and Arcane Tradition are player choices.', 1,
+    [['Intelligence', 3], ['Wisdom', 1], ['Dexterity', 2], ['Constitution', 1], ['Proficiency', 2]],
+    [
+      ['Cantrips', [
+        ['Fire Bolt · 1d10', [
+          ['Attack', '1d20+{Intelligence}+{Proficiency}'],
+          ['Damage', '1d10'],
+        ], 'DND5E_CRITICAL'],
+      ]],
+      ['Spells (examples)', []],
+      ['Skills & saves', [
+        ['Arcana', '1d20+{Intelligence}+{Proficiency}'],
+        ['Investigation', '1d20+{Intelligence}+{Proficiency}'],
+        ['Intelligence save', '1d20+{Intelligence}+{Proficiency}'],
+        ['Wisdom save', '1d20+{Wisdom}+{Proficiency}'],
+        ['Initiative', '1d20+{Dexterity}'],
+      ]],
+    ],
+  ],
   ['Fantasy · Ranger', 'Bryn · Ranger', 'A woodland explorer', 1,
     [['Agility', 2], ['Tracking', 3]],
     [
@@ -684,6 +704,94 @@ export function buildRogue2014Progression(doc) {
   return validateDocument(rogue);
 }
 
+/**
+ * Wizard 2014 spell slots, number of cantrips known and major class features.
+ * Slot counts are reference data only: the dice engine does not consume slots
+ * or choose spells/preparation/Arcane Tradition for a player.
+ */
+const WIZARD_2014_SLOT_ROWS = [
+  [2], [3], [4,2], [4,3], [4,3,2], [4,3,3], [4,3,3,1], [4,3,3,2],
+  [4,3,3,3,1], [4,3,3,3,2], [4,3,3,3,2,1], [4,3,3,3,2,1],
+  [4,3,3,3,2,1,1], [4,3,3,3,2,1,1], [4,3,3,3,2,1,1,1],
+  [4,3,3,3,2,1,1,1], [4,3,3,3,2,1,1,1,1],
+  [4,3,3,3,3,1,1,1,1], [4,3,3,3,3,2,1,1,1], [4,3,3,3,3,2,2,1,1],
+];
+const WIZARD_2014_FEATURES = [
+  'Spellcasting, Arcane Recovery',
+  'Arcane Tradition (choose a school)',
+  '2nd-level spell slots',
+  'Ability Score Improvement (player chooses)',
+  '3rd-level spell slots',
+  'Arcane Tradition feature',
+  '4th-level spell slots',
+  'Ability Score Improvement (player chooses)',
+  '5th-level spell slots',
+  'Arcane Tradition feature',
+  '6th-level spell slots',
+  'Ability Score Improvement (player chooses)',
+  '7th-level spell slots',
+  'Arcane Tradition feature',
+  '8th-level spell slots',
+  'Ability Score Improvement (player chooses)',
+  '9th-level spell slots',
+  'Spell Mastery (choose spells)',
+  'Ability Score Improvement (player chooses)',
+  'Signature Spells (choose spells)',
+];
+export const WIZARD_2014_LEVELS = WIZARD_2014_SLOT_ROWS.map((row, index) => ({
+  level: index + 1,
+  proficiency: 2 + [5,9,13,17].filter(start => index + 1 >= start).length,
+  cantripsKnown: index + 1 >= 10 ? 5 : index + 1 >= 4 ? 4 : 3,
+  slots: [...row, ...Array(9 - row.length).fill(0)],
+  features: WIZARD_2014_FEATURES[index],
+}));
+
+export function buildWizard2014Progression(doc) {
+  const wizard = structuredClone(doc);
+  if (!wizard.character.tag.startsWith('D&D 5e (2014) Wizard sample'))
+    throw new Error('Not a supported 2014 Wizard template');
+  const bolt = wizard.rolls.find(r => r.name === 'Fire Bolt · 1d10');
+  if (!bolt || bolt.subgroups.length !== 2 || bolt.effects.length !== 1)
+    throw new Error('Missing base Wizard cantrip');
+  const marker = '{' + FIGHTER_2014_PROFICIENCY_STEPS + '}';
+  const enhance = expression => expression.replaceAll('{Proficiency}', '{Proficiency}+' + marker);
+  for (const roll of wizard.rolls) {
+    if (roll.subgroups.length) {
+      for (const part of roll.subgroups) part.expression = enhance(part.expression);
+      roll.expression = normalFormula(roll.subgroups);
+    } else roll.expression = enhance(roll.expression);
+  }
+  // Make every active cantrip tier independently usable and independently
+  // critical: at lv5/11/17 we must roll an additional 2/3/4d10 on a nat20,
+  // not just the level-one 1d10. Old variants remain player-selectable.
+  const cantripGroup = wizard.groups.find(g => g.name === 'Cantrips');
+  for (const [level, dice] of [[5, 2], [11, 3], [17, 4]]) {
+    const spell = createStarterRoll(wizard.character.id, cantripGroup.id,
+      'Fire Bolt · ' + dice + 'd10', [
+        ['Attack', bolt.subgroups[0].expression], ['Damage', dice + 'd10'],
+      ], 'DND5E_CRITICAL', wizard.rolls.length);
+    spell.minimumLevel = level;
+    wizard.rolls.push(spell);
+  }
+  // Magic Missile has no attack roll and cannot critical. Each dart is its
+  // own independent 1d4+1 Part, allowing the player to assign targets. These
+  // are examples only: spells known/prepared and slot expenditure are manual.
+  const spellGroup = wizard.groups.find(g => g.name === 'Spells (examples)');
+  for (let slot = 1; slot <= 9; slot++) {
+    const darts = slot + 2;
+    const spell = { ...newRoll(wizard.character.id, spellGroup.id),
+      name: 'Magic Missile · slot ' + slot + ' (' + darts + ' darts)',
+      minimumLevel: slot * 2 - 1,
+      order: wizard.rolls.length,
+    };
+    spell.subgroups = Array.from({length:darts}, (_, i) =>
+      ({...newPart(), name: 'Dart ' + (i+1), expression: '1d4+1'}));
+    spell.expression = normalFormula(spell.subgroups);
+    wizard.rolls.push(spell);
+  }
+  return validateDocument(wizard);
+}
+
 /** New templates have all future gated Rolls prepared; existing saves are never rewritten. */
 export const templates = starterSpecs.map(([category, name, description], index) => ({ category, name, description, index }));
 export function instantiateTemplate(index) {
@@ -703,5 +811,6 @@ export function instantiateTemplate(index) {
   });
   if (index === 0) return buildFighter2014Progression(doc);
   if (index === 1) return buildRogue2014Progression(doc);
+  if (index === 2) return buildWizard2014Progression(doc);
   return validateDocument(doc);
 }
