@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   templates, instantiateTemplate, validateDocument, envelope, documentFromEnvelope,
-  encodeToken, decodeToken, importAsCopy, normalFormula, newPart, newRoll, shareUrl,
+  encodeToken, decodeToken, importAsCopy, normalFormula, newPart, newRoll, newCharacter, newGroup, newModifier, shareUrl,
   canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences, androidUrl,
-  FIGHTER_2014_LEVELS, FIGHTER_2014_PROFICIENCY_STEPS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, readShareHash,
+  FIGHTER_2014_LEVELS, FIGHTER_2014_PROFICIENCY_STEPS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS, readShareHash,
 } from './character.js';
 
 test('all ten starter templates validate and survive the versioned compressed link', () => {
@@ -109,8 +109,8 @@ test('D&D critical checks the natural d20 and samples one extra independent dama
   assert.deepEqual(documentFromEnvelope(envelope(copied)), copied);
 });
 
-test('other explicitly paired weapon templates use one Roll without assuming D&D rules', () => {
-  for (const [templateIndex, name] of [[3, 'Bow'], [5, 'Sword']]) {
+test('remaining generic weapon templates do not assume D&D criticals', () => {
+  for (const [templateIndex, name] of [[5, 'Sword']]) {
     const doc = instantiateTemplate(templateIndex);
     const roll = doc.rolls.find(r => r.name === name);
     assert.ok(roll, name);
@@ -172,15 +172,19 @@ test('legacy starter upgrade must not overwrite already customized rules', () =>
   assert.equal(upgradeLegacyStarterWeaponRolls(doc), null);
 });
 
-test('legacy Ranger and Paladin weapon pairs can be upgraded without D&D-only crit', () => {
-  for (const [index,name,atk,dmg] of [
-    [3,'Bow','Bow shot','Bow damage'], [5,'Sword','Sword attack','Sword damage']]) {
-    const doc = instantiateTemplate(index);
-    const roll = doc.rolls.find(r => r.name === name);
-    const [a,b] = roll.subgroups;
-    roll.name = atk; roll.expression = a.expression; roll.subgroups = [];
-    const second = { ...newRoll(doc.character.id, roll.groupId), name:dmg, expression:b.expression };
-    doc.rolls.splice(doc.rolls.indexOf(roll) + 1, 0, second);
+test('saved legacy generic Ranger and Paladin weapon pairs can still upgrade without D&D-only crit', () => {
+  for (const [tag,name,atk,dmg,stat,value] of [
+    ['A woodland explorer','Bow','Bow shot','Bow damage','Agility',2],
+    ['A steadfast champion','Sword','Sword attack','Sword damage','Might',3]]) {
+    const doc = newCharacter('Legacy character');
+    doc.character.tag = tag;
+    doc.modifiers = [{...newModifier(doc.character.id), name:stat, value}];
+    const group = {...newGroup(doc.character.id), name:'Combat'};
+    doc.groups.push(group);
+    doc.rolls.push(
+      {...newRoll(doc.character.id,group.id), name:atk, expression:'1d20+{'+stat+'}'},
+      {...newRoll(doc.character.id,group.id), name:dmg, expression:'1d8+{'+stat+'}'},
+    );
     assert.equal(canUpgradeLegacyStarterWeaponRolls(doc), true);
     const migrated = upgradeLegacyStarterWeaponRolls(doc);
     const weapon = migrated.rolls.find(r => r.name === name);
@@ -509,4 +513,98 @@ test('Wizard 2014 QR recipe survives import; custom modifications cannot be lost
   try { customUrl=shareUrl(custom,'https://example.com/workshop/'); }catch{}
   assert.ok(!customUrl || !customUrl.includes('#template=wizard2014v1'),
     'Modified wizard must not use a lossy QR recipe');
+});
+
+test('Ranger 2014 class table covers 20 levels and correct spell slot unlocks', () => {
+  assert.equal(templates[3].category,'D&D 5e (2014) · Ranger');
+  assert.equal(RANGER_2014_LEVELS.length,20);
+  for(let level=1;level<=20;level++){
+    const row=RANGER_2014_LEVELS[level-1];
+    assert.equal(row.level,level);
+    assert.equal(row.proficiency,2+[5,9,13,17].filter(start=>level>=start).length);
+    assert.equal(row.slots.length,5);
+    assert.ok(row.slots.every(count=>Number.isInteger(count)&&count>=0));
+    const maxSlot=level===1 ? 0 : level>=17 ? 5 : level>=13 ? 4 : level>=9 ? 3 : level>=5 ? 2 : 1;
+    assert.equal(row.slots.filter(x=>x>0).length,maxSlot);
+    assert.ok(!/Weapon Mastery|Epic Boon|Favored Foe/.test(row.features));
+  }
+  assert.deepEqual(RANGER_2014_LEVELS[0].slots,[0,0,0,0,0]);
+  assert.deepEqual(RANGER_2014_LEVELS[1].slots,[2,0,0,0,0]);
+  assert.deepEqual(RANGER_2014_LEVELS[4].slots,[4,2,0,0,0]);
+  assert.deepEqual(RANGER_2014_LEVELS[19].slots,[4,3,3,3,2]);
+  assert.match(RANGER_2014_LEVELS[4].features,/Extra Attack/);
+  assert.match(RANGER_2014_LEVELS[19].features,/Foe Slayer/);
+});
+
+test('2014 Ranger bow and level-5 Extra Attack have correct independent criticals', () => {
+  const ranger=instantiateTemplate(3);
+  assert.equal(ranger.character.level,1);
+  const bow=ranger.rolls.find(r=>r.name==='Bow');
+  assert.equal(bow.subgroups.length,2);
+  assert.equal(bow.subgroups[0].expression,'1d20+{Dexterity}+{Proficiency}+{levelstep:5:9:13:17}');
+  assert.equal(bow.subgroups[1].expression,'1d8+{Dexterity}');
+  assert.equal(bow.effects[0].activationGroups[0].conditions[0].partId,bow.subgroups[0].id);
+  assert.equal(bow.effects[0].activationGroups[0].conditions[0].scope,'DICE_ONLY');
+  assert.equal(bow.effects[0].actions[0].expression,'1d8');
+  assert.equal(bow.effects[0].actions[0].scope,'DICE_ONLY');
+  const multi=ranger.rolls.find(r=>r.name==='Bow · 2 attacks');
+  assert.equal(multi.minimumLevel,5);
+  assert.equal(multi.subgroups.length,4);
+  assert.equal(multi.effects.length,2);
+  for(let i=0;i<2;i++){
+    assert.equal(multi.subgroups[2*i].name,'Attack '+(i+1));
+    assert.equal(multi.effects[i].activationGroups[0].conditions[0].partId,multi.subgroups[2*i].id);
+    assert.equal(multi.effects[i].actions[0].targetPartId,multi.subgroups[2*i+1].id);
+    assert.equal(multi.effects[i].actions[0].expression,'1d8');
+  }
+  for(let level=1;level<=20;level++)
+    assert.equal(multi.minimumLevel<=level,level>=5);
+});
+
+test('Ranger spell and marked-hit dice are optional, gated and never secretly applied', () => {
+  const ranger=instantiateTemplate(3);
+  const mark=ranger.rolls.find(r=>r.name==="Hunter's Mark · on eligible hit");
+  const crit=ranger.rolls.find(r=>r.name==="Hunter's Mark · on critical");
+  assert.equal(mark.expression,'1d6');
+  assert.equal(crit.expression,'2d6');
+  assert.equal(mark.minimumLevel,2);
+  assert.equal(crit.minimumLevel,2);
+  assert.equal(mark.effects.length,0);
+  assert.equal(crit.effects.length,0);
+  assert.equal(ranger.rolls.find(r=>r.name==='Spell attack (if applicable)').minimumLevel,2);
+  for(const name of ['Survival','Perception','Stealth','Strength save','Dexterity save'])
+    assert.match(ranger.rolls.find(r=>r.name===name).expression,
+      /\{Proficiency\}\+\{levelstep:5:9:13:17\}/);
+  for(const [slot,min] of [[1,2],[2,5],[3,9],[4,13],[5,17]]){
+    const roll=ranger.rolls.find(r=>r.name==='Cure Wounds · slot '+slot+' (if known)');
+    assert.equal(roll.minimumLevel,min);
+    assert.equal(roll.expression,slot+'d8+{Wisdom}');
+  }
+  assert.ok(!ranger.rolls.some(r=>/Natural Explorer|Favored Enemy|Foe Slayer|Ranger Archetype/.test(r.name)));
+});
+
+test('Ranger 2014 share, critical references, old saves and customization roundtrip safely', () => {
+  const ranger=instantiateTemplate(3);
+  validateDocument(ranger);
+  assert.deepEqual(decodeToken(encodeToken(ranger)),ranger);
+  const clone=importAsCopy(ranger);
+  const mult=clone.rolls.find(r=>r.name==='Bow · 2 attacks');
+  assert.equal(mult.effects[1].activationGroups[0].conditions[0].partId,mult.subgroups[2].id);
+  assert.equal(mult.effects[1].actions[0].targetPartId,mult.subgroups[3].id);
+  assert.deepEqual(documentFromEnvelope(envelope(clone)),clone);
+  const recipient=withImportPreferences(ranger,'Bryn Veteran Ranger',20);
+  const url=shareUrl(recipient,'https://example.com/Android.DiceThrower/workshop/');
+  assert.ok(url.length<=2600);
+  const shared=readShareHash(new URL(url).hash);
+  assert.equal(shared.character.name,'Bryn Veteran Ranger');
+  assert.equal(shared.character.level,20);
+  assert.equal(shared.rolls.length,ranger.rolls.length);
+  assert.ok(androidUrl(shared).length<=8000);
+  const edited=structuredClone(ranger);
+  edited.rolls.find(r=>r.name==='Bow · 2 attacks').effects[1].actions[0].expression='2d8';
+  validateDocument(edited);
+  let link=null;
+  try{ link=shareUrl(edited,'https://example.com/workshop/'); }catch{}
+  assert.ok(!link || !link.includes('#template=ranger2014v1'),
+    'A customized Ranger must never be silently reconstructed from a stock QR');
 });
