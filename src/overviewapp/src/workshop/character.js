@@ -241,6 +241,7 @@ const shortSharePresets = [
   { key: 'rogue2014v1', index: 1, tag: 'D&D 5e (2014) Rogue sample' },
   { key: 'wizard2014v1', index: 2, tag: 'D&D 5e (2014) Wizard sample' },
   { key: 'ranger2014v1', index: 3, tag: 'D&D 5e (2014) Ranger sample' },
+  { key: 'cleric2014v1', index: 4, tag: 'D&D 5e (2014) Cleric sample' },
 ];
 function matchingUnmodifiedSharePreset(doc) {
   for (const preset of shortSharePresets) {
@@ -265,7 +266,7 @@ export function shareUrl(doc, base = window.location.href) {
   throw new Error('Link too long for a reliable QR code. Export the JSON file instead.');
 }
 export function readShareHash(hash = window.location.hash) {
-  const preset = hash.match(/^#template=(fighter2014v1|rogue2014v1|wizard2014v1|ranger2014v1)&name=([^&]+)&level=([0-9]+)$/);
+  const preset = hash.match(/^#template=(fighter2014v1|rogue2014v1|wizard2014v1|ranger2014v1|cleric2014v1)&name=([^&]+)&level=([0-9]+)$/);
   if (preset) {
     const definition = shortSharePresets.find(item => item.key === preset[1]);
     return withImportPreferences(
@@ -447,7 +448,33 @@ const starterSpecs = [
       ]],
     ],
   ],
-  ['Fantasy · Cleric', 'Sol · Healer', 'A protective spellcaster', 1, [['Faith', 3]], [['Magic', [['Healing word', '1d4+{Faith}'], ['Radiant strike', '1d8+{Faith}']]], ['Checks', [['Insight', '1d20+{Faith}']]]]],
+  ['D&D 5e (2014) · Cleric', 'Sol · Level 1 Cleric',
+    'D&D 5e (2014) Cleric sample; Wisdom +3, proficiency +2. Divine Domain, prepared spells and ASI are player choices.', 1,
+    [['Wisdom', 3], ['Charisma', 1], ['Strength', 1], ['Dexterity', 1], ['Intelligence', 1], ['Proficiency', 2]],
+    [
+      ['Combat', [
+        ['Mace', [['Attack', '1d20+{Strength}+{Proficiency}'], ['Damage', '1d6+{Strength}']], 'DND5E_CRITICAL'],
+        ['Initiative', '1d20+{Dexterity}'],
+      ]],
+      ['Cantrips (examples)', [
+        ['Sacred Flame · 1d8 (target Dex save)', '1d8'],
+        ['Guidance · optional d4 for ability check', '1d4'],
+      ]],
+      ['Spells (examples)', [
+        ['Spell attack (if applicable)', '1d20+{Wisdom}+{Proficiency}'],
+        ['Bless · optional d4 on an eligible d20', '1d4'],
+        ['Healing Word · slot 1 (if prepared)', '1d4+{Wisdom}'],
+        ['Cure Wounds · slot 1 (if prepared)', '1d8+{Wisdom}'],
+      ]],
+      ['Skills & saves', [
+        ['Insight', '1d20+{Wisdom}+{Proficiency}'],
+        ['Religion', '1d20+{Intelligence}+{Proficiency}'],
+        ['Medicine', '1d20+{Wisdom}+{Proficiency}'],
+        ['Wisdom save', '1d20+{Wisdom}+{Proficiency}'],
+        ['Charisma save', '1d20+{Charisma}+{Proficiency}'],
+      ]],
+    ],
+  ],
   ['Fantasy · Paladin', 'Thane · Guardian', 'A steadfast champion', 1,
     [['Might', 3]],
     [
@@ -888,6 +915,75 @@ export function buildRanger2014Progression(doc) {
   return validateDocument(ranger);
 }
 
+/**
+ * D&D 2014 Cleric, full-caster slot progression (equal to the 2014 Wizard
+ * slots at every class level). Resource consumption and preparations are not
+ * generated from this read-only reference table.
+ */
+const CLERIC_2014_FEATURES = [
+  'Spellcasting, Divine Domain (choose)',
+  'Channel Divinity (1/rest), Divine Domain feature',
+  '2nd-level spell slots',
+  'Ability Score Improvement (player chooses)',
+  'Destroy Undead (CR 1/2), 3rd-level spells',
+  'Channel Divinity (2/rest), Divine Domain feature',
+  '4th-level spell slots',
+  'Ability Score Improvement, Destroy Undead (CR 1), Domain feature',
+  '5th-level spell slots',
+  'Divine Intervention (resource, adjudicated manually)',
+  'Destroy Undead (CR 2), 6th-level spells',
+  'Ability Score Improvement (player chooses)',
+  '7th-level spell slots',
+  'Destroy Undead (CR 3)',
+  '8th-level spell slots',
+  'Ability Score Improvement (player chooses)',
+  'Destroy Undead (CR 4), Domain feature, 9th-level spells',
+  'Channel Divinity (3/rest)',
+  'Ability Score Improvement (player chooses)',
+  'Divine Intervention Improvement (automatic success when eligible)',
+];
+export const CLERIC_2014_LEVELS = CLERIC_2014_FEATURES.map((features,index) => ({
+  level: index+1,
+  proficiency: 2 + [5,9,13,17].filter(start=>index+1>=start).length,
+  cantripsKnown: index+1>=10 ? 5 : index+1>=4 ? 4 : 3,
+  slots: [...WIZARD_2014_LEVELS[index].slots],
+  features,
+}));
+export function buildCleric2014Progression(doc) {
+  const cleric=structuredClone(doc);
+  if (!cleric.character.tag.startsWith('D&D 5e (2014) Cleric sample'))
+    throw new Error('Not a supported 2014 Cleric template');
+  const marker='{'+FIGHTER_2014_PROFICIENCY_STEPS+'}';
+  const enhance=expression=>expression.replaceAll('{Proficiency}','{Proficiency}+'+marker);
+  for(const roll of cleric.rolls) {
+    if(roll.subgroups.length) {
+      roll.subgroups.forEach(part=>part.expression=enhance(part.expression));
+      roll.expression=normalFormula(roll.subgroups);
+    } else roll.expression=enhance(roll.expression);
+  }
+  const cantripGroup=cleric.groups.find(g=>g.name==='Cantrips (examples)');
+  const spellsGroup=cleric.groups.find(g=>g.name==='Spells (examples)');
+  const baseSacred=cleric.rolls.find(r=>r.name==='Sacred Flame · 1d8 (target Dex save)');
+  if(!baseSacred||!cantripGroup||!spellsGroup) throw new Error('Missing cleric examples');
+  // Sacred Flame forces a DEX saving throw: no d20 attack and no critical.
+  for(const [level,dice] of [[5,2],[11,3],[17,4]]) {
+    const cantrip=createStarterRoll(cleric.character.id,cantripGroup.id,
+      'Sacred Flame · '+dice+'d8 (target Dex save)',dice+'d8',null,cleric.rolls.length);
+    cantrip.minimumLevel=level;
+    cleric.rolls.push(cantrip);
+  }
+  // Full caster levels which first unlock a 1st..9th level slot.
+  for(const [slot,level] of [[2,3],[3,5],[4,7],[5,9],[6,11],[7,13],[8,15],[9,17]]) {
+    for(const [spell,die] of [['Healing Word','d4'],['Cure Wounds','d8']]) {
+      const upcast=createStarterRoll(cleric.character.id,spellsGroup.id,
+        spell+' · slot '+slot+' (if prepared)',slot+die+'+{Wisdom}',null,cleric.rolls.length);
+      upcast.minimumLevel=level;
+      cleric.rolls.push(upcast);
+    }
+  }
+  return validateDocument(cleric);
+}
+
 /** New templates have all future gated Rolls prepared; existing saves are never rewritten. */
 export const templates = starterSpecs.map(([category, name, description], index) => ({ category, name, description, index }));
 export function instantiateTemplate(index) {
@@ -909,5 +1005,6 @@ export function instantiateTemplate(index) {
   if (index === 1) return buildRogue2014Progression(doc);
   if (index === 2) return buildWizard2014Progression(doc);
   if (index === 3) return buildRanger2014Progression(doc);
+  if (index === 4) return buildCleric2014Progression(doc);
   return validateDocument(doc);
 }
