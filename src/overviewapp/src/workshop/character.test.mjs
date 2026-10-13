@@ -4,7 +4,7 @@ import {
   templates, instantiateTemplate, validateDocument, envelope, documentFromEnvelope,
   encodeToken, decodeToken, importAsCopy, normalFormula, newPart, newRoll, newCharacter, newGroup, newModifier, shareUrl,
   canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences, androidUrl,
-  FIGHTER_2014_LEVELS, FIGHTER_2014_PROFICIENCY_STEPS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS, readShareHash,
+  FIGHTER_2014_LEVELS, FIGHTER_2014_PROFICIENCY_STEPS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS, CLERIC_2014_LEVELS, readShareHash,
 } from './character.js';
 
 test('all ten starter templates validate and survive the versioned compressed link', () => {
@@ -607,4 +607,96 @@ test('Ranger 2014 share, critical references, old saves and customization roundt
   try{ link=shareUrl(edited,'https://example.com/workshop/'); }catch{}
   assert.ok(!link || !link.includes('#template=ranger2014v1'),
     'A customized Ranger must never be silently reconstructed from a stock QR');
+});
+
+test('Cleric 2014 class timeline covers levels 1–20, full caster slot counts and cantrips', () => {
+  assert.equal(templates[4].category,'D&D 5e (2014) · Cleric');
+  assert.equal(CLERIC_2014_LEVELS.length,20);
+  for(let level=1;level<=20;level++){
+    const row=CLERIC_2014_LEVELS[level-1];
+    assert.equal(row.level,level);
+    assert.equal(row.proficiency,2+[5,9,13,17].filter(v=>level>=v).length);
+    assert.equal(row.cantripsKnown,level>=10 ? 5 : level>=4 ? 4 : 3);
+    assert.deepEqual(row.slots,WIZARD_2014_LEVELS[level-1].slots);
+    assert.ok(!/Weapon Mastery|Epic Boon/.test(row.features));
+  }
+  assert.match(CLERIC_2014_LEVELS[0].features,/Divine Domain/);
+  assert.match(CLERIC_2014_LEVELS[9].features,/Divine Intervention/);
+  assert.match(CLERIC_2014_LEVELS[19].features,/Divine Intervention Improvement/);
+});
+
+test('Cleric 2014 Sacred Flame scales at levels 5/11/17 without attack or crit', () => {
+  const cleric=instantiateTemplate(4);
+  assert.equal(cleric.character.level,1);
+  const sacred=cleric.rolls.filter(r=>r.name.startsWith('Sacred Flame · '));
+  assert.deepEqual(sacred.map(r=>r.minimumLevel),[1,5,11,17]);
+  for(let i=0;i<sacred.length;i++){
+    const roll=sacred[i];
+    assert.equal(roll.expression,(i+1)+'d8');
+    assert.equal(roll.subgroups.length,0);
+    assert.equal(roll.effects.length,0);
+    assert.ok(!/1d20/.test(roll.expression));
+  }
+  for(let level=1;level<=20;level++){
+    const dice=level>=17?4:level>=11?3:level>=5?2:1;
+    assert.equal(sacred.filter(r=>r.minimumLevel<=level).at(-1).expression,dice+'d8');
+  }
+});
+
+test('Cleric 2014 prepared-healing examples upcast with Wisdom exactly once', () => {
+  const cleric=instantiateTemplate(4);
+  const tiers=[[1,1],[2,3],[3,5],[4,7],[5,9],[6,11],[7,13],[8,15],[9,17]];
+  for(const [slot,min] of tiers)for(const [name,die] of [['Healing Word','d4'],['Cure Wounds','d8']]){
+    const roll=cleric.rolls.find(r=>r.name===name+' · slot '+slot+' (if prepared)');
+    assert.ok(roll);
+    assert.equal(roll.expression,slot+die+'+{Wisdom}');
+    assert.equal(roll.minimumLevel,min);
+    assert.equal(roll.effects.length,0,'Healing is not a natural20 critical');
+  }
+  for(let level=1;level<=20;level++){
+    const slots=tiers.filter(([,min])=>min<=level).length;
+    assert.equal(cleric.rolls.filter(r=>r.name.startsWith('Healing Word · ')&&r.minimumLevel<=level).length,slots);
+    assert.equal(cleric.rolls.filter(r=>r.name.startsWith('Cure Wounds · ')&&r.minimumLevel<=level).length,slots);
+  }
+  assert.equal(cleric.rolls.find(r=>r.name==='Bless · optional d4 on an eligible d20').expression,'1d4');
+  assert.equal(cleric.rolls.find(r=>r.name==='Guidance · optional d4 for ability check').expression,'1d4');
+  for(const name of ['Insight','Religion','Medicine','Wisdom save','Charisma save']){
+    assert.match(cleric.rolls.find(r=>r.name===name).expression,
+      /\{Proficiency\}\+\{levelstep:5:9:13:17\}/);
+  }
+  assert.equal(cleric.rolls.find(r=>r.name==='Religion').expression,
+    '1d20+{Intelligence}+{Proficiency}+{levelstep:5:9:13:17}');
+  assert.ok(!cleric.rolls.some(r=>/Divine Intervention|Channel Divinity|ASI|Domain feature/.test(r.name)));
+});
+
+test('Cleric 2014 weapon crit uses its d6; import/remap and QR preserve rules', () => {
+  const cleric=instantiateTemplate(4);
+  const weapon=cleric.rolls.find(r=>r.name==='Mace');
+  assert.deepEqual(weapon.subgroups.map(s=>s.name),['Attack','Damage']);
+  assert.equal(weapon.subgroups[0].expression,'1d20+{Strength}+{Proficiency}+{levelstep:5:9:13:17}');
+  assert.equal(weapon.subgroups[1].expression,'1d6+{Strength}');
+  assert.equal(weapon.effects[0].activationGroups[0].conditions[0].partId,weapon.subgroups[0].id);
+  assert.equal(weapon.effects[0].activationGroups[0].conditions[0].scope,'DICE_ONLY');
+  assert.equal(weapon.effects[0].actions[0].targetPartId,weapon.subgroups[1].id);
+  assert.equal(weapon.effects[0].actions[0].scope,'DICE_ONLY');
+  assert.equal(weapon.effects[0].actions[0].expression,'1d6');
+  assert.deepEqual(decodeToken(encodeToken(cleric)),cleric);
+  const copied=importAsCopy(cleric);
+  const mace=copied.rolls.find(r=>r.name==='Mace');
+  assert.equal(mace.effects[0].actions[0].targetPartId,mace.subgroups[1].id);
+  assert.notEqual(mace.subgroups[1].id,weapon.subgroups[1].id);
+  assert.deepEqual(documentFromEnvelope(envelope(copied)),copied);
+  const recipient=withImportPreferences(cleric,'Sol the Cleric',20);
+  const link=shareUrl(recipient,'https://example.com/Android.DiceThrower/workshop/');
+  assert.ok(link.length<=2600);
+  const shared=readShareHash(new URL(link).hash);
+  assert.equal(shared.character.level,20);
+  assert.equal(shared.character.name,'Sol the Cleric');
+  assert.ok(androidUrl(shared).length<=8000);
+  const custom=structuredClone(cleric);
+  custom.rolls.find(r=>r.name==='Sacred Flame · 4d8 (target Dex save)').expression='8d8';
+  validateDocument(custom);
+  let customUrl=null;
+  try {customUrl=shareUrl(custom,'https://example.com/workshop/');}catch{}
+  assert.ok(!customUrl||!customUrl.includes('#template=cleric2014v1'));
 });
