@@ -77,4 +77,24 @@ jobs:
                 select(.merged_at != null and .head.repo.full_name == $repo) |
                 [.head.ref, .head.sha, (.number | tostring)] | @tsv'
           )
+          # One-time housekeeping of a superseded, unmerged PR. This exact head
+          # (PR #181) was audited against merged PRs #180/#182 on 2026-10-13:
+          # all 12 touched files are present on main, with only newer web help
+          # text on main. Never generalize this rule to other unmerged PRs.
+          superseded_branch="feat/fighter-2014-level-20-progression"
+          superseded_sha="a60172b790d64e90f9ce2a71e0ba93431a2376f9"
+          if ! grep -Fqx -- "$superseded_branch" <<< "$open_heads"; then
+            actual_sha="$(gh api "repos/$repo/git/ref/heads/$superseded_branch" --jq '.object.sha' 2>/dev/null || true)"
+            abandoned_state="$(gh api "repos/$repo/pulls/181" --jq '.state')"
+            abandoned_merged="$(gh api "repos/$repo/pulls/181" --jq '.merged')"
+            replacement_merged="$(gh api "repos/$repo/pulls/182" --jq '.merged')"
+            if [[ "$actual_sha" == "$superseded_sha" && "$abandoned_state" == "closed" && "$abandoned_merged" == "false" && "$replacement_merged" == "true" ]]; then
+              echo "Deleting audited superseded branch $superseded_branch (PR #181 -> #182)"
+              gh api --method DELETE "repos/$repo/git/refs/heads/$superseded_branch"
+              deleted=$((deleted + 1))
+            else
+              echo "Preserving superseded branch: ref or PR state no longer matches audited conditions"
+            fi
+          fi
+
           echo "Pruned $deleted merged branches; preserved $skipped changed/missing/open branches."
