@@ -433,3 +433,13 @@ footer {
   .workshop-character-avatar {width:52px;height:52px;font-size:1.5rem;}
   .workshop-character-top {gap:10px;}
 }
+
+/* Fighter 2014 preconfigured level roadmap, collapsed until requested. */
+.workshop-fighter-timeline {margin:14px 0;border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--surface2);color:var(--text);}
+.workshop-fighter-timeline summary {font-weight:750;cursor:pointer;}
+.workshop-fighter-timeline summary:focus-visible {outline:2px solid var(--accent);outline-offset:4px;}
+.workshop-level-grid {display:grid;gap:7px;margin-top:12px;max-height:380px;overflow:auto;}
+.workshop-level-row {display:grid;grid-template-columns:90px 120px 1fr;gap:10px;align-items:center;padding:11px;background:var(--surface);border:1px solid var(--line);border-radius:10px;font-size:.84rem;color:var(--text);}
+.workshop-level-row.current {border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface));}
+.workshop-level-row strong {white-space:nowrap;}
+@media(max-width:580px) {.workshop-level-row {grid-template-columns:1fr 1fr;gap:5px;} .workshop-level-row span:last-child {grid-column:1/-1;}}

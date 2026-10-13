@@ -197,6 +197,30 @@ object RollFormulaResolver {
         return variables
     }
 
+    /**
+     * Game-agnostic, deterministic level milestone expression. Example:
+     * {levelstep:5:9:13:17} resolves to 0 at L1, 1 at L5 ... 4 at L17.
+     * No per-game rules are baked into this engine; the template chooses steps.
+     */
+    private fun computeLevelSteps(token: String, variables: Map<String, Int>): Int? {
+        if (!token.startsWith("levelstep:")) return null
+        val steps = token.removePrefix("levelstep:").split(":")
+        require(steps.size in 1..20) { "Expected 1..20 level milestones" }
+        val thresholds = steps.map { step ->
+            val level = step.toIntOrNull()
+                ?: throw IllegalArgumentException("Invalid level milestone")
+            require(level in 2..9999 && step == level.toString()) {
+                "Invalid level milestone"
+            }
+            level
+        }
+        require(thresholds.zipWithNext().all { (a, b) -> a < b }) {
+            "Level milestones must be strictly increasing"
+        }
+        val characterLevel = requireNotNull(variables[LEVEL_VARIABLE])
+        return thresholds.count { characterLevel >= it }
+    }
+
     private fun resolveExpression(
         raw: String,
         variables: Map<String, Int>,
@@ -207,7 +231,8 @@ object RollFormulaResolver {
         val withExplicitMultiplication = Regex("""(?<=[0-9)}])(?=\{)""").replace(raw, "x")
         var resolved = variableRegex.replace(withExplicitMultiplication) { match ->
             val requested = normalizeName(match.groupValues[1])
-            variables[requested]?.toString()
+            (variables[requested] ?: computeLevelSteps(requested, variables))
+                ?.toString()
                 ?: throw IllegalArgumentException("Unknown variable: ${match.groupValues[1]}")
         }
 

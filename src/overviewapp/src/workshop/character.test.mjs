@@ -4,6 +4,7 @@ import {
   templates, instantiateTemplate, validateDocument, envelope, documentFromEnvelope,
   encodeToken, decodeToken, importAsCopy, normalFormula, newPart, newRoll, shareUrl,
   canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences, androidUrl,
+  FIGHTER_2014_LEVELS, FIGHTER_2014_PROFICIENCY_STEPS, readShareHash,
 } from './character.js';
 
 test('all ten starter templates validate and survive the versioned compressed link', () => {
@@ -68,14 +69,14 @@ test('invalid links, format versions and private history are rejected', () => {
 
 test('fighter Longsword is a single Roll with independent Attack and Damage Parts', () => {
   const fighter = instantiateTemplate(0);
-  const weapons = fighter.rolls.filter(r => /longsword/i.test(r.name));
+  const weapons = fighter.rolls.filter(r => r.name === 'Longsword');
   assert.equal(weapons.length, 1);
   const [roll] = weapons;
   assert.equal(roll.name, 'Longsword');
   assert.deepEqual(roll.subgroups.map(p => p.name), ['Attack', 'Damage']);
-  assert.equal(roll.subgroups[0].expression, '1d20+{Strength}+{Proficiency}');
+  assert.equal(roll.subgroups[0].expression, '1d20+{Strength}+{Proficiency}+{levelstep:5:9:13:17}');
   assert.equal(roll.subgroups[1].expression, '1d8+{Strength}');
-  assert.equal(roll.expression, '(1d20+{Strength}+{Proficiency})+(1d8+{Strength})');
+  assert.equal(roll.expression, '(1d20+{Strength}+{Proficiency}+{levelstep:5:9:13:17})+(1d8+{Strength})');
   assert.equal(roll.effects.length, 1);
   assert.equal(roll.doubleRollEnabled, false);
 });
@@ -124,7 +125,8 @@ function oldFighterTemplate() {
   const grouped = doc.rolls.find(r => r.name === 'Longsword');
   const [attack, damage] = grouped.subgroups;
   grouped.name = 'Longsword · attack';
-  grouped.expression = attack.expression;
+  // Recreate the exact pre-progression legacy expression for the opt-in upgrade.
+  grouped.expression = attack.expression.replace('+{levelstep:5:9:13:17}', '');
   grouped.subgroups = [];
   grouped.effects = [];
   const oldDamage = { ...newRoll(doc.character.id, grouped.groupId),
@@ -218,4 +220,102 @@ test('recipient overrides are validated before import, preserving the shared ori
   }
   assert.equal(source.character.level, 1);
   assert.equal(source.character.name, 'Aric · Level 1 Fighter');
+});
+
+test('2014 Fighter class table has twenty levels and correct proficiency milestones', () => {
+  assert.equal(FIGHTER_2014_LEVELS.length,20);
+  assert.equal(FIGHTER_2014_PROFICIENCY_STEPS,'levelstep:5:9:13:17');
+  for (let level=1;level<=20;level++) {
+    const expected = 2 + [5,9,13,17].filter(v => level >= v).length;
+    assert.equal(FIGHTER_2014_LEVELS[level-1].proficiency,expected);
+    assert.equal(FIGHTER_2014_LEVELS[level-1].level,level);
+  }
+  assert.match(FIGHTER_2014_LEVELS[1].features,/Action Surge/);
+  assert.match(FIGHTER_2014_LEVELS[2].features,/Martial Archetype/);
+  assert.match(FIGHTER_2014_LEVELS[8].features,/Indomitable/);
+  assert.match(FIGHTER_2014_LEVELS[16].features,/two uses|2 uses/);
+  assert.match(FIGHTER_2014_LEVELS[19].features,/4 attacks/);
+});
+
+test('Fighter future attack-action Rolls unlock at levels 5, 11 and 20 with an independent crit per attack', () => {
+  const doc = instantiateTemplate(0);
+  const actionRolls = doc.rolls.filter(r => /^Longsword · \d attacks/.test(r.name));
+  assert.deepEqual(actionRolls.map(r => r.minimumLevel), [5,11,20]);
+  assert.deepEqual(actionRolls.map(r => r.subgroups.length), [4,6,8]);
+  assert.deepEqual(actionRolls.map(r => r.effects.length), [2,3,4]);
+  for (const [i, roll] of actionRolls.entries()) {
+    const count = i+2;
+    for(let a=0;a<count;a++) {
+      const attack=roll.subgroups[a*2], damage=roll.subgroups[a*2+1],crit=roll.effects[a];
+      assert.equal(attack.name,'Attack '+(a+1));
+      assert.equal(damage.name,'Damage '+(a+1));
+      assert.equal(crit.activationGroups[0].conditions[0].partId, attack.id);
+      assert.equal(crit.activationGroups[0].conditions[0].scope,'DICE_ONLY');
+      assert.equal(crit.activationGroups[0].conditions[0].threshold,'20');
+      assert.equal(crit.actions[0].kind,'ROLL_AFTER');
+      assert.equal(crit.actions[0].targetPartId,damage.id);
+      assert.equal(crit.actions[0].expression,'1d8');
+    }
+  }
+  for (let level=1;level<=20;level++) {
+    const available=actionRolls.filter(r => r.minimumLevel<=level);
+    assert.equal(available.length,[5,11,20].filter(l=>l<=level).length);
+  }
+  assert.deepEqual(decodeToken(encodeToken(doc)),doc);
+  const copy=importAsCopy(doc);
+  const copied=copy.rolls.find(r=>r.name==='Longsword · 4 attacks');
+  assert.notEqual(copied.subgroups[0].id, actionRolls[2].subgroups[0].id);
+  assert.equal(copied.effects[3].actions[0].targetPartId,copied.subgroups[7].id);
+});
+
+test('2014 Fighter automatically scales proficient roll formulas but does not invent ASI or subclass boosts', () => {
+  const fighter=instantiateTemplate(0);
+  const sources=['Longsword','Athletics','Strength save','Constitution save'];
+  for(const name of sources) {
+    const roll=fighter.rolls.find(r=>r.name===name);
+    assert.ok(roll,name);
+    const formula = roll.subgroups.length ? roll.subgroups[0].expression : roll.expression;
+    assert.match(formula,/\{Proficiency\}\+\{levelstep:5:9:13:17\}/);
+  }
+  assert.equal(fighter.modifiers.find(v=>v.name==='Strength').value,3);
+  assert.equal(fighter.modifiers.find(v=>v.name==='Proficiency').value,2);
+  const healing=fighter.rolls.find(r=>r.name==='Second Wind · heal');
+  assert.equal(healing.expression,'1d10+{level}');
+  assert.ok(!fighter.rolls.some(r=>/subclass|ability score improvement/i.test(r.name)));
+});
+
+test('unmodified 2014 Fighter with future attacks fits a QR through a versioned offline preset link', () => {
+  const fighter=instantiateTemplate(0);
+  fighter.character.name='Arianna · Fighter';
+  fighter.character.level=18;
+  const url=shareUrl(fighter,'https://example.com/Android.DiceThrower/workshop/');
+  assert.match(url,/#template=fighter2014v1&name=/);
+  assert.ok(url.length<=2600);
+  const recipient=readShareHash(new URL(url).hash);
+  assert.equal(recipient.character.name,fighter.character.name);
+  assert.equal(recipient.character.level,18);
+  assert.equal(recipient.rolls.length,fighter.rolls.length);
+  assert.deepEqual(recipient.rolls.map(r=>r.minimumLevel),fighter.rolls.map(r=>r.minimumLevel));
+  assert.equal(recipient.rolls.find(r=>r.name==='Longsword · 4 attacks').effects.length,4);
+  // Site -> installed Android still transfers complete versioned JSON after preview.
+  const app=androidUrl(recipient);
+  assert.ok(app.length<=8000,'Android app handoff too long');
+  assert.deepEqual(decodeToken(decodeURIComponent(app.split('data=')[1])),recipient);
+});
+
+test('short preset URL cannot silently discard a customized roll, condition, style, or stat', () => {
+  const original=instantiateTemplate(0);
+  for(const change of [
+    doc=>doc.modifiers.find(x=>x.name==='Strength').value=4,
+    doc=>doc.rolls.find(x=>x.name==='Longsword').effects[0].actions[0].expression='2d8',
+    doc=>doc.rolls.find(x=>x.name==='Longsword').name='Magic sword',
+    doc=>doc.character.tag='A different campaign',
+  ]) {
+    const custom=structuredClone(original);
+    change(custom);
+    validateDocument(custom);
+    assert.throws(()=>shareUrl(custom,'https://example.com/Android.DiceThrower/workshop/'),/Link too long/);
+  }
+  assert.throws(()=>readShareHash('#template=fighter2014v1&name=Good&level=0'),/Invalid/);
+  assert.equal(readShareHash('#template=not-supported&name=Someone&level=1'),null);
 });
