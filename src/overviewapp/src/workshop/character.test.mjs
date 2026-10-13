@@ -4,7 +4,7 @@ import {
   templates, instantiateTemplate, validateDocument, envelope, documentFromEnvelope,
   encodeToken, decodeToken, importAsCopy, normalFormula, newPart, newRoll, shareUrl,
   canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences, androidUrl,
-  FIGHTER_2014_LEVELS, FIGHTER_2014_PROFICIENCY_STEPS, readShareHash,
+  FIGHTER_2014_LEVELS, FIGHTER_2014_PROFICIENCY_STEPS, ROGUE_2014_LEVELS, readShareHash,
 } from './character.js';
 
 test('all ten starter templates validate and survive the versioned compressed link', () => {
@@ -318,4 +318,96 @@ test('short preset URL cannot silently discard a customized roll, condition, sty
   }
   assert.throws(()=>readShareHash('#template=fighter2014v1&name=Good&level=0'),/Invalid/);
   assert.equal(readShareHash('#template=not-supported&name=Someone&level=1'),null);
+});
+
+test('2014 Rogue class reference covers every level and never adds 2024 features', () => {
+  assert.equal(ROGUE_2014_LEVELS.length, 20);
+  for (let level = 1; level <= 20; level++) {
+    const tier = ROGUE_2014_LEVELS[level-1];
+    assert.equal(tier.level, level);
+    assert.equal(tier.proficiency, 2 + [5,9,13,17].filter(start => level >= start).length);
+    assert.equal(tier.sneakAttackDice, Math.ceil(level/2));
+    assert.ok(!/Cunning Strike|Weapon Mastery|Epic Boon/.test(tier.features));
+  }
+  assert.match(ROGUE_2014_LEVELS[10].features, /Reliable Talent/);
+  assert.match(ROGUE_2014_LEVELS[14].features, /Slippery Mind/);
+  assert.match(ROGUE_2014_LEVELS[19].features, /Stroke of Luck/);
+});
+
+test('2014 Rogue dagger pairs Attack and Damage with independent d4 natural-20 critical', () => {
+  const rogue = instantiateTemplate(1);
+  assert.equal(rogue.character.level, 1);
+  assert.equal(templates[1].category, 'D&D 5e (2014) · Rogue');
+  const dagger = rogue.rolls.find(roll => roll.name === 'Dagger');
+  assert.ok(dagger);
+  assert.deepEqual(dagger.subgroups.map(part => part.name), ['Attack','Damage']);
+  assert.equal(dagger.subgroups[0].expression, '1d20+{Dexterity}+{Proficiency}+{levelstep:5:9:13:17}');
+  assert.equal(dagger.subgroups[1].expression, '1d4+{Dexterity}');
+  assert.equal(dagger.effects.length, 1);
+  const effect = dagger.effects[0];
+  assert.equal(effect.activationGroups[0].conditions[0].partId, dagger.subgroups[0].id);
+  assert.equal(effect.activationGroups[0].conditions[0].scope, 'DICE_ONLY');
+  assert.equal(effect.activationGroups[0].conditions[0].threshold, '20');
+  assert.equal(effect.actions[0].kind, 'ROLL_AFTER');
+  assert.equal(effect.actions[0].scope, 'DICE_ONLY');
+  assert.equal(effect.actions[0].targetPartId, dagger.subgroups[1].id);
+  assert.equal(effect.actions[0].expression, '1d4');
+  assert.equal(rogue.modifiers.find(stat => stat.name === 'Dexterity').value, 3);
+  assert.equal(rogue.modifiers.find(stat => stat.name === 'Proficiency').value, 2);
+});
+
+test('Sneak Attack is a player-triggered damage roll and doubles ONLY its dice on critical', () => {
+  const rogue = instantiateTemplate(1);
+  const sneak = rogue.rolls.find(roll => roll.name === 'Sneak Attack · if eligible');
+  const critical = rogue.rolls.find(roll => roll.name === 'Sneak Attack · critical (if eligible)');
+  assert.equal(sneak.expression, '1d6');
+  assert.equal(critical.expression, '2d6');
+  assert.deepEqual(sneak.levelRules.map(rule => rule.trigger), [3,5,7,9,11,13,15,17,19]);
+  assert.deepEqual(critical.levelRules.map(rule => rule.trigger), [3,5,7,9,11,13,15,17,19]);
+  assert.ok(sneak.levelRules.every(rule => rule.kind === 'FROM_LEVEL' && rule.expression === '1d6'));
+  assert.ok(critical.levelRules.every(rule => rule.kind === 'FROM_LEVEL' && rule.expression === '2d6'));
+  assert.equal(sneak.effects.length, 0);
+  for (let level = 1; level <= 20; level++) {
+    const active = sneak.levelRules.filter(rule => rule.trigger <= level);
+    const criticalActive = critical.levelRules.filter(rule => rule.trigger <= level);
+    const expectedDice = Math.ceil(level / 2);
+    assert.equal(1 + active.length, expectedDice, 'Sneak Attack level ' + level);
+    assert.equal(2 + 2 * criticalActive.length, 2 * expectedDice, 'Critical at level ' + level);
+  }
+  const extraWisdom = rogue.rolls.find(roll => roll.name === 'Wisdom save (Slippery Mind)');
+  assert.equal(extraWisdom.minimumLevel, 15);
+  assert.equal(extraWisdom.expression, '1d20+{Wisdom}+{Proficiency}+{levelstep:5:9:13:17}');
+  for (const name of ['Stealth','Acrobatics','Sleight of Hand','Perception',"Thieves' tools",'Dexterity save','Intelligence save']) {
+    const roll = rogue.rolls.find(r => r.name === name);
+    assert.match(roll.expression, /\{Proficiency\}\+\{levelstep:5:9:13:17\}/);
+  }
+  assert.ok(!rogue.rolls.some(r => /Reliable Talent|Cunning Action|Roguish Archetype|ASI|Expertise/.test(r.name)));
+});
+
+test('Rogue 2014 preset roundtrips with level rules and valid import remapped effect IDs', () => {
+  const rogue = instantiateTemplate(1);
+  validateDocument(rogue);
+  assert.deepEqual(decodeToken(encodeToken(rogue)), rogue);
+  const clone = importAsCopy(rogue);
+  const attack = clone.rolls.find(r => r.name === 'Dagger');
+  assert.equal(attack.effects[0].activationGroups[0].conditions[0].partId, attack.subgroups[0].id);
+  assert.equal(attack.effects[0].actions[0].targetPartId, attack.subgroups[1].id);
+  assert.notEqual(attack.subgroups[1].id, rogue.rolls.find(r => r.name === 'Dagger').subgroups[1].id);
+  assert.deepEqual(clone.rolls.find(r => r.name === 'Sneak Attack · if eligible').levelRules.map(r => r.trigger),
+    [3,5,7,9,11,13,15,17,19]);
+  assert.deepEqual(documentFromEnvelope(envelope(clone)), clone);
+  const recipient = withImportPreferences(rogue, 'Nim the Swift', 20);
+  const link = shareUrl(recipient,'https://example.com/Android.DiceThrower/workshop/');
+  assert.ok(link.length <= 2600, 'Preset QR should fit');
+  const shared = readShareHash(new URL(link).hash);
+  assert.equal(shared.character.level, 20);
+  assert.equal(shared.character.name, 'Nim the Swift');
+  assert.equal(shared.rolls.length, rogue.rolls.length);
+  assert.ok(androidUrl(shared).length <= 8000, 'App handoff must fit');
+  const custom = structuredClone(rogue);
+  custom.rolls.find(r => r.name === 'Sneak Attack · if eligible').levelRules[0].expression = '2d6';
+  validateDocument(custom);
+  const customLink = (() => { try { return shareUrl(custom,'https://example.com/workshop/'); } catch { return null; } })();
+  assert.ok(!customLink || !customLink.includes('#template=rogue2014v1'),
+    'Edited Sneak Attack must never produce a lossy preset QR');
 });

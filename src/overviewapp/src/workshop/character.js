@@ -236,27 +236,39 @@ function canonicalPresetShape(doc) {
   copy.character.level = 1;
   return JSON.stringify(visit(copy));
 }
-function isUnmodifiedFighterPreset(doc) {
-  if (!doc?.character?.tag?.startsWith('D&D 5e sample')) return false;
-  try { return canonicalPresetShape(doc) === canonicalPresetShape(instantiateTemplate(0)); }
-  catch { return false; }
+const shortSharePresets = [
+  { key: 'fighter2014v1', index: 0, tag: 'D&D 5e sample' },
+  { key: 'rogue2014v1', index: 1, tag: 'D&D 5e (2014) Rogue sample' },
+];
+function matchingUnmodifiedSharePreset(doc) {
+  for (const preset of shortSharePresets) {
+    if (!doc?.character?.tag?.startsWith(preset.tag)) continue;
+    try {
+      if (canonicalPresetShape(doc) === canonicalPresetShape(instantiateTemplate(preset.index))) return preset;
+    } catch { /* Invalid or no longer matching original: never discard edits. */ }
+  }
+  return null;
 }
 export function shareUrl(doc, base = window.location.href) {
   validateDocument(doc);
   const url = new URL(base);
   url.hash = 'character=' + encodeToken(doc);
   if (url.href.length <= MAX_LINK_LENGTH) return url.href;
-  if (isUnmodifiedFighterPreset(doc)) {
-    url.hash = 'template=fighter2014v1&name=' +
+  const preset = matchingUnmodifiedSharePreset(doc);
+  if (preset) {
+    url.hash = 'template=' + preset.key + '&name=' +
       encodeURIComponent(doc.character.name) + '&level=' + doc.character.level;
     if (url.href.length <= MAX_LINK_LENGTH) return url.href;
   }
   throw new Error('Link too long for a reliable QR code. Export the JSON file instead.');
 }
 export function readShareHash(hash = window.location.hash) {
-  const preset = hash.match(/^#template=fighter2014v1&name=([^&]+)&level=([0-9]+)$/);
-  if (preset) return withImportPreferences(
-    instantiateTemplate(0), decodeURIComponent(preset[1]), Number(preset[2]));
+  const preset = hash.match(/^#template=(fighter2014v1|rogue2014v1)&name=([^&]+)&level=([0-9]+)$/);
+  if (preset) {
+    const definition = shortSharePresets.find(item => item.key === preset[1]);
+    return withImportPreferences(
+      instantiateTemplate(definition.index), decodeURIComponent(preset[2]), Number(preset[3]));
+  }
   const match = hash.match(/^#character=(v1\.[A-Za-z0-9_-]+)$/);
   return match ? decodeToken(match[1]) : null;
 }
@@ -360,7 +372,32 @@ const starterSpecs = [
       ['Recovery', [['Second Wind · heal', '1d10+{level}']]],
     ],
   ],
-  ['Fantasy · Rogue', 'Nim · Shadow Rogue', 'A nimble adventurer', 1, [['Agility', 3], ['Skill', 2]], [['Combat', [['Quick strike', '1d20+{Agility}+{Skill}'], ['Sneak damage', '1d6+{Agility}']]], ['Skills', [['Stealth', '1d20+{Agility}+{Skill}']]]]],
+  ['D&D 5e (2014) · Rogue', 'Nim · Level 1 Rogue',
+    'D&D 5e (2014) Rogue sample; Dexterity +3, proficiency +2. Customize skill proficiency, Expertise, subclass and ASI.', 1,
+    [['Dexterity', 3], ['Intelligence', 1], ['Wisdom', 1], ['Constitution', 2], ['Proficiency', 2]],
+    [
+      ['Combat', [
+        ['Dagger', [
+          ['Attack', '1d20+{Dexterity}+{Proficiency}'],
+          ['Damage', '1d4+{Dexterity}'],
+        ], 'DND5E_CRITICAL'],
+        ['Initiative', '1d20+{Dexterity}'],
+      ]],
+      ['Optional damage', [
+        ['Sneak Attack · if eligible', '1d6'],
+        ['Sneak Attack · critical (if eligible)', '2d6'],
+      ]],
+      ['Skills & saves', [
+        ['Stealth', '1d20+{Dexterity}+{Proficiency}'],
+        ['Acrobatics', '1d20+{Dexterity}+{Proficiency}'],
+        ['Sleight of Hand', '1d20+{Dexterity}+{Proficiency}'],
+        ['Perception', '1d20+{Wisdom}+{Proficiency}'],
+        ["Thieves' tools", '1d20+{Dexterity}+{Proficiency}'],
+        ['Dexterity save', '1d20+{Dexterity}+{Proficiency}'],
+        ['Intelligence save', '1d20+{Intelligence}+{Proficiency}'],
+      ]],
+    ],
+  ],
   ['Fantasy · Mage', 'Lyra · Spellcaster', 'An elemental mage', 1, [['Magic', 3]], [['Spells', [['Arcane bolt', '1d20+{Magic}'], ['Fire spark', '2d6+{Magic}']]], ['Checks', [['Arcana', '1d20+{Magic}']]]]],
   ['Fantasy · Ranger', 'Bryn · Ranger', 'A woodland explorer', 1,
     [['Agility', 2], ['Tracking', 3]],
@@ -393,8 +430,8 @@ const starterSpecs = [
   ['Adventure · Bard', 'Orin · Performer', 'Creative social adventurer', 1, [['Charm', 3], ['Art', 2]], [['Social', [['Persuade', '1d20+{Charm}'], ['Performance', '1d20+{Art}']]], ['Support', [['Encourage', '1d6+{Charm}']]]]],
 ];
 /**
- * Dice Thrower is game-agnostic: only the explicitly labelled D&D 5e fighter
- * gets this game-specific critical rule. Attack is checked on its unmodified
+ * Dice Thrower is game-agnostic: only explicitly labelled D&D 5e starter weapons
+ * receive this game-specific critical rule. Attack is checked on its unmodified
  * d20 face (DICE_ONLY), not on 1d20 + Strength + Proficiency.
  *
  * A 5e critical rolls another damage die; it never multiplies the already
@@ -431,7 +468,8 @@ function createStarterRoll(characterId, groupId, name, formulaOrParts, rule, ord
   roll.subgroups = parts;
   roll.expression = normalFormula(parts);
   if (rule === 'DND5E_CRITICAL') {
-    const damageDice = '1d8'; // one-handed level-one longsword
+    const damageDice = parts[1].expression.match(/^(\d+d\d+)(?:\+|$)/i)?.[1];
+    if (!damageDice) throw new Error('Critical preset needs leading weapon damage dice');
     roll.effects = [createDnd5eCriticalEffect(parts[0].id, parts[1].id, damageDice)];
   }
   return roll;
@@ -581,6 +619,71 @@ export function buildFighter2014Progression(doc) {
   return validateDocument(fighter);
 }
 
+/**
+ * D&D 5e Rogue 2014: Sneak Attack is optional, never applied to every attack.
+ * It deals one extra d6 at odd levels 3..19. Critical Sneak Attack is provided
+ * as a separate manual damage-only choice (double dice, no ability modifier).
+ * This avoids granting the extra damage when attack eligibility is unknown.
+ */
+export const ROGUE_2014_LEVELS = [
+  'Expertise (choose 2), Sneak Attack 1d6, Thieves’ Cant',
+  'Cunning Action',
+  'Roguish Archetype (choose subclass)',
+  'Ability Score Improvement (player chooses)',
+  'Uncanny Dodge',
+  'Expertise (choose 2 more)',
+  'Evasion',
+  'Ability Score Improvement (player chooses)',
+  'Roguish Archetype feature',
+  'Ability Score Improvement (player chooses)',
+  'Reliable Talent (apply manually to proficient checks)',
+  'Ability Score Improvement (player chooses)',
+  'Roguish Archetype feature',
+  'Blindsense',
+  'Slippery Mind (Wisdom saves proficiency)',
+  'Ability Score Improvement (player chooses)',
+  'Roguish Archetype feature',
+  'Elusive',
+  'Ability Score Improvement (player chooses)',
+  'Stroke of Luck (resource use is manual)',
+].map((features, index) => ({
+  level: index + 1,
+  proficiency: 2 + [5, 9, 13, 17].filter(start => index + 1 >= start).length,
+  sneakAttackDice: Math.ceil((index + 1) / 2),
+  features,
+}));
+
+export function buildRogue2014Progression(doc) {
+  const rogue = structuredClone(doc);
+  if (!rogue.character.tag.startsWith('D&D 5e (2014) Rogue sample'))
+    throw new Error('Not a supported 2014 Rogue template');
+  const dagger = rogue.rolls.find(roll => roll.name === 'Dagger');
+  if (!dagger || dagger.subgroups.length !== 2 || dagger.effects.length !== 1)
+    throw new Error('Missing 2014 Rogue dagger and critical effect');
+  const marker = '{' + FIGHTER_2014_PROFICIENCY_STEPS + '}';
+  const addProficiencySteps = expr => expr.replaceAll('{Proficiency}', '{Proficiency}+' + marker);
+  for (const roll of rogue.rolls) {
+    if (roll.subgroups.length) {
+      for (const part of roll.subgroups) part.expression = addProficiencySteps(part.expression);
+      roll.expression = normalFormula(roll.subgroups);
+    } else roll.expression = addProficiencySteps(roll.expression);
+  }
+  const normal = rogue.rolls.find(roll => roll.name === 'Sneak Attack · if eligible');
+  const critical = rogue.rolls.find(roll => roll.name === 'Sneak Attack · critical (if eligible)');
+  if (!normal || !critical) throw new Error('Missing conditional sneak damage presets');
+  for (const level of [3, 5, 7, 9, 11, 13, 15, 17, 19]) {
+    normal.levelRules.push({ id: uid(), kind: 'FROM_LEVEL', trigger: level, expression: '1d6' });
+    critical.levelRules.push({ id: uid(), kind: 'FROM_LEVEL', trigger: level, expression: '2d6' });
+  }
+  // Slippery Mind at level 15 grants Wisdom-save proficiency, not before.
+  const skillGroup = rogue.groups.find(group => group.name === 'Skills & saves');
+  const wisdom = createStarterRoll(rogue.character.id, skillGroup.id, 'Wisdom save (Slippery Mind)',
+    '1d20+{Wisdom}+{Proficiency}+' + marker, null, rogue.rolls.length);
+  wisdom.minimumLevel = 15;
+  rogue.rolls.push(wisdom);
+  return validateDocument(rogue);
+}
+
 /** New templates have all future gated Rolls prepared; existing saves are never rewritten. */
 export const templates = starterSpecs.map(([category, name, description], index) => ({ category, name, description, index }));
 export function instantiateTemplate(index) {
@@ -598,5 +701,7 @@ export function instantiateTemplate(index) {
         formulaOrParts, rule, doc.rolls.length));
     });
   });
-  return index === 0 ? buildFighter2014Progression(doc) : validateDocument(doc);
+  if (index === 0) return buildFighter2014Progression(doc);
+  if (index === 1) return buildRogue2014Progression(doc);
+  return validateDocument(doc);
 }
