@@ -5,7 +5,7 @@ import {
   listSaved, newCharacter, newGroup, newLevelRule, newModifier, newPart, newRoll, newStyle,
   normalFormula, readShareHash, removeDocument, saveDocument, shareUrl, templates, validateDocument,
   canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences,
-  FIGHTER_2014_LEVELS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS, CLERIC_2014_LEVELS, PALADIN_2014_LEVELS,
+  FIGHTER_2014_LEVELS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS, CLERIC_2014_LEVELS, PALADIN_2014_LEVELS, BARD_2014_LEVELS,
 } from './character.js';
 import GuidedRollEditor from './GuidedRollEditor.jsx';
 import { isPartUsed, removePartSafely, SYSTEM_STYLES } from './guided.js';
@@ -29,6 +29,8 @@ const dictionary = {
     rangerProgression: 'Ranger 2014 · levels 1–20', rangerSlots: 'Slots (1–5)',
     clericProgression: 'Cleric 2014 · levels 1–20', clericSlots: 'Slots (1–9)', clericCantrips: 'cantrips known',
     paladinProgression: 'Paladin 2014 · levels 1–20', paladinSlots: 'Slots (1–5)', paladinLayOnHands: 'Lay on Hands HP',
+    bardProgression: 'Bard 2014 · levels 1–20', bardSlots: 'Slots (1–9)', bardKnown: 'spells known', bardInspiration: 'Inspiration',
+    bardChoiceNote: 'Bardic Inspiration dice are given to another creature who can hear you: a d6 at level 1, d8 at 5, d10 at 10, d12 at 15. Spending uses is manual. Song of Rest applies only when eligible creatures spend Hit Dice at the end of a short rest. Vicious Mockery is damage only on a failed target Wisdom save: it has no spell attack or critical, and scales 1/2/3/4d4 at levels 1/5/11/17. Jack of All Trades is configured only for an unproficient sample ability check, with half proficiency rounded down; do not apply it to already proficient checks. Class college, Expertise, Magical Secrets, learned spells and spent slots are player choices. Spell save DC = 8 + CHA + proficiency.',
     paladinChoiceNote: 'At level 5 use Longsword · 2 attacks. At level 11 use its Improved Smite alternative: weapon hits gain another 1d8 radiant and a natural 20 doubles both the sword and this extra die, never Strength. Divine Smite is an optional separate damage Roll, usable only after a melee weapon hit and spending a spell slot: choose exactly one regular/critical and undead-or-fiend alternative. If a critical hit, double only its dice. Spell slots are not automatically spent. Lay on Hands (5 HP per class level), Fighting Style, Aura, subclass Oath, ASI and resources must be handled manually.',
     clericChoiceNote: 'Sacred Flame calls for the target’s Dexterity save: roll only the damage tier (1d8/2d8/3d8/4d8 at levels 1/5/11/17), never an attack/critical. Healing Word and Cure Wounds heal Nd4 or Nd8 + Wisdom when the spell is prepared and cast with an Nth-level slot (1–9). Guidance and Bless d4 are optional and only apply to eligible checks/attacks/saves. Spell save DC is 8 + Wisdom + proficiency. Spell preparation, chosen Divine Domain, Channel Divinity, Divine Intervention and expended slots remain manual.',
     rangerChoiceNote: 'Extra Attack: use Bow · 2 attacks from level 5 (each attack has its own natural-20 critical). Hunter’s Mark damage is optional and requires the spell to be known, an eligible marked target, an active concentration and a hit; on a critical choose its 2d6 variant INSTEAD of 1d6. Cure Wounds and spell attacks are optional examples, not automatic known spells; slots are reference values, not expended automatically. Favored Enemy, terrain, Fighting Style, ASI and Ranger Archetype remain player choices.',
@@ -97,6 +99,18 @@ const dictionary = {
       'Ability Score Improvement (choice)', '5th-level slots',
       'Aura improvements', 'Ability Score Improvement (choice)', 'Sacred Oath feature',
     ],
+    bardEvents: [
+      'Spellcasting, Bardic Inspiration d6', 'Jack of All Trades, Song of Rest d6',
+      'Choose Bard College, Expertise (2 skills)', 'Ability Score Improvement (choice)',
+      'Bardic Inspiration d8, Font of Inspiration', 'Countercharm, Bard College feature',
+      '4th-level slots', 'Ability Score Improvement (choice)', 'Song of Rest d8',
+      'Inspiration d10, Expertise (2 more), Magical Secrets',
+      '6th-level slots', 'Ability Score Improvement (choice)',
+      'Song of Rest d10, 7th-level slots', 'Magical Secrets, Bard College feature',
+      'Bardic Inspiration d12', 'Ability Score Improvement (choice)',
+      'Song of Rest d12, 9th-level slots', 'Magical Secrets',
+      'Ability Score Improvement (choice)', 'Superior Inspiration',
+    ],
     details: 'Character details', characterName: 'Character name', level: 'Level', tag: 'Description', modifiers: 'Variables & modifiers',
     groups: 'Roll groups', rolls: 'Rolls', styles: 'Custom dice styles', group: 'Group', formula: 'Formula',
     parts: 'Roll Parts', rules: 'Level rules', effects: 'Bonus & malus effects', appearance: 'Dice appearance',
@@ -150,6 +164,8 @@ const dictionary = {
     rangerProgression: 'Ranger 2014 · livelli 1–20', rangerSlots: 'Slot (1–5)',
     clericProgression: 'Chierico 2014 · livelli 1–20', clericSlots: 'Slot (1–9)', clericCantrips: 'trucchetti conosciuti',
     paladinProgression: 'Paladino 2014 · livelli 1–20', paladinSlots: 'Slot (1–5)', paladinLayOnHands: 'Imposizione delle Mani PF',
+    bardProgression: 'Bardo 2014 · livelli 1–20', bardSlots: 'Slot (1–9)', bardKnown: 'incantesimi conosciuti', bardInspiration: 'Ispirazione',
+    bardChoiceNote: 'Il dado di Ispirazione Bardica va assegnato a un’altra creatura che ti sente: d6 dal livello 1, d8 dal 5, d10 dal 10, d12 dal 15. Gli usi si consumano manualmente. Canto di Riposo si applica solo quando una creatura spende Dadi Vita dopo un riposo breve. Scherno Crudele infligge danni solo se il bersaglio fallisce il TS Saggezza: non ha tiro per colpire o critico; 1/2/3/4d4 ai livelli 1/5/11/17. Jack of All Trades vale solo per le prove senza competenza e applica metà competenza arrotondata per difetto. Collegio, Maestria, Segreti Magici, incantesimi imparati e slot consumati restano scelte del giocatore. CD incantesimi = 8 + CAR + competenza.',
     paladinChoiceNote: 'Dal livello 5 usa Spada Lunga · 2 attacchi. Dal livello 11 usa la variante con Punizione Divina Migliorata: ogni colpo a segno aggiunge 1d8 radiante e sul 20 naturale si raddoppiano i dadi dell’arma e quello extra, mai Forza. La Punizione Divina opzionale va lanciata separatamente soltanto dopo un colpo in mischia e consumando uno slot: scegli UNA sola variante normale/critico e contro non morti o immondi. Su critico raddoppia solo i dadi. Gli slot non si consumano automaticamente. Imposizione delle Mani (5 PF per livello), Stile di Combattimento, Aure, Giuramento, caratteristiche e risorse sono gestiti manualmente.',
     clericChoiceNote: 'Fiamma Sacra richiede un tiro salvezza di Destrezza del bersaglio: usa soltanto il danno appropriato (1d8/2d8/3d8/4d8 ai livelli 1/5/11/17), non un tiro per colpire o critico. Parola Guaritrice e Cura Ferite curano Nd4 o Nd8 + Saggezza se preparati e lanciati con uno slot di livello N (1–9). Guida e Benedizione sono d4 opzionali applicabili solo a prove/attacchi/tiri salvezza idonei. CD degli incantesimi = 8 + Saggezza + competenza. Preparazione, Dominio Divino, Incanalare Divinità, Intervento Divino e slot spesi restano gestiti dal giocatore.',
     rangerChoiceNote: 'Attacco Extra: dal livello 5 usa Arco · 2 attacchi (ogni attacco ha un proprio critico con 20 naturale). Danno Marchio del Cacciatore solo se conosci l’incantesimo, mantieni concentrazione, il bersaglio è marchiato e il colpo va a segno; su critico usa 2d6 INVECE di 1d6. Cura Ferite e attacchi magici sono esempi opzionali, non incantesimi automaticamente conosciuti; gli slot sono valori di riferimento. Nemico Prescelto, terreno, Stile di Combattimento, caratteristiche e Archetipo sono scelte del giocatore.',
@@ -221,6 +237,22 @@ const dictionary = {
       'Slot di 4° livello', 'Tocco Purificatore', 'Privilegio di Giuramento',
       'Aumento delle caratteristiche (scelta)', 'Slot di 5° livello',
       'Miglioramento delle Aure', 'Aumento delle caratteristiche (scelta)', 'Privilegio di Giuramento',
+    ],
+    bardEvents: [
+      'Lancio degli Incantesimi, Ispirazione Bardica d6',
+      'Jack of All Trades, Canto di Riposo d6',
+      'Scegli Collegio Bardico, Maestria (2 abilità)',
+      'Aumento delle caratteristiche (scelta)',
+      'Ispirazione Bardica d8, Fonte di Ispirazione',
+      'Controfascino, privilegio del Collegio', 'Slot di 4° livello',
+      'Aumento delle caratteristiche (scelta)', 'Canto di Riposo d8',
+      'Ispirazione d10, Maestria (altre 2), Segreti Magici',
+      'Slot di 6° livello', 'Aumento delle caratteristiche (scelta)',
+      'Canto di Riposo d10, slot di 7° livello',
+      'Segreti Magici, privilegio del Collegio',
+      'Ispirazione Bardica d12', 'Aumento delle caratteristiche (scelta)',
+      'Canto di Riposo d12, slot di 9° livello',
+      'Segreti Magici', 'Aumento delle caratteristiche (scelta)', 'Ispirazione Superiore',
     ],
     details: 'Dettagli personaggio', characterName: 'Nome personaggio', level: 'Livello', tag: 'Descrizione', modifiers: 'Variabili e modificatori',
     groups: 'Gruppi di tiri', rolls: 'Tiri', styles: 'Stili dadi personalizzati', group: 'Gruppo', formula: 'Formula',
@@ -402,7 +434,8 @@ export default function CharacterWorkshop({ locale = 'en' }) {
   const isRanger2014 = doc?.character.tag.startsWith('D&D 5e (2014) Ranger sample');
   const isCleric2014 = doc?.character.tag.startsWith('D&D 5e (2014) Cleric sample');
   const isPaladin2014 = doc?.character.tag.startsWith('D&D 5e (2014) Paladin sample');
-  const dndLevels = isPaladin2014 ? PALADIN_2014_LEVELS : isCleric2014 ? CLERIC_2014_LEVELS : isRanger2014 ? RANGER_2014_LEVELS : isWizard2014 ? WIZARD_2014_LEVELS : isRogue2014 ? ROGUE_2014_LEVELS : FIGHTER_2014_LEVELS;
+  const isBard2014 = doc?.character.tag.startsWith('D&D 5e (2014) Bard sample');
+  const dndLevels = isBard2014 ? BARD_2014_LEVELS : isPaladin2014 ? PALADIN_2014_LEVELS : isCleric2014 ? CLERIC_2014_LEVELS : isRanger2014 ? RANGER_2014_LEVELS : isWizard2014 ? WIZARD_2014_LEVELS : isRogue2014 ? ROGUE_2014_LEVELS : FIGHTER_2014_LEVELS;
 
   return <section className="workshop">
     <div className="workshop-heading">
@@ -481,15 +514,15 @@ export default function CharacterWorkshop({ locale = 'en' }) {
               <Field label={t.level} type="number" min={1} max={9999} value={doc.character.level} onChange={value => edit(x => x.character.level = value)} />
               <Field label={t.tag} value={doc.character.tag} onChange={value => edit(x => x.character.tag = value)} />
             </div>
-            {(isFighter2014 || isRogue2014 || isWizard2014 || isRanger2014 || isCleric2014 || isPaladin2014) && <details className="workshop-fighter-timeline">
-              <summary>{isPaladin2014 ? t.paladinProgression : isCleric2014 ? t.clericProgression : isRanger2014 ? t.rangerProgression : isWizard2014 ? t.wizardProgression : isRogue2014 ? t.rogueProgression : t.fighterProgression}</summary>
-              <p className="workshop-hint">{isPaladin2014 ? t.paladinChoiceNote : isCleric2014 ? t.clericChoiceNote : isRanger2014 ? t.rangerChoiceNote : isWizard2014 ? t.wizardChoiceNote : isRogue2014 ? t.rogueChoiceNote : t.fighterChoiceNote}</p>
+            {(isFighter2014 || isRogue2014 || isWizard2014 || isRanger2014 || isCleric2014 || isPaladin2014 || isBard2014) && <details className="workshop-fighter-timeline">
+              <summary>{isBard2014 ? t.bardProgression : isPaladin2014 ? t.paladinProgression : isCleric2014 ? t.clericProgression : isRanger2014 ? t.rangerProgression : isWizard2014 ? t.wizardProgression : isRogue2014 ? t.rogueProgression : t.fighterProgression}</summary>
+              <p className="workshop-hint">{isBard2014 ? t.bardChoiceNote : isPaladin2014 ? t.paladinChoiceNote : isCleric2014 ? t.clericChoiceNote : isRanger2014 ? t.rangerChoiceNote : isWizard2014 ? t.wizardChoiceNote : isRogue2014 ? t.rogueChoiceNote : t.fighterChoiceNote}</p>
               <div className="workshop-level-grid">
                 {dndLevels.map((step, index) =>
                   <div className={step.level === doc.character.level ? 'workshop-level-row current' : 'workshop-level-row'} key={step.level}>
                     <strong>{t.level} {step.level}</strong>
                     <span>+{step.proficiency} {t.fighterProficiency}{isRogue2014 && <> · {step.sneakAttackDice}d6 {t.rogueSneak}</>}{isWizard2014 && <> · {step.cantripsKnown} {t.wizardCantrips}</>}{isCleric2014 && <> · {step.cantripsKnown} {t.clericCantrips}</>}</span>
-                    <span>{isPaladin2014 ? t.paladinEvents[index] + ' · ' + t.paladinSlots + ': ' + step.slots.join('/') + ' · ' + t.paladinLayOnHands + ': ' + step.layOnHandsPool : isCleric2014 ? t.clericEvents[index] + ' · ' + t.clericSlots + ': ' + step.slots.join('/') : isRanger2014 ? t.rangerEvents[index] + ' · ' + t.rangerSlots + ': ' + step.slots.join('/') : isWizard2014 ? t.wizardEvents[index] + ' · ' + t.wizardSlots + ': ' + step.slots.join('/') : isRogue2014 ? t.rogueEvents[index] : t.fighterEvents[index]}</span>
+                    <span>{isBard2014 ? t.bardEvents[index] + ' · ' + t.bardSlots + ': ' + step.slots.join('/') + ' · ' + t.bardKnown + ': ' + step.spellsKnown + ' · ' + t.bardInspiration + ': d' + step.inspirationDie : isPaladin2014 ? t.paladinEvents[index] + ' · ' + t.paladinSlots + ': ' + step.slots.join('/') + ' · ' + t.paladinLayOnHands + ': ' + step.layOnHandsPool : isCleric2014 ? t.clericEvents[index] + ' · ' + t.clericSlots + ': ' + step.slots.join('/') : isRanger2014 ? t.rangerEvents[index] + ' · ' + t.rangerSlots + ': ' + step.slots.join('/') : isWizard2014 ? t.wizardEvents[index] + ' · ' + t.wizardSlots + ': ' + step.slots.join('/') : isRogue2014 ? t.rogueEvents[index] : t.fighterEvents[index]}</span>
                   </div>)}
               </div>
             </details>}
