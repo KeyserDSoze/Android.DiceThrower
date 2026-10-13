@@ -240,6 +240,7 @@ const shortSharePresets = [
   { key: 'fighter2014v1', index: 0, tag: 'D&D 5e sample' },
   { key: 'rogue2014v1', index: 1, tag: 'D&D 5e (2014) Rogue sample' },
   { key: 'wizard2014v1', index: 2, tag: 'D&D 5e (2014) Wizard sample' },
+  { key: 'ranger2014v1', index: 3, tag: 'D&D 5e (2014) Ranger sample' },
 ];
 function matchingUnmodifiedSharePreset(doc) {
   for (const preset of shortSharePresets) {
@@ -264,7 +265,7 @@ export function shareUrl(doc, base = window.location.href) {
   throw new Error('Link too long for a reliable QR code. Export the JSON file instead.');
 }
 export function readShareHash(hash = window.location.hash) {
-  const preset = hash.match(/^#template=(fighter2014v1|rogue2014v1|wizard2014v1)&name=([^&]+)&level=([0-9]+)$/);
+  const preset = hash.match(/^#template=(fighter2014v1|rogue2014v1|wizard2014v1|ranger2014v1)&name=([^&]+)&level=([0-9]+)$/);
   if (preset) {
     const definition = shortSharePresets.find(item => item.key === preset[1]);
     return withImportPreferences(
@@ -419,16 +420,31 @@ const starterSpecs = [
       ]],
     ],
   ],
-  ['Fantasy · Ranger', 'Bryn · Ranger', 'A woodland explorer', 1,
-    [['Agility', 2], ['Tracking', 3]],
+  ['D&D 5e (2014) · Ranger', 'Bryn · Level 1 Ranger',
+    'D&D 5e (2014) Ranger sample; Dexterity +3, Wisdom +2, proficiency +2. Choose spells, terrain, enemies and subclass.', 1,
+    [['Dexterity', 3], ['Wisdom', 2], ['Strength', 1], ['Constitution', 1], ['Proficiency', 2]],
     [
       ['Combat', [
         ['Bow', [
-          ['Attack', '1d20+{Agility}'],
-          ['Damage', '1d8+{Agility}'],
-        ]],
+          ['Attack', '1d20+{Dexterity}+{Proficiency}'],
+          ['Damage', '1d8+{Dexterity}'],
+        ], 'DND5E_CRITICAL'],
+        ['Initiative', '1d20+{Dexterity}'],
       ]],
-      ['Exploration', [['Track', '1d20+{Tracking}']]],
+      ['Optional damage', [
+        ["Hunter's Mark · on eligible hit", '1d6'],
+        ["Hunter's Mark · on critical", '2d6'],
+      ]],
+      ['Spells (examples)', [
+        ['Spell attack (if applicable)', '1d20+{Wisdom}+{Proficiency}'],
+      ]],
+      ['Exploration & saves', [
+        ['Survival', '1d20+{Wisdom}+{Proficiency}'],
+        ['Perception', '1d20+{Wisdom}+{Proficiency}'],
+        ['Stealth', '1d20+{Dexterity}+{Proficiency}'],
+        ['Strength save', '1d20+{Strength}+{Proficiency}'],
+        ['Dexterity save', '1d20+{Dexterity}+{Proficiency}'],
+      ]],
     ],
   ],
   ['Fantasy · Cleric', 'Sol · Healer', 'A protective spellcaster', 1, [['Faith', 3]], [['Magic', [['Healing word', '1d4+{Faith}'], ['Radiant strike', '1d8+{Faith}']]], ['Checks', [['Insight', '1d20+{Faith}']]]]],
@@ -792,6 +808,86 @@ export function buildWizard2014Progression(doc) {
   return validateDocument(wizard);
 }
 
+/**
+ * Ranger 2014 spell slots are editorial only; tracked slots, spells known,
+ * concentration, favored enemies/terrain and subclass decisions are not part
+ * of a generic dice definition. These level gates are ranger CLASS levels,
+ * not optional multiclass spell-slot progression.
+ */
+const RANGER_2014_SLOT_ROWS = [
+  [], [2], [3], [3], [4,2], [4,2], [4,3], [4,3],
+  [4,3,2], [4,3,2], [4,3,3], [4,3,3], [4,3,3,1],
+  [4,3,3,1], [4,3,3,2], [4,3,3,2],
+  [4,3,3,3,1], [4,3,3,3,1], [4,3,3,3,2], [4,3,3,3,2],
+];
+const RANGER_2014_FEATURES = [
+  'Favored Enemy, Natural Explorer', 'Fighting Style, Spellcasting',
+  'Ranger Archetype (choose), Primeval Awareness',
+  'Ability Score Improvement (player chooses)', 'Extra Attack (2 attacks)',
+  'Favored Enemy, Natural Explorer improvements', 'Ranger Archetype feature',
+  'Ability Score Improvement (choice), Land’s Stride',
+  '3rd-level spell slots', 'Natural Explorer improvement, Hide in Plain Sight',
+  'Ranger Archetype feature', 'Ability Score Improvement (choice)',
+  '4th-level spell slots', 'Favored Enemy improvement, Vanish',
+  'Ranger Archetype feature', 'Ability Score Improvement (choice)',
+  '5th-level spell slots', 'Feral Senses',
+  'Ability Score Improvement (choice)', 'Foe Slayer (player choice per turn)',
+];
+export const RANGER_2014_LEVELS = RANGER_2014_SLOT_ROWS.map((row, index) => ({
+  level: index + 1,
+  proficiency: 2 + [5,9,13,17].filter(start => index + 1 >= start).length,
+  slots: [...row, ...Array(5-row.length).fill(0)],
+  features: RANGER_2014_FEATURES[index],
+}));
+
+export function buildRanger2014Progression(doc) {
+  const ranger = structuredClone(doc);
+  if (!ranger.character.tag.startsWith('D&D 5e (2014) Ranger sample'))
+    throw new Error('Not a supported 2014 Ranger template');
+  const bow = ranger.rolls.find(r => r.name === 'Bow');
+  if (!bow || bow.subgroups.length !== 2 || bow.effects.length !== 1)
+    throw new Error('Missing paired bow and critical effect');
+  const marker = '{' + FIGHTER_2014_PROFICIENCY_STEPS + '}';
+  const enhance = expr => expr.replaceAll('{Proficiency}', '{Proficiency}+' + marker);
+  for (const roll of ranger.rolls) {
+    if (roll.subgroups.length) {
+      roll.subgroups.forEach(part => part.expression = enhance(part.expression));
+      roll.expression = normalFormula(roll.subgroups);
+    } else roll.expression = enhance(roll.expression);
+  }
+  const spellAttack = ranger.rolls.find(r=>r.name==='Spell attack (if applicable)');
+  const marked = ranger.rolls.filter(r=>r.name.startsWith("Hunter's Mark ·"));
+  if (!spellAttack || marked.length!==2) throw new Error('Missing ranger spell examples');
+  spellAttack.minimumLevel = 2;
+  marked.forEach(roll=>roll.minimumLevel=2);
+  // Extra Attack unlocked at level 5, with an independent d20 and natural-20
+  // effect for each bow attack. The one-shot preset remains available.
+  const multi = { ...newRoll(ranger.character.id, bow.groupId),
+    name: 'Bow · 2 attacks', minimumLevel: 5, order: ranger.rolls.length };
+  for (let i=1;i<=2;i++) {
+    const attack={...newPart(),name:'Attack '+i,expression:bow.subgroups[0].expression};
+    const damage={...newPart(),name:'Damage '+i,expression:bow.subgroups[1].expression};
+    multi.subgroups.push(attack,damage);
+    const effect=createDnd5eCriticalEffect(attack.id,damage.id,'1d8');
+    effect.name='Critical hit · Attack '+i;
+    effect.order=i-1;
+    multi.effects.push(effect);
+  }
+  multi.expression=normalFormula(multi.subgroups);
+  ranger.rolls.push(multi);
+  // Cure Wounds is a configurable sample spell, not an automatically known
+  // ranger spell. Upcasting adds one d8 per slot level over 1st.
+  const group = ranger.groups.find(g=>g.name==='Spells (examples)');
+  for (const [slot,minimumLevel] of [[1,2],[2,5],[3,9],[4,13],[5,17]]) {
+    const roll=createStarterRoll(ranger.character.id,group.id,
+      'Cure Wounds · slot '+slot+' (if known)',
+      slot+'d8+{Wisdom}', null,ranger.rolls.length);
+    roll.minimumLevel=minimumLevel;
+    ranger.rolls.push(roll);
+  }
+  return validateDocument(ranger);
+}
+
 /** New templates have all future gated Rolls prepared; existing saves are never rewritten. */
 export const templates = starterSpecs.map(([category, name, description], index) => ({ category, name, description, index }));
 export function instantiateTemplate(index) {
@@ -812,5 +908,6 @@ export function instantiateTemplate(index) {
   if (index === 0) return buildFighter2014Progression(doc);
   if (index === 1) return buildRogue2014Progression(doc);
   if (index === 2) return buildWizard2014Progression(doc);
+  if (index === 3) return buildRanger2014Progression(doc);
   return validateDocument(doc);
 }

@@ -5,7 +5,7 @@ import {
   listSaved, newCharacter, newGroup, newLevelRule, newModifier, newPart, newRoll, newStyle,
   normalFormula, readShareHash, removeDocument, saveDocument, shareUrl, templates, validateDocument,
   canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences,
-  FIGHTER_2014_LEVELS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS,
+  FIGHTER_2014_LEVELS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS,
 } from './character.js';
 import GuidedRollEditor from './GuidedRollEditor.jsx';
 import { isPartUsed, removePartSafely, SYSTEM_STYLES } from './guided.js';
@@ -26,6 +26,8 @@ const dictionary = {
     fighterProgression: 'Fighter 2014 · levels 1–20', fighterProficiency: 'Proficiency',
     rogueProgression: 'Rogue 2014 · levels 1–20', rogueSneak: 'Sneak Attack',
     wizardProgression: 'Wizard 2014 · levels 1–20', wizardSlots: 'Slots (1–9)', wizardCantrips: 'cantrips known',
+    rangerProgression: 'Ranger 2014 · levels 1–20', rangerSlots: 'Slots (1–5)',
+    rangerChoiceNote: 'Extra Attack: use Bow · 2 attacks from level 5 (each attack has its own natural-20 critical). Hunter’s Mark damage is optional and requires the spell to be known, an eligible marked target, an active concentration and a hit; on a critical choose its 2d6 variant INSTEAD of 1d6. Cure Wounds and spell attacks are optional examples, not automatic known spells; slots are reference values, not expended automatically. Favored Enemy, terrain, Fighting Style, ASI and Ranger Archetype remain player choices.',
     wizardChoiceNote: 'This is a 2014 Wizard example, not an automatic spellbook. Fire Bolt has a tier-specific attack/damage/critical preset at levels 1/5/11/17: use the highest currently unlocked tier. Magic Missile rolls list each dart separately with one extra dart per higher spell slot (3 through 11); the player assigns targets and chooses a spell/slot. Prepared spells, spent slots, Arcane Tradition, Arcane Recovery, Spell Mastery and Signature Spells are not auto-tracked. If your table rolls a single shared d4 for all Magic Missile darts, use one Dart Part and apply that result to all darts.',
     rogueChoiceNote: 'Sneak Attack is conditional (once per turn, eligible finesse/ranged hit with advantage or ally nearby): throw its separate damage Roll only when eligible. Use the separate critical Sneak Attack Roll on a critical hit; the Dagger critical only adds its own weapon die. Expertise/skill choices, ASI, archetype, Reliable Talent and resource uses require player choices or manual adjudication. Slippery Mind unlocks Wisdom save proficiency at level 15.',
     fighterChoiceNote: 'Ability Score Improvements, feats, Fighting Style and Martial Archetype are player choices. Edit the relevant modifiers and rolls after choosing. For Indomitable, roll the relevant saving throw again and use its new result; ability and resource choices are not tracked by the dice engine.',
@@ -57,6 +59,17 @@ const dictionary = {
       '7th-level slots', 'Arcane Tradition feature', '8th-level slots',
       'Ability Score Improvement (choice)', '9th-level slots', 'Spell Mastery (choice)',
       'Ability Score Improvement (choice)', 'Signature Spells (choice)',
+    ],
+    rangerEvents: [
+      'Favored Enemy, Natural Explorer', 'Fighting Style, Spellcasting',
+      'Choose Ranger Archetype, Primeval Awareness', 'Ability Score Improvement (choice)',
+      'Extra Attack: 2 attacks', 'Favored Enemy, Natural Explorer improvements',
+      'Ranger Archetype feature', 'Ability Score Improvement (choice), Land’s Stride',
+      '3rd-level slots', 'Natural Explorer improvement, Hide in Plain Sight',
+      'Ranger Archetype feature', 'Ability Score Improvement (choice)',
+      '4th-level slots', 'Favored Enemy improvement, Vanish',
+      'Ranger Archetype feature', 'Ability Score Improvement (choice)',
+      '5th-level slots', 'Feral Senses', 'Ability Score Improvement (choice)', 'Foe Slayer',
     ],
     details: 'Character details', characterName: 'Character name', level: 'Level', tag: 'Description', modifiers: 'Variables & modifiers',
     groups: 'Roll groups', rolls: 'Rolls', styles: 'Custom dice styles', group: 'Group', formula: 'Formula',
@@ -108,6 +121,8 @@ const dictionary = {
     fighterProgression: 'Guerriero 2014 · livelli 1–20', fighterProficiency: 'Competenza',
     rogueProgression: 'Ladro 2014 · livelli 1–20', rogueSneak: 'Attacco Furtivo',
     wizardProgression: 'Mago 2014 · livelli 1–20', wizardSlots: 'Slot (1–9)', wizardCantrips: 'trucchetti conosciuti',
+    rangerProgression: 'Ranger 2014 · livelli 1–20', rangerSlots: 'Slot (1–5)',
+    rangerChoiceNote: 'Attacco Extra: dal livello 5 usa Arco · 2 attacchi (ogni attacco ha un proprio critico con 20 naturale). Danno Marchio del Cacciatore solo se conosci l’incantesimo, mantieni concentrazione, il bersaglio è marchiato e il colpo va a segno; su critico usa 2d6 INVECE di 1d6. Cura Ferite e attacchi magici sono esempi opzionali, non incantesimi automaticamente conosciuti; gli slot sono valori di riferimento. Nemico Prescelto, terreno, Stile di Combattimento, caratteristiche e Archetipo sono scelte del giocatore.',
     wizardChoiceNote: 'Questo è un esempio di Mago 2014, non un grimorio automatico. Dardo di Fuoco ha attacco/danno/critico separato ai livelli 1/5/11/17: usa la variante sbloccata più alta. Dardo Incantato mostra ogni dardo con una Parte separata (3–11 dardi secondo lo slot): scegli il bersaglio e lo slot. Incantesimi preparati, slot spesi, Tradizione Arcana, Recupero Arcano, Padronanza Magica e Incantesimi Distintivi sono gestiti dal giocatore. Se il tavolo tira un unico d4 per tutti i dardi, tira una sola Parte e usa quel risultato per ciascun dardo.',
     rogueChoiceNote: 'Attacco Furtivo è condizionale (una volta per turno, arma accurata/a distanza, vantaggio o alleato vicino): usa il tiro danno separato solo se applicabile. Su un critico usa il tiro Attacco Furtivo critico; il critico del pugnale aggiunge solo il dado dell’arma. Maestria, abilità, incrementi di caratteristica, archetipo, Talento Affidabile e risorse sono scelte o valutazioni manuali. Mente Sfuggente sblocca la competenza al TS Saggezza dal livello 15.',
     fighterChoiceNote: 'Aumenti di caratteristica, talenti, Stile di Combattimento e Archetipo Marziale sono scelte del giocatore. Modifica i relativi valori e tiri dopo aver scelto. Per Indomito, ripeti il tiro salvezza interessato e usa il nuovo risultato. Le scelte e gli usi delle risorse non vengono tracciati dal motore.',
@@ -139,6 +154,18 @@ const dictionary = {
       'Slot di 7° livello', 'Privilegio di Tradizione Arcana', 'Slot di 8° livello',
       'Aumento delle caratteristiche (scelta)', 'Slot di 9° livello', 'Padronanza Magica (scelta)',
       'Aumento delle caratteristiche (scelta)', 'Incantesimi Distintivi (scelta)',
+    ],
+    rangerEvents: [
+      'Nemico Prescelto, Esploratore Nato', 'Stile di Combattimento, Lancio Incantesimi',
+      'Scegli Archetipo Ranger, Consapevolezza Primordiale',
+      'Aumento delle caratteristiche (scelta)', 'Attacco Extra: 2 attacchi',
+      'Miglioramenti Nemico Prescelto ed Esploratore Nato', 'Privilegio di Archetipo',
+      'Aumento delle caratteristiche, Andatura sul Terreno', 'Slot di 3° livello',
+      'Esploratore Nato, Nascondersi in Piena Vista', 'Privilegio di Archetipo',
+      'Aumento delle caratteristiche (scelta)', 'Slot di 4° livello',
+      'Miglioramento Nemico Prescelto, Svanire', 'Privilegio di Archetipo',
+      'Aumento delle caratteristiche (scelta)', 'Slot di 5° livello',
+      'Sensi Ferini', 'Aumento delle caratteristiche (scelta)', 'Uccisore di Nemici',
     ],
     details: 'Dettagli personaggio', characterName: 'Nome personaggio', level: 'Livello', tag: 'Descrizione', modifiers: 'Variabili e modificatori',
     groups: 'Gruppi di tiri', rolls: 'Tiri', styles: 'Stili dadi personalizzati', group: 'Gruppo', formula: 'Formula',
@@ -317,7 +344,8 @@ export default function CharacterWorkshop({ locale = 'en' }) {
   const isRogue2014 = doc?.character.tag.startsWith('D&D 5e (2014) Rogue sample');
   const isFighter2014 = doc?.character.tag.startsWith('D&D 5e sample');
   const isWizard2014 = doc?.character.tag.startsWith('D&D 5e (2014) Wizard sample');
-  const dndLevels = isWizard2014 ? WIZARD_2014_LEVELS : isRogue2014 ? ROGUE_2014_LEVELS : FIGHTER_2014_LEVELS;
+  const isRanger2014 = doc?.character.tag.startsWith('D&D 5e (2014) Ranger sample');
+  const dndLevels = isRanger2014 ? RANGER_2014_LEVELS : isWizard2014 ? WIZARD_2014_LEVELS : isRogue2014 ? ROGUE_2014_LEVELS : FIGHTER_2014_LEVELS;
 
   return <section className="workshop">
     <div className="workshop-heading">
@@ -396,15 +424,15 @@ export default function CharacterWorkshop({ locale = 'en' }) {
               <Field label={t.level} type="number" min={1} max={9999} value={doc.character.level} onChange={value => edit(x => x.character.level = value)} />
               <Field label={t.tag} value={doc.character.tag} onChange={value => edit(x => x.character.tag = value)} />
             </div>
-            {(isFighter2014 || isRogue2014 || isWizard2014) && <details className="workshop-fighter-timeline">
-              <summary>{isWizard2014 ? t.wizardProgression : isRogue2014 ? t.rogueProgression : t.fighterProgression}</summary>
-              <p className="workshop-hint">{isWizard2014 ? t.wizardChoiceNote : isRogue2014 ? t.rogueChoiceNote : t.fighterChoiceNote}</p>
+            {(isFighter2014 || isRogue2014 || isWizard2014 || isRanger2014) && <details className="workshop-fighter-timeline">
+              <summary>{isRanger2014 ? t.rangerProgression : isWizard2014 ? t.wizardProgression : isRogue2014 ? t.rogueProgression : t.fighterProgression}</summary>
+              <p className="workshop-hint">{isRanger2014 ? t.rangerChoiceNote : isWizard2014 ? t.wizardChoiceNote : isRogue2014 ? t.rogueChoiceNote : t.fighterChoiceNote}</p>
               <div className="workshop-level-grid">
                 {dndLevels.map((step, index) =>
                   <div className={step.level === doc.character.level ? 'workshop-level-row current' : 'workshop-level-row'} key={step.level}>
                     <strong>{t.level} {step.level}</strong>
                     <span>+{step.proficiency} {t.fighterProficiency}{isRogue2014 && <> · {step.sneakAttackDice}d6 {t.rogueSneak}</>}{isWizard2014 && <> · {step.cantripsKnown} {t.wizardCantrips}</>}</span>
-                    <span>{isWizard2014 ? t.wizardEvents[index] + ' · ' + t.wizardSlots + ': ' + step.slots.join('/') : isRogue2014 ? t.rogueEvents[index] : t.fighterEvents[index]}</span>
+                    <span>{isRanger2014 ? t.rangerEvents[index] + ' · ' + t.rangerSlots + ': ' + step.slots.join('/') : isWizard2014 ? t.wizardEvents[index] + ' · ' + t.wizardSlots + ': ' + step.slots.join('/') : isRogue2014 ? t.rogueEvents[index] : t.fighterEvents[index]}</span>
                   </div>)}
               </div>
             </details>}
