@@ -17,6 +17,7 @@ import org.json.JSONObject
 object CharacterTransferCodec {
     const val FORMAT = "dice-thrower-character"
     const val FORMAT_VERSION = 1
+    const val BOUNDED_RULE_FORMAT_VERSION = 2
     private const val MAX_RAW_BYTES = 128 * 1024
     private const val MAX_TOKEN_LENGTH = 120_000
     const val MAX_SHARE_URL_LENGTH = 2600
@@ -60,7 +61,10 @@ object CharacterTransferCodec {
         val snapshot = exportCharacter(data, characterId)
         val json = JSONObject()
             .put("format", FORMAT)
-            .put("formatVersion", FORMAT_VERSION)
+            .put("formatVersion",
+                if (snapshot.rolls.any { roll -> roll.levelRules.any {
+                    rule -> rule.startLevel != null || rule.maxRepeats != null
+                } }) BOUNDED_RULE_FORMAT_VERSION else FORMAT_VERSION)
             .put("data", AppDataJsonCodec.encodeDataForSync(snapshot))
             .toString()
         require(json.toByteArray(Charsets.UTF_8).size <= MAX_RAW_BYTES) {
@@ -113,7 +117,7 @@ object CharacterTransferCodec {
         require(raw.toByteArray(Charsets.UTF_8).size <= MAX_RAW_BYTES) { "Character is too large" }
         val envelope = JSONObject(raw)
         require(envelope.optString("format") == FORMAT &&
-            envelope.optInt("formatVersion") == FORMAT_VERSION) {
+            envelope.optInt("formatVersion") in FORMAT_VERSION..BOUNDED_RULE_FORMAT_VERSION) {
             "Unsupported character document"
         }
         val contents = envelope.optJSONObject("data")

@@ -466,7 +466,7 @@ test('Wizard Fire Bolt scaling and natural-20 critical use correct 2014 dice at 
 });
 
 test('Wizard Magic Missile has independent darts, no attack or critical and correct spell slot gates', () => {
-  const wizard=instantiateTemplate(2);
+  const wizard=instantiateTemplate(2,2);
   const spells=wizard.rolls.filter(r=>r.name.startsWith('Magic Missile · slot '));
   assert.equal(spells.length,9);
   for(let slot=1;slot<=9;slot++){
@@ -487,7 +487,7 @@ test('Wizard Magic Missile has independent darts, no attack or critical and corr
 });
 
 test('Wizard 2014 QR recipe survives import; custom modifications cannot be lost', () => {
-  const wizard=instantiateTemplate(2);
+  const wizard=instantiateTemplate(2,2);
   validateDocument(wizard);
   assert.deepEqual(decodeToken(encodeToken(wizard)),wizard);
   const imported=importAsCopy(wizard);
@@ -919,7 +919,7 @@ test('Wizard v2 reference includes all 2014 SRD wizard spells, not fake rolls fo
 });
 
 test('Wizard v2 RollGroups are native, complete and faithfully remapped on import', () => {
-  const wizard=instantiateTemplate(2);
+  const wizard=instantiateTemplate(2,2);
   validateDocument(wizard);
   assert.deepEqual(wizard.groups.map(g=>g.name),
     ['Cantrips','Spell Lv 1','Skills & saves',
@@ -949,7 +949,7 @@ test('Wizard v2 RollGroups are native, complete and faithfully remapped on impor
 });
 
 test('Wizard 2014 spell hit/save, crit and scaling remain mathematically independent', () => {
-  const wizard=instantiateTemplate(2);
+  const wizard=instantiateTemplate(2,2);
   const fireball=wizard.rolls.find(r=>r.name==='Fireball (target Dex save)');
   assert.equal(fireball.expression,'8d6');
   assert.equal(fireball.minimumLevel,5);
@@ -1000,7 +1000,7 @@ test('Wizard 2014 spell hit/save, crit and scaling remain mathematically indepen
 });
 
 test('Wizard QR recipes v1/v2 remain pinned and no customized rolls are lost', () => {
-  const old=instantiateTemplate(2,1), current=instantiateTemplate(2);
+  const old=instantiateTemplate(2,1), current=instantiateTemplate(2,2);
   assert.equal(old.groups.length,3);
   assert.equal(old.rolls.length,18);
   assert.ok(current.groups.length>old.groups.length);
@@ -1022,4 +1022,68 @@ test('Wizard QR recipes v1/v2 remain pinned and no customized rolls are lost', (
   try {link=shareUrl(altered,'https://example.com/workshop/');}catch{}
   assert.ok(!link||!link.includes('#template=wizard2014v2'),
     'Customized spells must never be silently replaced by official stock');
+});
+
+test('Wizard v3 collapses duplicate upcasts without auto-casting a higher spell slot',()=>{
+  const wizard=instantiateTemplate(2),old=instantiateTemplate(2,2);
+  const missiles=wizard.rolls.filter(r=>r.name.startsWith('Magic Missile'));
+  assert.deepEqual(missiles.map(r=>r.name),[
+    'Magic Missile · slot 1 (3 darts)',
+    'Magic Missile · highest unlocked slot (optional)',
+  ]);
+  assert.ok(wizard.rolls.length<old.rolls.length-25);
+  assert.equal(missiles[0].subgroups.length,3);
+  assert.equal(missiles[0].levelRules.length,0);
+  assert.equal(missiles[1].expression,'3d4+3');
+  assert.deepEqual(missiles[1].levelRules.map(r=>[r.kind,r.trigger,r.expression,r.startLevel,r.maxRepeats]),
+    [['EVERY_LEVELS',2,'1d4+1',3,8]]);
+  assert.equal(wizard.groups.find(g=>g.id===missiles[1].groupId).name,'Spell Lv 1');
+  for(const [name,spellLevel] of [['Burning Hands',1],['Thunderwave',1],['Fireball',3],['Lightning Bolt',3]]){
+    assert.ok(wizard.rolls.some(r=>r.name.startsWith(name+' (target ')));
+    const max=wizard.rolls.find(r=>r.name.startsWith(name+' · highest unlocked slot'));
+    assert.ok(max);
+    assert.equal(max.minimumLevel,2*spellLevel-1);
+    assert.deepEqual(max.levelRules.map(r=>[r.kind,r.trigger,r.startLevel,r.maxRepeats]),
+      [['EVERY_LEVELS',2,2*(spellLevel+1)-1,9-spellLevel]]);
+    assert.equal(max.effects.length,0);
+    assert.ok(!wizard.rolls.some(r=>r.name.startsWith(name+' · slot ')));
+  }
+  assert.ok(wizard.rolls.some(r=>r.name==='Scorching Ray · slot 9 (10 rays)'));
+  assert.equal(envelope(wizard).formatVersion,2);
+  assert.deepEqual(documentFromEnvelope(envelope(wizard)),wizard);
+});
+
+test('Wizard original QR v1/v2 and compact v3 remain version-pinned',()=>{
+  for(const version of [1,2,3]){
+    const doc=instantiateTemplate(2,version);
+    assert.equal(envelope(doc).formatVersion,version===3?2:1);
+    const link=shareUrl(withImportPreferences(doc,'Lyra V'+version,20),
+      'https://example.com/Android.DiceThrower/workshop/');
+    assert.match(link,new RegExp('#template=wizard2014v'+version+'&'));
+    const imported=readShareHash(new URL(link).hash);
+    assert.deepEqual(imported.rolls.map(r=>r.name),doc.rolls.map(r=>r.name));
+    const changed=structuredClone(doc);
+    changed.rolls[0].name+=' customized';
+    let altered;
+    try{altered=shareUrl(changed,'https://example.com/Android.DiceThrower/workshop/');}catch{}
+    assert.ok(!altered||!altered.includes('#template=wizard2014v'+version));
+  }
+});
+
+test('periodic start and cap validate and legacy rules remain compatible',()=>{
+  const doc=instantiateTemplate(2);
+  const name='Magic Missile · highest unlocked slot (optional)';
+  for(const [field,bad] of [['startLevel',0],['maxRepeats',0],['maxRepeats',41],['startLevel',10000]]){
+    const x=structuredClone(doc),rule=x.rolls.find(r=>r.name===name).levelRules[0];
+    rule[field]=bad;
+    assert.throws(()=>validateDocument(x),/periodic/);
+  }
+  const old=structuredClone(doc);
+  const rule=old.rolls.find(r=>r.name===name).levelRules[0];
+  delete rule.startLevel;delete rule.maxRepeats;
+  validateDocument(old);
+  assert.deepEqual(documentFromEnvelope(envelope(old)),old);
+  const bad=structuredClone(doc);
+  bad.rolls.find(r=>r.name===name).levelRules[0].kind='FROM_LEVEL';
+  assert.throws(()=>validateDocument(bad),/periodic/);
 });

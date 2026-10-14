@@ -88,7 +88,11 @@ object AppDataJsonCodec {
                                 .put("id", rule.id)
                                 .put("kind", rule.kind.name)
                                 .put("trigger", rule.trigger)
-                                .put("expression", rule.expression))
+                                .put("expression", rule.expression)
+                                .apply {
+                                    rule.startLevel?.let { put("startLevel", it) }
+                                    rule.maxRepeats?.let { put("maxRepeats", it) }
+                                })
                         }
                     })
                     .put("subgroups", JSONArray().apply {
@@ -249,6 +253,8 @@ object AppDataJsonCodec {
                         ),
                         trigger = rule.optInt("trigger", 1).coerceAtLeast(1),
                         expression = rule.getString("expression"),
+                        startLevel = if (rule.has("startLevel") && !rule.isNull("startLevel")) rule.getInt("startLevel") else null,
+                        maxRepeats = if (rule.has("maxRepeats") && !rule.isNull("maxRepeats")) rule.getInt("maxRepeats") else null,
                     )
                 },
                 subgroups = item.optJSONArray("subgroups").mapObjects { subgroup ->

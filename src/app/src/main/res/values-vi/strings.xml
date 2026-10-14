@@ -156,6 +156,7 @@
     <string name="every_levels">Mỗi N cấp độ</string>
     <string name="trigger_level">Tỷ lệ</string>
     <string name="interval_levels">Mỗi người</string>
+    <string name="periodic_max_label">Số lần thêm tối đa</string>
     <string name="rule_expression">Tức là thêm</string>
     <string name="no_level_rules">Không có quy tắc.</string>
     <string name="dice_styles">Thiết kế Dice</string>

@@ -156,6 +156,7 @@
     <string name="every_levels">प्रत्येक N स्तर</string>
     <string name="trigger_level">स्तर</string>
     <string name="interval_levels">हर एक</string>
+    <string name="periodic_max_label">अधिकतम जोड़</string>
     <string name="rule_expression">जोड़ने के लिए अभिव्यक्ति</string>
     <string name="no_level_rules">कोई स्तर नियम नहीं।</string>
     <string name="dice_styles">डाइस शैली</string>

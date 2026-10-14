@@ -156,6 +156,7 @@
     <string name="every_levels">ప్రతి N స్థాయి</string>
     <string name="trigger_level">స్థాయి</string>
     <string name="interval_levels">ప్రతి</string>
+    <string name="periodic_max_label">గరిష్ఠ జోడింపులు</string>
     <string name="rule_expression">జోడించవలసిన వ్యక్తీకరణ</string>
     <string name="no_level_rules">ఏ స్థాయి నియమాలు.</string>
     <string name="dice_styles">డీస్ శైలులు</string>

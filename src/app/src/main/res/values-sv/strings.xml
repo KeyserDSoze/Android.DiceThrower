@@ -156,6 +156,7 @@
     <string name="every_levels">Varje N-nivå</string>
     <string name="trigger_level">Nivå</string>
     <string name="interval_levels">Alla</string>
+    <string name="periodic_max_label">Maximalt antal tillägg</string>
     <string name="rule_expression">Uttryck att lägga till</string>
     <string name="no_level_rules">Inga regler.</string>
     <string name="dice_styles">Tärningstilar</string>

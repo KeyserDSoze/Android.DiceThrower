@@ -156,6 +156,7 @@
     <string name="every_levels">Her N seviyesi</string>
     <string name="trigger_level">Dönüş</string>
     <string name="interval_levels">Her bir</string>
+    <string name="periodic_max_label">En fazla ekleme</string>
     <string name="rule_expression">Ekleyici ifadesi</string>
     <string name="no_level_rules">- Düzenli kural yok.</string>
     <string name="dice_styles">Çöp biçimleri</string>

@@ -156,6 +156,7 @@
     <string name="every_levels">Каждый N уровень</string>
     <string name="trigger_level">Уровень</string>
     <string name="interval_levels">Каждый</string>
+    <string name="periodic_max_label">Максимум добавлений</string>
     <string name="rule_expression">Выражение для добавления</string>
     <string name="no_level_rules">Никаких правил.</string>
     <string name="dice_styles">Стиль кости</string>

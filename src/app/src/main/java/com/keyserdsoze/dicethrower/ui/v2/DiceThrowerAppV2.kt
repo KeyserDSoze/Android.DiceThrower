@@ -2191,7 +2191,12 @@ private fun RollEditorCardV2(
                             Text(
                                 text = when (rule.kind) {
                                     LevelRuleKind.FROM_LEVEL -> "${stringResource(R.string.from_level)} ${rule.trigger}  ·  $signedRuleExpression"
-                                    LevelRuleKind.EVERY_LEVELS -> "${stringResource(R.string.every_levels)} ${rule.trigger}  ·  $signedRuleExpression"
+                                    LevelRuleKind.EVERY_LEVELS -> buildString {
+                                        append("${stringResource(R.string.every_levels)} ${rule.trigger}")
+                                        rule.startLevel?.let { append(" · ${stringResource(R.string.from_level)} $it") }
+                                        rule.maxRepeats?.let { append(" · ${stringResource(R.string.periodic_max_label)} $it") }
+                                        append("  ·  $signedRuleExpression")
+                                    }
                                 },
                                 modifier = Modifier.weight(1f),
                                 style = MaterialTheme.typography.bodySmall,
@@ -4790,10 +4795,17 @@ private fun LevelRuleDialogV2(
 ) {
     var kind by remember { mutableStateOf(LevelRuleKind.FROM_LEVEL) }
     var triggerText by remember { mutableStateOf("2") }
+    var startLevelText by remember { mutableStateOf("") }
+    var maxRepeatsText by remember { mutableStateOf("") }
     var expression by remember { mutableStateOf(TextFieldValue("")) }
     val trigger = triggerText.toIntOrNull()
+    val startLevel = startLevelText.toIntOrNull()
+    val maxRepeats = maxRepeatsText.toIntOrNull()
     val validExpression = RollFormulaResolver.validateTemplate(expression.text, character.level, modifiers)
-    val valid = trigger != null && trigger >= 1 && validExpression
+    val valid = trigger != null && trigger in 1..9999 && validExpression &&
+        (kind != LevelRuleKind.EVERY_LEVELS ||
+            ((startLevelText.isBlank() || (startLevel != null && startLevel in 1..9999)) &&
+                (maxRepeatsText.isBlank() || (maxRepeats != null && maxRepeats in 1..40))))
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -4818,6 +4830,20 @@ private fun LevelRuleDialogV2(
                     label = { Text(stringResource(if (kind == LevelRuleKind.FROM_LEVEL) R.string.trigger_level else R.string.interval_levels)) },
                     singleLine = true,
                 )
+                if (kind == LevelRuleKind.EVERY_LEVELS) {
+                    OutlinedTextField(
+                        value = startLevelText,
+                        onValueChange = { startLevelText = it.filter(Char::isDigit) },
+                        label = { Text(stringResource(R.string.from_level)) },
+                        singleLine = true,
+                    )
+                    OutlinedTextField(
+                        value = maxRepeatsText,
+                        onValueChange = { maxRepeatsText = it.filter(Char::isDigit) },
+                        label = { Text(stringResource(R.string.periodic_max_label)) },
+                        singleLine = true,
+                    )
+                }
                 ParameterizedExpressionField(
                     value = expression,
                     onValueChange = { expression = it },
@@ -4839,6 +4865,8 @@ private fun LevelRuleDialogV2(
                             kind = kind,
                             trigger = trigger ?: 1,
                             expression = expression.text.trim(),
+                            startLevel = if (kind == LevelRuleKind.EVERY_LEVELS) startLevel else null,
+                            maxRepeats = if (kind == LevelRuleKind.EVERY_LEVELS) maxRepeats else null,
                         ),
                     )
                 },

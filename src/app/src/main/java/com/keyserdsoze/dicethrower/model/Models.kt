@@ -107,6 +107,10 @@ data class RollLevelRule(
     val kind: LevelRuleKind,
     val trigger: Int,
     val expression: String,
+    /** Optional first activation level for periodic rules; absent retains legacy level/trigger semantics. */
+    val startLevel: Int? = null,
+    /** Optional cap on periodic additions; absent preserves unbounded legacy rules. */
+    val maxRepeats: Int? = null,
 )
 
 data class RollSubgroup(

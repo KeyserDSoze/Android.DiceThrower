@@ -156,6 +156,7 @@
     <string name="every_levels">Кожна N рівня</string>
     <string name="trigger_level">Рівень</string>
     <string name="interval_levels">Кожна</string>
+    <string name="periodic_max_label">Максимум додавань</string>
     <string name="rule_expression">Вираження додавати</string>
     <string name="no_level_rules">Немає ніякіх правил.</string>
     <string name="dice_styles">Стилі густових</string>

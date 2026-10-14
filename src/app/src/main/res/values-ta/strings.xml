@@ -156,6 +156,7 @@
     <string name="every_levels">ஒவ்வொரு N நிலைகளும்</string>
     <string name="trigger_level">நிலை</string>
     <string name="interval_levels">ஒவ்வொரு</string>
+    <string name="periodic_max_label">அதிகபட்ச சேர்த்தல்கள்</string>
     <string name="rule_expression">சேர்க்கும் வெளிப்பாடு</string>
     <string name="no_level_rules">நிலை விதிகள் இல்லை.</string>
     <string name="dice_styles">டயஸ் பாணிகள்</string>
