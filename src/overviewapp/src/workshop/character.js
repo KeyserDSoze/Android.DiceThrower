@@ -9,6 +9,7 @@ export { WIZARD_2014_SRD_SPELLS, WIZARD_2014_DICE_SPELLS } from './wizard-spells
  */
 export const FORMAT = 'dice-thrower-character';
 export const FORMAT_VERSION = 1;
+export const BOUNDED_RULE_FORMAT_VERSION = 2;
 export const MAX_LINK_LENGTH = 2600;
 const MAX_RAW_LENGTH = 128 * 1024;
 const DB_NAME = 'dicethrower-workshop';
@@ -154,14 +155,18 @@ export function validateDocument(doc) {
 export function envelope(doc) {
   validateDocument(doc);
   const { character, modifiers, groups, rolls, diceStyles } = doc;
+  // Old Android versions ignore unknown rule fields, which would change the
+  // number of dice. Force a versioned rejection instead of a silently wrong cast.
+  const usesBoundedRules = rolls.some(roll=>roll.levelRules.some(rule=>
+    rule.startLevel != null || rule.maxRepeats != null));
   return {
-    format: FORMAT, formatVersion: FORMAT_VERSION,
+    format: FORMAT, formatVersion: usesBoundedRules ? BOUNDED_RULE_FORMAT_VERSION : FORMAT_VERSION,
     data: { version: 16, characters: [{ ...character, image: null, imageUri: null, diceTableImage: null }],
       modifiers, groups, rolls, diceStyles, logs: [], characterSyncMetadata: [] },
   };
 }
 export function documentFromEnvelope(packet) {
-  assert(isRecord(packet) && packet.format === FORMAT && packet.formatVersion === FORMAT_VERSION, 'Unsupported character link');
+  assert(isRecord(packet) && packet.format === FORMAT && [FORMAT_VERSION,BOUNDED_RULE_FORMAT_VERSION].includes(packet.formatVersion), 'Unsupported character link');
   assert(isRecord(packet.data) && packet.data.characters?.length === 1, 'Link must contain exactly one character');
   assert(!packet.data.logs?.length && !packet.data.characterSyncMetadata?.length, 'Share contains private history or sync data');
   const doc = { character: packet.data.characters[0], modifiers: packet.data.modifiers || [],
