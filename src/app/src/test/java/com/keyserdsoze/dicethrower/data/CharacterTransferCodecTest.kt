@@ -7,6 +7,8 @@ import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 import com.keyserdsoze.dicethrower.model.RollDiceAppearance
 import com.keyserdsoze.dicethrower.model.RollDefinition
+import com.keyserdsoze.dicethrower.model.LevelRuleKind
+import com.keyserdsoze.dicethrower.model.RollLevelRule
 import com.keyserdsoze.dicethrower.model.RollGroup
 import com.keyserdsoze.dicethrower.model.RollSubgroup
 import java.io.ByteArrayOutputStream
@@ -205,6 +207,51 @@ class CharacterTransferCodecTest {
             expectFailure { CharacterTransferCodec.withRecipientPreferences(inbound, "New", level) }
         }
         assertEquals(inbound, sample())
+    }
+
+
+    @Test fun cappedPeriodicRulesSurvivePortableJsonAndLegacyDefaults() {
+        val source=sample().copy(
+            rolls=sample().rolls.map { roll -> roll.copy(
+                levelRules=listOf(RollLevelRule(
+                    id="repeat",kind=LevelRuleKind.EVERY_LEVELS,trigger=2,
+                    expression="1d4+1",startLevel=3,maxRepeats=8,
+                )),
+            ) },
+        )
+        val json=packet(source).toString()
+        val decoded=CharacterTransferCodec.decodeJson(json)
+        assertEquals(3,decoded.rolls.single().levelRules.single().startLevel)
+        assertEquals(8,decoded.rolls.single().levelRules.single().maxRepeats)
+        assertEquals(source,decoded)
+        assertTrue(AppDataValidator.validate(decoded).isEmpty())
+        val copy=CharacterTransferCodec.importCopy(AppData(), decoded)
+        assertTrue(AppDataValidator.validate(copy).isEmpty())
+        assertEquals(8,copy.rolls.single().levelRules.single().maxRepeats)
+
+        val legacy=packet(source)
+        val legacyRules=legacy.getJSONObject("data").getJSONArray("rolls")
+            .getJSONObject(0).getJSONArray("levelRules").getJSONObject(0)
+        legacyRules.remove("startLevel")
+        legacyRules.remove("maxRepeats")
+        val older=CharacterTransferCodec.decodeJson(legacy.toString())
+        assertEquals(null,older.rolls.single().levelRules.single().startLevel)
+        assertEquals(null,older.rolls.single().levelRules.single().maxRepeats)
+        assertTrue(AppDataValidator.validate(older).isEmpty())
+    }
+
+    @Test fun periodicRuleWithInvalidCapIsRejectedAtNativeImportBoundary() {
+        val json=packet(sample())
+        val rules=json.getJSONObject("data").getJSONArray("rolls")
+            .getJSONObject(0).getJSONArray("levelRules")
+        rules.put(JSONObject()
+            .put("id","malicious")
+            .put("kind","EVERY_LEVELS")
+            .put("trigger",2)
+            .put("expression","1d4")
+            .put("startLevel",3)
+            .put("maxRepeats",41))
+        expectFailure { CharacterTransferCodec.decodeJson(json.toString()) }
     }
 
     private fun expectFailure(action: () -> Unit) {
