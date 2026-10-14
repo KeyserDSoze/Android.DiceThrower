@@ -1,5 +1,7 @@
 import pako from 'pako';
 import { SYSTEM_STYLES, validateGuidedRoll } from './guided.js';
+import { WIZARD_2014_CANTRIP_DICE, WIZARD_2014_DICE_SPELLS } from './wizard-spells.js';
+export { WIZARD_2014_SRD_SPELLS, WIZARD_2014_DICE_SPELLS } from './wizard-spells.js';
 
 /**
  * Browser data stays in IndexedDB. A share link contains a compressed, versioned
@@ -239,7 +241,8 @@ function canonicalPresetShape(doc) {
 const shortSharePresets = [
   { key: 'fighter2014v1', index: 0, tag: 'D&D 5e sample' },
   { key: 'rogue2014v1', index: 1, tag: 'D&D 5e (2014) Rogue sample' },
-  { key: 'wizard2014v1', index: 2, tag: 'D&D 5e (2014) Wizard sample' },
+  { key: 'wizard2014v2', index: 2, tag: 'D&D 5e (2014) Wizard sample' },
+  { key: 'wizard2014v1', index: 2, tag: 'D&D 5e (2014) Wizard sample', wizardVersion: 1 },
   { key: 'ranger2014v1', index: 3, tag: 'D&D 5e (2014) Ranger sample' },
   { key: 'cleric2014v1', index: 4, tag: 'D&D 5e (2014) Cleric sample' },
   { key: 'paladin2014v1', index: 5, tag: 'D&D 5e (2014) Paladin sample' },
@@ -249,7 +252,7 @@ function matchingUnmodifiedSharePreset(doc) {
   for (const preset of shortSharePresets) {
     if (!doc?.character?.tag?.startsWith(preset.tag)) continue;
     try {
-      if (canonicalPresetShape(doc) === canonicalPresetShape(instantiateTemplate(preset.index))) return preset;
+      if (canonicalPresetShape(doc) === canonicalPresetShape(instantiateTemplate(preset.index, preset.wizardVersion))) return preset;
     } catch { /* Invalid or no longer matching original: never discard edits. */ }
   }
   return null;
@@ -268,11 +271,11 @@ export function shareUrl(doc, base = window.location.href) {
   throw new Error('Link too long for a reliable QR code. Export the JSON file instead.');
 }
 export function readShareHash(hash = window.location.hash) {
-  const preset = hash.match(/^#template=(fighter2014v1|rogue2014v1|wizard2014v1|ranger2014v1|cleric2014v1|paladin2014v1|bard2014v1)&name=([^&]+)&level=([0-9]+)$/);
+  const preset = hash.match(/^#template=(fighter2014v1|rogue2014v1|wizard2014v1|wizard2014v2|ranger2014v1|cleric2014v1|paladin2014v1|bard2014v1)&name=([^&]+)&level=([0-9]+)$/);
   if (preset) {
     const definition = shortSharePresets.find(item => item.key === preset[1]);
     return withImportPreferences(
-      instantiateTemplate(definition.index), decodeURIComponent(preset[2]), Number(preset[3]));
+      instantiateTemplate(definition.index, definition.wizardVersion), decodeURIComponent(preset[2]), Number(preset[3]));
   }
   const match = hash.match(/^#character=(v1\.[A-Za-z0-9_-]+)$/);
   return match ? decodeToken(match[1]) : null;
@@ -825,7 +828,7 @@ export const WIZARD_2014_LEVELS = WIZARD_2014_SLOT_ROWS.map((row, index) => ({
   features: WIZARD_2014_FEATURES[index],
 }));
 
-export function buildWizard2014Progression(doc) {
+function buildWizard2014ProgressionV1(doc) {
   const wizard = structuredClone(doc);
   if (!wizard.character.tag.startsWith('D&D 5e (2014) Wizard sample'))
     throw new Error('Not a supported 2014 Wizard template');
@@ -867,6 +870,97 @@ export function buildWizard2014Progression(doc) {
       ({...newPart(), name: 'Dart ' + (i+1), expression: '1d4+1'}));
     spell.expression = normalFormula(spell.subgroups);
     wizard.rolls.push(spell);
+  }
+  return validateDocument(wizard);
+}
+
+/**
+ * Opt-in Wizard 2014 v2: preserve the exact v1 factory for old version-pinned
+ * #template=wizard2014v1 links, then add native RollGroup(s) and SRD dice
+ * examples. No saved character is ever upgraded automatically.
+ */
+export function buildWizard2014Progression(doc) {
+  const wizard = buildWizard2014ProgressionV1(doc);
+  const cantrips = wizard.groups.find(g => g.name === 'Cantrips');
+  const levelOne = wizard.groups.find(g => g.name === 'Spells (examples)');
+  const skills = wizard.groups.find(g => g.name === 'Skills & saves');
+  if (!cantrips || !levelOne || !skills) throw new Error('Wizard starting groups missing');
+  levelOne.name = 'Spell Lv 1';
+  const spellGroups = [null, levelOne];
+  for (let level = 2; level <= 9; level++) {
+    const group = { ...newGroup(wizard.character.id), name: 'Spell Lv ' + level };
+    wizard.groups.push(group);
+    spellGroups[level] = group;
+  }
+  cantrips.order = 0;
+  for (let level = 1; level <= 9; level++) spellGroups[level].order = level;
+  skills.order = 10;
+
+  const attackExpr = '1d20+{Intelligence}+{Proficiency}+{' + FIGHTER_2014_PROFICIENCY_STEPS + '}';
+  const add = (groupId, name, expression, kind, minimumLevel, slot) => {
+    let shape = expression;
+    if (kind === 'attack') shape = [['Attack',attackExpr],['Damage',expression]];
+    // Keep distinct damage types independently visible on the dice table.
+    if (name === 'Meteor Swarm') shape = [['Fire damage','20d6'],['Bludgeoning damage','20d6']];
+    const roll = createStarterRoll(wizard.character.id, groupId, name, shape,
+      kind === 'attack' ? 'DND5E_CRITICAL' : null, wizard.rolls.length);
+    roll.minimumLevel = minimumLevel;
+    wizard.rolls.push(roll);
+    return roll;
+  };
+
+  // At character levels 1/5/11/17 cantrips use 1/2/3/4 dice.
+  // Spell attack cantrips get a dice-only natural-20 extra-dice effect.
+  for (const spell of WIZARD_2014_CANTRIP_DICE) {
+    for (const [min,dice] of [[1,1],[5,2],[11,3],[17,4]]) {
+      const formula = dice + 'd' + spell.die;
+      const label = spell.name + ' · ' + formula +
+        (spell.kind === 'save' ? ' (target ' + spell.save + ' save)' : '');
+      add(cantrips.id,label,formula,spell.kind,min);
+    }
+  }
+
+  // Magic Missile stays in Spell Lv 1 regardless of the selected slot.
+  // Existing v1 3–11 distinct Dart Parts and their spell-slot gates survive.
+  for (const item of WIZARD_2014_DICE_SPELLS) {
+    const min = item.level * 2 - 1;
+    const kind = item.kind === 'attack' ? 'attack' : 'plain';
+    const suffix = item.kind === 'save' ? ' (target ' + item.save + ' save)' :
+      item.kind === 'attack' ? ' (spell attack)' :
+      item.kind === 'check' ? ' (conditional check)' :
+      ' (conditional / no attack roll)';
+    add(spellGroups[item.level].id,item.name + suffix,item.dice,kind,min);
+
+    // Slot-specific upcasting for a small set of frequently used spells.
+    // More can be created with the guided Roll editor. No slots are spent.
+    if (['Burning Hands','Thunderwave','Fireball','Lightning Bolt'].includes(item.name)) {
+      const {die,baseDice,perSlot=1} = item.upcast;
+      for (let slot = item.level+1; slot <= 9; slot++) {
+        const diceCount = baseDice + (slot-item.level) * perSlot;
+        add(spellGroups[item.level].id,
+          item.name + ' · slot ' + slot + suffix,
+          diceCount + 'd' + die,kind,2*slot-1,slot);
+      }
+    }
+  }
+
+  // Scorching Ray: each ray is a separate d20 attack + 2d6 damage, not a
+  // single aggregated attack. A natural 20 applies only to that ray's dice.
+  for (let slot = 2; slot <= 9; slot++) {
+    const roll = { ...newRoll(wizard.character.id, spellGroups[2].id),
+      name: 'Scorching Ray · slot ' + slot + ' (' + (slot+1) + ' rays)',
+      minimumLevel: 2*slot-1, order:wizard.rolls.length };
+    for (let index = 1; index <= slot+1; index++) {
+      const attack={...newPart(),name:'Ray '+index+' attack',expression:attackExpr};
+      const damage={...newPart(),name:'Ray '+index+' damage',expression:'2d6'};
+      roll.subgroups.push(attack,damage);
+      const effect=createDnd5eCriticalEffect(attack.id,damage.id,'2d6');
+      effect.name='Critical hit · Ray '+index;
+      effect.order=index-1;
+      roll.effects.push(effect);
+    }
+    roll.expression=normalFormula(roll.subgroups);
+    wizard.rolls.push(roll);
   }
   return validateDocument(wizard);
 }
@@ -1212,7 +1306,7 @@ export function buildBard2014Progression(doc) {
 
 /** New templates have all future gated Rolls prepared; existing saves are never rewritten. */
 export const templates = starterSpecs.map(([category, name, description], index) => ({ category, name, description, index }));
-export function instantiateTemplate(index) {
+export function instantiateTemplate(index, wizardVersion = 2) {
   const spec = starterSpecs[index];
   if (!spec) throw new Error('Unknown template');
   const [, name, tag, level, modifiers, sections] = spec;
@@ -1229,7 +1323,7 @@ export function instantiateTemplate(index) {
   });
   if (index === 0) return buildFighter2014Progression(doc);
   if (index === 1) return buildRogue2014Progression(doc);
-  if (index === 2) return buildWizard2014Progression(doc);
+  if (index === 2) return wizardVersion === 1 ? buildWizard2014ProgressionV1(doc) : buildWizard2014Progression(doc);
   if (index === 3) return buildRanger2014Progression(doc);
   if (index === 4) return buildCleric2014Progression(doc);
   if (index === 5) return buildPaladin2014Progression(doc);
