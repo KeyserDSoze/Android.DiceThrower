@@ -473,3 +473,47 @@ footer {
   gap:9px; border-bottom:1px solid var(--line); padding:5px 0; font-size:.84rem; }
 .workshop-catalog-level li span { overflow-wrap:anywhere; }
 .workshop-catalog-level li small { flex-shrink:0; font-size:.68rem; color:var(--muted); }
+
+
+/* Read-only level-resolved roll previews. Wrap long formulas safely on phones.
+   Important: previews do not alter stored expressions, Parts or actual RNG. */
+.workshop-live-formula {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface2);
+  color: var(--text);
+  box-sizing: border-box;
+}
+.workshop-roll > summary > .workshop-live-formula { flex-basis: 100%; }
+.workshop-live-formula > small {
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 600;
+}
+.workshop-live-formula > code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  font-size: .84rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+.workshop-live-formula .workshop-level-rule-count {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-weight: 400;
+}
+.workshop-live-formula .workshop-level-rule-count span {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: .74rem;
+}
+.workshop-level-help { margin: 2px 0 14px; }
+.workshop-preview-roll > .workshop-live-formula { margin-top: 6px; }
