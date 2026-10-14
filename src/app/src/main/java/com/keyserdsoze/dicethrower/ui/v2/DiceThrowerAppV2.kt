@@ -4717,13 +4717,13 @@ internal fun RollDialogV2(
                     OutlinedTextField(
                         value = startLevelText,
                         onValueChange = { startLevelText = it.filter(Char::isDigit) },
-                        label = { Text(stringResource(R.string.periodic_start_level)) },
+                        label = { Text(stringResource(R.string.from_level)) },
                         singleLine = true,
                     )
                     OutlinedTextField(
                         value = maxRepeatsText,
                         onValueChange = { maxRepeatsText = it.filter(Char::isDigit) },
-                        label = { Text(stringResource(R.string.periodic_max_repeats)) },
+                        label = { Text(stringResource(R.string.periodic_max_label)) },
                         singleLine = true,
                     )
                 }
