@@ -156,6 +156,7 @@
     <string name="every_levels">प्रत्येक N स्तर</string>
     <string name="trigger_level">पातळी</string>
     <string name="interval_levels">प्रत्येक</string>
+    <string name="periodic_max_label">कमाल वाढी</string>
     <string name="rule_expression">जोडण्यासाठी शब्द</string>
     <string name="no_level_rules">कोणतेही नियम नाहीत.</string>
     <string name="dice_styles">दाट शैली</string>

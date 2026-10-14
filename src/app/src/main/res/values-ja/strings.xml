@@ -156,6 +156,7 @@
     <string name="every_levels">Nレベルごとに</string>
     <string name="trigger_level">レベル</string>
     <string name="interval_levels">どれでも</string>
+    <string name="periodic_max_label">追加回数の上限</string>
     <string name="rule_expression">追加する表現</string>
     <string name="no_level_rules">ルールがない</string>
     <string name="dice_styles">Dice スタイル</string>

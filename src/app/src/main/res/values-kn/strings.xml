@@ -156,6 +156,7 @@
     <string name="every_levels">ಪ್ರತಿ N ಮಟ್ಟ</string>
     <string name="trigger_level">ಮಟ್ಟ</string>
     <string name="interval_levels">ಪ್ರತಿ</string>
+    <string name="periodic_max_label">ಗರಿಷ್ಠ ಸೇರ್ಪಡೆಗಳು</string>
     <string name="rule_expression">ಸೇರಿಸಲು ಅಭಿವ್ಯಕ್ತಿ</string>
     <string name="no_level_rules">ಯಾವುದೇ ನಿಯಮಗಳಿಲ್ಲ.</string>
     <string name="dice_styles">ಡೈಸ್ ಶೈಲಿಗಳು</string>
