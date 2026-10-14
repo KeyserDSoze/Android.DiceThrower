@@ -222,7 +222,11 @@ object AppDataValidator {
             }
 
             roll.levelRules.forEach { rule ->
-                if (rule.trigger < 1) errors += "Level rule ${rule.id} has an invalid trigger"
+                if (rule.trigger !in 1..9999) errors += "Level rule ${rule.id} has an invalid trigger"
+                if (rule.startLevel != null && (rule.kind != LevelRuleKind.EVERY_LEVELS || rule.startLevel !in 1..9999))
+                    errors += "Level rule ${rule.id} has an invalid start level"
+                if (rule.maxRepeats != null && (rule.kind != LevelRuleKind.EVERY_LEVELS || rule.maxRepeats !in 1..40))
+                    errors += "Level rule ${rule.id} has an invalid repetition limit"
                 if (!RollFormulaResolver.validateTemplate(rule.expression, character.level, modifiers)) {
                     errors += "Level rule ${rule.id} has an invalid expression"
                 }
