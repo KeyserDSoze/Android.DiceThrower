@@ -12,7 +12,8 @@ import { isPartUsed, removePartSafely, SYSTEM_STYLES } from './guided.js';
 
 function orderedGroups(characterDoc) {
   if (!characterDoc) return [];
-  const rolls = characterDoc.rolls.map((roll,index)=>({roll,index}));
+  const rolls = characterDoc.rolls.map((roll,index)=>({roll,index}))
+    .sort((a,b)=>(a.roll.order ?? 0)-(b.roll.order ?? 0) || a.index-b.index);
   const groups = [...characterDoc.groups].sort((a,b)=>
     (a.order ?? 0)-(b.order ?? 0) || a.name.localeCompare(b.name));
   return [...groups.map(group=>({group,items:rolls.filter(item=>item.roll.groupId===group.id)})),
@@ -646,7 +647,7 @@ export default function CharacterWorkshop({ locale = 'en' }) {
             </div>)}
           </section>
           <section className="premium-panel">
-            <div className="workshop-row-head"><h2>{t.groups}</h2><button onClick={() => edit(x => x.groups.push(newGroup(x.character.id)))}>{t.addGroup}</button></div>
+            <div className="workshop-row-head"><h2>{t.groups}</h2><button onClick={() => edit(x => { const group=newGroup(x.character.id); group.order=x.groups.length; x.groups.push(group); })}>{t.addGroup}</button></div>
             {doc.groups.map((g,i) => <div className="workshop-inline" key={g.id}>
               <Field label={t.group} value={g.name} onChange={v => edit(x => x.groups[i].name = v)} />
               <button onClick={() => edit(x => { x.rolls.forEach(r => { if (r.groupId === g.id) r.groupId = null; }); x.groups.splice(i, 1); })} aria-label={t.remove}>×</button>
