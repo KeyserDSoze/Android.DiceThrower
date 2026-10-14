@@ -443,3 +443,33 @@ footer {
 .workshop-level-row.current {border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface));}
 .workshop-level-row strong {white-space:nowrap;}
 @media(max-width:580px) {.workshop-level-row {grid-template-columns:1fr 1fr;gap:5px;} .workshop-level-row span:last-child {grid-column:1/-1;}}
+
+
+/* Native-compatible RollGroups: shared structure in the Android graph and web. */
+.workshop-grouped-rolls { display:grid; gap:12px; }
+.workshop-roll-group { border:1px solid var(--line); border-radius:14px;
+  background:var(--surface2); color:var(--text); overflow:hidden; }
+.workshop-roll-group > summary { display:flex; align-items:center; justify-content:space-between;
+  gap:12px; cursor:pointer; padding:15px 17px; color:var(--text); }
+.workshop-roll-group > summary strong { font-weight:750; overflow-wrap:anywhere; }
+.workshop-roll-group > summary span { font-size:.82rem; color:var(--muted); white-space:nowrap; }
+.workshop-roll-group[open] > summary { border-bottom:1px solid var(--line); }
+.workshop-roll-group > summary:focus-visible, .workshop-spell-catalog summary:focus-visible {
+  outline:2px solid var(--accent); outline-offset:-3px; }
+.workshop-group-content { display:grid; gap:8px; padding:12px; }
+.workshop-group-content > .workshop-roll { margin:0; }
+.workshop-add-in-group { justify-self:start; }
+.workshop-preview-list { max-height:480px; }
+.workshop-preview-list .workshop-roll-group { background:var(--surface); }
+.workshop-spell-catalog { padding:14px; margin:16px 0; border:1px solid var(--line);
+  border-radius:14px; background:var(--surface2); color:var(--text); }
+.workshop-spell-catalog > summary { font-weight:750; cursor:pointer; }
+.workshop-catalog-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));
+  gap:10px; margin:12px 0; }
+.workshop-catalog-level { padding:12px; background:var(--surface); border:1px solid var(--line); border-radius:12px; }
+.workshop-catalog-level > summary { font-size:.9rem; font-weight:700; cursor:pointer; }
+.workshop-catalog-level ul { list-style:none; padding:0; margin:10px 0 0; display:grid; gap:7px; }
+.workshop-catalog-level li { display:flex; align-items:baseline; justify-content:space-between;
+  gap:9px; border-bottom:1px solid var(--line); padding:5px 0; font-size:.84rem; }
+.workshop-catalog-level li span { overflow-wrap:anywhere; }
+.workshop-catalog-level li small { flex-shrink:0; font-size:.68rem; color:var(--muted); }
