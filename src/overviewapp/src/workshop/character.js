@@ -126,7 +126,13 @@ export function validateDocument(doc) {
     }
     for (const rule of roll.levelRules) {
       assert(validId(rule.id) && !nestedIds.has(rule.id), 'Invalid/duplicate rule ID'); nestedIds.add(rule.id);
-      assert(Number.isInteger(rule.trigger) && rule.trigger > 0, 'Invalid level rule');
+      assert(Number.isInteger(rule.trigger) && rule.trigger >= 1 && rule.trigger <= 9999, 'Invalid level rule');
+      assert(rule.startLevel == null || (rule.kind === 'EVERY_LEVELS' &&
+        Number.isInteger(rule.startLevel) && rule.startLevel >= 1 && rule.startLevel <= 9999),
+        'Invalid periodic starting level');
+      assert(rule.maxRepeats == null || (rule.kind === 'EVERY_LEVELS' &&
+        Number.isInteger(rule.maxRepeats) && rule.maxRepeats >= 1 && rule.maxRepeats <= 40),
+        'Invalid periodic repetition maximum');
       formula(rule.expression);
     }
     // Preserve the complete native effect/appearance schema, even if advanced
@@ -241,7 +247,8 @@ function canonicalPresetShape(doc) {
 const shortSharePresets = [
   { key: 'fighter2014v1', index: 0, tag: 'D&D 5e sample' },
   { key: 'rogue2014v1', index: 1, tag: 'D&D 5e (2014) Rogue sample' },
-  { key: 'wizard2014v2', index: 2, tag: 'D&D 5e (2014) Wizard sample' },
+  { key: 'wizard2014v3', index: 2, tag: 'D&D 5e (2014) Wizard sample' },
+  { key: 'wizard2014v2', index: 2, tag: 'D&D 5e (2014) Wizard sample', wizardVersion: 2 },
   { key: 'wizard2014v1', index: 2, tag: 'D&D 5e (2014) Wizard sample', wizardVersion: 1 },
   { key: 'ranger2014v1', index: 3, tag: 'D&D 5e (2014) Ranger sample' },
   { key: 'cleric2014v1', index: 4, tag: 'D&D 5e (2014) Cleric sample' },
@@ -271,7 +278,7 @@ export function shareUrl(doc, base = window.location.href) {
   throw new Error('Link too long for a reliable QR code. Export the JSON file instead.');
 }
 export function readShareHash(hash = window.location.hash) {
-  const preset = hash.match(/^#template=(fighter2014v1|rogue2014v1|wizard2014v1|wizard2014v2|ranger2014v1|cleric2014v1|paladin2014v1|bard2014v1)&name=([^&]+)&level=([0-9]+)$/);
+  const preset = hash.match(/^#template=(fighter2014v1|rogue2014v1|wizard2014v1|wizard2014v2|wizard2014v3|ranger2014v1|cleric2014v1|paladin2014v1|bard2014v1)&name=([^&]+)&level=([0-9]+)$/);
   if (preset) {
     const definition = shortSharePresets.find(item => item.key === preset[1]);
     return withImportPreferences(
@@ -879,7 +886,7 @@ function buildWizard2014ProgressionV1(doc) {
  * #template=wizard2014v1 links, then add native RollGroup(s) and SRD dice
  * examples. No saved character is ever upgraded automatically.
  */
-export function buildWizard2014Progression(doc) {
+function buildWizard2014ProgressionV2(doc) {
   const wizard = buildWizard2014ProgressionV1(doc);
   const cantrips = wizard.groups.find(g => g.name === 'Cantrips');
   const levelOne = wizard.groups.find(g => g.name === 'Spells (examples)');
@@ -962,6 +969,61 @@ export function buildWizard2014Progression(doc) {
     roll.expression=normalFormula(roll.subgroups);
     wizard.rolls.push(roll);
   }
+  return validateDocument(wizard);
+}
+
+/**
+ * Wizard v3 reduces the number of near-identical upcasts. Every character can
+ * still cast the BASE spell with its original slot: level growth alone never
+ * changes the slot spent. Separate optional shortcuts illustrate a cast using
+ * the highest class spell slot unlocked at the CURRENT character level.
+ *
+ * The new periodic rule is game-neutral and capped. Other slot choices remain
+ * manual; do not call this a prepared or automatically cast spell.
+ */
+export function buildWizard2014Progression(doc) {
+  const wizard = buildWizard2014ProgressionV2(doc);
+  const magicMissiles = wizard.rolls.filter(r=>r.name.startsWith('Magic Missile · slot '));
+  const baseMissile = magicMissiles.find(r=>r.name==='Magic Missile · slot 1 (3 darts)');
+  if (!baseMissile || magicMissiles.length!==9)
+    throw new Error('Missing Wizard v2 Magic Missile variants');
+
+  // A stable 1st-slot spell keeps 3 individually addressable Dart Parts.
+  // The OPTIONAL highest-slot variant uses additional independent 1d4+1
+  // throws every 2 class levels (from 3) and stops at eight extra darts.
+  const maximum = createStarterRoll(wizard.character.id,baseMissile.groupId,
+    'Magic Missile · highest unlocked slot (optional)','3d4+3',
+    null,wizard.rolls.length);
+  maximum.levelRules.push({id:uid(),kind:'EVERY_LEVELS',trigger:2,
+    expression:'1d4+1',startLevel:3,maxRepeats:8});
+  wizard.rolls.push(maximum);
+  const redundantMissileIds = new Set(magicMissiles.filter(r=>r!==baseMissile).map(r=>r.id));
+
+  const scaleSpells = [
+    {name:'Burning Hands',level:1,dice:'1d6'},
+    {name:'Thunderwave',level:1,dice:'1d8'},
+    {name:'Fireball',level:3,dice:'1d6'},
+    {name:'Lightning Bolt',level:3,dice:'1d6'},
+  ];
+  const redundantUpcastIds = new Set();
+  for (const spell of scaleSpells) {
+    const upcasts=wizard.rolls.filter(r=>r.name.startsWith(spell.name+' · slot '));
+    const original=wizard.rolls.find(r=>r.name.startsWith(spell.name+' (target '));
+    if (!original || upcasts.length !== 9-spell.level)
+      throw new Error('Missing Wizard v2 upcast variants for '+spell.name);
+    upcasts.forEach(r=>redundantUpcastIds.add(r.id));
+    const short = createStarterRoll(wizard.character.id,original.groupId,
+      spell.name + ' · highest unlocked slot (optional, target save)',
+      original.expression,null,wizard.rolls.length);
+    short.minimumLevel=original.minimumLevel;
+    short.levelRules.push({id:uid(),kind:'EVERY_LEVELS',trigger:2,
+      expression:spell.dice,startLevel:2*(spell.level+1)-1,
+      maxRepeats:9-spell.level});
+    wizard.rolls.push(short);
+  }
+  wizard.rolls = wizard.rolls.filter(r=>
+    !redundantMissileIds.has(r.id) && !redundantUpcastIds.has(r.id));
+  wizard.rolls.forEach((roll,index)=>{roll.order=index;});
   return validateDocument(wizard);
 }
 
@@ -1306,7 +1368,7 @@ export function buildBard2014Progression(doc) {
 
 /** New templates have all future gated Rolls prepared; existing saves are never rewritten. */
 export const templates = starterSpecs.map(([category, name, description], index) => ({ category, name, description, index }));
-export function instantiateTemplate(index, wizardVersion = 2) {
+export function instantiateTemplate(index, wizardVersion = 3) {
   const spec = starterSpecs[index];
   if (!spec) throw new Error('Unknown template');
   const [, name, tag, level, modifiers, sections] = spec;
@@ -1323,7 +1385,7 @@ export function instantiateTemplate(index, wizardVersion = 2) {
   });
   if (index === 0) return buildFighter2014Progression(doc);
   if (index === 1) return buildRogue2014Progression(doc);
-  if (index === 2) return wizardVersion === 1 ? buildWizard2014ProgressionV1(doc) : buildWizard2014Progression(doc);
+  if (index === 2) return wizardVersion === 1 ? buildWizard2014ProgressionV1(doc) : wizardVersion === 2 ? buildWizard2014ProgressionV2(doc) : buildWizard2014Progression(doc);
   if (index === 3) return buildRanger2014Progression(doc);
   if (index === 4) return buildCleric2014Progression(doc);
   if (index === 5) return buildPaladin2014Progression(doc);
