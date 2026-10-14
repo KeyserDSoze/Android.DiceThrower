@@ -219,7 +219,8 @@ class CharacterTransferCodecTest {
                 )),
             ) },
         )
-        val json=packet(source).toString()
+        val json=CharacterTransferCodec.encodeJson(source,"fighter")
+        assertEquals(2,JSONObject(json).getInt("formatVersion"))
         val decoded=CharacterTransferCodec.decodeJson(json)
         assertEquals(3,decoded.rolls.single().levelRules.single().startLevel)
         assertEquals(8,decoded.rolls.single().levelRules.single().maxRepeats)
@@ -235,6 +236,7 @@ class CharacterTransferCodecTest {
         legacyRules.remove("startLevel")
         legacyRules.remove("maxRepeats")
         val older=CharacterTransferCodec.decodeJson(legacy.toString())
+        assertEquals(1,legacy.getInt("formatVersion"))
         assertEquals(null,older.rolls.single().levelRules.single().startLevel)
         assertEquals(null,older.rolls.single().levelRules.single().maxRepeats)
         assertTrue(AppDataValidator.validate(older).isEmpty())
