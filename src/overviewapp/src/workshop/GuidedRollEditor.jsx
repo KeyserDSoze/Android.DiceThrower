@@ -3,6 +3,7 @@ import {
   SYSTEM_STYLES, newAction, newActivationGroup, newCondition, newEffect,
   setActionKind, setDieStyle, setPartStyle,
 } from './guided.js';
+import { formulaVariables } from './formula-variables.js';
 
 function Choice({ label, value, options, onChange }) {
   return <label className="workshop-field"><span>{label}</span>
@@ -38,13 +39,13 @@ function ConditionEditor({ condition, roll, doc, t, onUpdate, onRemove, disabled
       ]} onChange={source => onUpdate(c => {
         c.source = source;
         c.partId = source === 'PART' ? parts[0]?.id || null : null;
-        c.variableName = source === 'VARIABLE' ? doc.modifiers[0]?.name || null : null;
+        c.variableName = source === 'VARIABLE' ? 'level' : null;
       })} />
       {condition.source === 'PART' && <Choice label={t.targetPart} value={condition.partId || ''}
         options={[{ id:'', name:t.choosePart }, ...parts.map(p => ({ id:p.id, name:p.name || p.expression }))]}
         onChange={v => onUpdate(c => c.partId = v || null)} />}
       {condition.source === 'VARIABLE' && <Choice label={t.variable} value={condition.variableName || ''}
-        options={[{ id:'', name:t.chooseVariable }, ...doc.modifiers.map(m => ({ id:m.name, name:m.name }))]}
+        options={[{ id:'', name:t.chooseVariable }, ...formulaVariables(doc.modifiers).map(name => ({id:name, name:name==='level' ? t.levelVariable : name}))]}
         onChange={v => onUpdate(c => c.variableName = v || null)} />}
       <Choice label={t.effectScope} value={condition.scope} options={scopeOptions(t)}
         onChange={v => onUpdate(c => c.scope = v)} />
