@@ -4818,8 +4818,8 @@ private fun LevelRuleDialogV2(
     val validExpression = RollFormulaResolver.validateTemplate(expression.text, character.level, modifiers)
     val valid = trigger != null && trigger in 1..9999 && validExpression &&
         (kind != LevelRuleKind.EVERY_LEVELS ||
-            ((startLevelText.isBlank() || startLevel in 1..9999) &&
-                (maxRepeatsText.isBlank() || maxRepeats in 1..40)))
+            ((startLevelText.isBlank() || (startLevel != null && startLevel in 1..9999)) &&
+                (maxRepeatsText.isBlank() || (maxRepeats != null && maxRepeats in 1..40))))
 
     AlertDialog(
         onDismissRequest = onDismiss,
