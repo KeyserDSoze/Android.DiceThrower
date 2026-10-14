@@ -114,7 +114,13 @@ object RollFormulaResolver {
             require(rule.trigger >= 1) { "Level rule trigger must be at least 1" }
             val repeatCount = when (rule.kind) {
                 LevelRuleKind.FROM_LEVEL -> if (character.level >= rule.trigger) 1 else 0
-                LevelRuleKind.EVERY_LEVELS -> character.level / rule.trigger
+                LevelRuleKind.EVERY_LEVELS -> {
+                    val start = rule.startLevel
+                    val occurrences = if (start == null) character.level / rule.trigger
+                    else if (character.level < start) 0
+                    else 1 + (character.level - start) / rule.trigger
+                    rule.maxRepeats?.let { occurrences.coerceAtMost(it) } ?: occurrences
+                }
             }
 
             repeat(repeatCount) {
