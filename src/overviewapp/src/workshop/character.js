@@ -901,7 +901,7 @@ export function buildWizard2014Progression(doc) {
     let shape = expression;
     if (kind === 'attack') shape = [['Attack',attackExpr],['Damage',expression]];
     // Keep distinct damage types independently visible on the dice table.
-    if (name === 'Meteor Swarm') shape = [['Fire damage','20d6'],['Bludgeoning damage','20d6']];
+    if (name.startsWith('Meteor Swarm (')) shape = [['Fire damage','20d6'],['Bludgeoning damage','20d6']];
     const roll = createStarterRoll(wizard.character.id, groupId, name, shape,
       kind === 'attack' ? 'DND5E_CRITICAL' : null, wizard.rolls.length);
     roll.minimumLevel = minimumLevel;
