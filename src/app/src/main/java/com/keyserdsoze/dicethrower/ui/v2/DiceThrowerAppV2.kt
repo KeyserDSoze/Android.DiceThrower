@@ -4713,20 +4713,6 @@ internal fun RollDialogV2(
                     label = { Text(stringResource(R.string.roll_name)) },
                     singleLine = true,
                 )
-                if (kind == LevelRuleKind.EVERY_LEVELS) {
-                    OutlinedTextField(
-                        value = startLevelText,
-                        onValueChange = { startLevelText = it.filter(Char::isDigit) },
-                        label = { Text(stringResource(R.string.from_level)) },
-                        singleLine = true,
-                    )
-                    OutlinedTextField(
-                        value = maxRepeatsText,
-                        onValueChange = { maxRepeatsText = it.filter(Char::isDigit) },
-                        label = { Text(stringResource(R.string.periodic_max_label)) },
-                        singleLine = true,
-                    )
-                }
                 ParameterizedExpressionField(
                     value = expression,
                     onValueChange = { expression = it },
@@ -4844,6 +4830,20 @@ private fun LevelRuleDialogV2(
                     label = { Text(stringResource(if (kind == LevelRuleKind.FROM_LEVEL) R.string.trigger_level else R.string.interval_levels)) },
                     singleLine = true,
                 )
+                if (kind == LevelRuleKind.EVERY_LEVELS) {
+                    OutlinedTextField(
+                        value = startLevelText,
+                        onValueChange = { startLevelText = it.filter(Char::isDigit) },
+                        label = { Text(stringResource(R.string.from_level)) },
+                        singleLine = true,
+                    )
+                    OutlinedTextField(
+                        value = maxRepeatsText,
+                        onValueChange = { maxRepeatsText = it.filter(Char::isDigit) },
+                        label = { Text(stringResource(R.string.periodic_max_label)) },
+                        singleLine = true,
+                    )
+                }
                 ParameterizedExpressionField(
                     value = expression,
                     onValueChange = { expression = it },
