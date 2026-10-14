@@ -2,6 +2,7 @@ package com.keyserdsoze.dicethrower.data
 
 import com.keyserdsoze.dicethrower.dice.RollFormulaResolver
 import com.keyserdsoze.dicethrower.model.AppData
+import com.keyserdsoze.dicethrower.model.LevelRuleKind
 import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 import com.keyserdsoze.dicethrower.model.EffectValueSource
 import com.keyserdsoze.dicethrower.model.EffectActionType
