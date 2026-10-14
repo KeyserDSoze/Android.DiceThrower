@@ -499,12 +499,12 @@ test('Wizard 2014 QR recipe survives import; custom modifications cannot be lost
   const recipient=withImportPreferences(wizard,'Lyra Master Wizard',20);
   const url=shareUrl(recipient,'https://example.com/Android.DiceThrower/workshop/');
   assert.ok(url.length<=2600,'Wizard template QR fits');
-  assert.match(url,/#template=wizard2014v1&/);
+  assert.match(url,/#template=wizard2014v2&/);
   const decoded=readShareHash(new URL(url).hash);
   assert.equal(decoded.character.name,'Lyra Master Wizard');
   assert.equal(decoded.character.level,20);
   assert.deepEqual(decoded.rolls.map(r=>r.minimumLevel),wizard.rolls.map(r=>r.minimumLevel));
-  assert.ok(androidUrl(decoded).length<=8000,'Android app handoff supported');
+  assert.ok(androidUrl(decoded).length>8000,'Large Wizard preset must offer JSON rather than an oversized deep-link');
   const custom=structuredClone(wizard);
   custom.rolls.find(r=>r.name==='Fire Bolt · 4d10').effects[0].actions[0].expression='3d10';
   validateDocument(custom);
