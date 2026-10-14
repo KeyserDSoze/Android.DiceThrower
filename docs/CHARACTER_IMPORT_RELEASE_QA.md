@@ -12,10 +12,10 @@ Tracking: [#202](https://github.com/KeyserDSoze/Android.DiceThrower/issues/202),
 
 ## Automated acceptance
 
-- [ ] Web unit tests and Pages build/deploy on final commit.
-- [ ] Android `testDebugUnitTest`, `assembleDebug`, `assembleRelease`, `lintDebug` and instrumentation APK build.
-- [ ] Emulator `CharacterDeepLinkImportTest`: registered VIEW URI, preview (no mutation until confirm), safe copy including groups/rolls, invalid link rejection.
-- [ ] Release workflow builds *signed* APK/AAB, verifies signature/production OAuth config, generates sha256 and publishes tagged v0.0.24 artifacts.
+- [x] Web unit tests and Pages build/deploy on most recent web-source commit (release PR made no web changes).
+- [x] Android `testDebugUnitTest`, `assembleDebug`, `assembleRelease`, `lintDebug` and instrumentation APK build.
+- [x] Emulator `CharacterDeepLinkImportTest`: registered VIEW URI, preview (no mutation until confirm), safe copy including groups/rolls, invalid link rejection.
+- [x] Release workflow builds *signed* APK/AAB, verifies signature/production OAuth config, generates sha256 and publishes tagged v0.0.24 artifacts.
 
 ## Physical device acceptance — pending, not automatic
 
@@ -31,7 +31,7 @@ Physical tests must be recorded with device/OS/date/result in **#165**; do **not
 
 | Gate | Evidence |
 |---|---|
-| PR CI | Pending |
-| Main CI and Pages | Pending |
-| Signed GitHub Release v0.0.24 | Pending |
+| PR CI | [Android CI #38633787642](https://github.com/KeyserDSoze/Android.DiceThrower/actions/runs/38633787642): test + emulator **success** |
+| Main CI and Pages | [Android CI main #38635000079](https://github.com/KeyserDSoze/Android.DiceThrower/actions/runs/38635000079): test + emulator **success**; [last website Pages #38623751420](https://github.com/KeyserDSoze/Android.DiceThrower/actions/runs/38623751420): **success** (no web source changes since) |
+| Signed GitHub Release v0.0.24 | [GitHub Release](https://github.com/KeyserDSoze/Android.DiceThrower/releases/tag/v0.0.24), signed APK+AAB+SHA256; [Release workflow #38635000084](https://github.com/KeyserDSoze/Android.DiceThrower/actions/runs/38635000084) **success**; Google Play internal **skipped** |
 | Real camera → site → app | Pending (#165) |
