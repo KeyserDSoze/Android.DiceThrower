@@ -156,6 +156,7 @@
     <string name="every_levels">Chaque niveau N</string>
     <string name="trigger_level">Niveau</string>
     <string name="interval_levels">Chaque</string>
+    <string name="periodic_max_label">Ajouts maximum</string>
     <string name="rule_expression">Expression à ajouter</string>
     <string name="no_level_rules">Pas de règles de niveau.</string>
     <string name="dice_styles">Des styles de dés</string>

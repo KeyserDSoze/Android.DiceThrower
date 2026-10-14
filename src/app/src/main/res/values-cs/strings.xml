@@ -156,6 +156,7 @@
     <string name="every_levels">Každé N úrovně</string>
     <string name="trigger_level">Úroveň</string>
     <string name="interval_levels">Každý</string>
+    <string name="periodic_max_label">Maximální počet přidání</string>
     <string name="rule_expression">Výrazem přidávání</string>
     <string name="no_level_rules">Žádná pravidla.</string>
     <string name="dice_styles">Stylová hračka</string>

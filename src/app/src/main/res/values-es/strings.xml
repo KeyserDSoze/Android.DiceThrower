@@ -156,6 +156,7 @@
     <string name="every_levels">Cada N niveles</string>
     <string name="trigger_level">Nivel</string>
     <string name="interval_levels">Cada</string>
+    <string name="periodic_max_label">Adiciones máximas</string>
     <string name="rule_expression">Expresión para agregar</string>
     <string name="no_level_rules">Sin reglas de nivel.</string>
     <string name="dice_styles">Estilos de dados</string>

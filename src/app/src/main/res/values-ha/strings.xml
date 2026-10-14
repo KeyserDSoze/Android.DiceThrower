@@ -156,6 +156,7 @@
     <string name="every_levels">Kowane N matakan</string>
     <string name="trigger_level">Matsayi</string>
     <string name="interval_levels">Kowane</string>
+    <string name="periodic_max_label">Mafi yawan kari</string>
     <string name="rule_expression">Magana don ƙarawa</string>
     <string name="no_level_rules">Babu dokoki na matakin.</string>
     <string name="dice_styles">Hanyar dice</string>
