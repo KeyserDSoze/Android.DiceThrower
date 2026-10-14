@@ -57,7 +57,14 @@ class CharacterDeepLinkImportTest {
         val before = store.loadData()
         assertTrue(before.characters.none { it.name == name })
 
-        rule.activityRule.scenario.onActivity { it.onNewIntent(intent) }
+        rule.activityRule.scenario.onActivity {
+            // Launch through Android itself: MainActivity.onNewIntent is protected.
+            // SINGLE_TOP reuses the already running activity just like a browser
+            // returning to the app, exercising intent resolution and dispatch.
+            intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                .setPackage(it.packageName)
+            it.startActivity(intent)
+        }
         rule.onNodeWithText(rule.activity.getString(R.string.import_character_title))
             .assertIsDisplayed()
         // Opening a link alone must not alter local storage.
@@ -85,7 +92,11 @@ class CharacterDeepLinkImportTest {
         val before = store.loadData()
         val bad = Intent(Intent.ACTION_VIEW,
             Uri.parse("dicethrower://import?data=not-a-valid-token"))
-        rule.activityRule.scenario.onActivity { it.onNewIntent(bad) }
+        rule.activityRule.scenario.onActivity {
+            bad.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                .setPackage(it.packageName)
+            it.startActivity(bad)
+        }
         rule.onNodeWithText(rule.activity.getString(R.string.import_character_error_title))
             .assertIsDisplayed()
         assertEquals(before.characters.size, store.loadData().characters.size)
