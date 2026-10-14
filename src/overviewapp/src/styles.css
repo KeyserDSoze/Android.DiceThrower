@@ -517,3 +517,30 @@ footer {
 }
 .workshop-level-help { margin: 2px 0 14px; }
 .workshop-preview-roll > .workshop-live-formula { margin-top: 6px; }
+
+
+/* The built-in character level is a real, selectable Roll formula variable. */
+.workshop-formula-field {
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  flex-wrap:wrap;
+  min-width:0;
+  flex:1 1 100%;
+}
+.workshop-formula-field > .workshop-field:first-child {
+  flex:3 1 230px;
+}
+.workshop-formula-field > .workshop-formula-variable {
+  flex:1 1 200px;
+  min-width:min(100%,180px);
+}
+.workshop-formula-variable select {
+  cursor:pointer;
+}
+@media (max-width:560px) {
+  .workshop-formula-field > .workshop-field:first-child,
+  .workshop-formula-field > .workshop-formula-variable {
+    flex-basis:100%;
+  }
+}

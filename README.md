@@ -42,6 +42,11 @@ Le espressioni possono usare le variabili tra parentesi graffe:
 
 Salire di livello non riscrive i tiri: la formula effettiva viene risolta al momento del lancio, quindi tutti i tiri parametrizzati si aggiornano automaticamente.
 
+ Salvataggi, JSON e formule restano game-agnostic.
+
+**Inserimento delle variabili nel sito:** nel Character Workshop ogni formula principale, Roll Part e regola di livello ha un selettore **Aggiungi variabile alla formula** con `Livello personaggio · {level}` e gli altri modificatori. L'inserimento aggiunge esplicitamente un termine `+{level}`; si può comunque scrivere direttamente `{level}d6` se occorre un numero dinamico di dadi. Nell'editor guidato delle condizioni BONUS/MALUS, la fonte **Variabile** comprende `level`, coerentemente con il motore Android. Questo non aumenta automaticamente i danni degli incantesimi: per Wizard le progressioni sono preconfigurate nelle Level Rules e la scelta dello slot resta manuale.
+
+
 **Anteprima sul Character Workshop (web):** accanto alla formula base dei Roll che utilizzano `{level}`, milestone `{levelstep:...}` o Level Rules viene mostrata la **formula derivata dal livello corrente**. I bonus periodici sono rappresentati in forma compatta, ad esempio `3d4+3 + 8 × (1d4+1)` a livello 20 per la variante opzionale di *Magic Missile* del Wizard v3. È un'anteprima senza RNG: le ripetizioni sono effettivamente risolte dal motore Android durante il lancio e la formula originale resta immutata. Anche chi riceve un QR vede l'anteprima aggiornata quando sceglie un livello di importazione differente. Il livello del personaggio **non** decide autonomamente quale slot magico spendere: le varianti "highest unlocked slot" sono facoltative.
 
 

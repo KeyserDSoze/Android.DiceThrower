@@ -74,7 +74,9 @@ const validRefExpr = (value, partIds) => {
 export function validateGuidedRoll(roll, modifierNames, styleIds) {
   const parts = roll.subgroups || [];
   const partIds = new Set(parts.map(x => x.id));
-  const modifierKeys = new Set(modifierNames.map(x => x.trim().toLowerCase()));
+  // Android EffectActivationEvaluator and EffectsEditorV2 both include level
+  // in the effect-variable map, even though it is not a custom modifier.
+  const modifierKeys = new Set(['level', ...modifierNames.map(x => x.trim().toLowerCase())]);
   const a = roll.diceAppearance || { mode: 'CHARACTER_DEFAULT' };
   requireValid(APPEARANCE_MODES.includes(a.mode || 'CHARACTER_DEFAULT'), 'Invalid dice appearance mode');
   const checkStyle = style => requireValid(style == null || styleIds.has(style), 'Unknown dice appearance style');
@@ -115,6 +117,8 @@ export function validateGuidedRoll(roll, modifierNames, styleIds) {
         requireValid(condition.source !== 'VARIABLE' ||
           modifierKeys.has((condition.variableName || '').trim().toLowerCase()),
           'Trigger refers to a missing variable');
+        requireValid(condition.source !== 'VARIABLE' || condition.scope === 'TOTAL',
+          'Variable conditions require total scope');
         validRefExpr(condition.threshold, partIds);
         requireValid(condition.threshold.trim().length > 0, 'Condition threshold required');
       }
