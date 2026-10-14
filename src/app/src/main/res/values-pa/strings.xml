@@ -156,6 +156,7 @@
     <string name="every_levels">ਹਰ N ਪੱਧਰ</string>
     <string name="trigger_level">ਪੱਧਰ</string>
     <string name="interval_levels">ਹਰ</string>
+    <string name="periodic_max_label">ਵੱਧ ਤੋਂ ਵੱਧ ਜੋੜ</string>
     <string name="rule_expression">ਜੋੜਨ ਲਈ ਸ਼ਬਦ</string>
     <string name="no_level_rules">ਕੋਈ ਨਿਯਮ ਨਹੀਂ.</string>
     <string name="dice_styles">ਡਾਇਸ ਸਟਾਈਲ</string>
