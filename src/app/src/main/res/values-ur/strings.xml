@@ -156,6 +156,7 @@
     <string name="every_levels">ہر N سطح</string>
     <string name="trigger_level">سطح</string>
     <string name="interval_levels">ہر ایک</string>
+    <string name="periodic_max_label">زیادہ سے زیادہ اضافے</string>
     <string name="rule_expression">شامل کرنے کا اظہار</string>
     <string name="no_level_rules">کوئی سطح کے قوانین نہیں.</string>
     <string name="dice_styles">ڈاس سٹائل</string>
