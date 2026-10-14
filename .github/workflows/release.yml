@@ -206,8 +206,8 @@ jobs:
           VERSION: ${{ needs.release.outputs.version }}
         run: |
           mkdir -p distribution/whatsnew
-          printf 'Dice Thrower %s: shared custom dice styles across characters and Roll Parts, reusable system presets, a clearer style picker and larger 3D preview. Includes safe style migration/deletion and improved Drive conflict handling.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
-          printf 'Dice Thrower %s: stili dei dadi personalizzati condivisi tra personaggi e Roll Parts, preset di sistema, selezione più chiara e anteprima 3D più grande. Migrazione ed eliminazione sicure, conflitti Drive migliorati.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
+          printf 'Dice Thrower %s: share characters and roll groups through a web preview link/QR, then review and import a copy in the Android app. Import/export large characters as JSON. More flexible level-based roll progression, including maximum repeat counts; optional D&D 5e 2014 Wizard spell presets.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
+          printf 'Dice Thrower %s: condividi personaggi e gruppi di tiri tramite link/QR con anteprima web, poi conferma l’importazione di una copia nell’app Android. Importa/esporta personaggi grandi in JSON. Progressione dei tiri più flessibile con limite alle ripetizioni e preset opzionali per il Mago D&D 5e 2014.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
 
       - name: Upload to Google Play Internal testing
         uses: r0adkll/upload-google-play@v1.1.5
