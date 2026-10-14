@@ -156,6 +156,9 @@
     <string name="every_levels">Every N levels</string>
     <string name="trigger_level">Level</string>
     <string name="interval_levels">Every</string>
+    <string name="periodic_start_level">First level (optional)</string>
+    <string name="periodic_max_repeats">Maximum additions (optional)</string>
+    <string name="periodic_max_label">Maximum</string>
     <string name="rule_expression">Expression to add</string>
     <string name="no_level_rules">No level rules.</string>
     <string name="dice_styles">Dice styles</string>
