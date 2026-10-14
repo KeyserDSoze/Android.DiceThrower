@@ -52,6 +52,10 @@ test('web guided effect VARIABLE conditions accept reserved character level, lik
   validateDocument(wizard);
   assert.equal(documentFromEnvelope(envelope(wizard)).rolls.find(r=>r.id===roll.id)
     .effects.at(-1).activationGroups[0].conditions[0].variableName,'level');
+  const invalidScope = structuredClone(wizard);
+  invalidScope.rolls.find(r=>r.id===roll.id).effects.at(-1)
+    .activationGroups[0].conditions[0].scope='DICE_ONLY';
+  assert.throws(()=>validateDocument(invalidScope),/require total scope/);
   const broken = structuredClone(wizard);
   broken.rolls.find(r=>r.id===roll.id).effects.at(-1)
     .activationGroups[0].conditions[0].variableName='unknown';
