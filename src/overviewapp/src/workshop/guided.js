@@ -117,6 +117,8 @@ export function validateGuidedRoll(roll, modifierNames, styleIds) {
         requireValid(condition.source !== 'VARIABLE' ||
           modifierKeys.has((condition.variableName || '').trim().toLowerCase()),
           'Trigger refers to a missing variable');
+        requireValid(condition.source !== 'VARIABLE' || condition.scope === 'TOTAL',
+          'Variable conditions require total scope');
         validRefExpr(condition.threshold, partIds);
         requireValid(condition.threshold.trim().length > 0, 'Condition threshold required');
       }
