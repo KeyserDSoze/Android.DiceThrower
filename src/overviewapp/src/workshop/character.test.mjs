@@ -4,6 +4,7 @@ import {
   templates, instantiateTemplate, validateDocument, envelope, documentFromEnvelope,
   encodeToken, decodeToken, importAsCopy, normalFormula, newPart, newRoll, newCharacter, newGroup, newModifier, shareUrl,
   canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences, androidUrl,
+  WIZARD_2014_SRD_SPELLS, WIZARD_2014_DICE_SPELLS,
   FIGHTER_2014_LEVELS, FIGHTER_2014_PROFICIENCY_STEPS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS, CLERIC_2014_LEVELS, PALADIN_2014_LEVELS, BARD_2014_LEVELS, readShareHash,
 } from './character.js';
 
@@ -901,4 +902,124 @@ test('Bard 2014 exact QR preset and complete Android transfer preserve styles, r
   let url=null;
   try {url=shareUrl(altered,'https://example.com/workshop/');}catch{}
   assert.ok(!url||!url.includes('#template=bard2014v1'),'Customized Bard cannot use lossy recipe');
+});
+
+test('Wizard v2 reference includes all 2014 SRD wizard spells, not fake rolls for utility magic', () => {
+  assert.equal(WIZARD_2014_SRD_SPELLS.length,10);
+  assert.ok(WIZARD_2014_SRD_SPELLS.reduce((n,list)=>n+list.length,0)>=180);
+  assert.deepEqual(WIZARD_2014_SRD_SPELLS[0].slice(0,2),['Acid Splash','Chill Touch']);
+  for(const name of ['Shield','Invisibility','Teleport','Wish'])
+    assert.ok(WIZARD_2014_SRD_SPELLS.some(list=>list.includes(name)));
+  for(const spell of WIZARD_2014_DICE_SPELLS)
+    assert.ok(WIZARD_2014_SRD_SPELLS[spell.level].includes(spell.listedAs||spell.name),
+      'All executable spells must belong to the SRD wizard list');
+  const wizard=instantiateTemplate(2);
+  assert.ok(!wizard.rolls.some(roll=>/^(Shield|Invisibility|Teleport|Wish)(?:\b|\s)/.test(roll.name)),
+    'Utility spells have no invented damage rolls');
+});
+
+test('Wizard v2 RollGroups are native, complete and faithfully remapped on import', () => {
+  const wizard=instantiateTemplate(2);
+  validateDocument(wizard);
+  assert.deepEqual(wizard.groups.map(g=>g.name),
+    ['Cantrips','Spell Lv 1','Skills & saves',
+      'Spell Lv 2','Spell Lv 3','Spell Lv 4','Spell Lv 5',
+      'Spell Lv 6','Spell Lv 7','Spell Lv 8','Spell Lv 9']);
+  for(let slot=1;slot<=9;slot++){
+    const group=wizard.groups.find(g=>g.name==='Spell Lv '+slot);
+    assert.equal(group.order,slot);
+    assert.ok(wizard.rolls.some(r=>r.groupId===group.id),
+      'Spell level '+slot+' must contain actual playable Rolls');
+    assert.ok(wizard.rolls.filter(r=>r.groupId===group.id).every(r=>r.minimumLevel>=2*slot-1),
+      'No spell can unlock before its class spell slot');
+  }
+  assert.equal(wizard.groups.find(g=>g.name==='Skills & saves').order,10);
+  const bolt=wizard.rolls.find(r=>r.name==='Fire Bolt · 1d10');
+  assert.equal(wizard.groups.find(g=>g.id===bolt.groupId).name,'Cantrips');
+  for(let slot=1;slot<=9;slot++){
+    const missile=wizard.rolls.find(r=>r.name.startsWith('Magic Missile · slot '+slot+' ('));
+    assert.equal(wizard.groups.find(g=>g.id===missile.groupId).name,'Spell Lv 1');
+  }
+  const copy=importAsCopy(wizard);
+  assert.equal(copy.groups.length,wizard.groups.length);
+  assert.ok(copy.groups.every(g=>!wizard.groups.some(old=>old.id===g.id)));
+  assert.ok(copy.rolls.every(r=>copy.groups.some(g=>g.id===r.groupId)));
+  assert.deepEqual(documentFromEnvelope(envelope(copy)),copy);
+  assert.deepEqual(decodeToken(encodeToken(wizard)),wizard);
+});
+
+test('Wizard 2014 spell hit/save, crit and scaling remain mathematically independent', () => {
+  const wizard=instantiateTemplate(2);
+  const fireball=wizard.rolls.find(r=>r.name==='Fireball (target Dex save)');
+  assert.equal(fireball.expression,'8d6');
+  assert.equal(fireball.minimumLevel,5);
+  assert.equal(fireball.subgroups.length,0);
+  assert.equal(fireball.effects.length,0);
+  const upcast=wizard.rolls.find(r=>r.name==='Fireball · slot 9 (target Dex save)');
+  assert.equal(upcast.expression,'14d6');
+  assert.equal(upcast.minimumLevel,17);
+  assert.equal(upcast.groupId,fireball.groupId);
+  const disintegrate=wizard.rolls.find(r=>r.name==='Disintegrate (target Dex save)');
+  assert.equal(disintegrate.expression,'10d6+40');
+  assert.equal(disintegrate.effects.length,0);
+  const swarm=wizard.rolls.find(r=>r.name==='Meteor Swarm (target Dex save)');
+  assert.deepEqual(swarm.subgroups.map(p=>p.name),['Fire damage','Bludgeoning damage']);
+  assert.deepEqual(swarm.subgroups.map(p=>p.expression),['20d6','20d6']);
+  assert.equal(swarm.effects.length,0);
+  for(const name of ['Chill Touch','Ray of Frost','Shocking Grasp']){
+    const variants=wizard.rolls.filter(r=>r.name.startsWith(name+' ·'));
+    assert.deepEqual(variants.map(v=>v.minimumLevel),[1,5,11,17]);
+    for(let tier=1;tier<=4;tier++){
+      const v=variants[tier-1];
+      assert.equal(v.subgroups[0].expression,'1d20+{Intelligence}+{Proficiency}+{levelstep:5:9:13:17}');
+      assert.equal(v.subgroups[1].expression,tier+'d8');
+      assert.equal(v.effects[0].actions[0].expression,tier+'d8');
+      assert.equal(v.effects[0].activationGroups[0].conditions[0].scope,'DICE_ONLY');
+    }
+  }
+  for(const [spell,die,save] of [['Acid Splash',6,'Dex'],['Poison Spray',12,'Con']]){
+    const variants=wizard.rolls.filter(r=>r.name.startsWith(spell+' ·'));
+    assert.deepEqual(variants.map(v=>v.expression),[1,2,3,4].map(n=>n+'d'+die));
+    assert.ok(variants.every(v=>v.effects.length===0&&v.subgroups.length===0));
+    assert.ok(variants.every(v=>v.name.includes('target '+save+' save')));
+  }
+  for(let slot=2;slot<=9;slot++){
+    const rays=wizard.rolls.find(r=>r.name==='Scorching Ray · slot '+slot+' ('+(slot+1)+' rays)');
+    assert.equal(rays.minimumLevel,2*slot-1);
+    assert.equal(rays.subgroups.length,2*(slot+1));
+    assert.equal(rays.effects.length,slot+1);
+    for(let index=0;index<slot+1;index++){
+      const attack=rays.subgroups[2*index],damage=rays.subgroups[2*index+1],effect=rays.effects[index];
+      assert.match(attack.expression,/^1d20\+/);
+      assert.equal(damage.expression,'2d6');
+      assert.equal(effect.activationGroups[0].conditions[0].partId,attack.id);
+      assert.equal(effect.actions[0].targetPartId,damage.id);
+      assert.equal(effect.actions[0].expression,'2d6');
+    }
+  }
+});
+
+test('Wizard QR recipes v1/v2 remain pinned and no customized rolls are lost', () => {
+  const old=instantiateTemplate(2,1), current=instantiateTemplate(2);
+  assert.equal(old.groups.length,3);
+  assert.equal(old.rolls.length,18);
+  assert.ok(current.groups.length>old.groups.length);
+  const oldUrl=shareUrl(withImportPreferences(old,'Old Lyra',20),'https://example.com/Android.DiceThrower/workshop/');
+  assert.match(oldUrl,/#template=wizard2014v1&/);
+  assert.deepEqual(readShareHash(new URL(oldUrl).hash).rolls.map(r=>r.name),old.rolls.map(r=>r.name));
+  const url=shareUrl(withImportPreferences(current,'Lyra Grandmaster',20),'https://example.com/Android.DiceThrower/workshop/');
+  assert.ok(url.length<=2600);
+  assert.match(url,/#template=wizard2014v2&/);
+  const decoded=readShareHash(new URL(url).hash);
+  assert.equal(decoded.character.level,20);
+  assert.equal(decoded.character.name,'Lyra Grandmaster');
+  assert.equal(decoded.rolls.length,current.rolls.length);
+  assert.deepEqual(decoded.groups.map(g=>g.name),current.groups.map(g=>g.name));
+  const altered=structuredClone(current);
+  altered.rolls.find(r=>r.name==='Fireball (target Dex save)').expression='9d6';
+  validateDocument(altered);
+  let link;
+  try {link=shareUrl(altered,'https://example.com/workshop/');}catch{}
+  assert.ok(!link||!link.includes('#template=wizard2014v2'),
+    'Customized spells must never be silently replaced by official stock');
 });
