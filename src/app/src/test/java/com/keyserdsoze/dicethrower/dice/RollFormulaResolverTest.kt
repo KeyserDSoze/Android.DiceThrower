@@ -296,4 +296,47 @@ class RollFormulaResolverTest {
             ),
         )
     }
+    @Test
+    fun periodicRuleCanStartLaterAndSaturateAtCap() {
+        val spell = RollDefinition(
+            id = "max-slot", characterId = character.id, name = "Magic Missile",
+            expression = "3d4+3",
+            levelRules = listOf(RollLevelRule(
+                id = "extra-dart", kind = LevelRuleKind.EVERY_LEVELS,
+                trigger = 2, startLevel = 3, maxRepeats = 8,
+                expression = "1d4+1",
+            )),
+        )
+        for (level in 1..35) {
+            val resolved = RollFormulaResolver.resolve(character.copy(level = level), modifiers, spell)
+            val expected = (if (level < 3) 0 else 1 + (level - 3) / 2).coerceAtMost(8)
+            val parsed = DiceExpression.parse(resolved.expression)
+            assertEquals("At level $level, expected exactly $expected extra darts",
+                expected + 1, parsed.diceShape().size)
+            assertEquals("At level $level, should add one modifier per extra dart",
+                3 + expected, parsed.constantTotal())
+            assertEquals(level >= 3, resolved.appliedRules.isNotEmpty())
+        }
+        // A fixed first-level slot can still be chosen at high character level.
+        val base = spell.copy(levelRules = emptyList())
+        assertEquals("3d4+3",
+            RollFormulaResolver.resolve(character.copy(level = 20), modifiers, base).expression)
+    }
+
+    @Test
+    fun historicalEveryLevelsRulesWithoutNewOptionsRetainExactRepeatCounts() {
+        val roll = RollDefinition(
+            id = "historical", characterId = character.id, name = "Historical",
+            expression = "1d6",
+            levelRules = listOf(RollLevelRule(
+                id = "old", kind = LevelRuleKind.EVERY_LEVELS,
+                trigger = 2, expression = "1d4",
+            )),
+        )
+        for(level in 1..20) {
+            val resolved=RollFormulaResolver.resolve(character.copy(level=level),modifiers,roll)
+            assertEquals(1+level/2, DiceExpression.parse(resolved.expression).diceShape().size)
+        }
+    }
+
 }
