@@ -1049,12 +1049,14 @@ test('Wizard v3 collapses duplicate upcasts without auto-casting a higher spell 
     assert.ok(!wizard.rolls.some(r=>r.name.startsWith(name+' · slot ')));
   }
   assert.ok(wizard.rolls.some(r=>r.name==='Scorching Ray · slot 9 (10 rays)'));
+  assert.equal(envelope(wizard).formatVersion,2);
   assert.deepEqual(documentFromEnvelope(envelope(wizard)),wizard);
 });
 
 test('Wizard original QR v1/v2 and compact v3 remain version-pinned',()=>{
   for(const version of [1,2,3]){
     const doc=instantiateTemplate(2,version);
+    assert.equal(envelope(doc).formatVersion,version===3?2:1);
     const link=shareUrl(withImportPreferences(doc,'Lyra V'+version,20),
       'https://example.com/Android.DiceThrower/workshop/');
     assert.match(link,new RegExp('#template=wizard2014v'+version+'&'));
