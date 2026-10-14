@@ -8,6 +8,7 @@ import {
   WIZARD_2014_SRD_SPELLS, FIGHTER_2014_LEVELS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS, CLERIC_2014_LEVELS, PALADIN_2014_LEVELS, BARD_2014_LEVELS,
 } from './character.js';
 import GuidedRollEditor from './GuidedRollEditor.jsx';
+import { rollLevelPreview } from './roll-level-preview.js';
 import { isPartUsed, removePartSafely, SYSTEM_STYLES } from './guided.js';
 
 function orderedGroups(characterDoc) {
@@ -19,6 +20,23 @@ function orderedGroups(characterDoc) {
   return [...groups.map(group=>({group,items:rolls.filter(item=>item.roll.groupId===group.id)})),
     {group:null,items:rolls.filter(item=>!item.roll.groupId)}]
     .filter(entry=>entry.group || entry.items.length);
+}
+
+function LevelFormulaPreview({doc, roll, t}) {
+  const result = rollLevelPreview(doc, roll);
+  if (!result.dynamic) return null;
+  return <div className="workshop-live-formula">
+    <small>{t.effectiveAtLevel} {result.level}{result.level < (roll.minimumLevel || 1) ? ' · ' + t.unlockedAt + ' ' + roll.minimumLevel : ''}</small>
+    <code>{result.formula}</code>
+    {result.additions.length > 0 && <small className="workshop-level-rule-count">
+      {result.additions.map(({rule,count,expression}) =>
+        <span key={rule.id}>{count} × ({expression}) · {rule.kind === 'EVERY_LEVELS'
+          ? t.everyN + ': ' + rule.trigger +
+            (rule.startLevel != null ? ' · ' + t.startAt + ' ' + rule.startLevel : '') +
+            (rule.maxRepeats != null ? ' · ' + t.maximum + ' ' + rule.maxRepeats : '')
+          : t.startAt + ' ' + rule.trigger}</span>)}
+    </small>}
+  </div>;
 }
 
 const dictionary = {
@@ -34,6 +52,8 @@ const dictionary = {
     appLarge: 'Character too large for reliable app handoff. Export the JSON file and import it inside Dice Thrower instead.',
     templateLinkNote: 'This QR refers to a versioned official D&D starter preset on this site, not to a standalone backup. Export JSON to keep an independent copy.',
     everyN: 'Every N levels', periodicStart: 'First level (optional)', periodicMax: 'Maximum additions (optional)',
+    effectiveAtLevel: 'Formula at level', startAt: 'from level', maximum: 'max additions',
+    levelFormulaHint: 'In a formula, {level} is the character-level variable. Level rules add dice at roll time, even when the base formula stays unchanged.',
     unlockedAt: 'Unlocked at level', ungrouped: 'Ungrouped rolls',
     addToGroup: '+ Roll in group', rollsInGroup: 'rolls',
     spellCatalogue: 'Wizard SRD 2014 · Spell catalogue',
@@ -175,6 +195,8 @@ const dictionary = {
     appLarge: 'Personaggio troppo grande per il passaggio diretto all’app. Esporta il JSON e importalo da Dice Thrower.',
     templateLinkNote: 'Questo QR richiama un modello D&D predefinito e versionato sul sito. Non sostituisce un backup indipendente: esporta il JSON per conservarne una copia.',
     everyN: 'Ogni N livelli', periodicStart: 'Primo livello (opzionale)', periodicMax: 'Numero massimo di aggiunte (opzionale)',
+    effectiveAtLevel: 'Formula al livello', startAt: 'dal livello', maximum: 'aggiunte massime',
+    levelFormulaHint: 'Nella formula, {level} è la variabile del livello del personaggio. Le regole di livello aggiungono i dadi durante il tiro, anche se la formula base resta invariata.',
     unlockedAt: 'Disponibile dal livello', ungrouped: 'Tiri senza gruppo',
     addToGroup: '+ Tiro nel gruppo', rollsInGroup: 'tiri',
     spellCatalogue: 'Mago SRD 2014 · Catalogo incantesimi',
@@ -467,7 +489,9 @@ export default function CharacterWorkshop({ locale = 'en' }) {
   const dndLevels = isBard2014 ? BARD_2014_LEVELS : isPaladin2014 ? PALADIN_2014_LEVELS : isCleric2014 ? CLERIC_2014_LEVELS : isRanger2014 ? RANGER_2014_LEVELS : isWizard2014 ? WIZARD_2014_LEVELS : isRogue2014 ? ROGUE_2014_LEVELS : FIGHTER_2014_LEVELS;
 
   const renderRollEditor = (r,i) => (<details className="workshop-roll" key={r.id}>
-              <summary><strong>{r.name || t.addRoll}</strong><span>{r.expression}</span></summary>
+              <summary><strong>{r.name || t.addRoll}</strong><span>{r.expression}</span>
+                <LevelFormulaPreview doc={doc} roll={r} t={t} />
+              </summary>
               <div className="workshop-inline">
                 <Field label={t.rolls} value={r.name} onChange={v => edit(x => x.rolls[i].name = v)} />
                 <button onClick={() => edit(x => x.rolls.splice(i, 1))}>{t.remove}</button>
@@ -552,6 +576,7 @@ export default function CharacterWorkshop({ locale = 'en' }) {
                     <strong>{roll.name}</strong>
                     {roll.minimumLevel > 1 && <small>{t.unlockedAt} {roll.minimumLevel}</small>}
                     {!!roll.subgroups?.length && <small>{roll.subgroups.map(part=>part.name).join(' · ')}</small>}
+                    <LevelFormulaPreview doc={importCandidate || preview} roll={roll} t={t} />
                   </div>)}
                 </div>
               </details>)}
@@ -668,6 +693,7 @@ export default function CharacterWorkshop({ locale = 'en' }) {
           </section>
           <section className="premium-panel">
             <div className="workshop-row-head"><h2>{t.rolls}</h2><button onClick={() => edit(x => x.rolls.push(newRoll(x.character.id)))}>{t.addRoll}</button></div>
+            <p className="workshop-hint workshop-level-help">{t.levelFormulaHint}</p>
             <div className="workshop-grouped-rolls">
               {orderedGroups(doc).map(({group,items})=>
                 <details className="workshop-roll-group" key={group?.id || 'ungrouped'}>
