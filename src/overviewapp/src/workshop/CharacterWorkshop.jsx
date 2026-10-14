@@ -9,6 +9,7 @@ import {
 } from './character.js';
 import GuidedRollEditor from './GuidedRollEditor.jsx';
 import { rollLevelPreview } from './roll-level-preview.js';
+import { appendFormulaVariable, formulaVariables } from './formula-variables.js';
 import { isPartUsed, removePartSafely, SYSTEM_STYLES } from './guided.js';
 
 function orderedGroups(characterDoc) {
@@ -54,6 +55,7 @@ const dictionary = {
     everyN: 'Every N levels', periodicStart: 'First level (optional)', periodicMax: 'Maximum additions (optional)',
     effectiveAtLevel: 'Formula at level', startAt: 'from level', maximum: 'max additions',
     levelFormulaHint: 'In a formula, {level} is the character-level variable. Level rules add dice at roll time, even when the base formula stays unchanged.',
+    insertVariable: 'Add variable to formula', levelVariable: 'Character level · {level}',
     unlockedAt: 'Unlocked at level', ungrouped: 'Ungrouped rolls',
     addToGroup: '+ Roll in group', rollsInGroup: 'rolls',
     spellCatalogue: 'Wizard SRD 2014 · Spell catalogue',
@@ -197,6 +199,7 @@ const dictionary = {
     everyN: 'Ogni N livelli', periodicStart: 'Primo livello (opzionale)', periodicMax: 'Numero massimo di aggiunte (opzionale)',
     effectiveAtLevel: 'Formula al livello', startAt: 'dal livello', maximum: 'aggiunte massime',
     levelFormulaHint: 'Nella formula, {level} è la variabile del livello del personaggio. Le regole di livello aggiungono i dadi durante il tiro, anche se la formula base resta invariata.',
+    insertVariable: 'Aggiungi variabile alla formula', levelVariable: 'Livello personaggio · {level}',
     unlockedAt: 'Disponibile dal livello', ungrouped: 'Tiri senza gruppo',
     addToGroup: '+ Tiro nel gruppo', rollsInGroup: 'tiri',
     spellCatalogue: 'Mago SRD 2014 · Catalogo incantesimi',
@@ -343,6 +346,23 @@ function Field({ label, value, onChange, type = 'text', min, max, readOnly = fal
     <input type={type} min={min} max={max} readOnly={readOnly} value={value ?? ''} onChange={e => onChange(type === 'number' ? Number(e.target.value) : e.target.value)} />
   </label>;
 }
+function FormulaField({ label, value, onChange, doc, t, readOnly = false }) {
+  return <div className="workshop-formula-field">
+    <Field label={label} value={value} onChange={onChange} readOnly={readOnly} />
+    {!readOnly && <label className="workshop-field workshop-formula-variable">
+      <span>{t.insertVariable}</span>
+      <select value="" onChange={e => {
+        if (e.target.value) onChange(appendFormulaVariable(value, e.target.value));
+      }}>
+        <option value="">{t.chooseVariable}</option>
+        {formulaVariables(doc.modifiers).map(name=><option key={name} value={name}>
+          {name === 'level' ? t.levelVariable : name + ' · {' + name + '}'}
+        </option>)}
+      </select>
+    </label>}
+  </div>;
+}
+
 function OptionalNumberField({label,value,onChange}) {
   return <label className="workshop-field"><span>{label}</span>
     <input type="number" min="1" value={value ?? ''}
@@ -505,7 +525,7 @@ export default function CharacterWorkshop({ locale = 'en' }) {
                 <label className="workshop-check"><input type="checkbox" checked={r.enabled !== false} onChange={e => edit(x => x.rolls[i].enabled = e.target.checked)} /> {t.enabled}</label>
                 <label className="workshop-check"><input type="checkbox" checked={!!r.doubleRollEnabled} onChange={e => edit(x => x.rolls[i].doubleRollEnabled = e.target.checked)} /> {t.double}</label>
               </div>
-              <Field label={t.formula} value={r.expression} readOnly={r.subgroups.length > 1} onChange={v => edit(x => { x.rolls[i].expression = v; if (x.rolls[i].subgroups.length === 1) { x.rolls[i].subgroups[0].expression = v; x.rolls[i].expression = normalFormula(x.rolls[i].subgroups); } })} />
+              <FormulaField label={t.formula} doc={doc} t={t} value={r.expression} readOnly={r.subgroups.length > 1} onChange={v => edit(x => { x.rolls[i].expression = v; if (x.rolls[i].subgroups.length === 1) { x.rolls[i].subgroups[0].expression = v; x.rolls[i].expression = normalFormula(x.rolls[i].subgroups); } })} />
               {r.subgroups.length > 1 && <small className="workshop-hint">{t.formulaFromParts}</small>}
               <div className="workshop-row-head"><h3>{t.parts}</h3><button onClick={() => edit(x => {
                 const roll = x.rolls[i];
@@ -516,7 +536,7 @@ export default function CharacterWorkshop({ locale = 'en' }) {
               {r.subgroups.map((p,j) => <div className="workshop-part" key={p.id}>
                 <div className="workshop-inline">
                   <Field label={t.parts} value={p.name} onChange={v => edit(x => x.rolls[i].subgroups[j].name = v)} />
-                  <Field label={t.formula} value={p.expression} onChange={v => edit(x => { const roll = x.rolls[i]; roll.subgroups[j].expression = v; roll.expression = normalFormula(roll.subgroups); })} />
+                  <FormulaField label={t.formula} doc={doc} t={t} value={p.expression} onChange={v => edit(x => { const roll = x.rolls[i]; roll.subgroups[j].expression = v; roll.expression = normalFormula(roll.subgroups); })} />
                   <button disabled={isPartUsed(r, p.id)} title={isPartUsed(r, p.id) ? t.partUsed : t.remove} onClick={() => edit(x => removePartSafely(x.rolls[i], p.id, normalFormula))}>×</button>
                 </div>
                 <div className="workshop-inline">
@@ -535,7 +555,7 @@ export default function CharacterWorkshop({ locale = 'en' }) {
                   <OptionalNumberField label={t.periodicStart} value={rule.startLevel ?? ''} onChange={v => edit(x => { if (v == null) delete x.rolls[i].levelRules[j].startLevel; else x.rolls[i].levelRules[j].startLevel = Number(v); })} />
                   <OptionalNumberField label={t.periodicMax} value={rule.maxRepeats ?? ''} onChange={v => edit(x => { if (v == null) delete x.rolls[i].levelRules[j].maxRepeats; else x.rolls[i].levelRules[j].maxRepeats = Number(v); })} />
                 </>}
-                <Field label={t.formula} value={rule.expression} onChange={v => edit(x => x.rolls[i].levelRules[j].expression = v)} />
+                <FormulaField label={t.formula} doc={doc} t={t} value={rule.expression} onChange={v => edit(x => x.rolls[i].levelRules[j].expression = v)} />
                 <button onClick={() => edit(x => x.rolls[i].levelRules.splice(j,1))}>×</button>
               </div>)}
               <GuidedRollEditor roll={r} doc={doc} t={t} onEdit={mutator => edit(x => mutator(x.rolls[i]))} />
