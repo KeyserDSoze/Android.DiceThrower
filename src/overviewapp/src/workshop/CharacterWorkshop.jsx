@@ -321,6 +321,12 @@ function Field({ label, value, onChange, type = 'text', min, max, readOnly = fal
     <input type={type} min={min} max={max} readOnly={readOnly} value={value ?? ''} onChange={e => onChange(type === 'number' ? Number(e.target.value) : e.target.value)} />
   </label>;
 }
+function OptionalNumberField({label,value,onChange}) {
+  return <label className="workshop-field"><span>{label}</span>
+    <input type="number" min="1" value={value ?? ''}
+      onChange={e=>onChange(e.target.value==='' ? null : Number(e.target.value))} />
+  </label>;
+}
 function JsonField({ label, value, onChange }) {
   const [draft, setDraft] = useState(JSON.stringify(value || [], null, 2));
   const [error, setError] = useState('');
@@ -502,8 +508,8 @@ export default function CharacterWorkshop({ locale = 'en' }) {
                   <option value="FROM_LEVEL">From level</option><option value="EVERY_LEVELS">Every N levels</option></select>
                 <Field label={rule.kind === 'EVERY_LEVELS' ? t.everyN : t.level} type="number" min={1} value={rule.trigger} onChange={v => edit(x => x.rolls[i].levelRules[j].trigger = v)} />
                 {rule.kind === 'EVERY_LEVELS' && <>
-                  <Field label={t.periodicStart} type="number" min={1} value={rule.startLevel ?? ''} onChange={v => edit(x => { if (v === '') delete x.rolls[i].levelRules[j].startLevel; else x.rolls[i].levelRules[j].startLevel = Number(v); })} />
-                  <Field label={t.periodicMax} type="number" min={1} value={rule.maxRepeats ?? ''} onChange={v => edit(x => { if (v === '') delete x.rolls[i].levelRules[j].maxRepeats; else x.rolls[i].levelRules[j].maxRepeats = Number(v); })} />
+                  <OptionalNumberField label={t.periodicStart} value={rule.startLevel ?? ''} onChange={v => edit(x => { if (v == null) delete x.rolls[i].levelRules[j].startLevel; else x.rolls[i].levelRules[j].startLevel = Number(v); })} />
+                  <OptionalNumberField label={t.periodicMax} value={rule.maxRepeats ?? ''} onChange={v => edit(x => { if (v == null) delete x.rolls[i].levelRules[j].maxRepeats; else x.rolls[i].levelRules[j].maxRepeats = Number(v); })} />
                 </>}
                 <Field label={t.formula} value={rule.expression} onChange={v => edit(x => x.rolls[i].levelRules[j].expression = v)} />
                 <button onClick={() => edit(x => x.rolls[i].levelRules.splice(j,1))}>×</button>
