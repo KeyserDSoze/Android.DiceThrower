@@ -5,10 +5,21 @@ import {
   listSaved, newCharacter, newGroup, newLevelRule, newModifier, newPart, newRoll, newStyle,
   normalFormula, readShareHash, removeDocument, saveDocument, shareUrl, templates, validateDocument,
   canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences,
-  FIGHTER_2014_LEVELS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS, CLERIC_2014_LEVELS, PALADIN_2014_LEVELS, BARD_2014_LEVELS,
+  WIZARD_2014_SRD_SPELLS, FIGHTER_2014_LEVELS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS, CLERIC_2014_LEVELS, PALADIN_2014_LEVELS, BARD_2014_LEVELS,
 } from './character.js';
 import GuidedRollEditor from './GuidedRollEditor.jsx';
 import { isPartUsed, removePartSafely, SYSTEM_STYLES } from './guided.js';
+
+function orderedGroups(characterDoc) {
+  if (!characterDoc) return [];
+  const rolls = characterDoc.rolls.map((roll,index)=>({roll,index}))
+    .sort((a,b)=>(a.roll.order ?? 0)-(b.roll.order ?? 0) || a.index-b.index);
+  const groups = [...characterDoc.groups].sort((a,b)=>
+    (a.order ?? 0)-(b.order ?? 0) || a.name.localeCompare(b.name));
+  return [...groups.map(group=>({group,items:rolls.filter(item=>item.roll.groupId===group.id)})),
+    {group:null,items:rolls.filter(item=>!item.roll.groupId)}]
+    .filter(entry=>entry.group || entry.items.length);
+}
 
 const dictionary = {
   en: {
@@ -22,7 +33,12 @@ const dictionary = {
     appDirect: 'Send this character to the Android app', appDirectHint: 'Opens Dice Thrower if it is installed and supports character import.',
     appLarge: 'Character too large for reliable app handoff. Export the JSON file and import it inside Dice Thrower instead.',
     templateLinkNote: 'This QR refers to a versioned official D&D starter preset on this site, not to a standalone backup. Export JSON to keep an independent copy.',
-    unlockedAt: 'Unlocked at level',
+    unlockedAt: 'Unlocked at level', ungrouped: 'Ungrouped rolls',
+    addToGroup: '+ Roll in group', rollsInGroup: 'rolls',
+    spellCatalogue: 'Wizard SRD 2014 · Spell catalogue',
+    spellCatalogueNote: 'All SRD Wizard spells are references, not automatically known or prepared. Only spells with a meaningful dice/check preset appear as Rolls. Choose spells, targets, save results, concentration and spent slots manually.',
+    spellWithRoll: 'Dice preset', spellReference: 'Reference only',
+    spellLevel: 'Spell Lv', cantripTitle: 'Cantrips',
     fighterProgression: 'Fighter 2014 · levels 1–20', fighterProficiency: 'Proficiency',
     rogueProgression: 'Rogue 2014 · levels 1–20', rogueSneak: 'Sneak Attack',
     wizardProgression: 'Wizard 2014 · levels 1–20', wizardSlots: 'Slots (1–9)', wizardCantrips: 'cantrips known',
@@ -34,7 +50,7 @@ const dictionary = {
     paladinChoiceNote: 'At level 5 use Longsword · 2 attacks. At level 11 use its Improved Smite alternative: weapon hits gain another 1d8 radiant and a natural 20 doubles both the sword and this extra die, never Strength. Divine Smite is an optional separate damage Roll, usable only after a melee weapon hit and spending a spell slot: choose exactly one regular/critical and undead-or-fiend alternative. If a critical hit, double only its dice. Spell slots are not automatically spent. Lay on Hands (5 HP per class level), Fighting Style, Aura, subclass Oath, ASI and resources must be handled manually.',
     clericChoiceNote: 'Sacred Flame calls for the target’s Dexterity save: roll only the damage tier (1d8/2d8/3d8/4d8 at levels 1/5/11/17), never an attack/critical. Healing Word and Cure Wounds heal Nd4 or Nd8 + Wisdom when the spell is prepared and cast with an Nth-level slot (1–9). Guidance and Bless d4 are optional and only apply to eligible checks/attacks/saves. Spell save DC is 8 + Wisdom + proficiency. Spell preparation, chosen Divine Domain, Channel Divinity, Divine Intervention and expended slots remain manual.',
     rangerChoiceNote: 'Extra Attack: use Bow · 2 attacks from level 5 (each attack has its own natural-20 critical). Hunter’s Mark damage is optional and requires the spell to be known, an eligible marked target, an active concentration and a hit; on a critical choose its 2d6 variant INSTEAD of 1d6. Cure Wounds and spell attacks are optional examples, not automatic known spells; slots are reference values, not expended automatically. Favored Enemy, terrain, Fighting Style, ASI and Ranger Archetype remain player choices.',
-    wizardChoiceNote: 'This is a 2014 Wizard example, not an automatic spellbook. Fire Bolt has a tier-specific attack/damage/critical preset at levels 1/5/11/17: use the highest currently unlocked tier. Magic Missile rolls list each dart separately with one extra dart per higher spell slot (3 through 11); the player assigns targets and chooses a spell/slot. Prepared spells, spent slots, Arcane Tradition, Arcane Recovery, Spell Mastery and Signature Spells are not auto-tracked. If your table rolls a single shared d4 for all Magic Missile darts, use one Dart Part and apply that result to all darts.',
+    wizardChoiceNote: 'Spell Lv 1–9 are native Roll groups shared with Android. The 2014 Wizard SRD catalogue is only a reference, not a prepared spellbook: choose which spells are known, prepared and cast.  Fire Bolt has a tier-specific attack/damage/critical preset at levels 1/5/11/17: use the highest currently unlocked tier. Magic Missile rolls list each dart separately with one extra dart per higher spell slot (3 through 11); the player assigns targets and chooses a spell/slot. Prepared spells, spent slots, Arcane Tradition, Arcane Recovery, Spell Mastery and Signature Spells are not auto-tracked. If your table rolls a single shared d4 for all Magic Missile darts, use one Dart Part and apply that result to all darts.',
     rogueChoiceNote: 'Sneak Attack is conditional (once per turn, eligible finesse/ranged hit with advantage or ally nearby): throw its separate damage Roll only when eligible. Use the separate critical Sneak Attack Roll on a critical hit; the Dagger critical only adds its own weapon die. Expertise/skill choices, ASI, archetype, Reliable Talent and resource uses require player choices or manual adjudication. Slippery Mind unlocks Wisdom save proficiency at level 15.',
     fighterChoiceNote: 'Ability Score Improvements, feats, Fighting Style and Martial Archetype are player choices. Edit the relevant modifiers and rolls after choosing. For Indomitable, roll the relevant saving throw again and use its new result; ability and resource choices are not tracked by the dice engine.',
     fighterEvents: [
@@ -157,7 +173,12 @@ const dictionary = {
     appDirect: 'Invia questo personaggio all’app Android', appDirectHint: 'Apre Dice Thrower se è installata e supporta l’importazione dei personaggi.',
     appLarge: 'Personaggio troppo grande per il passaggio diretto all’app. Esporta il JSON e importalo da Dice Thrower.',
     templateLinkNote: 'Questo QR richiama un modello D&D predefinito e versionato sul sito. Non sostituisce un backup indipendente: esporta il JSON per conservarne una copia.',
-    unlockedAt: 'Disponibile dal livello',
+    unlockedAt: 'Disponibile dal livello', ungrouped: 'Tiri senza gruppo',
+    addToGroup: '+ Tiro nel gruppo', rollsInGroup: 'tiri',
+    spellCatalogue: 'Mago SRD 2014 · Catalogo incantesimi',
+    spellCatalogueNote: 'Tutti gli incantesimi SRD del Mago sono riferimenti: non sono automaticamente conosciuti né preparati. Solo quelli che richiedono davvero dadi o prove hanno un tiro predisposto. Incantesimi, bersagli, tiri salvezza, concentrazione e slot spesi restano manuali.',
+    spellWithRoll: 'Tiro predisposto', spellReference: 'Solo riferimento',
+    spellLevel: 'Magie Lv', cantripTitle: 'Trucchetti',
     fighterProgression: 'Guerriero 2014 · livelli 1–20', fighterProficiency: 'Competenza',
     rogueProgression: 'Ladro 2014 · livelli 1–20', rogueSneak: 'Attacco Furtivo',
     wizardProgression: 'Mago 2014 · livelli 1–20', wizardSlots: 'Slot (1–9)', wizardCantrips: 'trucchetti conosciuti',
@@ -169,7 +190,7 @@ const dictionary = {
     paladinChoiceNote: 'Dal livello 5 usa Spada Lunga · 2 attacchi. Dal livello 11 usa la variante con Punizione Divina Migliorata: ogni colpo a segno aggiunge 1d8 radiante e sul 20 naturale si raddoppiano i dadi dell’arma e quello extra, mai Forza. La Punizione Divina opzionale va lanciata separatamente soltanto dopo un colpo in mischia e consumando uno slot: scegli UNA sola variante normale/critico e contro non morti o immondi. Su critico raddoppia solo i dadi. Gli slot non si consumano automaticamente. Imposizione delle Mani (5 PF per livello), Stile di Combattimento, Aure, Giuramento, caratteristiche e risorse sono gestiti manualmente.',
     clericChoiceNote: 'Fiamma Sacra richiede un tiro salvezza di Destrezza del bersaglio: usa soltanto il danno appropriato (1d8/2d8/3d8/4d8 ai livelli 1/5/11/17), non un tiro per colpire o critico. Parola Guaritrice e Cura Ferite curano Nd4 o Nd8 + Saggezza se preparati e lanciati con uno slot di livello N (1–9). Guida e Benedizione sono d4 opzionali applicabili solo a prove/attacchi/tiri salvezza idonei. CD degli incantesimi = 8 + Saggezza + competenza. Preparazione, Dominio Divino, Incanalare Divinità, Intervento Divino e slot spesi restano gestiti dal giocatore.',
     rangerChoiceNote: 'Attacco Extra: dal livello 5 usa Arco · 2 attacchi (ogni attacco ha un proprio critico con 20 naturale). Danno Marchio del Cacciatore solo se conosci l’incantesimo, mantieni concentrazione, il bersaglio è marchiato e il colpo va a segno; su critico usa 2d6 INVECE di 1d6. Cura Ferite e attacchi magici sono esempi opzionali, non incantesimi automaticamente conosciuti; gli slot sono valori di riferimento. Nemico Prescelto, terreno, Stile di Combattimento, caratteristiche e Archetipo sono scelte del giocatore.',
-    wizardChoiceNote: 'Questo è un esempio di Mago 2014, non un grimorio automatico. Dardo di Fuoco ha attacco/danno/critico separato ai livelli 1/5/11/17: usa la variante sbloccata più alta. Dardo Incantato mostra ogni dardo con una Parte separata (3–11 dardi secondo lo slot): scegli il bersaglio e lo slot. Incantesimi preparati, slot spesi, Tradizione Arcana, Recupero Arcano, Padronanza Magica e Incantesimi Distintivi sono gestiti dal giocatore. Se il tavolo tira un unico d4 per tutti i dardi, tira una sola Parte e usa quel risultato per ciascun dardo.',
+    wizardChoiceNote: 'Spell Lv 1–9 sono i gruppi di tiri nativi condivisi con Android. Il catalogo SRD 2014 è solo un riferimento: scegli quali incantesimi conosci, prepari e lanci.  Dardo di Fuoco ha attacco/danno/critico separato ai livelli 1/5/11/17: usa la variante sbloccata più alta. Dardo Incantato mostra ogni dardo con una Parte separata (3–11 dardi secondo lo slot): scegli il bersaglio e lo slot. Incantesimi preparati, slot spesi, Tradizione Arcana, Recupero Arcano, Padronanza Magica e Incantesimi Distintivi sono gestiti dal giocatore. Se il tavolo tira un unico d4 per tutti i dardi, tira una sola Parte e usa quel risultato per ciascun dardo.',
     rogueChoiceNote: 'Attacco Furtivo è condizionale (una volta per turno, arma accurata/a distanza, vantaggio o alleato vicino): usa il tiro danno separato solo se applicabile. Su un critico usa il tiro Attacco Furtivo critico; il critico del pugnale aggiunge solo il dado dell’arma. Maestria, abilità, incrementi di caratteristica, archetipo, Talento Affidabile e risorse sono scelte o valutazioni manuali. Mente Sfuggente sblocca la competenza al TS Saggezza dal livello 15.',
     fighterChoiceNote: 'Aumenti di caratteristica, talenti, Stile di Combattimento e Archetipo Marziale sono scelte del giocatore. Modifica i relativi valori e tiri dopo aver scelto. Per Indomito, ripeti il tiro salvezza interessato e usa il nuovo risultato. Le scelte e gli usi delle risorse non vengono tracciati dal motore.',
     fighterEvents: [
@@ -437,6 +458,58 @@ export default function CharacterWorkshop({ locale = 'en' }) {
   const isBard2014 = doc?.character.tag.startsWith('D&D 5e (2014) Bard sample');
   const dndLevels = isBard2014 ? BARD_2014_LEVELS : isPaladin2014 ? PALADIN_2014_LEVELS : isCleric2014 ? CLERIC_2014_LEVELS : isRanger2014 ? RANGER_2014_LEVELS : isWizard2014 ? WIZARD_2014_LEVELS : isRogue2014 ? ROGUE_2014_LEVELS : FIGHTER_2014_LEVELS;
 
+  const renderRollEditor = (r,i) => (<details className="workshop-roll" key={r.id}>
+              <summary><strong>{r.name || t.addRoll}</strong><span>{r.expression}</span></summary>
+              <div className="workshop-inline">
+                <Field label={t.rolls} value={r.name} onChange={v => edit(x => x.rolls[i].name = v)} />
+                <button onClick={() => edit(x => x.rolls.splice(i, 1))}>{t.remove}</button>
+              </div>
+              <div className="workshop-fields">
+                <label className="workshop-field"><span>{t.group}</span>
+                  <select value={r.groupId || ''} onChange={e => edit(x => x.rolls[i].groupId = e.target.value || null)}>
+                    <option value="">—</option>{doc.groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                  </select></label>
+                <Field label={t.minimum} type="number" min={1} value={r.minimumLevel || 1} onChange={v => edit(x => x.rolls[i].minimumLevel = v)} />
+                <label className="workshop-check"><input type="checkbox" checked={r.enabled !== false} onChange={e => edit(x => x.rolls[i].enabled = e.target.checked)} /> {t.enabled}</label>
+                <label className="workshop-check"><input type="checkbox" checked={!!r.doubleRollEnabled} onChange={e => edit(x => x.rolls[i].doubleRollEnabled = e.target.checked)} /> {t.double}</label>
+              </div>
+              <Field label={t.formula} value={r.expression} readOnly={r.subgroups.length > 1} onChange={v => edit(x => { x.rolls[i].expression = v; if (x.rolls[i].subgroups.length === 1) { x.rolls[i].subgroups[0].expression = v; x.rolls[i].expression = normalFormula(x.rolls[i].subgroups); } })} />
+              {r.subgroups.length > 1 && <small className="workshop-hint">{t.formulaFromParts}</small>}
+              <div className="workshop-row-head"><h3>{t.parts}</h3><button onClick={() => edit(x => {
+                const roll = x.rolls[i];
+                if (!roll.subgroups.length) roll.subgroups = [{ ...newPart(), name: roll.name, expression: roll.expression }];
+                else roll.subgroups.push(newPart());
+                roll.expression = normalFormula(roll.subgroups);
+              })}>{t.addPart}</button></div>
+              {r.subgroups.map((p,j) => <div className="workshop-part" key={p.id}>
+                <div className="workshop-inline">
+                  <Field label={t.parts} value={p.name} onChange={v => edit(x => x.rolls[i].subgroups[j].name = v)} />
+                  <Field label={t.formula} value={p.expression} onChange={v => edit(x => { const roll = x.rolls[i]; roll.subgroups[j].expression = v; roll.expression = normalFormula(roll.subgroups); })} />
+                  <button disabled={isPartUsed(r, p.id)} title={isPartUsed(r, p.id) ? t.partUsed : t.remove} onClick={() => edit(x => removePartSafely(x.rolls[i], p.id, normalFormula))}>×</button>
+                </div>
+                <div className="workshop-inline">
+                  <select value={p.operator || 'ADD'} onChange={e => edit(x => { const roll = x.rolls[i]; roll.subgroups[j].operator = e.target.value; roll.expression = normalFormula(roll.subgroups); })}>
+                    <option value="ADD">+</option><option value="SUBTRACT">−</option></select>
+                  <label className="workshop-check"><input type="checkbox" checked={p.includeInNormalRoll !== false} disabled={p.includeInNormalRoll !== false && r.subgroups.filter(q => q.includeInNormalRoll !== false).length === 1} onChange={e => edit(x => { const roll = x.rolls[i]; roll.subgroups[j].includeInNormalRoll = e.target.checked; roll.expression = normalFormula(roll.subgroups); })} /> {t.initialThrow}</label>
+                                    <label className="workshop-check"><input type="checkbox" checked={!!p.includeInDoubleRoll} onChange={e => edit(x => x.rolls[i].subgroups[j].includeInDoubleRoll = e.target.checked)} /> {t.doubleCandidate}</label>
+                </div>
+              </div>)}
+              <div className="workshop-row-head"><h3>{t.rules}</h3><button onClick={() => edit(x => x.rolls[i].levelRules.push(newLevelRule()))}>{t.addRule}</button></div>
+              {r.levelRules.map((rule,j) => <div className="workshop-inline" key={rule.id}>
+                <select value={rule.kind} onChange={e => edit(x => x.rolls[i].levelRules[j].kind = e.target.value)}>
+                  <option value="FROM_LEVEL">From level</option><option value="EVERY_LEVELS">Every N levels</option></select>
+                <Field label={t.level} type="number" min={1} value={rule.trigger} onChange={v => edit(x => x.rolls[i].levelRules[j].trigger = v)} />
+                <Field label={t.formula} value={rule.expression} onChange={v => edit(x => x.rolls[i].levelRules[j].expression = v)} />
+                <button onClick={() => edit(x => x.rolls[i].levelRules.splice(j,1))}>×</button>
+              </div>)}
+              <GuidedRollEditor roll={r} doc={doc} t={t} onEdit={mutator => edit(x => mutator(x.rolls[i]))} />
+              <details className="workshop-expert"><summary>{t.expertJson}</summary>
+                <p className="workshop-hint">{t.expertHelp}</p>
+                <JsonField label={t.effects} value={r.effects} onChange={v => edit(x => x.rolls[i].effects = v)} />
+                <JsonField label={t.appearance} value={r.diceAppearance || { mode: 'CHARACTER_DEFAULT' }} onChange={v => edit(x => x.rolls[i].diceAppearance = v)} />
+              </details>
+            </details>);
+
   return <section className="workshop">
     <div className="workshop-heading">
       <span className="eyebrow">Offline-first · No account</span>
@@ -459,11 +532,17 @@ export default function CharacterWorkshop({ locale = 'en' }) {
         </div>
         <details className="workshop-preview-rolls"><summary>{t.rolls}</summary>
           <div className="workshop-preview-list">
-            {preview.rolls.map(roll => <div key={roll.id} className="workshop-preview-roll">
-              <strong>{roll.name}</strong>
-              {roll.minimumLevel > 1 && <small>{t.unlockedAt} {roll.minimumLevel}</small>}
-              {!!roll.subgroups?.length && <small>{roll.subgroups.map(part => part.name).join(' · ')}</small>}
-            </div>)}
+            {orderedGroups(preview).map(({group,items}) =>
+              <details className="workshop-roll-group" key={group?.id || 'ungrouped'}>
+                <summary><strong>{group?.name || t.ungrouped}</strong><span>{items.length} {t.rollsInGroup}</span></summary>
+                <div className="workshop-group-content">
+                  {items.map(({roll})=><div key={roll.id} className="workshop-preview-roll">
+                    <strong>{roll.name}</strong>
+                    {roll.minimumLevel > 1 && <small>{t.unlockedAt} {roll.minimumLevel}</small>}
+                    {!!roll.subgroups?.length && <small>{roll.subgroups.map(part=>part.name).join(' · ')}</small>}
+                  </div>)}
+                </div>
+              </details>)}
           </div>
         </details>
       </div>
@@ -526,6 +605,22 @@ export default function CharacterWorkshop({ locale = 'en' }) {
                   </div>)}
               </div>
             </details>}
+            {isWizard2014 && <details className="workshop-spell-catalog">
+              <summary>{t.spellCatalogue} · {WIZARD_2014_SRD_SPELLS.reduce((n,list)=>n+list.length,0)}</summary>
+              <p className="workshop-hint">{t.spellCatalogueNote}</p>
+              <div className="workshop-catalog-grid">
+                {WIZARD_2014_SRD_SPELLS.map((spells,level)=>
+                  <details key={level} className="workshop-catalog-level">
+                    <summary>{level===0?t.cantripTitle:t.spellLevel+' '+level} · {spells.length}</summary>
+                    <ul>{spells.map(spell=>{
+                      const hasRoll=doc.rolls.some(roll=>roll.name===spell||roll.name.startsWith(spell+' ·')||roll.name.startsWith(spell+' ('));
+                      return <li key={spell}><span>{spell}</span><small>{hasRoll?t.spellWithRoll:t.spellReference}</small></li>;
+                    })}</ul>
+                  </details>)}
+              </div>
+              <p className="workshop-hint"><a href="https://5e.d20srd.org/srd/spellLists/wizardSpells.htm" target="_blank" rel="noreferrer">D&D 5e (2014) SRD · Wizard spell list</a></p>
+              <p className="workshop-hint workshop-srd-attribution">This work includes material taken from the System Reference Document 5.1 (“SRD 5.1”) by Wizards of the Coast LLC and available at <a href="https://dnd.wizards.com/resources/systems-reference-document" target="_blank" rel="noreferrer">https://dnd.wizards.com/resources/systems-reference-document</a>. The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License available at <a href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noreferrer">https://creativecommons.org/licenses/by/4.0/legalcode</a>.</p>
+            </details>}
             <div className="workshop-actions">
               <button className="primary" onClick={save}>{t.save}</button>
               {canUpgradeLegacyStarterWeaponRolls(doc) && <button type="button"
@@ -553,7 +648,7 @@ export default function CharacterWorkshop({ locale = 'en' }) {
             </div>)}
           </section>
           <section className="premium-panel">
-            <div className="workshop-row-head"><h2>{t.groups}</h2><button onClick={() => edit(x => x.groups.push(newGroup(x.character.id)))}>{t.addGroup}</button></div>
+            <div className="workshop-row-head"><h2>{t.groups}</h2><button onClick={() => edit(x => { const group=newGroup(x.character.id); group.order=x.groups.length; x.groups.push(group); })}>{t.addGroup}</button></div>
             {doc.groups.map((g,i) => <div className="workshop-inline" key={g.id}>
               <Field label={t.group} value={g.name} onChange={v => edit(x => x.groups[i].name = v)} />
               <button onClick={() => edit(x => { x.rolls.forEach(r => { if (r.groupId === g.id) r.groupId = null; }); x.groups.splice(i, 1); })} aria-label={t.remove}>×</button>
@@ -561,57 +656,18 @@ export default function CharacterWorkshop({ locale = 'en' }) {
           </section>
           <section className="premium-panel">
             <div className="workshop-row-head"><h2>{t.rolls}</h2><button onClick={() => edit(x => x.rolls.push(newRoll(x.character.id)))}>{t.addRoll}</button></div>
-            {doc.rolls.map((r,i) => <details className="workshop-roll" key={r.id}>
-              <summary><strong>{r.name || t.addRoll}</strong><span>{r.expression}</span></summary>
-              <div className="workshop-inline">
-                <Field label={t.rolls} value={r.name} onChange={v => edit(x => x.rolls[i].name = v)} />
-                <button onClick={() => edit(x => x.rolls.splice(i, 1))}>{t.remove}</button>
-              </div>
-              <div className="workshop-fields">
-                <label className="workshop-field"><span>{t.group}</span>
-                  <select value={r.groupId || ''} onChange={e => edit(x => x.rolls[i].groupId = e.target.value || null)}>
-                    <option value="">—</option>{doc.groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                  </select></label>
-                <Field label={t.minimum} type="number" min={1} value={r.minimumLevel || 1} onChange={v => edit(x => x.rolls[i].minimumLevel = v)} />
-                <label className="workshop-check"><input type="checkbox" checked={r.enabled !== false} onChange={e => edit(x => x.rolls[i].enabled = e.target.checked)} /> {t.enabled}</label>
-                <label className="workshop-check"><input type="checkbox" checked={!!r.doubleRollEnabled} onChange={e => edit(x => x.rolls[i].doubleRollEnabled = e.target.checked)} /> {t.double}</label>
-              </div>
-              <Field label={t.formula} value={r.expression} readOnly={r.subgroups.length > 1} onChange={v => edit(x => { x.rolls[i].expression = v; if (x.rolls[i].subgroups.length === 1) { x.rolls[i].subgroups[0].expression = v; x.rolls[i].expression = normalFormula(x.rolls[i].subgroups); } })} />
-              {r.subgroups.length > 1 && <small className="workshop-hint">{t.formulaFromParts}</small>}
-              <div className="workshop-row-head"><h3>{t.parts}</h3><button onClick={() => edit(x => {
-                const roll = x.rolls[i];
-                if (!roll.subgroups.length) roll.subgroups = [{ ...newPart(), name: roll.name, expression: roll.expression }];
-                else roll.subgroups.push(newPart());
-                roll.expression = normalFormula(roll.subgroups);
-              })}>{t.addPart}</button></div>
-              {r.subgroups.map((p,j) => <div className="workshop-part" key={p.id}>
-                <div className="workshop-inline">
-                  <Field label={t.parts} value={p.name} onChange={v => edit(x => x.rolls[i].subgroups[j].name = v)} />
-                  <Field label={t.formula} value={p.expression} onChange={v => edit(x => { const roll = x.rolls[i]; roll.subgroups[j].expression = v; roll.expression = normalFormula(roll.subgroups); })} />
-                  <button disabled={isPartUsed(r, p.id)} title={isPartUsed(r, p.id) ? t.partUsed : t.remove} onClick={() => edit(x => removePartSafely(x.rolls[i], p.id, normalFormula))}>×</button>
-                </div>
-                <div className="workshop-inline">
-                  <select value={p.operator || 'ADD'} onChange={e => edit(x => { const roll = x.rolls[i]; roll.subgroups[j].operator = e.target.value; roll.expression = normalFormula(roll.subgroups); })}>
-                    <option value="ADD">+</option><option value="SUBTRACT">−</option></select>
-                  <label className="workshop-check"><input type="checkbox" checked={p.includeInNormalRoll !== false} disabled={p.includeInNormalRoll !== false && r.subgroups.filter(q => q.includeInNormalRoll !== false).length === 1} onChange={e => edit(x => { const roll = x.rolls[i]; roll.subgroups[j].includeInNormalRoll = e.target.checked; roll.expression = normalFormula(roll.subgroups); })} /> {t.initialThrow}</label>
-                                    <label className="workshop-check"><input type="checkbox" checked={!!p.includeInDoubleRoll} onChange={e => edit(x => x.rolls[i].subgroups[j].includeInDoubleRoll = e.target.checked)} /> {t.doubleCandidate}</label>
-                </div>
-              </div>)}
-              <div className="workshop-row-head"><h3>{t.rules}</h3><button onClick={() => edit(x => x.rolls[i].levelRules.push(newLevelRule()))}>{t.addRule}</button></div>
-              {r.levelRules.map((rule,j) => <div className="workshop-inline" key={rule.id}>
-                <select value={rule.kind} onChange={e => edit(x => x.rolls[i].levelRules[j].kind = e.target.value)}>
-                  <option value="FROM_LEVEL">From level</option><option value="EVERY_LEVELS">Every N levels</option></select>
-                <Field label={t.level} type="number" min={1} value={rule.trigger} onChange={v => edit(x => x.rolls[i].levelRules[j].trigger = v)} />
-                <Field label={t.formula} value={rule.expression} onChange={v => edit(x => x.rolls[i].levelRules[j].expression = v)} />
-                <button onClick={() => edit(x => x.rolls[i].levelRules.splice(j,1))}>×</button>
-              </div>)}
-              <GuidedRollEditor roll={r} doc={doc} t={t} onEdit={mutator => edit(x => mutator(x.rolls[i]))} />
-              <details className="workshop-expert"><summary>{t.expertJson}</summary>
-                <p className="workshop-hint">{t.expertHelp}</p>
-                <JsonField label={t.effects} value={r.effects} onChange={v => edit(x => x.rolls[i].effects = v)} />
-                <JsonField label={t.appearance} value={r.diceAppearance || { mode: 'CHARACTER_DEFAULT' }} onChange={v => edit(x => x.rolls[i].diceAppearance = v)} />
-              </details>
-            </details>)}
+            <div className="workshop-grouped-rolls">
+              {orderedGroups(doc).map(({group,items})=>
+                <details className="workshop-roll-group" key={group?.id || 'ungrouped'}>
+                  <summary><strong>{group?.name || t.ungrouped}</strong>
+                    <span>{items.length} {t.rollsInGroup}</span></summary>
+                  <div className="workshop-group-content">
+                    {group && <button type="button" className="workshop-add-in-group"
+                      onClick={()=>edit(x=>{const roll=newRoll(x.character.id,group.id);roll.order=x.rolls.length;x.rolls.push(roll);})}>{t.addToGroup}</button>}
+                    {items.map(({roll,index})=>renderRollEditor(roll,index))}
+                  </div>
+                </details>)}
+            </div>
           </section>
           <section className="premium-panel">
             <div className="workshop-row-head"><h2>{t.styles}</h2><button onClick={() => edit(x => x.diceStyles.push(newStyle()))}>{t.addStyle}</button></div>

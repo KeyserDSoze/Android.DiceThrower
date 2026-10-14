@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" role="img" aria-label="Dice Thrower">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#121a35"/>
+      <stop offset="1" stop-color="#070a17"/>
+    </linearGradient>
+    <linearGradient id="dice" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#a8e6ff"/>
+      <stop offset=".6" stop-color="#7dcaff"/>
+      <stop offset="1" stop-color="#bda8ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="108" height="108" rx="25" fill="url(#background)"/>
+  <!-- Exactly the 108x108 monochrome Android launcher dice geometry. -->
+  <path fill="url(#dice)" fill-rule="evenodd"
+    d="M54,10 L88,28 L98,61 L76,92 L36,98 L10,68 L18,30 Z M54,20 L27,35 L22,63 L39,82 L71,78 L86,58 L79,35 Z M54,20 L54,51 L27,35 Z M54,20 L79,35 L54,51 Z M27,35 L54,51 L22,63 Z M79,35 L86,58 L54,51 Z M22,63 L54,51 L39,82 Z M86,58 L71,78 L54,51 Z M39,82 L54,51 L71,78 Z"/>
+</svg>
