@@ -40,6 +40,7 @@ function ConditionEditor({ condition, roll, doc, t, onUpdate, onRemove, disabled
         c.source = source;
         c.partId = source === 'PART' ? parts[0]?.id || null : null;
         c.variableName = source === 'VARIABLE' ? 'level' : null;
+        if (source === 'VARIABLE') c.scope = 'TOTAL';
       })} />
       {condition.source === 'PART' && <Choice label={t.targetPart} value={condition.partId || ''}
         options={[{ id:'', name:t.choosePart }, ...parts.map(p => ({ id:p.id, name:p.name || p.expression }))]}
@@ -47,7 +48,8 @@ function ConditionEditor({ condition, roll, doc, t, onUpdate, onRemove, disabled
       {condition.source === 'VARIABLE' && <Choice label={t.variable} value={condition.variableName || ''}
         options={[{ id:'', name:t.chooseVariable }, ...formulaVariables(doc.modifiers).map(name => ({id:name, name:name==='level' ? t.levelVariable : name}))]}
         onChange={v => onUpdate(c => c.variableName = v || null)} />}
-      <Choice label={t.effectScope} value={condition.scope} options={scopeOptions(t)}
+      <Choice label={t.effectScope} value={condition.scope}
+        options={condition.source === 'VARIABLE' ? scopeOptions(t).filter(option => option.id === 'TOTAL') : scopeOptions(t)}
         onChange={v => onUpdate(c => c.scope = v)} />
       <Choice label={t.comparison} value={condition.comparison}
         options={COMPARISONS.map((id,i) => ({ id, name:['≥','≤','>','<','=','≠'][i] }))}
