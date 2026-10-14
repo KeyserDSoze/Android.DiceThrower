@@ -45,6 +45,14 @@ class CharacterDeepLinkImportTest {
         val token = CharacterTransferCodec.encodeToken(shared, characterId)
         val intent = Intent(Intent.ACTION_VIEW,
             Uri.parse("dicethrower://import?data=" + Uri.encode(token)))
+        // This test uses the same implicit VIEW+BROWSABLE URI that the web
+        // workshop button invokes; check Android's intent-filter registration.
+        val browserIntent = Intent(Intent.ACTION_VIEW,
+            Uri.parse("dicethrower://import?data=" + Uri.encode(token)))
+            .addCategory(Intent.CATEGORY_BROWSABLE)
+            .setPackage(rule.activity.packageName)
+        assertEquals(MainActivity::class.java.name,
+            browserIntent.resolveActivity(rule.activity.packageManager)?.className)
         val store = LocalStore(rule.activity)
         val before = store.loadData()
         assertTrue(before.characters.none { it.name == name })
