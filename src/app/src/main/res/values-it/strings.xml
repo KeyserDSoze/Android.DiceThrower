@@ -156,9 +156,7 @@
     <string name="every_levels">Ogni N livelli</string>
     <string name="trigger_level">Livello</string>
     <string name="interval_levels">Ogni</string>
-    <string name="periodic_start_level">Primo livello (opzionale)</string>
-    <string name="periodic_max_repeats">Numero massimo di aggiunte (opzionale)</string>
-    <string name="periodic_max_label">Massimo</string>
+    <string name="periodic_max_label">Massimo di aggiunte</string>
     <string name="rule_expression">Espressione da aggiungere</string>
     <string name="no_level_rules">Nessuna regola di livello.</string>
     <string name="dice_styles">Stili dei dadi</string>
