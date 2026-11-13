@@ -25,18 +25,16 @@ data class ResolvedRollSubgroup(
 )
 
 /**
- * Existing normal Parts keep their logical formula; dormant subtracting Parts
- * carry a negative sample when invoked by an Effect. An explicit action dice
- * expression still takes precedence over this default.
+ * Default effect formula of each Part, carrying its sign in the Roll: a subtracting Part
+ * (normal or dormant) samples a negative value when an Effect rerolls it or rolls it again,
+ * exactly like its share of the canonical expression. An explicit action dice expression
+ * still takes precedence over this default.
  */
-fun ResolvedRollFormula.effectPartExpressions(): Map<String, String> {
-    val supportIds = supportSubgroups.map { it.id }.toSet()
-    return (subgroups + supportSubgroups).associate { part ->
-        part.id to if (part.id in supportIds &&
-            part.operator == RollSubgroupOperator.SUBTRACT) "-(${part.expression})"
+fun ResolvedRollFormula.effectPartExpressions(): Map<String, String> =
+    (subgroups + supportSubgroups).associate { part ->
+        part.id to if (part.operator == RollSubgroupOperator.SUBTRACT) "-(${part.expression})"
         else part.expression
     }
-}
 
 data class ResolvedRollSubgroupResult(
     val subgroup: ResolvedRollSubgroup,
