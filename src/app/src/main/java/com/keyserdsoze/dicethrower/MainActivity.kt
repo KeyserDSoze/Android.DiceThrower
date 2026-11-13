@@ -98,6 +98,10 @@ class MainActivity : ComponentActivity() {
             } catch (_: Exception) {
                 pendingCharacterImport = null
                 characterImportError = true
+            } catch (_: StackOverflowError) {
+                // Untrusted file: deeply nested JSON must never crash the app.
+                pendingCharacterImport = null
+                characterImportError = true
             }
         }
     }
@@ -259,11 +263,18 @@ class MainActivity : ComponentActivity() {
             // change can restore the preview; finishLinkImport then consumes it.
             linkImportPending = true
         } catch (_: Exception) {
-            pendingCharacterImport = null
-            characterImportError = true
-            linkImportPending = false
-            incoming.data = null
+            rejectCharacterLink(incoming)
+        } catch (_: StackOverflowError) {
+            // Untrusted link: deeply nested JSON must never crash the app.
+            rejectCharacterLink(incoming)
         }
+    }
+
+    private fun rejectCharacterLink(incoming: Intent) {
+        pendingCharacterImport = null
+        characterImportError = true
+        linkImportPending = false
+        incoming.data = null
     }
 
     /** Consumes the launch link once its import preview is confirmed or dismissed. */

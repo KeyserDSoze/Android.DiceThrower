@@ -115,7 +115,8 @@ object CharacterTransferCodec {
 
     fun decodeJson(raw: String): AppData {
         require(raw.toByteArray(Charsets.UTF_8).size <= MAX_RAW_BYTES) { "Character is too large" }
-        val envelope = JSONObject(raw)
+        // Links and files are untrusted: bound the nesting before org.json recurses into it.
+        val envelope = JsonNestingGuard.parse(raw) { JSONObject(it) }
         require(envelope.optString("format") == FORMAT &&
             envelope.optInt("formatVersion") in FORMAT_VERSION..BOUNDED_RULE_FORMAT_VERSION) {
             "Unsupported character document"

@@ -58,7 +58,7 @@ object AppBackupCodec {
 
     fun decode(raw: String): BackupPayload {
         require(raw.isNotBlank()) { "Backup file is empty" }
-        val root = JSONObject(raw)
+        val root = JsonNestingGuard.parse(raw) { JSONObject(it) }
         require(root.optString("format") == FORMAT) { "Not a Dice Thrower backup" }
         val formatVersion = root.optInt("formatVersion", -1)
         require(formatVersion in 1..FORMAT_VERSION) {
