@@ -217,6 +217,47 @@ class EffectSequenceExecutorTest {
         assertEquals(4, outcome.finalSnapshot.parts.getValue("damage").total)
     }
 
+    private class CountingRandom(seed: Int) : Random() {
+        private val delegate = Random(seed)
+        var draws = 0
+            private set
+
+        override fun nextBits(bitCount: Int): Int {
+            draws++
+            return delegate.nextBits(bitCount)
+        }
+    }
+
+    @Test
+    fun generatedDiceBudgetIsCheckedBeforeSampling() {
+        val oversized = effect("oversized", 0, "attack", "1",
+            EffectAction("huge", EffectActionType.ROLL_AFTER, "damage",
+                EffectValueScope.DICE_ONLY, "100d6+1d6"))
+        val random = CountingRandom(4)
+        val outcome = EffectSequenceExecutor.execute(initial, listOf(oversized), expressions, random)
+
+        assertEquals("The rejected sample must not consume dice RNG", 0, random.draws)
+        val action = outcome.steps.single().actions.single()
+        assertFalse(action.applied)
+        assertEquals("Effect generated dice limit exceeded", action.error)
+        assertTrue(outcome.executionLimitReached)
+        assertTrue(outcome.generatedDice.isEmpty())
+        assertEquals(4, outcome.finalSnapshot.parts.getValue("damage").total)
+
+        // Exactly the remaining budget is still accepted; the next die is not sampled.
+        val full = effect("full", 0, "attack", "1",
+            EffectAction("hundred", EffectActionType.ROLL_AFTER, "damage",
+                EffectValueScope.DICE_ONLY, "100d6"))
+        val extra = effect("extra", 1, "attack", "1",
+            EffectAction("one-more", EffectActionType.ROLL_AFTER, "attack",
+                EffectValueScope.DICE_ONLY, "1d20"))
+        val budgeted = EffectSequenceExecutor.execute(initial, listOf(full, extra), expressions, Random(4))
+        assertEquals(100, budgeted.generatedDice.single().result.components.single().rolls.size)
+        assertEquals("Effect generated dice limit exceeded",
+            budgeted.steps.last().actions.single().error)
+        assertEquals(20, budgeted.finalSnapshot.parts.getValue("attack").dice)
+    }
+
     @Test
     fun rollWideConditionsFailClosedInsteadOfWrappingAroundIntRange() {
         val huge = { id: String, part: String, order: Int ->

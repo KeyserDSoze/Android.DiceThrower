@@ -100,30 +100,19 @@ object EffectSequenceExecutor {
                     }
                     when (action.kind) {
                         EffectActionType.REROLL, EffectActionType.ROLL_AFTER -> {
-                            val previousSnapshot = numeric
+                            val usedDice = generated.sumOf { sample ->
+                                sample.result.components.sumOf { component -> component.rolls.size }
+                            }
                             val result = applyDiceAction(
-                                effect.id, action, previousSnapshot, resolvedPartExpressions, random,
+                                effect.id, action, numeric, resolvedPartExpressions, random,
+                                remainingDice = MAX_GENERATED_DICE - usedDice,
                             )
-                            numeric = result.first
-                            results += result.second
-                            result.third?.let { sampled ->
-                                val additionalDice = sampled.result.components.sumOf { it.rolls.size }
-                                if (generated.sumOf { it.result.components.sumOf { component -> component.rolls.size } } +
-                                    additionalDice > MAX_GENERATED_DICE) {
-                                    // Reject this action rather than retaining an unbounded sample.
-                                    numeric = previousSnapshot
-                                    results.removeAt(results.lastIndex)
-                                    results += result.second.copy(
-                                        applied = false,
-                                        after = null,
-                                        error = "Effect generated dice limit exceeded",
-                                        snapshot = previousSnapshot,
-                                    )
-                                    limited = true
-                                } else {
-                                    generated += sampled
-                                    generatedThisPass = true
-                                }
+                            numeric = result.snapshot
+                            results += result.trace
+                            if (result.diceLimitExceeded) limited = true
+                            result.drawn?.let { sampled ->
+                                generated += sampled
+                                generatedThisPass = true
                             }
                         }
                         else -> {
@@ -186,10 +175,20 @@ object EffectSequenceExecutor {
         }
     }
 
+    private class DiceActionOutcome(
+        val snapshot: EffectNumericSnapshot,
+        val trace: EffectActionResult,
+        val drawn: EffectGeneratedDice?,
+        val diceLimitExceeded: Boolean = false,
+    )
+
+    private class GeneratedDiceLimitExceeded : IllegalArgumentException("Effect generated dice limit exceeded")
+
     /**
      * Take a fresh sample solely in the logical engine. A targeted reroll replaces
      * its selected dice/Part, while roll-after adds the new sample's contribution.
      * Modifiers-only actions never sample dice: constants are deterministic.
+     * An expression needing more than [remainingDice] dice is rejected before sampling.
      */
     private fun applyDiceAction(
         effectId: String,
@@ -197,7 +196,8 @@ object EffectSequenceExecutor {
         snapshot: EffectNumericSnapshot,
         expressions: Map<String, String>,
         random: Random,
-    ): Triple<EffectNumericSnapshot, EffectActionResult, EffectGeneratedDice?> {
+        remainingDice: Int,
+    ): DiceActionOutcome {
         val id = action.targetPartId
         val part = id?.let { snapshot.parts[it] }
         val before = part?.value(action.scope)
@@ -212,6 +212,7 @@ object EffectSequenceExecutor {
                     "Modifiers-only rerolls cannot consume dice RNG"
                 }
             }
+            if (shape.diceCount > remainingDice) throw GeneratedDiceLimitExceeded()
             val sample = shape.evaluate(random)
             val sampledDice = sample.components.map { it.subtotal }.sumExact()
             val next = when (action.kind) {
@@ -245,12 +246,17 @@ object EffectSequenceExecutor {
         }
         return outcome.fold(
             onSuccess = { (changed, after, drawn) ->
-                Triple(changed, EffectActionResult(action.id, true, id, action.scope,
+                DiceActionOutcome(changed, EffectActionResult(action.id, true, id, action.scope,
                     before, after, snapshot = changed), drawn)
             },
             onFailure = { failure ->
-                Triple(snapshot, EffectActionResult(action.id, false, id, action.scope,
-                    before, null, error = failure.message ?: "Roll effect failed", snapshot = snapshot), null)
+                DiceActionOutcome(
+                    snapshot,
+                    EffectActionResult(action.id, false, id, action.scope,
+                        before, null, error = failure.message ?: "Roll effect failed", snapshot = snapshot),
+                    drawn = null,
+                    diceLimitExceeded = failure is GeneratedDiceLimitExceeded,
+                )
             },
         )
     }
