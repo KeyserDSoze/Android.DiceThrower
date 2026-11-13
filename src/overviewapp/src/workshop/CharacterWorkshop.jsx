@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import QRCode from 'qrcode';
 import {
   androidHandoff, decodeToken, documentFromEnvelope, envelope, importAsCopy, instantiateTemplate,
   listSaved, newCharacter, newGroup, newLevelRule, newModifier, newPart, newRoll, newStyle,
@@ -10,6 +9,7 @@ import {
 } from './character.js';
 import GuidedRollEditor from './GuidedRollEditor.jsx';
 import WorkshopErrorBoundary from './WorkshopErrorBoundary.jsx';
+import { renderShareQr } from './share-qr.js';
 import { rollLevelPreview } from './roll-level-preview.js';
 import { appendFormulaVariable, formulaVariables } from './formula-variables.js';
 import { isPartUsed, removePartSafely, SYSTEM_STYLES, validateGuidedRoll } from './guided.js';
@@ -478,7 +478,7 @@ function Workshop({ locale }) {
   const [previewName, setPreviewName] = useState('');
   const [previewLevel, setPreviewLevel] = useState(1);
   const [url, setUrl] = useState('');
-  const [qr, setQr] = useState('');
+  const [qr, setQr] = useState(null);
   const [shareHandoff, setShareHandoff] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -553,16 +553,16 @@ function Workshop({ locale }) {
       mutator(copy);
       return copy;
     });
-    setUrl(''); setQr(''); setMessage(''); setError('');
+    setUrl(''); setQr(null); setMessage(''); setError('');
   }
   /** Replaces the open document, asking before unsaved edits are discarded. */
   function openDocument(create) {
     if (dirty && !window.confirm(t.unsavedConfirm)) return;
     const next = create();
-    setDoc(next); setBaseline(JSON.stringify(next)); setUrl(''); setQr('');
+    setDoc(next); setBaseline(JSON.stringify(next)); setUrl(''); setQr(null);
   }
   function closeBrokenDocument() {
-    setDoc(null); setBaseline(null); setUrl(''); setQr('');
+    setDoc(null); setBaseline(null); setUrl(''); setQr(null);
   }
   async function save() {
     const snapshot = doc;
@@ -578,7 +578,7 @@ function Workshop({ locale }) {
       const upgraded = upgradeLegacyStarterWeaponRolls(doc);
       if (!upgraded) return;
       await saveDocument(upgraded);
-      setDoc(upgraded); setBaseline(JSON.stringify(upgraded)); setUrl(''); setQr(''); setError('');
+      setDoc(upgraded); setBaseline(JSON.stringify(upgraded)); setUrl(''); setQr(null); setError('');
       await refresh();
       setMessage(t.upgradeComplete);
     } catch (e) { setError(e); }
@@ -592,9 +592,9 @@ function Workshop({ locale }) {
     const snapshot = doc;
     try {
       const link = shareUrl(snapshot, window.location.origin + import.meta.env.BASE_URL + 'workshop/');
-      const image = await QRCode.toDataURL(link, { errorCorrectionLevel: 'L', width: 340, margin: 2 });
+      const image = await renderShareQr(link);
       setUrl(link); setQr(image); setShareHandoff(androidHandoff(snapshot)); setMessage(t.ready); setError('');
-    } catch (e) { setQr(''); setUrl(''); setError(failure('share-invalid', e)); }
+    } catch (e) { setQr(null); setUrl(''); setError(failure('share-invalid', e)); }
   }
   async function addShared() {
     try {
@@ -820,7 +820,7 @@ function Workshop({ locale }) {
             {url && <div className="workshop-share">
               <p className="workshop-hint">{t.warning}</p>
               {url.includes('#template=') && <p className="workshop-hint">{t.templateLinkNote}</p>}
-              <img src={qr} alt="QR code: character share URL" width="260" height="260"/>
+              {qr && <img src={qr.src} alt="QR code: character share URL" width={qr.size} height={qr.size}/>}
               <textarea readOnly aria-label="Shareable character link" value={url} rows={3} />
               <div className="workshop-actions"><button onClick={() => navigator.clipboard.writeText(url)}>{t.copy}</button>
                 {shareHandoff?.link && <a className="secondary" href={shareHandoff.link}>{t.openApp}</a>}</div>
