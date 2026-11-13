@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="change_not_saved_invalid_rolls">Modification non enregistrée : elle rendrait un ou plusieurs jets invalides.</string>
+</resources>

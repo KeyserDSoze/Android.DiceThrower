@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="change_not_saved_invalid_rolls">変更は保存されていません：1 つ以上のロールが無効になります。</string>
+</resources>

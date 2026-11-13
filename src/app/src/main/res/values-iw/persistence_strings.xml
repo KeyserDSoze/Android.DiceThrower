@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="change_not_saved_invalid_rolls">השינוי לא נשמר: הוא היה הופך הטלה אחת או יותר ללא תקפה.</string>
+</resources>

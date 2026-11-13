@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="change_not_saved_invalid_rolls">변경 사항이 저장되지 않았습니다: 하나 이상의 굴림이 유효하지 않게 됩니다.</string>
+</resources>

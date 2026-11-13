@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="change_not_saved_invalid_rolls">Modifica non salvata: renderebbe non validi uno o più tiri.</string>
+</resources>

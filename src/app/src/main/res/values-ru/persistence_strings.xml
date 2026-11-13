@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="change_not_saved_invalid_rolls">Изменение не сохранено: оно сделало бы один или несколько бросков недействительными.</string>
+</resources>

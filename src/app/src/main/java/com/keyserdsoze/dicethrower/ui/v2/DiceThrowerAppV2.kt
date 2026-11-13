@@ -2,6 +2,7 @@ package com.keyserdsoze.dicethrower.ui.v2
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -315,10 +316,16 @@ fun DiceThrowerAppV2(
     var editMode by rememberSaveable { mutableStateOf(false) }
     var editingActiveRoll by rememberSaveable { mutableStateOf(false) }
     val stateHolder = rememberSaveableStateHolder()
+    val context = LocalContext.current
 
     fun persist(updated: AppData) {
-        data = store.saveData(updated)
-        onLocalDataChanged()
+        try {
+            data = store.saveData(updated)
+            onLocalDataChanged()
+        } catch (_: IllegalArgumentException) {
+            // LocalStore refuses invalid data; keep the last saved state instead of crashing.
+            Toast.makeText(context, R.string.change_not_saved_invalid_rolls, Toast.LENGTH_LONG).show()
+        }
     }
 
     fun navigateBack() {
@@ -491,14 +498,14 @@ fun DiceThrowerAppV2(
                         onEditRoll = { editingActiveRoll = true },
                         canChangeLevel = { proposed ->
                             proposed in 1..9999 &&
-                                AppDataValidator.validate(data.withCharacterLevel(character.id, proposed)).isEmpty()
+                                AppDataValidator.validateEdit(data.withCharacterLevel(character.id, proposed), data).isEmpty()
                         },
                         onLevelChanged = { newLevel ->
                             if (newLevel in 1..9999) {
                                 val proposed = data.withCharacterLevel(character.id, newLevel)
                                 // Dynamic dice counts like {level}d6 can become invalid
                                 // above 100. Reject the change rather than crash in LocalStore.
-                                if (AppDataValidator.validate(proposed).isEmpty()) persist(proposed)
+                                if (AppDataValidator.validateEdit(proposed, data).isEmpty()) persist(proposed)
                             }
                         },
                         onLogged = { log ->
@@ -1054,11 +1061,27 @@ internal fun CharacterEditContentV2(
     var editingRollId by remember { mutableStateOf<String?>(null) }
     var addRuleRollId by remember { mutableStateOf<String?>(null) }
     var levelText by remember(character.id) { mutableStateOf(character.level.toString()) }
+    var levelRejected by remember(character.id) { mutableStateOf(false) }
+    val context = LocalContext.current
     // Keep the edit list's position while the nested roll builder replaces its content.
     val editListState = rememberLazyListState()
 
     LaunchedEffect(character.level) {
         if (levelText.toIntOrNull() != character.level) levelText = character.level.toString()
+        levelRejected = false
+    }
+
+    // Level and modifier edits are checked as a save would check them, so an edit that would
+    // make a roll unrollable (e.g. {level}d6 above level 100) is refused instead of persisted.
+    fun withLevel(level: Int): AppData = data.copy(
+        characters = data.characters.map { if (it.id == character.id) it.copy(level = level) else it },
+    )
+    fun acceptsEdit(proposed: AppData): Boolean = AppDataValidator.validateEdit(proposed, data).isEmpty()
+    val canLevelDown = remember(data, character.id) {
+        character.level > 1 && acceptsEdit(withLevel(character.level - 1))
+    }
+    val canLevelUp = remember(data, character.id) {
+        character.level < AppDataValidator.MAX_CHARACTER_LEVEL && acceptsEdit(withLevel(character.level + 1))
     }
 
     val groups = data.groups.filter { it.characterId == character.id }.sortedBy { it.order }
@@ -1139,48 +1162,36 @@ internal fun CharacterEditContentV2(
                             val candidate = raw.filter(Char::isDigit).take(4)
                             if (candidate.isBlank() || (candidate.toIntOrNull() ?: 0) >= 1) {
                                 levelText = candidate
+                                levelRejected = false
                                 candidate.toIntOrNull()?.let { newLevel ->
                                     if (newLevel != character.level) {
-                                        onDataChanged(
-                                            data.copy(
-                                                characters = data.characters.map {
-                                                    if (it.id == character.id) it.copy(level = newLevel) else it
-                                                },
-                                            ),
-                                        )
+                                        val proposed = withLevel(newLevel)
+                                        if (acceptsEdit(proposed)) onDataChanged(proposed) else levelRejected = true
                                     }
                                 }
                             }
                         },
                         label = { Text(stringResource(R.string.level)) },
                         singleLine = true,
+                        isError = levelRejected,
                         modifier = Modifier.width(96.dp),
                     )
                     Spacer(Modifier.weight(1f))
                     OutlinedButton(
-                        enabled = character.level > 1,
+                        enabled = canLevelDown,
                         onClick = {
                             levelText = (character.level - 1).coerceAtLeast(1).toString()
-                            onDataChanged(
-                                data.copy(
-                                    characters = data.characters.map {
-                                        if (it.id == character.id) it.copy(level = (it.level - 1).coerceAtLeast(1)) else it
-                                    },
-                                ),
-                            )
+                            levelRejected = false
+                            onDataChanged(withLevel((character.level - 1).coerceAtLeast(1)))
                         },
                     ) { Text("−") }
                     Spacer(Modifier.width(8.dp))
                     Button(
+                        enabled = canLevelUp,
                         onClick = {
                             levelText = (character.level + 1).toString()
-                            onDataChanged(
-                                data.copy(
-                                    characters = data.characters.map {
-                                        if (it.id == character.id) it.copy(level = it.level + 1) else it
-                                    },
-                                ),
-                            )
+                            levelRejected = false
+                            onDataChanged(withLevel(character.level + 1))
                         },
                     ) {
                         Icon(Icons.Rounded.Add, contentDescription = null)
@@ -1423,12 +1434,17 @@ internal fun CharacterEditContentV2(
                 existingNames = modifiers.filterNot { it.id == existing.id }.map { it.name },
                 onDismiss = { editingModifierId = null },
                 onSave = { saved ->
-                    onDataChanged(
-                        data.copy(
-                            modifiers = data.modifiers.map { if (it.id == saved.id) saved else it },
-                        ),
+                    val proposed = data.copy(
+                        modifiers = data.modifiers.map { if (it.id == saved.id) saved else it },
                     )
-                    editingModifierId = null
+                    // A modifier used as a dice count or renamed while referenced could
+                    // break rolls; keep the dialog open instead of persisting invalid data.
+                    if (acceptsEdit(proposed)) {
+                        onDataChanged(proposed)
+                        editingModifierId = null
+                    } else {
+                        Toast.makeText(context, R.string.change_not_saved_invalid_rolls, Toast.LENGTH_LONG).show()
+                    }
                 },
             )
         }
@@ -2332,9 +2348,18 @@ private fun RollScreenV2(
     }
     val tableBitmap = customTableBitmap ?: presetTableBitmap
     val tableImageKey = character.diceTableImage?.assetId ?: "preset:${character.diceTableTheme.name}"
-    val formula = remember(character.level, modifiers, roll) {
-        RollFormulaResolver.resolve(character, modifiers, roll)
+    val resolvedFormula = remember(character.level, modifiers, roll) {
+        runCatching { RollFormulaResolver.resolve(character, modifiers, roll) }.getOrNull()
     }
+    if (resolvedFormula == null) {
+        // Legacy data can hold a roll that newer limits no longer allow at this level.
+        LaunchedEffect(roll.id) {
+            Toast.makeText(context, R.string.invalid_expression, Toast.LENGTH_LONG).show()
+            onBack()
+        }
+        return
+    }
+    val formula = resolvedFormula
     val parsedExpression = remember(formula.expression) { DiceExpression.parse(formula.expression) }
     val previewResult = remember(formula.expression) { parsedExpression.previewResult() }
     val subgroupIdByComponentIndex = remember(formula.subgroups) {
