@@ -48,6 +48,10 @@ data class DiceTermShape(
 class DiceExpression private constructor(
     val source: String,
     private val root: Node,
+    /** Physical dice sampled by one evaluation, summed over every dice term. */
+    val diceCount: Int,
+    /** Number of integer and dice terms. */
+    val termCount: Int,
 ) {
     private sealed interface Node {
         data class Dice(val count: Int, val sides: Int) : Node
@@ -176,14 +180,29 @@ class DiceExpression private constructor(
     companion object {
         val supportedSides = setOf(2, 3, 4, 6, 8, 10, 12, 20, 100)
 
+        const val MAX_DICE_PER_TERM = 100
+        const val MAX_EXPRESSION_LENGTH = 4096
+        const val MAX_NESTING_DEPTH = 32
+        const val MAX_TOTAL_DICE = 500
+        const val MAX_TERMS = 1000
+
         fun parse(raw: String): DiceExpression {
+            require(raw.length <= MAX_EXPRESSION_LENGTH) {
+                "Expression exceeds $MAX_EXPRESSION_LENGTH characters"
+            }
             // Whitespace only separates tokens: "3 1d6" or "2 4" are errors, never 31d6 or 24.
             val tokens = tokenize(raw)
             require(tokens.isNotEmpty()) { "Expression cannot be empty" }
-            val root = Parser(tokens).parse()
+            val parser = Parser(tokens)
+            val root = parser.parse()
             require(isLinear(root)) { "Multiplication between two dice expressions is not supported" }
             bound(root)
-            return DiceExpression(source = tokens.joinToString("") { it.text }, root = root)
+            return DiceExpression(
+                source = tokens.joinToString("") { it.text },
+                root = root,
+                diceCount = parser.diceCount,
+                termCount = parser.termCount,
+            )
         }
 
         private fun isLinear(node: Node): Boolean = when (node) {
@@ -274,6 +293,11 @@ class DiceExpression private constructor(
 
         private class Parser(private val tokens: List<Token>) {
             private var cursor = 0
+            private var depth = 0
+            var diceCount = 0
+                private set
+            var termCount = 0
+                private set
 
             fun parse(): Node {
                 val result = parseAddSubtract()
@@ -315,11 +339,11 @@ class DiceExpression private constructor(
             }
 
             private fun parseUnary(): Node = when (peek()) {
-                TokenType.PLUS -> {
+                TokenType.PLUS -> nested {
                     cursor++
                     parseUnary()
                 }
-                TokenType.MINUS -> {
+                TokenType.MINUS -> nested {
                     cursor++
                     Node.Negate(parseUnary())
                 }
@@ -328,7 +352,7 @@ class DiceExpression private constructor(
 
             private fun parsePrimary(): Node = when (peek()) {
                 null -> throw IllegalArgumentException("Unexpected end of dice expression")
-                TokenType.OPEN -> {
+                TokenType.OPEN -> nested {
                     cursor++
                     val inner = parseAddSubtract()
                     require(peek() == TokenType.CLOSE) {
@@ -344,6 +368,7 @@ class DiceExpression private constructor(
             }
 
             private fun parseTerm(): Node {
+                require(++termCount <= MAX_TERMS) { "Expression exceeds $MAX_TERMS terms" }
                 val countText = if (peek() == TokenType.NUMBER) tokens[cursor++].text else null
                 if (peek() != TokenType.DIE) {
                     return Node.Constant(integer(requireNotNull(countText)))
@@ -352,13 +377,28 @@ class DiceExpression private constructor(
                 require(peek() == TokenType.NUMBER) { "Missing die sides near position ${positionText()}" }
                 val sides = integer(tokens[cursor++].text)
                 val count = countText?.let(::integer) ?: 1
-                require(count in 1..100) { "Dice count must be between 1 and 100" }
+                require(count in 1..MAX_DICE_PER_TERM) {
+                    "Dice count must be between 1 and $MAX_DICE_PER_TERM"
+                }
                 require(sides in supportedSides) { "Unsupported die d$sides" }
+                diceCount += count
+                require(diceCount <= MAX_TOTAL_DICE) { "Expression exceeds $MAX_TOTAL_DICE dice" }
                 return Node.Dice(count, sides)
             }
 
             private fun integer(digits: String): Int = digits.toIntOrNull()
                 ?: throw IllegalArgumentException("Number exceeds the supported integer range")
+
+            private inline fun <T> nested(block: () -> T): T {
+                require(++depth <= MAX_NESTING_DEPTH) {
+                    "Expression nesting exceeds $MAX_NESTING_DEPTH levels"
+                }
+                try {
+                    return block()
+                } finally {
+                    depth--
+                }
+            }
         }
     }
 }

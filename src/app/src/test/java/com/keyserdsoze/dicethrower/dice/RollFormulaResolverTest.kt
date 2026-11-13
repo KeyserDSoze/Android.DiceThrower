@@ -356,4 +356,46 @@ class RollFormulaResolverTest {
         }
     }
 
+    @Test
+    fun periodicRulesAreBoundedBeforeTheExpansionIsBuilt() {
+        val roll = RollDefinition(
+            id = "uncapped", characterId = character.id, name = "Uncapped",
+            expression = "1d6",
+            levelRules = listOf(RollLevelRule(
+                id = "every", kind = LevelRuleKind.EVERY_LEVELS, trigger = 1, expression = "1d6",
+            )),
+        )
+        // 1 base die + 499 periodic dice is exactly at the global dice limit.
+        val atLimit = RollFormulaResolver.resolve(character.copy(level = 499), modifiers, roll)
+        assertEquals(DiceExpression.MAX_TOTAL_DICE, DiceExpression.parse(atLimit.expression).diceCount)
+        listOf(500, 9999).forEach { level ->
+            assertTrue(runCatching {
+                RollFormulaResolver.resolve(character.copy(level = level), modifiers, roll)
+            }.exceptionOrNull() is IllegalArgumentException)
+        }
+        val flatBonus = roll.copy(levelRules = listOf(roll.levelRules.single().copy(expression = "1")))
+        assertTrue(runCatching {
+            RollFormulaResolver.resolve(character.copy(level = 9999), modifiers, flatBonus)
+        }.exceptionOrNull() is IllegalArgumentException)
+
+        val capped = roll.copy(levelRules = listOf(roll.levelRules.single().copy(maxRepeats = 8)))
+        val resolved = RollFormulaResolver.resolve(character.copy(level = 9999), modifiers, capped)
+        assertEquals("1d6" + "+1d6".repeat(8), resolved.expression)
+        assertEquals(listOf(capped.levelRules.single()), resolved.appliedRules)
+    }
+
+    @Test
+    fun negativeRepeatedRulesKeepTheirSignWhenConcatenated() {
+        val roll = RollDefinition(
+            id = "mixed", characterId = character.id, name = "Mixed",
+            expression = "1d20",
+            levelRules = listOf(
+                RollLevelRule("minus", LevelRuleKind.EVERY_LEVELS, trigger = 2, expression = "-1"),
+                RollLevelRule("plus", LevelRuleKind.FROM_LEVEL, trigger = 1, expression = "1d4+{Intelligenza}"),
+            ),
+        )
+        val resolved = RollFormulaResolver.resolve(character, modifiers, roll)
+        assertEquals("1d20-1-1+1d4+3", resolved.expression)
+    }
+
 }

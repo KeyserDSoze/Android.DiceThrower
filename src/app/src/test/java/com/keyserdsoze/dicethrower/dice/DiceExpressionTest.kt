@@ -127,6 +127,27 @@ class DiceExpressionTest {
         assertEquals(10_500_000_000.0, result.expectedTotal(), 0.5)
     }
 
+    @Test
+    fun enforcesGlobalSizeLimits() {
+        assertRejected("1+".repeat(2048) + "1")
+        assertRejected("(".repeat(DiceExpression.MAX_NESTING_DEPTH + 1) + "1" +
+            ")".repeat(DiceExpression.MAX_NESTING_DEPTH + 1))
+        assertRejected("-".repeat(DiceExpression.MAX_NESTING_DEPTH + 1) + "1")
+        // Deep input is rejected with IllegalArgumentException, never a StackOverflowError.
+        assertRejected("(".repeat(4000))
+        assertRejected("100d6+100d6+100d6+100d6+100d6+1d6")
+        assertRejected("1+".repeat(DiceExpression.MAX_TERMS) + "1")
+
+        val nested = "(".repeat(DiceExpression.MAX_NESTING_DEPTH) + "1d6" +
+            ")".repeat(DiceExpression.MAX_NESTING_DEPTH)
+        assertEquals(1, DiceExpression.parse(nested).diceCount)
+        val maximum = DiceExpression.parse("100d6+100d6+100d6+100d6+100d6")
+        assertEquals(DiceExpression.MAX_TOTAL_DICE, maximum.diceCount)
+        assertEquals(5, maximum.termCount)
+        assertEquals(DiceExpression.MAX_TERMS,
+            DiceExpression.parse("1+".repeat(DiceExpression.MAX_TERMS - 1) + "1").termCount)
+    }
+
     private fun assertRejected(expression: String) {
         try {
             DiceExpression.parse(expression)
