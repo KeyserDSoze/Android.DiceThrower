@@ -10,6 +10,7 @@ import {
 import GuidedRollEditor from './GuidedRollEditor.jsx';
 import WorkshopErrorBoundary from './WorkshopErrorBoundary.jsx';
 import { renderShareQr } from './share-qr.js';
+import './workshop-fixes.css';
 import { rollLevelPreview } from './roll-level-preview.js';
 import { appendFormulaVariable, formulaVariables } from './formula-variables.js';
 import { isPartUsed, removePartSafely, SYSTEM_STYLES, validateGuidedRoll } from './guided.js';
@@ -28,7 +29,7 @@ function orderedGroups(characterDoc) {
 function LevelFormulaPreview({doc, roll, t}) {
   const result = rollLevelPreview(doc, roll);
   if (!result.dynamic) return null;
-  return <div className="workshop-live-formula">
+  return <span className="workshop-live-formula">
     <small>{t.effectiveAtLevel} {result.level}{result.level < (roll.minimumLevel || 1) ? ' · ' + t.unlockedAt + ' ' + roll.minimumLevel : ''}</small>
     <code>{result.formula}</code>
     {result.additions.length > 0 && <small className="workshop-level-rule-count">
@@ -39,7 +40,7 @@ function LevelFormulaPreview({doc, roll, t}) {
             (rule.maxRepeats != null ? ' · ' + t.maximum + ' ' + rule.maxRepeats : '')
           : t.startAt + ' ' + rule.trigger}</span>)}
     </small>}
-  </div>;
+  </span>;
 }
 
 const dictionary = {
@@ -200,6 +201,9 @@ const dictionary = {
     storageFailed: 'Browser storage error:', fileTooLarge: 'The file is too large (max 128 KB).', fileInvalid: 'The file is not valid JSON.',
     appInvalid: 'Fix the character before sending it to the app:', shareInvalid: 'This character cannot be shared yet',
     documentTooLarge: 'The character is too large (over 128 KB of data). Remove some rolls or effects.',
+    operator: 'Part operator', ruleKind: 'Rule type', fromLevel: 'From level', material: 'Dice material',
+    removePart: 'Remove Part', removeRule: 'Remove level rule', removeStyle: 'Remove dice style',
+    qrAlt: 'QR code of the character share link', shareLink: 'Shareable character link',
   },
   it: {
     title: 'Laboratorio personaggi', intro: 'Crea il personaggio sul sito. Salvalo privatamente nel browser oppure condividilo via link o QR. I modelli standard più grandi possono usare un riferimento alla versione del modello.',
@@ -367,6 +371,9 @@ const dictionary = {
     storageFailed: 'Errore dell’archivio del browser:', fileTooLarge: 'Il file è troppo grande (massimo 128 KB).', fileInvalid: 'Il file non contiene JSON valido.',
     appInvalid: 'Correggi il personaggio prima di inviarlo all’app:', shareInvalid: 'Il personaggio non può ancora essere condiviso',
     documentTooLarge: 'Il personaggio è troppo grande (oltre 128 KB di dati). Rimuovi alcuni tiri o effetti.',
+    operator: 'Operatore della parte', ruleKind: 'Tipo di regola', fromLevel: 'Dal livello', material: 'Materiale del dado',
+    removePart: 'Rimuovi parte', removeRule: 'Rimuovi regola di livello', removeStyle: 'Rimuovi stile dado',
+    qrAlt: 'Codice QR del link di condivisione del personaggio', shareLink: 'Link di condivisione del personaggio',
   },
 };
 const uid = () => crypto.randomUUID();
@@ -678,10 +685,10 @@ function Workshop({ locale }) {
                 <div className="workshop-inline">
                   <Field label={t.parts} value={p.name} onChange={v => edit(x => x.rolls[i].subgroups[j].name = v)} />
                   <FormulaField label={t.formula} doc={doc} t={t} value={p.expression} onChange={v => edit(x => { const roll = x.rolls[i]; roll.subgroups[j].expression = v; roll.expression = normalFormula(roll.subgroups); })} />
-                  <button disabled={isPartUsed(r, p.id)} title={isPartUsed(r, p.id) ? t.partUsed : t.remove} onClick={() => edit(x => removePartSafely(x.rolls[i], p.id, normalFormula))}>×</button>
+                  <button disabled={isPartUsed(r, p.id)} title={isPartUsed(r, p.id) ? t.partUsed : t.remove} aria-label={t.removePart + ': ' + p.name} onClick={() => edit(x => removePartSafely(x.rolls[i], p.id, normalFormula))}>×</button>
                 </div>
                 <div className="workshop-inline">
-                  <select value={p.operator || 'ADD'} onChange={e => edit(x => { const roll = x.rolls[i]; roll.subgroups[j].operator = e.target.value; roll.expression = normalFormula(roll.subgroups); })}>
+                  <select aria-label={t.operator} value={p.operator || 'ADD'} onChange={e => edit(x => { const roll = x.rolls[i]; roll.subgroups[j].operator = e.target.value; roll.expression = normalFormula(roll.subgroups); })}>
                     <option value="ADD">+</option><option value="SUBTRACT">−</option></select>
                   <label className="workshop-check"><input type="checkbox" checked={p.includeInNormalRoll !== false} disabled={p.includeInNormalRoll !== false && r.subgroups.filter(q => q.includeInNormalRoll !== false).length === 1} onChange={e => edit(x => { const roll = x.rolls[i]; roll.subgroups[j].includeInNormalRoll = e.target.checked; roll.expression = normalFormula(roll.subgroups); })} /> {t.initialThrow}</label>
                                     <label className="workshop-check"><input type="checkbox" checked={!!p.includeInDoubleRoll} onChange={e => edit(x => x.rolls[i].subgroups[j].includeInDoubleRoll = e.target.checked)} /> {t.doubleCandidate}</label>
@@ -689,15 +696,15 @@ function Workshop({ locale }) {
               </div>)}
               <div className="workshop-row-head"><h3>{t.rules}</h3><button onClick={() => edit(x => x.rolls[i].levelRules.push(newLevelRule()))}>{t.addRule}</button></div>
               {r.levelRules.map((rule,j) => <div className="workshop-inline" key={rule.id}>
-                <select value={rule.kind} onChange={e => edit(x => x.rolls[i].levelRules[j].kind = e.target.value)}>
-                  <option value="FROM_LEVEL">From level</option><option value="EVERY_LEVELS">Every N levels</option></select>
+                <select aria-label={t.ruleKind} value={rule.kind} onChange={e => edit(x => x.rolls[i].levelRules[j].kind = e.target.value)}>
+                  <option value="FROM_LEVEL">{t.fromLevel}</option><option value="EVERY_LEVELS">{t.everyN}</option></select>
                 <NumberField label={rule.kind === 'EVERY_LEVELS' ? t.everyN : t.level} min={1} value={rule.trigger} onChange={v => edit(x => x.rolls[i].levelRules[j].trigger = v)} />
                 {rule.kind === 'EVERY_LEVELS' && <>
                   <NumberField optional label={t.periodicStart} min={1} value={rule.startLevel} onChange={v => edit(x => { if (v == null) delete x.rolls[i].levelRules[j].startLevel; else x.rolls[i].levelRules[j].startLevel = Number(v); })} />
                   <NumberField optional label={t.periodicMax} min={1} value={rule.maxRepeats} onChange={v => edit(x => { if (v == null) delete x.rolls[i].levelRules[j].maxRepeats; else x.rolls[i].levelRules[j].maxRepeats = Number(v); })} />
                 </>}
                 <FormulaField label={t.formula} doc={doc} t={t} value={rule.expression} onChange={v => edit(x => x.rolls[i].levelRules[j].expression = v)} />
-                <button onClick={() => edit(x => x.rolls[i].levelRules.splice(j,1))}>×</button>
+                <button aria-label={t.removeRule + ' ' + (j + 1)} onClick={() => edit(x => x.rolls[i].levelRules.splice(j,1))}>×</button>
               </div>)}
               <GuidedRollEditor roll={r} doc={doc} t={t} onEdit={mutator => edit(x => mutator(x.rolls[i]))} />
               <details className="workshop-expert"><summary>{t.expertJson}</summary>
@@ -716,7 +723,7 @@ function Workshop({ locale }) {
       <p className="workshop-hint">{t.storage} · {t.noCloud}</p>
     </div>
     {error && <p className="workshop-error" role="alert">{describeError(error, t)}</p>}
-    {message && <p className="workshop-success" role="status">{message}</p>}
+    <div role="status" aria-live="polite">{message && <p className="workshop-success">{message}</p>}</div>
     {preview && <section className="premium-panel workshop-preview" aria-label={t.preview}>
       <div className="workshop-row-head"><h2>{t.importCheck}</h2><span className="eyebrow">{t.importSource}</span></div>
       <div className="workshop-character-card">
@@ -834,8 +841,8 @@ function Workshop({ locale }) {
             {url && <div className="workshop-share">
               <p className="workshop-hint">{t.warning}</p>
               {url.includes('#template=') && <p className="workshop-hint">{t.templateLinkNote}</p>}
-              {qr && <img src={qr.src} alt="QR code: character share URL" width={qr.size} height={qr.size}/>}
-              <textarea readOnly aria-label="Shareable character link" value={url} rows={3} />
+              {qr && <img src={qr.src} alt={t.qrAlt} width={qr.size} height={qr.size}/>}
+              <textarea readOnly aria-label={t.shareLink} value={url} rows={3} />
               <div className="workshop-actions"><button onClick={() => navigator.clipboard.writeText(url)}>{t.copy}</button>
                 {shareHandoff?.link && <a className="secondary" href={shareHandoff.link}>{t.openApp}</a>}</div>
               {!shareHandoff?.link && <p className="workshop-hint">{handoffHint(shareHandoff)}</p>}
@@ -846,14 +853,14 @@ function Workshop({ locale }) {
             {doc.modifiers.map((m, index) => <div className="workshop-inline" key={m.id}>
               <Field label={t.modifiers} value={m.name} onChange={v => edit(x => x.modifiers[index].name = v)} />
               <NumberField label="±" value={m.value} onChange={v => edit(x => x.modifiers[index].value = v)} />
-              <button onClick={() => edit(x => x.modifiers.splice(index, 1))} aria-label={t.remove}>×</button>
+              <button onClick={() => edit(x => x.modifiers.splice(index, 1))} aria-label={t.remove + ': ' + m.name}>×</button>
             </div>)}
           </section>
           <section className="premium-panel">
             <div className="workshop-row-head"><h2>{t.groups}</h2><button onClick={() => edit(x => { const group=newGroup(x.character.id); group.order=x.groups.length; x.groups.push(group); })}>{t.addGroup}</button></div>
             {doc.groups.map((g,i) => <div className="workshop-inline" key={g.id}>
               <Field label={t.group} value={g.name} onChange={v => edit(x => x.groups[i].name = v)} />
-              <button onClick={() => edit(x => { x.rolls.forEach(r => { if (r.groupId === g.id) r.groupId = null; }); x.groups.splice(i, 1); })} aria-label={t.remove}>×</button>
+              <button onClick={() => edit(x => { x.rolls.forEach(r => { if (r.groupId === g.id) r.groupId = null; }); x.groups.splice(i, 1); })} aria-label={t.remove + ': ' + g.name}>×</button>
             </div>)}
           </section>
           <section className="premium-panel">
@@ -877,9 +884,9 @@ function Workshop({ locale }) {
             {doc.diceStyles.map((style,i) => <div className="workshop-part" key={style.id}>
               <div className="workshop-inline">
                 <Field label={t.styles} value={style.name} onChange={v => edit(x => x.diceStyles[i].name = v)} />
-                <select value={style.material} onChange={e => edit(x => x.diceStyles[i].material = e.target.value)}>
+                <select aria-label={t.material} value={style.material} onChange={e => edit(x => x.diceStyles[i].material = e.target.value)}>
                   {DICE_MATERIALS.map(s => <option key={s}>{s}</option>)}</select>
-                <button onClick={() => edit(x => { x.diceStyles.splice(i, 1);
+                <button aria-label={t.removeStyle + ': ' + style.name} onClick={() => edit(x => { x.diceStyles.splice(i, 1);
                   const fallback = 'preset:arcane-blue';
                   const fix = id => id === style.id ? fallback : id;
                   x.character.defaultDiceStyleId = fix(x.character.defaultDiceStyleId);

@@ -1,0 +1,8 @@
+/* Accessibility fixes for the Character Workshop (no visual restyling). */
+
+/* The JSON import input is visually hidden inside its label (styles.css):
+   show its keyboard focus on the visible label instead. */
+.workshop-file-button:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 3px; }
+@supports not selector(:has(*)) {
+  .workshop-file-button:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; }
+}
