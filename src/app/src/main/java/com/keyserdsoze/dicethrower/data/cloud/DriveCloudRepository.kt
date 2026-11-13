@@ -71,7 +71,10 @@ class DriveCloudRepository(
         requireLogicalFile(file, KIND_CHARACTER, characterKey(characterId))
         val document = CloudDocumentCodec.decodeCharacter(transport.read(file.id))
         val expected = metadataFromProperties(file)
-        if (document.metadata != expected) {
+        // Asset ids in Drive properties are only a listing index: older versions wrote none for a
+        // character with two images and could leave a stale one behind. The decoded document is
+        // already validated against its own images, so only the identity fields must agree.
+        if (document.metadata.copy(assetIds = emptyList()) != expected.copy(assetIds = emptyList())) {
             throw CloudProtocolException("Drive metadata does not match character ${document.metadata.characterId}")
         }
         return document
@@ -86,7 +89,7 @@ class DriveCloudRepository(
             name = "dice-thrower-character-${stableName(metadata.characterId)}.json",
             mimeType = JSON_MIME,
             properties = baseProperties(KIND_CHARACTER, key) + metadataProperties(metadata) +
-                (metadata.assetIds.singleOrNull()?.let { mapOf(PROP_ASSET_ID to it) } ?: emptyMap()),
+                assetIdProperties(metadata.assetIds),
             bytes = bytes,
         )
     }
@@ -143,7 +146,7 @@ class DriveCloudRepository(
     ) {
         val existing = findUnique(key)
         if (existing != null) {
-            transport.update(existing.id, name, mimeType, properties, bytes)
+            transport.update(existing.id, name, mimeType, properties, bytes, staleAssetIdKeys(existing, properties))
             return
         }
         try {
@@ -152,9 +155,13 @@ class DriveCloudRepository(
             // A create is deliberately never replayed blindly: the server may have committed it
             // before the connection failed. Recover the stable logical key first.
             val recovered = findUnique(key) ?: throw error
-            transport.update(recovered.id, name, mimeType, properties, bytes)
+            transport.update(recovered.id, name, mimeType, properties, bytes, staleAssetIdKeys(recovered, properties))
         }
     }
+
+    /** Drive merges appProperties on update, so asset ids that are no longer listed must be cleared. */
+    private fun staleAssetIdKeys(existing: DriveAppDataFile, properties: Map<String, String>): Set<String> =
+        existing.appProperties.keys.filter(::isAssetIdKey).toSet() - properties.keys
 
     private suspend fun deleteLogical(key: String): Boolean {
         val existing = findUnique(key) ?: return false
@@ -198,7 +205,7 @@ class DriveCloudRepository(
             updatedAt = updatedAt,
             revision = revision,
             writerId = writerId,
-            assetIds = listOfNotNull(properties[PROP_ASSET_ID]),
+            assetIds = properties.filterKeys(::isAssetIdKey).values.filter(String::isNotBlank).distinct().sorted(),
         )
     }
 
@@ -259,6 +266,19 @@ class DriveCloudRepository(
         PROP_REVISION to metadata.revision,
         PROP_WRITER_ID to metadata.writerId,
     )
+
+    /**
+     * One property per image asset id: Drive limits a property's key plus value to 124 bytes, so
+     * ids are never joined. The first id keeps the single-asset key that older versions read.
+     */
+    private fun assetIdProperties(assetIds: List<String>): Map<String, String> =
+        assetIds.distinct().sorted().mapIndexed { index, assetId ->
+            (if (index == 0) PROP_ASSET_ID else "${PROP_ASSET_ID}_$index") to assetId
+        }.toMap()
+
+    private fun isAssetIdKey(key: String): Boolean = key == PROP_ASSET_ID ||
+        (key.startsWith("${PROP_ASSET_ID}_") && key.length > PROP_ASSET_ID.length + 1 &&
+            key.substring(PROP_ASSET_ID.length + 1).all { it in '0'..'9' })
 
     private fun baseProperties(kind: String, key: String): Map<String, String> = mapOf(
         PROP_APP to APP_ID,

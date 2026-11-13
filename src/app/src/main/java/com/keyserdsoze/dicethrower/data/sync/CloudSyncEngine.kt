@@ -434,7 +434,9 @@ class CloudSyncEngine(
     ): CharacterSyncCommit {
         val document = remote.readCharacter(characterId)
             ?: throw CloudProtocolException("Remote character $characterId disappeared during sync")
-        if (document.metadata != remoteMetadata) {
+        // Asset ids listed from Drive properties are an index that older versions could leave
+        // incomplete; the revision, timestamp and writer identify the document.
+        if (document.metadata.copy(assetIds = remoteMetadata.assetIds) != remoteMetadata) {
             throw CloudProtocolException("Remote character $characterId changed during sync")
         }
         val character = document.data.characters.single()

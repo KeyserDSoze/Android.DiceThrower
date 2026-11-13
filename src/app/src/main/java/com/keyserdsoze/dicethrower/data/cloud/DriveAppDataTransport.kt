@@ -33,12 +33,17 @@ interface DriveAppDataTransport {
         bytes: ByteArray,
     ): DriveAppDataFile
 
+    /**
+     * Updates content and metadata. Drive merges appProperties: keys absent from [appProperties]
+     * are kept unless listed in [removedAppProperties], which are cleared.
+     */
     suspend fun update(
         fileId: String,
         name: String,
         mimeType: String,
         appProperties: Map<String, String>,
         bytes: ByteArray,
+        removedAppProperties: Set<String> = emptySet(),
     ): DriveAppDataFile
 
     suspend fun delete(fileId: String)
@@ -132,9 +137,13 @@ class DriveRestTransport(
         mimeType: String,
         appProperties: Map<String, String>,
         bytes: ByteArray,
+        removedAppProperties: Set<String>,
     ): DriveAppDataFile = withContext(Dispatchers.IO) {
         val boundary = "dice_thrower_${UUID.randomUUID()}"
-        val body = multipartBody(boundary, fileMetadataJson(name, mimeType, appProperties), mimeType, bytes)
+        val metadata = fileMetadataJson(name, mimeType, appProperties)
+        // A JSON null clears an appProperty in a files.update request.
+        removedAppProperties.forEach { key -> metadata.getJSONObject("appProperties").put(key, JSONObject.NULL) }
+        val body = multipartBody(boundary, metadata, mimeType, bytes)
         val response = execute(
             method = "PATCH",
             url = "$UPLOAD_FILES_URL/${path(fileId)}?uploadType=multipart&fields=id,name,mimeType,modifiedTime,appProperties",
