@@ -1,6 +1,6 @@
 # Dice Thrower
 
-**Versione 0.0.25** · [Release e APK](https://github.com/KeyserDSoze/Android.DiceThrower/releases/latest) · [Novità e compatibilità](docs/releases/0.0.25.md) · [Verifica del rilascio](docs/PREMIUM_RELEASE_QA.md)
+**Versione 0.0.26** · [Release e APK](https://github.com/KeyserDSoze/Android.DiceThrower/releases/latest) · [Novità e compatibilità](docs/releases/0.0.26.md) · [Verifica del rilascio](docs/PERCENTILE_RELEASE_QA.md)
 
 **Dice Thrower** è un'app Android offline-first e game-agnostic per creare personaggi e collegare a ciascuno una dashboard di tiri di dado configurabili.
 
