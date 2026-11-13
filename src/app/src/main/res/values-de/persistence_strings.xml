@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="change_not_saved_invalid_rolls">Änderung nicht gespeichert: Sie würde einen oder mehrere Würfe ungültig machen.</string>
+    <string name="change_not_saved_data_reloaded">Änderung nicht gespeichert: Die Daten wurden an anderer Stelle geändert und neu geladen. Bitte versuche es erneut.</string>
 </resources>

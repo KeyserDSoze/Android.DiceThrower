@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="change_not_saved_invalid_rolls">Зміну не збережено: вона зробила б один або кілька кидків недійсними.</string>
+    <string name="change_not_saved_data_reloaded">Зміну не збережено: дані змінено в іншому місці та перезавантажено. Спробуйте ще раз.</string>
 </resources>

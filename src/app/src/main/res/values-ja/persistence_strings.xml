@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="change_not_saved_invalid_rolls">変更は保存されていません：1 つ以上のロールが無効になります。</string>
+    <string name="change_not_saved_data_reloaded">変更は保存されていません：データが別の場所で変更されたため再読み込みしました。もう一度お試しください。</string>
 </resources>

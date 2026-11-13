@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="change_not_saved_invalid_rolls">Değişiklik kaydedilmedi: bir veya daha fazla atışı geçersiz kılardı.</string>
+    <string name="change_not_saved_data_reloaded">Değişiklik kaydedilmedi: veriler başka bir yerde değiştirildi ve yeniden yüklendi. Lütfen tekrar deneyin.</string>
 </resources>

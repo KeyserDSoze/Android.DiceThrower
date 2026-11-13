@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="change_not_saved_invalid_rolls">更改未保存：这会使一个或多个掷骰无效。</string>
+    <string name="change_not_saved_data_reloaded">更改未保存：数据已在其他位置被修改并已重新加载。请重试。</string>
 </resources>

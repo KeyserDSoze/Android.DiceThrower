@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="change_not_saved_invalid_rolls">മാറ്റം സംരക്ഷിച്ചില്ല: ഇത് ഒന്നോ അതിലധികമോ റോളുകളെ അസാധുവാക്കുമായിരുന്നു.</string>
+    <string name="change_not_saved_data_reloaded">മാറ്റം സംരക്ഷിച്ചില്ല: ഡാറ്റ മറ്റൊരിടത്ത് മാറ്റിയതിനാൽ വീണ്ടും ലോഡ് ചെയ്തു. വീണ്ടും ശ്രമിക്കുക.</string>
 </resources>

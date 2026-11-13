@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="change_not_saved_invalid_rolls">बदलाव सहेजा नहीं गया: इससे एक या अधिक रोल अमान्य हो जाते।</string>
+    <string name="change_not_saved_data_reloaded">बदलाव सहेजा नहीं गया: डेटा कहीं और बदला गया था और फिर से लोड किया गया है। कृपया दोबारा कोशिश करें।</string>
 </resources>

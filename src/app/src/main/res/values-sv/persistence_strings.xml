@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="change_not_saved_invalid_rolls">Ändringen sparades inte: den skulle göra ett eller flera slag ogiltiga.</string>
+    <string name="change_not_saved_data_reloaded">Ändringen sparades inte: data ändrades någon annanstans och har lästs in igen. Försök igen.</string>
 </resources>

@@ -121,6 +121,7 @@ import com.keyserdsoze.dicethrower.data.CloudAccountState
 import com.keyserdsoze.dicethrower.data.AppDataValidator
 import com.keyserdsoze.dicethrower.data.DashboardDataOperations
 import com.keyserdsoze.dicethrower.data.LocalStore
+import com.keyserdsoze.dicethrower.data.StaleDataException
 import com.keyserdsoze.dicethrower.data.sync.ConflictArea
 import com.keyserdsoze.dicethrower.data.sync.SyncConflict
 import com.keyserdsoze.dicethrower.data.sync.SyncConflictResolution
@@ -310,6 +311,8 @@ fun DiceThrowerAppV2(
     }
 
     var data by remember { mutableStateOf(store.loadData()) }
+    // Version of the stored document that `data` was loaded from (optimistic-concurrency token).
+    var dataVersion by remember { mutableStateOf(store.dataVersion()) }
     var route by rememberSaveable { mutableStateOf(RouteV2.CHARACTERS) }
     var selectedCharacterId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedGroupId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -320,10 +323,21 @@ fun DiceThrowerAppV2(
     val stateHolder = rememberSaveableStateHolder()
     val context = LocalContext.current
 
+    fun reloadData() {
+        data = store.loadData()
+        dataVersion = store.dataVersion()
+    }
+
     fun persist(updated: AppData) {
         try {
-            data = store.saveData(updated)
+            data = store.saveData(updated, expectedVersion = dataVersion)
+            dataVersion = store.dataVersion()
             onLocalDataChanged()
+        } catch (_: StaleDataException) {
+            // An import, a sync or another window saved meanwhile: never overwrite that newer
+            // content with this older copy; show the stored data instead.
+            reloadData()
+            Toast.makeText(context, R.string.change_not_saved_data_reloaded, Toast.LENGTH_LONG).show()
         } catch (_: IllegalArgumentException) {
             // LocalStore refuses invalid data; keep the last saved state instead of crashing.
             Toast.makeText(context, R.string.change_not_saved_invalid_rolls, Toast.LENGTH_LONG).show()
@@ -360,7 +374,13 @@ fun DiceThrowerAppV2(
     }
 
     LaunchedEffect(dataRefreshVersion) {
-        if (dataRefreshVersion > 0) data = store.loadData()
+        if (dataRefreshVersion > 0) reloadData()
+    }
+
+    // Pick up data saved elsewhere while this screen was not in the foreground.
+    LifecycleResumeEffect(Unit) {
+        if (store.dataVersion() != dataVersion) reloadData()
+        onPauseOrDispose { }
     }
 
     syncStatus.conflicts.firstOrNull()?.let { conflict ->

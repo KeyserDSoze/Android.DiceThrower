@@ -1,6 +1,7 @@
 package com.keyserdsoze.dicethrower.data
 
 import android.content.Context
+import android.content.SharedPreferences
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.AppSettings
 import com.keyserdsoze.dicethrower.model.CharacterImageRef
@@ -15,6 +16,7 @@ import java.util.UUID
 
 class LocalStore(context: Context) {
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    private val document = VersionedDocument(prefs, KEY_DATA, KEY_DATA_VERSION)
     private val imageAssetStore = CharacterImageAssetStore(context)
     private val writerIdStore = InstallationWriterIdStore(
         File(context.noBackupFilesDir, WRITER_ID_FILE),
@@ -22,7 +24,7 @@ class LocalStore(context: Context) {
     private val syncJournalStore = SyncJournalStore(context)
 
     fun loadData(): AppData {
-        val raw = prefs.getString(KEY_DATA, null) ?: return AppData()
+        val raw = document.read() ?: return AppData()
         val decoded = decodeStoredData(raw)
         val portableImages = SharedDiceStyleCatalog.migrateLegacy(imageAssetStore.migrateLegacyImages(decoded))
         val migrated = SyncMetadataManager.ensureMetadata(
@@ -35,7 +37,15 @@ class LocalStore(context: Context) {
         return migrated
     }
 
-    fun saveData(data: AppData): AppData {
+    /** Version of the stored data document; it increases with every write. */
+    fun dataVersion(): Long = document.version()
+
+    /**
+     * Saves [data] as the next local edit. A caller that passes the [expectedVersion] its copy was
+     * loaded at gets a [StaleDataException] instead of overwriting newer stored content.
+     */
+    fun saveData(data: AppData, expectedVersion: Long? = null): AppData {
+        document.requireVersion(expectedVersion)
         val previous = loadData()
         val now = System.currentTimeMillis()
         val writerId = installationWriterId()
@@ -84,10 +94,9 @@ class LocalStore(context: Context) {
         AppDataValidator.requireValid(migrated)
         imageAssetStore.restorePortableAssets(imageAssets)
         imageAssetStore.requireReferencedAssetsAvailable(migrated)
-        prefs.edit()
-            .putString(KEY_DATA, AppDataJsonCodec.encodeData(migrated).toString())
-            .putString(KEY_SETTINGS, AppDataJsonCodec.encodeSettings(settings).toString())
-            .apply()
+        document.write(AppDataJsonCodec.encodeData(migrated).toString()) {
+            putString(KEY_SETTINGS, AppDataJsonCodec.encodeSettings(settings).toString())
+        }
         recordDataTransition(previousData, migrated, writerId, now)
         recordSettingsTransition(previousSettings, settings, writerId, now)
         imageAssetStore.cleanupOrphans(migrated)
@@ -175,16 +184,46 @@ class LocalStore(context: Context) {
     }
 
     private fun persistData(data: AppData) {
-        prefs.edit()
-            .putString(KEY_DATA, AppDataJsonCodec.encodeData(data).toString())
-            .apply()
+        document.write(AppDataJsonCodec.encodeData(data).toString())
     }
 
     companion object {
         private const val PREFS = "dice_thrower_store"
         private const val KEY_DATA = "data_v1"
+        private const val KEY_DATA_VERSION = "data_v1_version"
         private const val KEY_SETTINGS = "settings_v1"
         private const val WRITER_ID_FILE = "installation_writer_id_v1"
+    }
+}
+
+/** Thrown when a caller saves data derived from a copy that is no longer the stored one. */
+class StaleDataException : IllegalStateException("Stored data changed since this copy was loaded")
+
+/**
+ * A preferences-backed document whose version increases with every write. Callers compare it
+ * with the version their copy was loaded at (optimistic concurrency), so a screen that missed an
+ * import, a sync or another window's save cannot silently overwrite that newer content.
+ */
+internal class VersionedDocument(
+    private val prefs: SharedPreferences,
+    private val key: String,
+    private val versionKey: String,
+) {
+    fun read(): String? = prefs.getString(key, null)
+
+    fun version(): Long = prefs.getLong(versionKey, 0L)
+
+    fun requireVersion(expected: Long?) {
+        if (expected != null && expected != version()) throw StaleDataException()
+    }
+
+    @Synchronized
+    fun write(raw: String, alsoWrite: SharedPreferences.Editor.() -> Unit = {}) {
+        val editor = prefs.edit()
+            .putString(key, raw)
+            .putLong(versionKey, version() + 1)
+        editor.alsoWrite()
+        editor.apply()
     }
 }
 

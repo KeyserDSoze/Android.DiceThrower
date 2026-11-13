@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="change_not_saved_invalid_rolls">Zmiana nie została zapisana: jeden lub więcej rzutów stałoby się nieprawidłowych.</string>
+    <string name="change_not_saved_data_reloaded">Zmiana nie została zapisana: dane zostały zmienione w innym miejscu i wczytane ponownie. Spróbuj jeszcze raz.</string>
 </resources>

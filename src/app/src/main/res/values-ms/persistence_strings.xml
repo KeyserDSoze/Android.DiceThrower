@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="change_not_saved_invalid_rolls">Perubahan tidak disimpan: ia akan menjadikan satu atau lebih balingan tidak sah.</string>
+    <string name="change_not_saved_data_reloaded">Perubahan tidak disimpan: data telah diubah di tempat lain dan dimuatkan semula. Sila cuba lagi.</string>
 </resources>

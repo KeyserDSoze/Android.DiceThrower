@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="change_not_saved_invalid_rolls">மாற்றம் சேமிக்கப்படவில்லை: இது ஒன்று அல்லது அதற்கு மேற்பட்ட உருட்டல்களைச் செல்லாததாக்கும்.</string>
+    <string name="change_not_saved_data_reloaded">மாற்றம் சேமிக்கப்படவில்லை: தரவு வேறு இடத்தில் மாற்றப்பட்டு மீண்டும் ஏற்றப்பட்டது. மீண்டும் முயலவும்.</string>
 </resources>

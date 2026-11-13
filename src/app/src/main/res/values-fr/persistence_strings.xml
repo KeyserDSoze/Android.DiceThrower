@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="change_not_saved_invalid_rolls">Modification non enregistrée : elle rendrait un ou plusieurs jets invalides.</string>
+    <string name="change_not_saved_data_reloaded">Modification non enregistrée : les données ont été modifiées ailleurs et ont été rechargées. Réessayez.</string>
 </resources>
