@@ -1,7 +1,5 @@
 package com.keyserdsoze.dicethrower.ui.v2
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -1556,7 +1554,8 @@ internal fun DiceTablePickerV2(
                     rowThemes.forEach { theme ->
                         val selected = character.diceTableImage == null && character.diceTableTheme == theme
                         val label = stringResource(theme.presetNameRes())
-                        val previewBitmap = remember(context, theme) { theme.presetBitmap(context, preview = true).asImageBitmap() }
+                        val previewBitmap = rememberTablePreviewBitmap(context, theme)
+                        val previewImage = remember(previewBitmap) { previewBitmap?.asImageBitmap() }
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
@@ -1573,14 +1572,19 @@ internal fun DiceTablePickerV2(
                             ),
                         ) {
                             Column {
-                                Image(
-                                    bitmap = previewBitmap,
-                                    contentDescription = label,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(118.dp),
-                                )
+                                if (previewImage != null) {
+                                    Image(
+                                        bitmap = previewImage,
+                                        contentDescription = label,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(118.dp),
+                                    )
+                                } else {
+                                    // Same footprint and label while the preview is painted off the main thread.
+                                    Box(Modifier.fillMaxWidth().height(118.dp).semantics { contentDescription = label })
+                                }
                                 Text(
                                     text = label,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
@@ -2337,16 +2341,9 @@ private fun RollScreenV2(
     onLogged: (RollLog) -> Unit,
 ) {
     val context = LocalContext.current
-    val tableImageStore = remember(context) { CharacterImageAssetStore(context) }
-    val presetTableBitmap = remember(context, character.diceTableTheme) {
-        character.diceTableTheme.presetBitmap(context)
-    }
-    val customTableBitmap = remember(character.diceTableImage) {
-        character.diceTableImage
-            ?.let(tableImageStore::loadVerified)
-            ?.let(::decodeTableBitmap)
-    }
-    val tableBitmap = customTableBitmap ?: presetTableBitmap
+    // Cached process-wide and produced off the main thread; a custom image replaces the preset,
+    // which is then not painted at all. The plain table colour shows until the image is ready.
+    val tableBitmap = rememberRollTableBitmap(context, character.diceTableTheme, character.diceTableImage)
     val tableImageKey = character.diceTableImage?.assetId ?: "preset:${character.diceTableTheme.name}"
     val resolvedFormula = remember(character.level, modifiers, roll) {
         runCatching { RollFormulaResolver.resolve(character, modifiers, roll) }.getOrNull()
@@ -2585,7 +2582,9 @@ private fun RollScreenV2(
                 event = visualEvent,
                 tableTheme = character.diceTableTheme,
                 tableImage = tableBitmap,
-                tableImageKey = tableImageKey,
+                // The scene re-reads its table only when this key or the event changes. Artwork that
+                // finishes loading after a throw is applied with the next throw, never by replaying it.
+                tableImageKey = if (tableBitmap == null && !hasRolled) "$tableImageKey:loading" else tableImageKey,
                 fullBleed = true,
                 animateRoll = hasRolled && settings.animationsEnabled,
                 winnerRevealed = resultRevealed,
@@ -3007,21 +3006,6 @@ private fun DiceExpression.previewResult(): DiceRollResult {
         total = components.sumOf { it.subtotal },
         components = components,
         constantTotal = 0,
-    )
-}
-
-private fun decodeTableBitmap(bytes: ByteArray): Bitmap? {
-    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
-
-    var sample = 1
-    while (bounds.outWidth / sample > 2048 || bounds.outHeight / sample > 2048) sample *= 2
-    return BitmapFactory.decodeByteArray(
-        bytes,
-        0,
-        bytes.size,
-        BitmapFactory.Options().apply { inSampleSize = sample },
     )
 }
 

@@ -36,7 +36,11 @@ internal object FantasyTableArtwork {
         require(supports(theme)) { "No generated artwork for $theme" }
         val width = if (preview) PREVIEW_WIDTH else FULL_WIDTH
         val height = if (preview) PREVIEW_HEIGHT else FULL_HEIGHT
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+        // Full-screen gradients band visibly in RGB_565; small previews keep the cheaper format.
+        val config = if (preview) Bitmap.Config.RGB_565 else Bitmap.Config.ARGB_8888
+        val bitmap = Bitmap.createBitmap(width, height, config)
+        // Same opaque black base an RGB_565 bitmap starts with, so the artwork composites identically.
+        bitmap.eraseColor(Color.BLACK)
         val canvas = Canvas(bitmap)
         canvas.scale(width / FULL_WIDTH.toFloat(), height / FULL_HEIGHT.toFloat())
         Painter(canvas, Random(theme.ordinal * 34171 + 9031)).apply {
