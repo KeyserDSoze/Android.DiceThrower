@@ -204,6 +204,7 @@ const dictionary = {
     operator: 'Part operator', ruleKind: 'Rule type', fromLevel: 'From level', material: 'Dice material',
     removePart: 'Remove Part', removeRule: 'Remove level rule', removeStyle: 'Remove dice style',
     qrAlt: 'QR code of the character share link', shareLink: 'Shareable character link',
+    copied: 'Link copied.', copyFailed: 'Copy failed: the link is selected, copy it manually.',
   },
   it: {
     title: 'Laboratorio personaggi', intro: 'Crea il personaggio sul sito. Salvalo privatamente nel browser oppure condividilo via link o QR. I modelli standard più grandi possono usare un riferimento alla versione del modello.',
@@ -374,6 +375,7 @@ const dictionary = {
     operator: 'Operatore della parte', ruleKind: 'Tipo di regola', fromLevel: 'Dal livello', material: 'Materiale del dado',
     removePart: 'Rimuovi parte', removeRule: 'Rimuovi regola di livello', removeStyle: 'Rimuovi stile dado',
     qrAlt: 'Codice QR del link di condivisione del personaggio', shareLink: 'Link di condivisione del personaggio',
+    copied: 'Link copiato.', copyFailed: 'Copia non riuscita: il link è selezionato, copialo manualmente.',
   },
 };
 const uid = () => crypto.randomUUID();
@@ -501,6 +503,13 @@ function Workshop({ locale }) {
   const [url, setUrl] = useState('');
   const [qr, setQr] = useState(null);
   const [shareHandoff, setShareHandoff] = useState(null);
+  const [copyStatus, setCopyStatus] = useState(null);
+  const shareLinkRef = useRef(null);
+  useEffect(() => {
+    if (!copyStatus) return;
+    const timer = setTimeout(() => setCopyStatus(null), 4000);
+    return () => clearTimeout(timer);
+  }, [copyStatus]);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   // JSON of the open document as it was opened or last saved.
@@ -614,8 +623,20 @@ function Workshop({ locale }) {
     try {
       const link = shareUrl(snapshot, window.location.origin + import.meta.env.BASE_URL + 'workshop/');
       const image = await renderShareQr(link);
-      setUrl(link); setQr(image); setShareHandoff(androidHandoff(snapshot)); setMessage(t.ready); setError('');
+      setUrl(link); setQr(image); setShareHandoff(androidHandoff(snapshot)); setCopyStatus(null); setMessage(t.ready); setError('');
     } catch (e) { setQr(null); setUrl(''); setError(failure('share-invalid', e)); }
+  }
+  async function copyLink() {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+      await navigator.clipboard.writeText(url);
+      setCopyStatus({ text: t.copied });
+    } catch {
+      // e.g. insecure context or permission denied: leave it ready for Ctrl+C.
+      setCopyStatus({ text: t.copyFailed });
+      shareLinkRef.current?.focus();
+      shareLinkRef.current?.select();
+    }
   }
   async function addShared() {
     try {
@@ -842,9 +863,10 @@ function Workshop({ locale }) {
               <p className="workshop-hint">{t.warning}</p>
               {url.includes('#template=') && <p className="workshop-hint">{t.templateLinkNote}</p>}
               {qr && <img src={qr.src} alt={t.qrAlt} width={qr.size} height={qr.size}/>}
-              <textarea readOnly aria-label={t.shareLink} value={url} rows={3} />
-              <div className="workshop-actions"><button onClick={() => navigator.clipboard.writeText(url)}>{t.copy}</button>
-                {shareHandoff?.link && <a className="secondary" href={shareHandoff.link}>{t.openApp}</a>}</div>
+              <textarea ref={shareLinkRef} readOnly aria-label={t.shareLink} value={url} rows={3} />
+              <div className="workshop-actions"><button onClick={copyLink}>{t.copy}</button>
+                {shareHandoff?.link && <a className="secondary" href={shareHandoff.link}>{t.openApp}</a>}
+                <span className="workshop-hint" role="status" aria-live="polite">{copyStatus?.text}</span></div>
               {!shareHandoff?.link && <p className="workshop-hint">{handoffHint(shareHandoff)}</p>}
             </div>}
           </section>
