@@ -10,6 +10,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -78,6 +80,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -99,6 +102,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.testTag
@@ -3723,8 +3727,16 @@ private fun RollTriggerToggle(
     checked: Boolean,
     onChecked: (Boolean) -> Unit,
 ) {
+    // One accessible switch node for the whole row; the Switch only draws (shared press state).
+    val interactionSource = remember { MutableInteractionSource() }
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().toggleable(
+            value = checked,
+            interactionSource = interactionSource,
+            indication = null,
+            role = Role.Switch,
+            onValueChange = onChecked,
+        ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -3732,7 +3744,12 @@ private fun RollTriggerToggle(
             modifier = Modifier.weight(1f),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Switch(checked = checked, onCheckedChange = onChecked)
+        Switch(
+            checked = checked,
+            onCheckedChange = null,
+            modifier = Modifier.minimumInteractiveComponentSize(),
+            interactionSource = interactionSource,
+        )
     }
 }
 
@@ -3742,13 +3759,28 @@ private fun ToggleSettingCard(
     checked: Boolean,
     onChecked: (Boolean) -> Unit,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
     PremiumCard(Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .toggleable(
+                    value = checked,
+                    interactionSource = interactionSource,
+                    indication = null,
+                    role = Role.Switch,
+                    onValueChange = onChecked,
+                )
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(label, modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
-            Switch(checked = checked, onCheckedChange = onChecked)
+            Switch(
+                checked = checked,
+                onCheckedChange = null,
+                modifier = Modifier.minimumInteractiveComponentSize(),
+                interactionSource = interactionSource,
+            )
         }
     }
 }
