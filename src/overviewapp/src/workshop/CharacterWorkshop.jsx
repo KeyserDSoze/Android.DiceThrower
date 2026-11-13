@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import {
-  androidUrl, decodeToken, documentFromEnvelope, envelope, importAsCopy, instantiateTemplate,
+  androidHandoff, decodeToken, documentFromEnvelope, envelope, importAsCopy, instantiateTemplate,
   listSaved, newCharacter, newGroup, newLevelRule, newModifier, newPart, newRoll, newStyle,
   normalFormula, readShareHash, removeDocument, saveDocument, shareUrl, templates, validateDocument,
   canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences,
@@ -198,6 +198,8 @@ const dictionary = {
     storageQuota: 'Browser storage is full. Free up space or export your characters as JSON.',
     storageBlocked: 'Browser storage is busy in another tab. Close other workshop tabs and reload this page.',
     storageFailed: 'Browser storage error:', fileTooLarge: 'The file is too large (max 128 KB).', fileInvalid: 'The file is not valid JSON.',
+    appInvalid: 'Fix the character before sending it to the app:', shareInvalid: 'This character cannot be shared yet',
+    documentTooLarge: 'The character is too large (over 128 KB of data). Remove some rolls or effects.',
   },
   it: {
     title: 'Laboratorio personaggi', intro: 'Crea il personaggio sul sito. Salvalo privatamente nel browser oppure condividilo via link o QR. I modelli standard più grandi possono usare un riferimento alla versione del modello.',
@@ -363,6 +365,8 @@ const dictionary = {
     storageQuota: 'L’archivio del browser è pieno. Libera spazio oppure esporta i personaggi in JSON.',
     storageBlocked: 'L’archivio del browser è occupato da un’altra scheda. Chiudi le altre schede del laboratorio e ricarica la pagina.',
     storageFailed: 'Errore dell’archivio del browser:', fileTooLarge: 'Il file è troppo grande (massimo 128 KB).', fileInvalid: 'Il file non contiene JSON valido.',
+    appInvalid: 'Correggi il personaggio prima di inviarlo all’app:', shareInvalid: 'Il personaggio non può ancora essere condiviso',
+    documentTooLarge: 'Il personaggio è troppo grande (oltre 128 KB di dati). Rimuovi alcuni tiri o effetti.',
   },
 };
 const uid = () => crypto.randomUUID();
@@ -426,14 +430,16 @@ function JsonField({ label, value, onChange, validate, t }) {
 // Coded errors from character.js get localized text; others keep their message.
 const errorText = {
   'link-invalid': 'linkInvalid', 'link-too-large': 'linkTooLarge', 'link-unsupported': 'linkUnsupported',
+  'link-too-long': 'tooLong', 'document-too-large': 'documentTooLarge',
   'storage-unavailable': 'storageUnavailable', 'storage-quota': 'storageQuota', 'storage-blocked': 'storageBlocked',
 };
-/** A received character that fails validation keeps its specific message. */
-const readFailure = error => error?.code ? error
-  : Object.assign(new Error(error?.message || String(error)), { code: 'read-failed' });
+// Context prefixes for uncoded (validation) errors that keep their specific message.
+const errorPrefix = { 'read-failed': 'invalid', 'share-invalid': 'shareInvalid' };
+const failure = (code, error) => error?.code ? error
+  : Object.assign(new Error(error?.message || String(error)), { code });
 function describeError(error, t) {
   if (!error || typeof error === 'string') return error || '';
-  if (error.code === 'read-failed') return t.invalid + ': ' + error.message;
+  if (errorPrefix[error.code]) return t[errorPrefix[error.code]] + ': ' + error.message;
   if (error.code === 'storage-failed') return t.storageFailed + ' ' + (error.cause?.message || error.cause?.name || '');
   return errorText[error.code] ? t[errorText[error.code]] : error.message || String(error);
 }
@@ -445,6 +451,19 @@ function downloadDocument(characterDoc) {
   a.download = 'dice-thrower-character.json';
   a.click();
   setTimeout(() => URL.revokeObjectURL(href), 1500);
+}
+/**
+ * The open document, updated only once edits pause for `delay` ms. Opening a
+ * different character is adopted immediately.
+ */
+function useSettledDocument(doc, delay) {
+  const [settled, setSettled] = useState(doc);
+  if (settled !== doc && settled?.character.id !== doc?.character.id) setSettled(doc);
+  useEffect(() => {
+    const timer = setTimeout(() => setSettled(doc), delay);
+    return () => clearTimeout(timer);
+  }, [doc, delay]);
+  return settled;
 }
 export default function CharacterWorkshop({ locale = 'en' }) {
   const t = dictionary[locale] || dictionary.en;
@@ -460,6 +479,7 @@ function Workshop({ locale }) {
   const [previewLevel, setPreviewLevel] = useState(1);
   const [url, setUrl] = useState('');
   const [qr, setQr] = useState('');
+  const [shareHandoff, setShareHandoff] = useState(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   // JSON of the open document as it was opened or last saved.
@@ -475,6 +495,12 @@ function Workshop({ locale }) {
     try { setItems((await listSaved()).sort((a,b) => a.character.name.localeCompare(b.character.name))); }
     catch (e) { setError(e); }
   }
+  // Recipient name/level start from the shared values in the same render, so
+  // the preview never flashes an invalid (empty-name) import candidate.
+  function showPreview(shared) {
+    setPreview(shared);
+    if (shared) { setPreviewName(shared.character.name); setPreviewLevel(shared.character.level); }
+  }
   useEffect(() => {
     refresh();
     function openSharedLink(event) {
@@ -484,8 +510,8 @@ function Workshop({ locale }) {
         const shared = readShareHash(hash);
         // e.g. a #template= reference this version of the site does not know.
         if (!shared) throw Object.assign(new Error('Unsupported link'), { code: 'link-unsupported' });
-        setPreview(shared); setError('');
-      } catch (e) { setPreview(null); setError(readFailure(e)); }
+        showPreview(shared); setError('');
+      } catch (e) { showPreview(null); setError(failure('read-failed', e)); }
       // A link opened in the same tab: bring the preview/error into view.
       if (event) window.scrollTo(0, 0);
     }
@@ -493,32 +519,31 @@ function Workshop({ locale }) {
     window.addEventListener('hashchange', openSharedLink);
     return () => window.removeEventListener('hashchange', openSharedLink);
   }, []);
-  useEffect(() => {
-    if (preview) {
-      setPreviewName(preview.character.name);
-      setPreviewLevel(preview.character.level);
-    }
-  }, [preview]);
 
-  const importCandidate = useMemo(() => {
-    if (!preview) return null;
-    try { return withImportPreferences(preview, previewName, previewLevel); }
-    catch { return null; }
+  const importDraft = useMemo(() => {
+    if (!preview) return { candidate: null, error: null };
+    try { return { candidate: withImportPreferences(preview, previewName, previewLevel), error: null }; }
+    catch (error) { return { candidate: null, error }; }
   }, [preview, previewName, previewLevel]);
-  const importAppLink = useMemo(() => {
-    if (!importCandidate) return null;
-    try {
-      const link = androidUrl(importCandidate);
-      return link.length <= 8000 ? link : null;
-    } catch { return null; }
-  }, [importCandidate]);
-  const editorAppLink = useMemo(() => {
-    if (!doc) return null;
-    try {
-      const link = androidUrl(doc);
-      return link.length <= 8000 ? link : null;
-    } catch { return null; }
-  }, [doc]);
+  const importCandidate = importDraft.candidate;
+  const importHandoff = useMemo(() => importCandidate && androidHandoff(importCandidate), [importCandidate]);
+  // Building the app link validates and deflates the whole document: do it once
+  // typing pauses, not on every keystroke.
+  const handoffDoc = useSettledDocument(doc, 400);
+  const editorHandoff = useMemo(() => handoffDoc && androidHandoff(handoffDoc), [handoffDoc]);
+  function handoffHint(handoff, problem) {
+    if (handoff?.link) return t.appDirectHint;
+    const error = handoff?.reason === 'too-large' ? null : handoff?.error || problem;
+    return error ? t.appInvalid + ' ' + describeError(error, t) : t.appLarge;
+  }
+  /** The visible link may lag behind the last keystrokes: send the latest document. */
+  function openLatestInApp(event) {
+    if (handoffDoc === doc) return;
+    const latest = androidHandoff(doc);
+    if (latest.link) { event.currentTarget.href = latest.link; return; }
+    event.preventDefault();
+    setError(latest.reason === 'too-large' ? t.appLarge : latest.error);
+  }
 
 
   function edit(mutator) {
@@ -564,11 +589,12 @@ function Workshop({ locale }) {
     catch (e) { setError(e); }
   }
   async function createShare() {
+    const snapshot = doc;
     try {
-      const link = shareUrl(doc, window.location.origin + import.meta.env.BASE_URL + 'workshop/');
+      const link = shareUrl(snapshot, window.location.origin + import.meta.env.BASE_URL + 'workshop/');
       const image = await QRCode.toDataURL(link, { errorCorrectionLevel: 'L', width: 340, margin: 2 });
-      setUrl(link); setQr(image); setMessage(t.ready); setError('');
-    } catch (e) { setQr(''); setUrl(''); setError(t.tooLong + ' ' + e.message); }
+      setUrl(link); setQr(image); setShareHandoff(androidHandoff(snapshot)); setMessage(t.ready); setError('');
+    } catch (e) { setQr(''); setUrl(''); setError(failure('share-invalid', e)); }
   }
   async function addShared() {
     try {
@@ -588,11 +614,11 @@ function Workshop({ locale }) {
       let packet;
       try { packet = JSON.parse(await file.text()); } catch { throw new Error(t.fileInvalid); }
       const imported = documentFromEnvelope(packet);
-      setPreview(imported);
+      showPreview(imported);
       setError(''); setMessage('');
       // The same explicit preview and confirmation now handles QR, link and file.
 
-    } catch (e) { setError(readFailure(e)); }
+    } catch (e) { setError(failure('read-failed', e)); }
     event.target.value = '';
   }
 
@@ -714,10 +740,10 @@ function Workshop({ locale }) {
       <p className="workshop-hint">{t.importExisting} {t.warning}</p>
       <div className="workshop-actions">
         <button className="primary" disabled={!importCandidate} onClick={addShared}>{t.add}</button>
-        {importAppLink && <a className="secondary" href={importAppLink}>{t.openApp}</a>}
+        {importHandoff?.link && <a className="secondary" href={importHandoff.link}>{t.openApp}</a>}
         <button onClick={() => { setPreview(null); history.replaceState(null, '', location.pathname); }}>{t.discard}</button>
       </div>
-      <p className="workshop-hint">{importAppLink ? t.appDirectHint : t.appLarge}</p>
+      <p className="workshop-hint">{handoffHint(importHandoff, importDraft.error)}</p>
     </section>}
     <div className="workshop-layout">
       <aside className="workshop-sidebar">
@@ -787,17 +813,18 @@ function Workshop({ locale }) {
               {canUpgradeLegacyStarterWeaponRolls(doc) && <button type="button"
                 onClick={upgradeStarter}>{t.upgradeLegacy}</button>}
               <button onClick={createShare}>{t.share}</button>
-              {editorAppLink && <a className="secondary" href={editorAppLink}>{t.openApp}</a>}
+              {editorHandoff?.link && <a className="secondary" href={editorHandoff.link} onClick={openLatestInApp}>{t.openApp}</a>}
               <button onClick={() => downloadDocument(doc)}>{t.export}</button>
             </div>
-            <p className="workshop-hint">{editorAppLink ? t.appDirectHint : t.appLarge}</p>
+            <p className="workshop-hint">{handoffHint(editorHandoff)}</p>
             {url && <div className="workshop-share">
               <p className="workshop-hint">{t.warning}</p>
               {url.includes('#template=') && <p className="workshop-hint">{t.templateLinkNote}</p>}
               <img src={qr} alt="QR code: character share URL" width="260" height="260"/>
               <textarea readOnly aria-label="Shareable character link" value={url} rows={3} />
               <div className="workshop-actions"><button onClick={() => navigator.clipboard.writeText(url)}>{t.copy}</button>
-                <a className="secondary" href={androidUrl(doc)}>{t.openApp}</a></div>
+                {shareHandoff?.link && <a className="secondary" href={shareHandoff.link}>{t.openApp}</a>}</div>
+              {!shareHandoff?.link && <p className="workshop-hint">{handoffHint(shareHandoff)}</p>}
             </div>}
           </section>
           <section className="premium-panel">

@@ -173,7 +173,8 @@ export function validateDocument(doc) {
     for (const id of appearance.randomStyleIds || []) checkStyle(id);
     validateGuidedRoll(roll, doc.modifiers.map(m => m.name), allStyles);
   }
-  assert(new TextEncoder().encode(JSON.stringify(doc)).length <= MAX_RAW_LENGTH, 'Character too large');
+  if (new TextEncoder().encode(JSON.stringify(doc)).length > MAX_RAW_LENGTH)
+    throw codedError('document-too-large', 'Character too large');
   return doc;
 }
 
@@ -325,7 +326,7 @@ export function shareUrl(doc, base = window.location.href) {
       encodeURIComponent(doc.character.name) + '&level=' + doc.character.level;
     if (url.href.length <= MAX_LINK_LENGTH) return url.href;
   }
-  throw new Error('Link too long for a reliable QR code. Export the JSON file instead.');
+  throw codedError('link-too-long', 'Link too long for a reliable QR code. Export the JSON file instead.');
 }
 export function readShareHash(hash = window.location.hash) {
   const preset = hash.match(/^#template=(fighter2014v1|rogue2014v1|wizard2014v1|wizard2014v2|wizard2014v3|ranger2014v1|cleric2014v1|paladin2014v1|bard2014v1)&name=([^&]+)&level=([0-9]+)$/);
@@ -340,6 +341,21 @@ export function readShareHash(hash = window.location.hash) {
   return hash.startsWith('#character=') ? decodeToken(hash.slice('#character='.length)) : null;
 }
 export function androidUrl(doc) { return 'dicethrower://import?data=' + encodeURIComponent(encodeToken(doc)); }
+/** Longer app deep links are not offered; the JSON file is the fallback. */
+export const MAX_APP_LINK_LENGTH = 8000;
+/**
+ * Installed-app handoff for a document: { link } when it can be offered,
+ * otherwise { link: null, reason: 'too-large' } (export the JSON file) or
+ * { link: null, reason: 'invalid', error } with the validation problem.
+ */
+export function androidHandoff(doc) {
+  try {
+    const link = androidUrl(doc);
+    return link.length <= MAX_APP_LINK_LENGTH ? { link, reason: null } : { link: null, reason: 'too-large' };
+  } catch (error) {
+    return { link: null, reason: error.code === 'document-too-large' ? 'too-large' : 'invalid', error };
+  }
+}
 
 /** Recipients can rename/relevel a copy without altering a sender's document. */
 export function withImportPreferences(source, name, level) {

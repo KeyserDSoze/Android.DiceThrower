@@ -5,7 +5,7 @@ import {
   templates, instantiateTemplate, validateDocument, envelope, documentFromEnvelope,
   encodeToken, decodeToken, importAsCopy, normalFormula, newPart, newRoll, newCharacter, newGroup, newModifier, shareUrl,
   canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences, androidUrl,
-  WIZARD_2014_SRD_SPELLS, WIZARD_2014_DICE_SPELLS, MAX_TAG_LENGTH, DICE_MATERIALS, newLevelRule, newStyle,
+  WIZARD_2014_SRD_SPELLS, WIZARD_2014_DICE_SPELLS, MAX_TAG_LENGTH, DICE_MATERIALS, newLevelRule, newStyle, androidHandoff, MAX_APP_LINK_LENGTH,
   FIGHTER_2014_LEVELS, FIGHTER_2014_PROFICIENCY_STEPS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS, CLERIC_2014_LEVELS, PALADIN_2014_LEVELS, BARD_2014_LEVELS, readShareHash,
 } from './character.js';
 
@@ -1226,4 +1226,34 @@ test('malformed #character= and #template= links report an error instead of bein
     instantiateTemplate(6).rolls.map(r => r.name));
   assert.throws(() => readShareHash('#template=fighter2014v1&name=%E0%A4%A&level=3'), isLinkError('link-invalid'));
   assert.equal(readShareHash('#template=fighter2014v1&name=Ari%20Fighter&level=3').character.name, 'Ari Fighter');
+});
+
+test('Android app handoff is offered only for valid documents within the 8000-char deep-link bound', () => {
+  const fighter = androidHandoff(instantiateTemplate(0));
+  assert.match(fighter.link, /^dicethrower:\/\/import\?data=v1\./);
+  assert.ok(fighter.link.length <= MAX_APP_LINK_LENGTH);
+  assert.deepEqual(decodeToken(decodeURIComponent(fighter.link.split('data=')[1])).rolls.length,
+    instantiateTemplate(0).rolls.length);
+  // The stock Wizard needs ~24 KB: it must not get an oversized deep link.
+  const wizard = instantiateTemplate(2);
+  assert.ok(androidUrl(wizard).length > MAX_APP_LINK_LENGTH);
+  assert.deepEqual(androidHandoff(wizard), { link: null, reason: 'too-large' });
+  // Invalid characters report the validation problem, not "too large".
+  for (const [mutate, message] of [[x => x.character.name = ' ', /name/], [x => x.character.level = 0, /level/]]) {
+    const bad = instantiateTemplate(6);
+    mutate(bad);
+    const result = androidHandoff(bad);
+    assert.equal(result.link, null);
+    assert.equal(result.reason, 'invalid');
+    assert.match(result.error.message, message);
+  }
+  const huge = instantiateTemplate(6);
+  huge.character.tag = 'x'.repeat(400);
+  for (let i = 0; i < 140; i++) huge.rolls.push({ ...newRoll(huge.character.id), name: 'Roll ' + i, expression: '1d20+' + '1+'.repeat(700) + '1' });
+  const tooBig = androidHandoff(huge);
+  assert.equal(tooBig.reason, 'too-large');
+  assert.equal(tooBig.error.code, 'document-too-large');
+  const custom = structuredClone(wizard);
+  custom.character.tag = 'A different campaign';
+  assert.throws(() => shareUrl(custom, 'https://example.com/workshop/'), error => error.code === 'link-too-long');
 });
