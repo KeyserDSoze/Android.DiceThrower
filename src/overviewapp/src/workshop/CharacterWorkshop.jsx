@@ -371,9 +371,29 @@ const dictionary = {
 };
 const uid = () => crypto.randomUUID();
 
-function Field({ label, value, onChange, type = 'text', min, max, maxLength, readOnly = false }) {
+function Field({ label, value, onChange, maxLength, readOnly = false }) {
   return <label className="workshop-field"><span>{label}</span>
-    <input type={type} min={min} max={max} maxLength={maxLength} readOnly={readOnly} value={value ?? ''} onChange={e => onChange(type === 'number' ? Number(e.target.value) : e.target.value)} />
+    <input maxLength={maxLength} readOnly={readOnly} value={value ?? ''} onChange={e => onChange(e.target.value)} />
+  </label>;
+}
+/**
+ * Integer input that keeps the typed text as a draft, so clearing the field or
+ * starting a negative number ('-') is not turned into 0. Only whole numbers
+ * are committed (or null for an emptied optional field); on blur the field
+ * shows the committed value again.
+ */
+function NumberField({ label, value, onChange, min, max, optional = false }) {
+  const [draft, setDraft] = useState(null);
+  return <label className="workshop-field"><span>{label}</span>
+    <input type="number" step="1" min={min} max={max} value={draft ?? value ?? ''}
+      onChange={e => {
+        const text = e.target.value;
+        setDraft(text);
+        if (text.trim() === '') { if (optional) onChange(null); return; }
+        const number = Number(text);
+        if (Number.isInteger(number)) onChange(number);
+      }}
+      onBlur={() => setDraft(null)} />
   </label>;
 }
 function FormulaField({ label, value, onChange, doc, t, readOnly = false }) {
@@ -393,12 +413,6 @@ function FormulaField({ label, value, onChange, doc, t, readOnly = false }) {
   </div>;
 }
 
-function OptionalNumberField({label,value,onChange}) {
-  return <label className="workshop-field"><span>{label}</span>
-    <input type="number" min="1" value={value ?? ''}
-      onChange={e=>onChange(e.target.value==='' ? null : Number(e.target.value))} />
-  </label>;
-}
 function JsonField({ label, value, onChange, validate, t }) {
   const committed = JSON.stringify(value || []);
   const [draft, setDraft] = useState(() => JSON.stringify(value || [], null, 2));
@@ -648,7 +662,7 @@ function Workshop({ locale }) {
                   <select value={r.groupId || ''} onChange={e => edit(x => x.rolls[i].groupId = e.target.value || null)}>
                     <option value="">—</option>{doc.groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                   </select></label>
-                <Field label={t.minimum} type="number" min={1} value={r.minimumLevel || 1} onChange={v => edit(x => x.rolls[i].minimumLevel = v)} />
+                <NumberField label={t.minimum} min={1} value={r.minimumLevel || 1} onChange={v => edit(x => x.rolls[i].minimumLevel = v)} />
                 <label className="workshop-check"><input type="checkbox" checked={r.enabled !== false} onChange={e => edit(x => x.rolls[i].enabled = e.target.checked)} /> {t.enabled}</label>
                 <label className="workshop-check"><input type="checkbox" checked={!!r.doubleRollEnabled} onChange={e => edit(x => x.rolls[i].doubleRollEnabled = e.target.checked)} /> {t.double}</label>
               </div>
@@ -677,10 +691,10 @@ function Workshop({ locale }) {
               {r.levelRules.map((rule,j) => <div className="workshop-inline" key={rule.id}>
                 <select value={rule.kind} onChange={e => edit(x => x.rolls[i].levelRules[j].kind = e.target.value)}>
                   <option value="FROM_LEVEL">From level</option><option value="EVERY_LEVELS">Every N levels</option></select>
-                <Field label={rule.kind === 'EVERY_LEVELS' ? t.everyN : t.level} type="number" min={1} value={rule.trigger} onChange={v => edit(x => x.rolls[i].levelRules[j].trigger = v)} />
+                <NumberField label={rule.kind === 'EVERY_LEVELS' ? t.everyN : t.level} min={1} value={rule.trigger} onChange={v => edit(x => x.rolls[i].levelRules[j].trigger = v)} />
                 {rule.kind === 'EVERY_LEVELS' && <>
-                  <OptionalNumberField label={t.periodicStart} value={rule.startLevel ?? ''} onChange={v => edit(x => { if (v == null) delete x.rolls[i].levelRules[j].startLevel; else x.rolls[i].levelRules[j].startLevel = Number(v); })} />
-                  <OptionalNumberField label={t.periodicMax} value={rule.maxRepeats ?? ''} onChange={v => edit(x => { if (v == null) delete x.rolls[i].levelRules[j].maxRepeats; else x.rolls[i].levelRules[j].maxRepeats = Number(v); })} />
+                  <NumberField optional label={t.periodicStart} min={1} value={rule.startLevel} onChange={v => edit(x => { if (v == null) delete x.rolls[i].levelRules[j].startLevel; else x.rolls[i].levelRules[j].startLevel = Number(v); })} />
+                  <NumberField optional label={t.periodicMax} min={1} value={rule.maxRepeats} onChange={v => edit(x => { if (v == null) delete x.rolls[i].levelRules[j].maxRepeats; else x.rolls[i].levelRules[j].maxRepeats = Number(v); })} />
                 </>}
                 <FormulaField label={t.formula} doc={doc} t={t} value={rule.expression} onChange={v => edit(x => x.rolls[i].levelRules[j].expression = v)} />
                 <button onClick={() => edit(x => x.rolls[i].levelRules.splice(j,1))}>×</button>
@@ -735,7 +749,7 @@ function Workshop({ locale }) {
       <p className="workshop-hint">{t.importSettings}</p>
       <div className="workshop-fields">
         <Field label={t.characterName} value={previewName} onChange={setPreviewName} />
-        <Field label={t.level} type="number" min={1} max={9999} value={previewLevel} onChange={setPreviewLevel} />
+        <NumberField label={t.level} min={1} max={9999} value={previewLevel} onChange={setPreviewLevel} />
       </div>
       <p className="workshop-hint">{t.importExisting} {t.warning}</p>
       <div className="workshop-actions">
@@ -777,7 +791,7 @@ function Workshop({ locale }) {
             <div className="workshop-row-head"><h2>{t.details}</h2><span className="eyebrow">Lv {doc.character.level}</span></div>
             <div className="workshop-fields">
               <Field label={t.characterName} value={doc.character.name} onChange={value => edit(x => x.character.name = value)} />
-              <Field label={t.level} type="number" min={1} max={9999} value={doc.character.level} onChange={value => edit(x => x.character.level = value)} />
+              <NumberField label={t.level} min={1} max={9999} value={doc.character.level} onChange={value => edit(x => x.character.level = value)} />
               <Field label={t.tag} value={doc.character.tag} maxLength={MAX_TAG_LENGTH} onChange={value => edit(x => x.character.tag = value)} />
             </div>
             {(isFighter2014 || isRogue2014 || isWizard2014 || isRanger2014 || isCleric2014 || isPaladin2014 || isBard2014) && <details className="workshop-fighter-timeline">
@@ -831,7 +845,7 @@ function Workshop({ locale }) {
             <div className="workshop-row-head"><h2>{t.modifiers}</h2><button onClick={() => edit(x => x.modifiers.push(newModifier(x.character.id)))}>{t.addModifier}</button></div>
             {doc.modifiers.map((m, index) => <div className="workshop-inline" key={m.id}>
               <Field label={t.modifiers} value={m.name} onChange={v => edit(x => x.modifiers[index].name = v)} />
-              <Field label="±" type="number" value={m.value} onChange={v => edit(x => x.modifiers[index].value = v)} />
+              <NumberField label="±" value={m.value} onChange={v => edit(x => x.modifiers[index].value = v)} />
               <button onClick={() => edit(x => x.modifiers.splice(index, 1))} aria-label={t.remove}>×</button>
             </div>)}
           </section>
