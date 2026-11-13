@@ -157,21 +157,22 @@ object EffectSequenceExecutor {
         }
         EffectValueSource.ROLL -> {
             val initialTotal = requireNotNull(original.roll) { "Missing Roll" }
-            val initial = original.partsById.values.sumOf { it.total }
-            val modified = current.parts.values.sumOf { it.total }
+            val initial = original.partsById.values.map { it.total }.sumExact()
+            val modified = current.parts.values.map { it.total }.sumExact()
             val total = Math.addExact(initialTotal.total, Math.subtractExact(modified, initial))
             when (condition.scope) {
                 EffectValueScope.TOTAL -> total
                 EffectValueScope.DICE_ONLY -> {
-                    val diceOriginal = initialTotal.components.sumOf { it.subtotal }
-                    val initialDice = original.partsById.values.sumOf { part -> part.components.sumOf { it.subtotal } }
-                    val currentDice = current.parts.values.sumOf { it.dice }
+                    val diceOriginal = initialTotal.components.map { it.subtotal }.sumExact()
+                    val initialDice = original.partsById.values
+                        .flatMap { part -> part.components.map { it.subtotal } }.sumExact()
+                    val currentDice = current.parts.values.map { it.dice }.sumExact()
                     Math.addExact(diceOriginal, Math.subtractExact(currentDice, initialDice))
                 }
                 EffectValueScope.MODIFIERS_ONLY -> {
                     val originalModifiers = initialTotal.constantTotal
-                    val previous = original.partsById.values.sumOf { it.constantTotal }
-                    val changed = current.parts.values.sumOf { it.modifiers }
+                    val previous = original.partsById.values.map { it.constantTotal }.sumExact()
+                    val changed = current.parts.values.map { it.modifiers }.sumExact()
                     Math.addExact(originalModifiers, Math.subtractExact(changed, previous))
                 }
             }
@@ -212,27 +213,24 @@ object EffectSequenceExecutor {
                 }
             }
             val sample = shape.evaluate(random)
+            val sampledDice = sample.components.map { it.subtotal }.sumExact()
             val next = when (action.kind) {
                 EffectActionType.REROLL -> when (action.scope) {
-                    EffectValueScope.DICE_ONLY -> part.copy(
-                        dice = sample.components.sumOf { it.subtotal },
-                    )
+                    EffectValueScope.DICE_ONLY -> part.copy(dice = sampledDice)
                     EffectValueScope.MODIFIERS_ONLY -> part.copy(modifiers = sample.constantTotal)
                     EffectValueScope.TOTAL -> part.copy(
-                        dice = sample.components.sumOf { it.subtotal },
+                        dice = sampledDice,
                         modifiers = sample.constantTotal,
                         totalAdjustment = 0,
                     )
                 }
                 EffectActionType.ROLL_AFTER -> when (action.scope) {
-                    EffectValueScope.DICE_ONLY -> part.copy(dice = Math.addExact(
-                        part.dice, sample.components.sumOf { it.subtotal },
-                    ))
+                    EffectValueScope.DICE_ONLY -> part.copy(dice = Math.addExact(part.dice, sampledDice))
                     EffectValueScope.MODIFIERS_ONLY -> part.copy(
                         modifiers = Math.addExact(part.modifiers, sample.constantTotal),
                     )
                     EffectValueScope.TOTAL -> part.copy(
-                        dice = Math.addExact(part.dice, sample.components.sumOf { it.subtotal }),
+                        dice = Math.addExact(part.dice, sampledDice),
                         modifiers = Math.addExact(part.modifiers, sample.constantTotal),
                     )
                 }
@@ -255,5 +253,14 @@ object EffectSequenceExecutor {
                     before, null, error = failure.message ?: "Roll effect failed", snapshot = snapshot), null)
             },
         )
+    }
+
+    /** Int sums that fail closed instead of silently wrapping around. */
+    private fun List<Int>.sumExact(): Int = fold(0) { total, value ->
+        try {
+            Math.addExact(total, value)
+        } catch (overflow: ArithmeticException) {
+            throw IllegalArgumentException("Effect result exceeds supported integer range", overflow)
+        }
     }
 }

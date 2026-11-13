@@ -97,6 +97,36 @@ class DiceExpressionTest {
         assertEquals(7, DiceExpression.parse("3+4").evaluate(Random(1)).total)
     }
 
+    @Test
+    fun rejectsIntegerOverflowInsteadOfWrappingAround() {
+        listOf(
+            "1d6*65536*65536",
+            "65536*65536*1d6",
+            "2147483647+1",
+            "-2147483647-2",
+            "2147483648",
+            "1d20+2147483647",
+            "(1d100+1)*30000000",
+        ).forEach { expression ->
+            assertRejected(expression)
+        }
+        assertEquals(Int.MAX_VALUE, DiceExpression.parse("2147483647").evaluate(Random(1)).total)
+        assertEquals(2147483646, DiceExpression.parse("2147483647-1").evaluate(Random(1)).total)
+        val scaled = DiceExpression.parse("1d6*1000000").evaluate(Random(5))
+        assertTrue(scaled.total in 1_000_000..6_000_000)
+        assertEquals(scaled.total, scaled.components.sumOf { it.subtotal })
+    }
+
+    @Test
+    fun expectedTotalIsComputedWithoutIntOverflow() {
+        val result = DiceRollResult(
+            total = 0,
+            components = listOf(DiceComponent(count = 3, sides = 6, sign = 1_000_000_000, rolls = listOf(1, 1, 1))),
+            constantTotal = 0,
+        )
+        assertEquals(10_500_000_000.0, result.expectedTotal(), 0.5)
+    }
+
     private fun assertRejected(expression: String) {
         try {
             DiceExpression.parse(expression)

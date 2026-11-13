@@ -1,5 +1,6 @@
 package com.keyserdsoze.dicethrower.dice
 
+import kotlin.math.abs
 import kotlin.random.Random
 
 data class DiceComponent(
@@ -17,8 +18,8 @@ data class DiceRollResult(
     val constantTotal: Int,
 ) {
     /** Mathematical mean of this roll shape, independent from the sampled face values. */
-    fun expectedTotal(): Double = constantTotal + components.sumOf { component ->
-        component.sign * component.count * (component.sides + 1) / 2.0
+    fun expectedTotal(): Double = constantTotal.toDouble() + components.sumOf { component ->
+        component.sign.toDouble() * component.count * (component.sides + 1) / 2.0
     }
 
     fun detail(): String {
@@ -181,6 +182,7 @@ class DiceExpression private constructor(
             require(tokens.isNotEmpty()) { "Expression cannot be empty" }
             val root = Parser(tokens).parse()
             require(isLinear(root)) { "Multiplication between two dice expressions is not supported" }
+            bound(root)
             return DiceExpression(source = tokens.joinToString("") { it.text }, root = root)
         }
 
@@ -201,6 +203,39 @@ class DiceExpression private constructor(
             is Node.Multiply -> containsDice(node.left) || containsDice(node.right)
             is Node.Negate -> containsDice(node.value)
         }
+
+        /**
+         * [magnitude] bounds every total, constant, die sign and die subtotal that evaluation can
+         * compute beneath a node (dice-free nodes are folded exactly into [exact]). Requiring it to
+         * fit an Int at every node means Int arithmetic during evaluation can never wrap around.
+         */
+        private class Bound(val magnitude: Long, val exact: Long?)
+
+        private fun bound(node: Node): Bound {
+            val result = when (node) {
+                is Node.Constant -> Bound(node.value.toLong(), node.value.toLong())
+                is Node.Dice -> Bound(node.count.toLong() * node.sides, null)
+                is Node.Negate -> bound(node.value).let { Bound(it.magnitude, it.exact?.unaryMinus()) }
+                is Node.Add -> sumBound(bound(node.left), bound(node.right)) { a, b -> a + b }
+                is Node.Subtract -> sumBound(bound(node.left), bound(node.right)) { a, b -> a - b }
+                is Node.Multiply -> {
+                    val left = bound(node.left)
+                    val right = bound(node.right)
+                    if (left.exact != null && right.exact != null) exactBound(left.exact * right.exact)
+                    else Bound(left.magnitude * right.magnitude, null)
+                }
+            }
+            require(result.magnitude <= Int.MAX_VALUE) {
+                "Dice expression exceeds the supported integer range"
+            }
+            return result
+        }
+
+        private inline fun sumBound(left: Bound, right: Bound, operation: (Long, Long) -> Long): Bound =
+            if (left.exact != null && right.exact != null) exactBound(operation(left.exact, right.exact))
+            else Bound(left.magnitude + right.magnitude, null)
+
+        private fun exactBound(value: Long) = Bound(abs(value), value)
 
         private enum class TokenType { NUMBER, DIE, PLUS, MINUS, TIMES, OPEN, CLOSE }
 
@@ -311,16 +346,19 @@ class DiceExpression private constructor(
             private fun parseTerm(): Node {
                 val countText = if (peek() == TokenType.NUMBER) tokens[cursor++].text else null
                 if (peek() != TokenType.DIE) {
-                    return Node.Constant(requireNotNull(countText).toInt())
+                    return Node.Constant(integer(requireNotNull(countText)))
                 }
                 cursor++
                 require(peek() == TokenType.NUMBER) { "Missing die sides near position ${positionText()}" }
-                val sides = tokens[cursor++].text.toInt()
-                val count = countText?.toInt() ?: 1
+                val sides = integer(tokens[cursor++].text)
+                val count = countText?.let(::integer) ?: 1
                 require(count in 1..100) { "Dice count must be between 1 and 100" }
                 require(sides in supportedSides) { "Unsupported die d$sides" }
                 return Node.Dice(count, sides)
             }
+
+            private fun integer(digits: String): Int = digits.toIntOrNull()
+                ?: throw IllegalArgumentException("Number exceeds the supported integer range")
         }
     }
 }

@@ -216,4 +216,33 @@ class EffectSequenceExecutorTest {
         assertTrue(outcome.generatedDice.isEmpty())
         assertEquals(4, outcome.finalSnapshot.parts.getValue("damage").total)
     }
+
+    @Test
+    fun rollWideConditionsFailClosedInsteadOfWrappingAroundIntRange() {
+        val huge = { id: String, part: String, order: Int ->
+            effect(id, order, "attack", "1",
+                EffectAction("replace-$part", EffectActionType.REPLACE, part,
+                    EffectValueScope.TOTAL, "2000000000"))
+        }
+        val rollCheck = RollEffect(
+            id = "roll-check", name = "Roll check", type = EffectType.BONUS, order = 2,
+            activationGroups = listOf(EffectActivationGroup("roll-group", listOf(
+                EffectCondition("roll-total", source = com.keyserdsoze.dicethrower.model.EffectValueSource.ROLL,
+                    scope = EffectValueScope.TOTAL, comparison = EffectComparison.LESS, threshold = "0"),
+            ))),
+            actions = listOf(EffectAction("noop", EffectActionType.ADD, "damage", EffectValueScope.TOTAL, "0")),
+        )
+        val outcome = EffectSequenceExecutor.execute(
+            initial, listOf(huge("a", "attack", 0), huge("b", "damage", 1), rollCheck), expressions,
+        )
+
+        assertEquals(2_000_000_000, outcome.finalSnapshot.parts.getValue("attack").total)
+        assertEquals(2_000_000_000, outcome.finalSnapshot.parts.getValue("damage").total)
+        val condition = outcome.steps.single { it.effectId == "roll-check" }
+            .activation.groups.single().conditions.single()
+        // 4e9 does not fit an Int: report it instead of a wrapped negative total.
+        assertFalse(condition.passed)
+        assertNull(condition.actual)
+        assertNotNull(condition.error)
+    }
 }
