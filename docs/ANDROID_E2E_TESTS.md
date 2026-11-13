@@ -24,8 +24,11 @@ Runner locale/CI: `scripts/run-android-ui-tests.sh`.
    anche con il tema chiaro, poi ripristinate al ritorno al gruppo.
 3. Best/Worst, tema chiaro e italiano: confronti corretti, danno campionato una sola volta,
    risultati indipendenti delle Parts e dado di supporto generato dall'effetto.
-4. Ricreazione durante la fase animata del dado aggiuntivo: finale già campionato, nessuna
-   seconda esecuzione dell'effetto e nessun nuovo log.
+4. Ricreazione richiesta all'ingresso della fase del dado aggiuntivo: finale già campionato,
+   nessuna seconda esecuzione dell'effetto e nessun nuovo log. L'osservatore di test viene
+   registrato prima del lancio, verifica sul main thread fase pendente e controlli bloccati,
+   richiede `Activity.recreate()` e aspetta una nuova Activity reale. Non si affida a un badge
+   che può restare visibile dopo l'arresto dei dadi o alla durata di uno screenshot.
 5. Statistiche → ricreazione → aumento di livello → Back di Android: il foglio resta utilizzabile,
    il vecchio risultato viene invalidato e Back segue la gerarchia foglio → tavolo → gruppo.
 6. Editor aperto dal tavolo: bozza invalida preservata alla ricreazione; Cancel lascia invariati

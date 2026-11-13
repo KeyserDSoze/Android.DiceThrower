@@ -32,7 +32,8 @@ class AppDataViewModel(store: LocalStore) : ViewModel() {
     val notices = noticeQueue.receiveAsFlow()
     private var cleared = false
     // Bounded to one active destination; neither the database nor GL resources go into a Bundle.
-    private var activeRollSession: RollSession? = null
+    internal var activeRollSession: RollSession? = null
+        private set
     private val persistence = AsyncDataPersistence(LocalDataPersistenceStore(store), AppData(), 0)
 
     init {

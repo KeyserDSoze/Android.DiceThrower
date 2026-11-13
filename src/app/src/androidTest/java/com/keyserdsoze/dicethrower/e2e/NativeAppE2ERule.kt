@@ -7,10 +7,12 @@ import android.graphics.Bitmap
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.printToString
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.core.view.WindowCompat
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
@@ -24,13 +26,21 @@ import com.keyserdsoze.dicethrower.data.sync.LocalSyncJournal
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.AppSettings
 import com.keyserdsoze.dicethrower.ui.AppDataViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.rules.TestRule
 import org.junit.runner.Description
 import org.junit.runners.model.Statement
 import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 /** Runs the real Activity. Captures diagnostics before closing it, without masking test failures. */
 internal class NativeAppE2ERule(private val compose: ComposeTestRule) : TestRule {
@@ -40,6 +50,7 @@ internal class NativeAppE2ERule(private val compose: ComposeTestRule) : TestRule
     private var scenario: ActivityScenario<MainActivity>? = null
     private lateinit var output: File
     private val steps = StringBuilder()
+    private var phaseRecreation: Job? = null
 
     fun launch(data: AppData, settings: AppSettings, locale: String = "en") {
         check(scenario == null)
@@ -56,6 +67,48 @@ internal class NativeAppE2ERule(private val compose: ComposeTestRule) : TestRule
     fun recreate() {
         step("Recreate Activity")
         checkNotNull(scenario).recreate()
+    }
+
+    /** Register before throwing: the lifecycle request must not depend on test-thread/GPU timing. */
+    fun recreateAtNextGeneratedDiceStage(): () -> Unit {
+        check(phaseRecreation == null)
+        val active = checkNotNull(scenario)
+        val requested = AtomicBoolean(false)
+        val failure = AtomicReference<Throwable?>(null)
+        lateinit var before: MainActivity
+        active.onActivity { activity ->
+            before = activity
+            val session = checkNotNull(ViewModelProvider(activity)[AppDataViewModel::class.java].activeRollSession)
+            check(!session.hasRolled.value)
+            phaseRecreation = activity.lifecycleScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                try {
+                    val stage = snapshotFlow { session.visualStageIndex.value }.first { it > 0 }
+                    assertFalse("Generated stage must still be pending", session.resultRevealed.value)
+                    assertFalse("Throw requests must be locked in the generated stage", session.controlsReady)
+                    check(session.visualEvent.value.effectAccentComponents.isNotEmpty())
+                    step("Recreate at generated-stage entry: stage=$stage, revealed=false, controlsReady=false")
+                    requested.set(true)
+                    activity.recreate()
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Throwable) {
+                    // Report assertions on the instrumentation thread, not as an app crash.
+                    failure.set(error)
+                }
+            }
+        }
+        return {
+            compose.waitUntil(10_000) {
+                failure.get()?.let { throw it }
+                runCatching {
+                    var recreated = false
+                    active.onActivity { activity -> recreated = requested.get() && activity !== before }
+                    recreated
+                }.getOrDefault(false)
+            }
+            phaseRecreation?.cancel()
+            phaseRecreation = null
+        }
     }
 
     fun rotate() {
@@ -180,6 +233,8 @@ internal class NativeAppE2ERule(private val compose: ComposeTestRule) : TestRule
                 captureFailure(failure)
                 throw failure
             } finally {
+                phaseRecreation?.cancel()
+                phaseRecreation = null
                 runCatching { publishArtifacts() }
                 try {
                     scenario?.close()

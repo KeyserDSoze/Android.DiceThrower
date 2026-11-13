@@ -2,7 +2,6 @@ package com.keyserdsoze.dicethrower.e2e
 
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasScrollToIndexAction
@@ -209,16 +208,12 @@ class RollJourneyE2ETest {
     }
 
     @Test
-    fun rotationDuringGeneratedDiceStageDoesNotExecuteTheEffectAgain() {
+    fun recreationAtGeneratedDiceStageEntryDoesNotExecuteTheEffectAgain() {
         launch(multipart, animate = true)
+        val awaitRecreation = app.recreateAtNextGeneratedDiceStage()
         tap("roll-normal")
         val first = awaitLogCount(1).single()
-        awaitNode("roll-effect-cue")
-        compose.onNodeWithTag("roll-normal").assertIsNotEnabled()
-        compose.onNodeWithTag("roll-results-overlay").assertDoesNotExist()
-        checkpoint("during-generated-dice")
-
-        app.recreate()
+        awaitRecreation()
         expectParts(first)
         assertEquals(listOf(first), app.store.loadData().logs)
         checkpoint("generated-dice-after-recreation")
