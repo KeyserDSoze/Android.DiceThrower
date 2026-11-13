@@ -76,8 +76,14 @@ object CharacterTransferCodec {
     fun encodeToken(data: AppData, characterId: String): String {
         val raw = encodeJson(data, characterId)
         val stream = ByteArrayOutputStream()
-        DeflaterOutputStream(stream, Deflater(9)).use { out ->
-            out.write(raw.toByteArray(Charsets.UTF_8))
+        // DeflaterOutputStream only ends deflaters it created itself; release the native one here.
+        val deflater = Deflater(9)
+        try {
+            DeflaterOutputStream(stream, deflater).use { out ->
+                out.write(raw.toByteArray(Charsets.UTF_8))
+            }
+        } finally {
+            deflater.end()
         }
         return "v1." + Base64.getUrlEncoder().withoutPadding().encodeToString(stream.toByteArray())
     }
