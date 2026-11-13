@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -290,6 +291,11 @@ fun DragReorderCard(
         targetValue = if (abs(dragOffset) > 1f) 1.02f else 1f,
         label = "drag-scale",
     )
+    // The gesture keeps running across reorders; always use the latest position and data.
+    val currentCanMoveUp by rememberUpdatedState(canMoveUp)
+    val currentCanMoveDown by rememberUpdatedState(canMoveDown)
+    val currentOnMoveUp by rememberUpdatedState(onMoveUp)
+    val currentOnMoveDown by rememberUpdatedState(onMoveDown)
 
     PremiumCard(
         modifier = modifier
@@ -299,7 +305,7 @@ fun DragReorderCard(
                 scaleY = scale
                 shadowElevation = if (abs(dragOffset) > 1f) 16f else 0f
             }
-            .pointerInput(key, canMoveUp, canMoveDown) {
+            .pointerInput(key) {
                 detectDragGesturesAfterLongPress(
                     onDragStart = { dragOffset = 0f },
                     onDragCancel = { dragOffset = 0f },
@@ -307,11 +313,11 @@ fun DragReorderCard(
                     onDrag = { change, dragAmount ->
                         change.consume()
                         dragOffset += dragAmount.y
-                        if (dragOffset <= -threshold && canMoveUp) {
-                            onMoveUp()
+                        if (dragOffset <= -threshold && currentCanMoveUp) {
+                            currentOnMoveUp()
                             dragOffset = 0f
-                        } else if (dragOffset >= threshold && canMoveDown) {
-                            onMoveDown()
+                        } else if (dragOffset >= threshold && currentCanMoveDown) {
+                            currentOnMoveDown()
                             dragOffset = 0f
                         }
                     },
