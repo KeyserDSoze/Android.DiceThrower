@@ -159,7 +159,6 @@ import com.keyserdsoze.dicethrower.model.RollVisualEffectsSettings
 import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.DiceTableTheme
 import com.keyserdsoze.dicethrower.model.LevelRuleKind
-import com.keyserdsoze.dicethrower.model.RollButtonPosition
 import com.keyserdsoze.dicethrower.model.RollDiceAppearance
 import com.keyserdsoze.dicethrower.model.RollDefinition
 import com.keyserdsoze.dicethrower.model.RollLevelAvailability
@@ -4916,27 +4915,6 @@ private fun LevelRuleDialogV2(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
-}
-
-@Composable
-private fun positionLabel(position: RollButtonPosition): String = stringResource(
-    when (position) {
-        RollButtonPosition.TOP_LEFT -> R.string.top_left
-        RollButtonPosition.TOP_CENTER -> R.string.top_center
-        RollButtonPosition.TOP_RIGHT -> R.string.top_right
-        RollButtonPosition.BOTTOM_LEFT -> R.string.bottom_left
-        RollButtonPosition.BOTTOM_CENTER -> R.string.bottom_center
-        RollButtonPosition.BOTTOM_RIGHT -> R.string.bottom_right
-    },
-)
-
-private fun RollButtonPosition.toAlignment(): Alignment = when (this) {
-    RollButtonPosition.TOP_LEFT -> Alignment.TopStart
-    RollButtonPosition.TOP_CENTER -> Alignment.TopCenter
-    RollButtonPosition.TOP_RIGHT -> Alignment.TopEnd
-    RollButtonPosition.BOTTOM_LEFT -> Alignment.BottomStart
-    RollButtonPosition.BOTTOM_CENTER -> Alignment.BottomCenter
-    RollButtonPosition.BOTTOM_RIGHT -> Alignment.BottomEnd
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
