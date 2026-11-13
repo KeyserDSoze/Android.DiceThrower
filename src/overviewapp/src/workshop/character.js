@@ -12,6 +12,9 @@ export const FORMAT_VERSION = 1;
 export const BOUNDED_RULE_FORMAT_VERSION = 2;
 export const MAX_LINK_LENGTH = 2600;
 const MAX_RAW_LENGTH = 128 * 1024;
+// Same bound as Android CharacterTransferCodec.MAX_TOKEN_LENGTH.
+const MAX_TOKEN_LENGTH = 120000;
+const INVALID_LINK = 'Invalid or incomplete character link';
 const DB_NAME = 'dicethrower-workshop';
 const STORE = 'characters';
 const uid = () => crypto.randomUUID();
@@ -61,9 +64,24 @@ const isRecord = x => !!x && typeof x === 'object' && !Array.isArray(x);
 const validName = x => typeof x === 'string' && x.trim().length > 0 && x.length <= 160;
 const validId = x => typeof x === 'string' && x.length > 0 && x.length <= 180;
 const exprPattern = /^[\d\s()+\-*\/xXdD.%{}\p{L}\p{M}_:]+$/u;
+// Android has no description limit; this bound comfortably fits every starter
+// tag (up to ~115 characters) while keeping shared links from flooding the UI.
+export const MAX_TAG_LENGTH = 500;
+// Native enum names (Android LevelRuleKind, RollSubgroupOperator, DiceMaterial).
+const RULE_KINDS = ['FROM_LEVEL', 'EVERY_LEVELS'];
+const PART_OPERATORS = ['ADD', 'SUBTRACT'];
+export const DICE_MATERIALS = ['GLOSSY_RESIN', 'MATTE_RESIN', 'METAL', 'GEMSTONE'];
+// Android stores ARGB colors as a signed 32-bit Int; its JSON decoder also
+// accepts the unsigned spelling of the same 32 bits.
+const validArgb = x => Number.isInteger(x) && x >= -0x80000000 && x <= 0xffffffff;
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+function codedError(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
 }
 
 export function validateDocument(doc) {
@@ -71,6 +89,7 @@ export function validateDocument(doc) {
   const c = doc.character;
   assert(validId(c.id) && validName(c.name), 'Invalid character name or ID');
   assert(Number.isInteger(c.level) && c.level >= 1 && c.level <= 9999, 'Invalid character level');
+  assert(typeof c.tag === 'string' && c.tag.length <= MAX_TAG_LENGTH, 'Invalid character description');
   for (const field of ['modifiers', 'groups', 'rolls', 'diceStyles']) {
     assert(Array.isArray(doc[field]) && doc[field].length <= 250, 'Invalid ' + field);
   }
@@ -86,6 +105,10 @@ export function validateDocument(doc) {
   }
   const groupIds = new Set(doc.groups.map(g => g.id));
   const styleIds = new Set(doc.diceStyles.map(s => s.id));
+  for (const style of doc.diceStyles) {
+    assert(DICE_MATERIALS.includes(style.material), 'Invalid dice style material');
+    assert(validArgb(style.primaryColorArgb) && validArgb(style.secondaryColorArgb), 'Invalid dice style color');
+  }
   const allStyles = new Set([...styleIds, ...SYSTEM_STYLES.map(s => s.id)]);
   const checkStyle = id => assert(id == null || allStyles.has(id), 'Unknown dice style');
   checkStyle(c.defaultDiceStyleId); checkStyle(c.secondaryDiceStyleId);
@@ -116,17 +139,19 @@ export function validateDocument(doc) {
     assert(Array.isArray(roll.subgroups) && roll.subgroups.length <= 30, 'Invalid roll parts');
     assert(Array.isArray(roll.levelRules) && roll.levelRules.length <= 40, 'Invalid level rules');
     assert(Array.isArray(roll.effects) && roll.effects.length <= 40, 'Invalid effects');
+    for (const part of roll.subgroups) {
+      assert(isRecord(part) && validId(part.id) && !nestedIds.has(part.id), 'Invalid/duplicate Part ID'); nestedIds.add(part.id);
+      assert(validName(part.name), 'Invalid Part name');
+      assert(PART_OPERATORS.includes(part.operator), 'Invalid Part operator');
+      formula(part.expression);
+    }
     if (roll.subgroups.length) {
       assert(roll.subgroups.some(s => s.includeInNormalRoll !== false), 'At least one normal Part needed');
       assert(normalFormula(roll.subgroups) === roll.expression, 'Roll parts and formula do not match');
     }
-    for (const part of roll.subgroups) {
-      assert(validId(part.id) && !nestedIds.has(part.id), 'Invalid/duplicate Part ID'); nestedIds.add(part.id);
-      assert(validName(part.name), 'Invalid Part name');
-      formula(part.expression);
-    }
     for (const rule of roll.levelRules) {
-      assert(validId(rule.id) && !nestedIds.has(rule.id), 'Invalid/duplicate rule ID'); nestedIds.add(rule.id);
+      assert(isRecord(rule) && validId(rule.id) && !nestedIds.has(rule.id), 'Invalid/duplicate rule ID'); nestedIds.add(rule.id);
+      assert(RULE_KINDS.includes(rule.kind), 'Invalid level rule kind');
       assert(Number.isInteger(rule.trigger) && rule.trigger >= 1 && rule.trigger <= 9999, 'Invalid level rule');
       assert(rule.startLevel == null || (rule.kind === 'EVERY_LEVELS' &&
         Number.isInteger(rule.startLevel) && rule.startLevel >= 1 && rule.startLevel <= 9999),
@@ -148,7 +173,8 @@ export function validateDocument(doc) {
     for (const id of appearance.randomStyleIds || []) checkStyle(id);
     validateGuidedRoll(roll, doc.modifiers.map(m => m.name), allStyles);
   }
-  assert(new TextEncoder().encode(JSON.stringify(doc)).length <= MAX_RAW_LENGTH, 'Character too large');
+  if (new TextEncoder().encode(JSON.stringify(doc)).length > MAX_RAW_LENGTH)
+    throw codedError('document-too-large', 'Character too large');
   return doc;
 }
 
@@ -169,7 +195,10 @@ export function documentFromEnvelope(packet) {
   assert(isRecord(packet) && packet.format === FORMAT && [FORMAT_VERSION,BOUNDED_RULE_FORMAT_VERSION].includes(packet.formatVersion), 'Unsupported character link');
   assert(isRecord(packet.data) && packet.data.characters?.length === 1, 'Link must contain exactly one character');
   assert(!packet.data.logs?.length && !packet.data.characterSyncMetadata?.length, 'Share contains private history or sync data');
-  const doc = { character: packet.data.characters[0], modifiers: packet.data.modifiers || [],
+  const character = packet.data.characters[0];
+  assert(isRecord(character), 'Invalid character document');
+  // Android reads a missing description as "" (optString); accept the same.
+  const doc = { character: character.tag == null ? { ...character, tag: '' } : character, modifiers: packet.data.modifiers || [],
     groups: packet.data.groups || [], rolls: packet.data.rolls || [], diceStyles: packet.data.diceStyles || [] };
   assert(doc.character.image == null && doc.character.diceTableImage == null && doc.character.imageUri == null, 'Images are not supported in links');
   return validateDocument(doc);
@@ -181,7 +210,7 @@ function toBase64(bytes) {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 function fromBase64(string) {
-  assert(/^[A-Za-z0-9_-]+$/.test(string) && string.length <= 120000, 'Invalid link payload');
+  assert(/^[A-Za-z0-9_-]+$/.test(string), 'Invalid link payload');
   const base = string.replace(/-/g, '+').replace(/_/g, '/');
   const decoded = atob(base + '='.repeat((4 - base.length % 4) % 4));
   return Uint8Array.from(decoded, value => value.charCodeAt(0));
@@ -190,23 +219,40 @@ export function encodeToken(doc) {
   const compressed = pako.deflate(new TextEncoder().encode(JSON.stringify(envelope(doc))), { level: 9 });
   return 'v1.' + toBase64(compressed);
 }
+/**
+ * Link decode failures carry a stable `code` (link-invalid, link-too-large,
+ * link-unsupported) so the UI can show a localized message instead of a raw
+ * SyntaxError/DOMException. Document validation errors are thrown unchanged.
+ */
 export function decodeToken(token) {
-  assert(typeof token === 'string' && token.startsWith('v1.'), 'Unsupported link');
-  // Inflate in bounded chunks to reject malicious highly-compressible zip bombs.
-  const inflater = new pako.Inflate({ chunkSize: 4096 });
-  const chunks = [];
-  let total = 0;
-  inflater.onData = (chunk) => {
-    total += chunk.length;
-    assert(total <= MAX_RAW_LENGTH, 'Character too large');
-    chunks.push(chunk);
-  };
-  inflater.push(fromBase64(token.slice(3)), true);
-  assert(!inflater.err, 'Invalid compressed character');
-  const bytes = new Uint8Array(total);
-  let position = 0;
-  for (const chunk of chunks) { bytes.set(chunk, position); position += chunk.length; }
-  return documentFromEnvelope(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)));
+  if (typeof token !== 'string' || !token.startsWith('v1.')) {
+    throw /^v\d+\./.test(token) ? codedError('link-unsupported', 'Unsupported link')
+      : codedError('link-invalid', INVALID_LINK);
+  }
+  if (token.length > MAX_TOKEN_LENGTH) throw codedError('link-too-large', 'Character link too large');
+  let tooLarge = false;
+  let packet;
+  try {
+    // Inflate in bounded chunks to reject malicious highly-compressible zip bombs.
+    const inflater = new pako.Inflate({ chunkSize: 4096 });
+    const chunks = [];
+    let total = 0;
+    inflater.onData = (chunk) => {
+      total += chunk.length;
+      if (total > MAX_RAW_LENGTH) { tooLarge = true; throw new Error('Character too large'); }
+      chunks.push(chunk);
+    };
+    inflater.push(fromBase64(token.slice(3)), true);
+    // A truncated stream reports no error but never ends: never parse partial output.
+    assert(!inflater.err && inflater.ended, 'Invalid compressed character');
+    const bytes = new Uint8Array(total);
+    let position = 0;
+    for (const chunk of chunks) { bytes.set(chunk, position); position += chunk.length; }
+    packet = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+  } catch {
+    throw tooLarge ? codedError('link-too-large', 'Character too large') : codedError('link-invalid', INVALID_LINK);
+  }
+  return documentFromEnvelope(packet);
 }
 /**
  * Canonical shape fingerprint for version-pinned, unmodified local starter
@@ -280,19 +326,36 @@ export function shareUrl(doc, base = window.location.href) {
       encodeURIComponent(doc.character.name) + '&level=' + doc.character.level;
     if (url.href.length <= MAX_LINK_LENGTH) return url.href;
   }
-  throw new Error('Link too long for a reliable QR code. Export the JSON file instead.');
+  throw codedError('link-too-long', 'Link too long for a reliable QR code. Export the JSON file instead.');
 }
 export function readShareHash(hash = window.location.hash) {
   const preset = hash.match(/^#template=(fighter2014v1|rogue2014v1|wizard2014v1|wizard2014v2|wizard2014v3|ranger2014v1|cleric2014v1|paladin2014v1|bard2014v1)&name=([^&]+)&level=([0-9]+)$/);
   if (preset) {
     const definition = shortSharePresets.find(item => item.key === preset[1]);
+    let name;
+    try { name = decodeURIComponent(preset[2]); } catch { throw codedError('link-invalid', INVALID_LINK); }
     return withImportPreferences(
-      instantiateTemplate(definition.index, definition.wizardVersion), decodeURIComponent(preset[2]), Number(preset[3]));
+      instantiateTemplate(definition.index, definition.wizardVersion), name, Number(preset[3]));
   }
-  const match = hash.match(/^#character=(v1\.[A-Za-z0-9_-]+)$/);
-  return match ? decodeToken(match[1]) : null;
+  // A damaged or truncated #character= link is an error, not "no link".
+  return hash.startsWith('#character=') ? decodeToken(hash.slice('#character='.length)) : null;
 }
 export function androidUrl(doc) { return 'dicethrower://import?data=' + encodeURIComponent(encodeToken(doc)); }
+/** Longer app deep links are not offered; the JSON file is the fallback. */
+export const MAX_APP_LINK_LENGTH = 8000;
+/**
+ * Installed-app handoff for a document: { link } when it can be offered,
+ * otherwise { link: null, reason: 'too-large' } (export the JSON file) or
+ * { link: null, reason: 'invalid', error } with the validation problem.
+ */
+export function androidHandoff(doc) {
+  try {
+    const link = androidUrl(doc);
+    return link.length <= MAX_APP_LINK_LENGTH ? { link, reason: null } : { link: null, reason: 'too-large' };
+  } catch (error) {
+    return { link: null, reason: error.code === 'document-too-large' ? 'too-large' : 'invalid', error };
+  }
+}
 
 /** Recipients can rename/relevel a copy without altering a sender's document. */
 export function withImportPreferences(source, name, level) {
@@ -304,24 +367,68 @@ export function withImportPreferences(source, name, level) {
 }
 
 
+/**
+ * Browser storage failures carry a `code` for localized UI messages:
+ * storage-unavailable (IndexedDB missing or denied: private browsing,
+ * blocked cookies/site data), storage-quota, storage-blocked (another tab
+ * holds an incompatible connection) or storage-failed.
+ */
+function storageError(cause) {
+  const name = cause?.name;
+  const code = name === 'QuotaExceededError' ? 'storage-quota'
+    : ['SecurityError', 'InvalidStateError', 'UnknownError'].includes(name) ? 'storage-unavailable'
+      : 'storage-failed';
+  const error = codedError(code, 'Browser storage error: ' + (cause?.message || name || 'unknown'));
+  error.cause = cause;
+  return error;
+}
 function db() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
+    let request;
+    try {
+      // Accessing indexedDB itself throws in some blocked-storage contexts.
+      const factory = globalThis.indexedDB;
+      if (!factory) throw new DOMException('IndexedDB is not available', 'InvalidStateError');
+      request = factory.open(DB_NAME, 1);
+    } catch (error) {
+      reject(storageError(error));
+      return;
+    }
+    let settled = false;
     request.onupgradeneeded = () => { if (!request.result.objectStoreNames.contains(STORE))
       request.result.createObjectStore(STORE, { keyPath: 'character.id' }); };
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => { settled = true; reject(storageError(request.error)); };
+    request.onblocked = () => {
+      settled = true;
+      reject(codedError('storage-blocked', 'Browser storage is blocked by another open tab'));
+    };
+    request.onsuccess = () => {
+      const database = request.result;
+      // Opened after we already gave up (blocked): do not leak the connection.
+      if (settled) { database.close(); return; }
+      settled = true;
+      database.onversionchange = () => database.close();
+      resolve(database);
+    };
   });
 }
 async function transaction(mode, run) {
   const database = await db();
   try {
     return await new Promise((resolve, reject) => {
-      const tx = database.transaction(STORE, mode);
-      const request = run(tx.objectStore(STORE));
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-      tx.onabort = () => reject(tx.error);
+      try {
+        const tx = database.transaction(STORE, mode);
+        let result;
+        const request = run(tx.objectStore(STORE));
+        request.onsuccess = () => { result = request.result; };
+        // A successful request is not a committed write: the transaction can
+        // still abort (e.g. quota). Resolve only once it completes.
+        tx.oncomplete = () => resolve(result);
+        tx.onerror = event => reject(storageError(event?.target?.error || tx.error));
+        tx.onabort = () => reject(storageError(tx.error || new DOMException('Transaction aborted', 'AbortError')));
+      } catch (error) {
+        reject(storageError(error));
+      }
     });
   } finally { database.close(); }
 }

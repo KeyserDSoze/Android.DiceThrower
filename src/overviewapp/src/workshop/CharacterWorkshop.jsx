@@ -1,16 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
-import QRCode from 'qrcode';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  androidUrl, decodeToken, documentFromEnvelope, envelope, importAsCopy, instantiateTemplate,
+  androidHandoff, documentFromEnvelope, envelope, importAsCopy, instantiateTemplate,
   listSaved, newCharacter, newGroup, newLevelRule, newModifier, newPart, newRoll, newStyle,
   normalFormula, readShareHash, removeDocument, saveDocument, shareUrl, templates, validateDocument,
   canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences,
+  DICE_MATERIALS, MAX_TAG_LENGTH,
   WIZARD_2014_SRD_SPELLS, FIGHTER_2014_LEVELS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS, CLERIC_2014_LEVELS, PALADIN_2014_LEVELS, BARD_2014_LEVELS,
 } from './character.js';
 import GuidedRollEditor from './GuidedRollEditor.jsx';
+import WorkshopErrorBoundary from './WorkshopErrorBoundary.jsx';
+import { renderShareQr } from './share-qr.js';
+import './workshop-fixes.css';
 import { rollLevelPreview } from './roll-level-preview.js';
 import { appendFormulaVariable, formulaVariables } from './formula-variables.js';
-import { isPartUsed, removePartSafely, SYSTEM_STYLES } from './guided.js';
+import { isPartUsed, removePartSafely, SYSTEM_STYLES, validateGuidedRoll } from './guided.js';
 
 function orderedGroups(characterDoc) {
   if (!characterDoc) return [];
@@ -26,7 +29,7 @@ function orderedGroups(characterDoc) {
 function LevelFormulaPreview({doc, roll, t}) {
   const result = rollLevelPreview(doc, roll);
   if (!result.dynamic) return null;
-  return <div className="workshop-live-formula">
+  return <span className="workshop-live-formula">
     <small>{t.effectiveAtLevel} {result.level}{result.level < (roll.minimumLevel || 1) ? ' · ' + t.unlockedAt + ' ' + roll.minimumLevel : ''}</small>
     <code>{result.formula}</code>
     {result.additions.length > 0 && <small className="workshop-level-rule-count">
@@ -37,7 +40,7 @@ function LevelFormulaPreview({doc, roll, t}) {
             (rule.maxRepeats != null ? ' · ' + t.maximum + ' ' + rule.maxRepeats : '')
           : t.startAt + ' ' + rule.trigger}</span>)}
     </small>}
-  </div>;
+  </span>;
 }
 
 const dictionary = {
@@ -184,6 +187,24 @@ const dictionary = {
     expertJson: 'Advanced native JSON (optional)', expertHelp: 'Only edit this if you know the Android schema. Guided controls preserve existing fields.',
     upgradeLegacy: 'Update old starter weapon rolls', upgradeConfirm: 'Replace the two original weapon Rolls with Attack and Damage Parts? Your other character data will be preserved and the result saved locally.', upgradeComplete: 'Starter weapon rolls updated and saved.',
     download: 'Download / keep backup', select: 'Open a character or create one.', saved: 'Saved locally.', ready: 'Link ready.',
+    invalidJson: 'Invalid JSON. The previous value is kept until the JSON is valid.',
+    jsonArrayExpected: 'Expected a JSON array of effects.', jsonObjectExpected: 'Expected a JSON object.', jsonNotApplied: 'Not applied:',
+    crashTitle: 'Something went wrong', crashBody: 'This part of the workshop could not be displayed. Characters saved in this browser are not affected.',
+    crashRetry: 'Try again', crashClose: 'Close character',
+    unsavedConfirm: 'The open character has unsaved changes. Discard them?',
+    linkInvalid: 'This character link is damaged or incomplete. Ask for a new link or QR code, or import the JSON file instead.',
+    linkTooLarge: 'This character link is too large to open safely. Import the JSON file instead.',
+    linkUnsupported: 'This character link uses an unsupported format. Reload the page for the latest workshop, or import the JSON file.',
+    storageUnavailable: 'Browser storage is unavailable (private browsing, or cookies and site data are blocked). Characters cannot be saved here: export them as JSON.',
+    storageQuota: 'Browser storage is full. Free up space or export your characters as JSON.',
+    storageBlocked: 'Browser storage is busy in another tab. Close other workshop tabs and reload this page.',
+    storageFailed: 'Browser storage error:', fileTooLarge: 'The file is too large (max 128 KB).', fileInvalid: 'The file is not valid JSON.',
+    appInvalid: 'Fix the character before sending it to the app:', shareInvalid: 'This character cannot be shared yet',
+    documentTooLarge: 'The character is too large (over 128 KB of data). Remove some rolls or effects.',
+    operator: 'Part operator', ruleKind: 'Rule type', fromLevel: 'From level', material: 'Dice material',
+    removePart: 'Remove Part', removeRule: 'Remove level rule', removeStyle: 'Remove dice style',
+    qrAlt: 'QR code of the character share link', shareLink: 'Shareable character link',
+    copied: 'Link copied.', copyFailed: 'Copy failed: the link is selected, copy it manually.',
   },
   it: {
     title: 'Laboratorio personaggi', intro: 'Crea il personaggio sul sito. Salvalo privatamente nel browser oppure condividilo via link o QR. I modelli standard più grandi possono usare un riferimento alla versione del modello.',
@@ -337,13 +358,49 @@ const dictionary = {
     expertJson: 'JSON nativo avanzato (facoltativo)', expertHelp: 'Modificalo solo se conosci il formato Android. I controlli guidati preservano i campi esistenti.',
     upgradeLegacy: 'Aggiorna i vecchi tiri del modello', upgradeConfirm: 'Sostituire i due vecchi tiri dell’arma con le parti Attacco e Danno? Gli altri dati del personaggio saranno conservati e il risultato salvato in locale.', upgradeComplete: 'Tiri del modello aggiornati e salvati.',
     download: 'Scarica un backup', select: 'Apri un personaggio o creane uno.', saved: 'Salvato nel browser.', ready: 'Link pronto.',
+    invalidJson: 'JSON non valido. Resta attivo il valore precedente finché il JSON non è valido.',
+    jsonArrayExpected: 'Serve un array JSON di effetti.', jsonObjectExpected: 'Serve un oggetto JSON.', jsonNotApplied: 'Non applicato:',
+    crashTitle: 'Si è verificato un problema', crashBody: 'Questa parte del laboratorio non può essere mostrata. I personaggi salvati nel browser non sono stati modificati.',
+    crashRetry: 'Riprova', crashClose: 'Chiudi personaggio',
+    unsavedConfirm: 'Il personaggio aperto ha modifiche non salvate. Vuoi scartarle?',
+    linkInvalid: 'Il link del personaggio è danneggiato o incompleto. Chiedi un nuovo link o QR oppure importa il file JSON.',
+    linkTooLarge: 'Il link del personaggio è troppo grande per essere aperto in sicurezza. Importa il file JSON.',
+    linkUnsupported: 'Il link del personaggio usa un formato non supportato. Ricarica la pagina per avere il laboratorio aggiornato oppure importa il file JSON.',
+    storageUnavailable: 'L’archivio del browser non è disponibile (navigazione privata oppure cookie e dati dei siti bloccati). Qui non è possibile salvare: esporta i personaggi in JSON.',
+    storageQuota: 'L’archivio del browser è pieno. Libera spazio oppure esporta i personaggi in JSON.',
+    storageBlocked: 'L’archivio del browser è occupato da un’altra scheda. Chiudi le altre schede del laboratorio e ricarica la pagina.',
+    storageFailed: 'Errore dell’archivio del browser:', fileTooLarge: 'Il file è troppo grande (massimo 128 KB).', fileInvalid: 'Il file non contiene JSON valido.',
+    appInvalid: 'Correggi il personaggio prima di inviarlo all’app:', shareInvalid: 'Il personaggio non può ancora essere condiviso',
+    documentTooLarge: 'Il personaggio è troppo grande (oltre 128 KB di dati). Rimuovi alcuni tiri o effetti.',
+    operator: 'Operatore della parte', ruleKind: 'Tipo di regola', fromLevel: 'Dal livello', material: 'Materiale del dado',
+    removePart: 'Rimuovi parte', removeRule: 'Rimuovi regola di livello', removeStyle: 'Rimuovi stile dado',
+    qrAlt: 'Codice QR del link di condivisione del personaggio', shareLink: 'Link di condivisione del personaggio',
+    copied: 'Link copiato.', copyFailed: 'Copia non riuscita: il link è selezionato, copialo manualmente.',
   },
 };
-const uid = () => crypto.randomUUID();
-
-function Field({ label, value, onChange, type = 'text', min, max, readOnly = false }) {
+function Field({ label, value, onChange, maxLength, readOnly = false }) {
   return <label className="workshop-field"><span>{label}</span>
-    <input type={type} min={min} max={max} readOnly={readOnly} value={value ?? ''} onChange={e => onChange(type === 'number' ? Number(e.target.value) : e.target.value)} />
+    <input maxLength={maxLength} readOnly={readOnly} value={value ?? ''} onChange={e => onChange(e.target.value)} />
+  </label>;
+}
+/**
+ * Integer input that keeps the typed text as a draft, so clearing the field or
+ * starting a negative number ('-') is not turned into 0. Only whole numbers
+ * are committed (or null for an emptied optional field); on blur the field
+ * shows the committed value again.
+ */
+function NumberField({ label, value, onChange, min, max, optional = false }) {
+  const [draft, setDraft] = useState(null);
+  return <label className="workshop-field"><span>{label}</span>
+    <input type="number" step="1" min={min} max={max} value={draft ?? value ?? ''}
+      onChange={e => {
+        const text = e.target.value;
+        setDraft(text);
+        if (text.trim() === '') { if (optional) onChange(null); return; }
+        const number = Number(text);
+        if (Number.isInteger(number)) onChange(number);
+      }}
+      onBlur={() => setDraft(null)} />
   </label>;
 }
 function FormulaField({ label, value, onChange, doc, t, readOnly = false }) {
@@ -363,23 +420,49 @@ function FormulaField({ label, value, onChange, doc, t, readOnly = false }) {
   </div>;
 }
 
-function OptionalNumberField({label,value,onChange}) {
-  return <label className="workshop-field"><span>{label}</span>
-    <input type="number" min="1" value={value ?? ''}
-      onChange={e=>onChange(e.target.value==='' ? null : Number(e.target.value))} />
-  </label>;
-}
-function JsonField({ label, value, onChange }) {
-  const [draft, setDraft] = useState(JSON.stringify(value || [], null, 2));
+function JsonField({ label, value, onChange, validate, t }) {
+  const committed = JSON.stringify(value || []);
+  const [draft, setDraft] = useState(() => JSON.stringify(value || [], null, 2));
   const [error, setError] = useState('');
-  useEffect(() => { setDraft(JSON.stringify(value || [], null, 2)); }, [value]);
+  const lastCommitted = useRef(committed);
+  useEffect(() => {
+    // Reformat only for changes made elsewhere (guided editor, other document).
+    if (committed === lastCommitted.current) return;
+    lastCommitted.current = committed;
+    setDraft(JSON.stringify(JSON.parse(committed), null, 2));
+    setError('');
+  }, [committed]);
   return <label className="workshop-field"><span>{label}</span>
-    <textarea rows="3" spellCheck="false" value={draft} onChange={e => {
-      setDraft(e.target.value);
-      try { onChange(JSON.parse(e.target.value)); setError(''); } catch { setError('Invalid JSON'); }
+    <textarea rows="3" spellCheck="false" value={draft} aria-invalid={error ? true : undefined} onChange={e => {
+      const text = e.target.value;
+      setDraft(text);
+      let parsed;
+      try { parsed = JSON.parse(text); } catch { setError(t.invalidJson); return; }
+      // Keep the draft, but never commit a value of the wrong shape: the guided
+      // editor would crash on it (e.g. 5, {} or [1] as effects).
+      try { validate(parsed); } catch (problem) { setError(t.jsonNotApplied + ' ' + problem.message); return; }
+      setError('');
+      lastCommitted.current = JSON.stringify(parsed);
+      onChange(parsed);
     }} />
     {error && <small role="alert">{error}</small>}
   </label>;
+}
+// Coded errors from character.js get localized text; others keep their message.
+const errorText = {
+  'link-invalid': 'linkInvalid', 'link-too-large': 'linkTooLarge', 'link-unsupported': 'linkUnsupported',
+  'link-too-long': 'tooLong', 'document-too-large': 'documentTooLarge',
+  'storage-unavailable': 'storageUnavailable', 'storage-quota': 'storageQuota', 'storage-blocked': 'storageBlocked',
+};
+// Context prefixes for uncoded (validation) errors that keep their specific message.
+const errorPrefix = { 'read-failed': 'invalid', 'share-invalid': 'shareInvalid' };
+const failure = (code, error) => error?.code ? error
+  : Object.assign(new Error(error?.message || String(error)), { code });
+function describeError(error, t) {
+  if (!error || typeof error === 'string') return error || '';
+  if (errorPrefix[error.code]) return t[errorPrefix[error.code]] + ': ' + error.message;
+  if (error.code === 'storage-failed') return t.storageFailed + ' ' + (error.cause?.message || error.cause?.name || '');
+  return errorText[error.code] ? t[errorText[error.code]] : error.message || String(error);
 }
 function downloadDocument(characterDoc) {
   const blob = new Blob([JSON.stringify(envelope(characterDoc), null, 2)], { type: 'application/json' });
@@ -390,7 +473,25 @@ function downloadDocument(characterDoc) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(href), 1500);
 }
+/**
+ * The open document, updated only once edits pause for `delay` ms. Opening a
+ * different character is adopted immediately.
+ */
+function useSettledDocument(doc, delay) {
+  const [settled, setSettled] = useState(doc);
+  if (settled !== doc && settled?.character.id !== doc?.character.id) setSettled(doc);
+  useEffect(() => {
+    const timer = setTimeout(() => setSettled(doc), delay);
+    return () => clearTimeout(timer);
+  }, [doc, delay]);
+  return settled;
+}
 export default function CharacterWorkshop({ locale = 'en' }) {
+  const t = dictionary[locale] || dictionary.en;
+  return <WorkshopErrorBoundary t={t}><Workshop locale={locale} /></WorkshopErrorBoundary>;
+}
+
+function Workshop({ locale }) {
   const t = dictionary[locale] || dictionary.en;
   const [items, setItems] = useState([]);
   const [doc, setDoc] = useState(null);
@@ -398,46 +499,79 @@ export default function CharacterWorkshop({ locale = 'en' }) {
   const [previewName, setPreviewName] = useState('');
   const [previewLevel, setPreviewLevel] = useState(1);
   const [url, setUrl] = useState('');
-  const [qr, setQr] = useState('');
+  const [qr, setQr] = useState(null);
+  const [shareHandoff, setShareHandoff] = useState(null);
+  const [copyStatus, setCopyStatus] = useState(null);
+  const shareLinkRef = useRef(null);
+  useEffect(() => {
+    if (!copyStatus) return;
+    const timer = setTimeout(() => setCopyStatus(null), 4000);
+    return () => clearTimeout(timer);
+  }, [copyStatus]);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-
+  // JSON of the open document as it was opened or last saved.
+  const [baseline, setBaseline] = useState(null);
+  const dirty = useMemo(() => !!doc && JSON.stringify(doc) !== baseline, [doc, baseline]);
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = event => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
   async function refresh() {
     try { setItems((await listSaved()).sort((a,b) => a.character.name.localeCompare(b.character.name))); }
-    catch (e) { setError('IndexedDB: ' + e.message); }
+    catch (e) { setError(e); }
+  }
+  // Recipient name/level start from the shared values in the same render, so
+  // the preview never flashes an invalid (empty-name) import candidate.
+  function showPreview(shared) {
+    setPreview(shared);
+    if (shared) { setPreviewName(shared.character.name); setPreviewLevel(shared.character.level); }
   }
   useEffect(() => {
     refresh();
-    if (window.location.hash.startsWith('#character=') || window.location.hash.startsWith('#template=')) {
-      try { setPreview(readShareHash()); } catch (e) { setError(e.message); }
+    function openSharedLink(event) {
+      const hash = window.location.hash;
+      if (!hash.startsWith('#character=') && !hash.startsWith('#template=')) return;
+      try {
+        const shared = readShareHash(hash);
+        // e.g. a #template= reference this version of the site does not know.
+        if (!shared) throw Object.assign(new Error('Unsupported link'), { code: 'link-unsupported' });
+        showPreview(shared); setError('');
+      } catch (e) { showPreview(null); setError(failure('read-failed', e)); }
+      // A link opened in the same tab: bring the preview/error into view.
+      if (event) window.scrollTo(0, 0);
     }
+    openSharedLink();
+    window.addEventListener('hashchange', openSharedLink);
+    return () => window.removeEventListener('hashchange', openSharedLink);
   }, []);
-  useEffect(() => {
-    if (preview) {
-      setPreviewName(preview.character.name);
-      setPreviewLevel(preview.character.level);
-    }
-  }, [preview]);
 
-  const importCandidate = useMemo(() => {
-    if (!preview) return null;
-    try { return withImportPreferences(preview, previewName, previewLevel); }
-    catch { return null; }
+  const importDraft = useMemo(() => {
+    if (!preview) return { candidate: null, error: null };
+    try { return { candidate: withImportPreferences(preview, previewName, previewLevel), error: null }; }
+    catch (error) { return { candidate: null, error }; }
   }, [preview, previewName, previewLevel]);
-  const importAppLink = useMemo(() => {
-    if (!importCandidate) return null;
-    try {
-      const link = androidUrl(importCandidate);
-      return link.length <= 8000 ? link : null;
-    } catch { return null; }
-  }, [importCandidate]);
-  const editorAppLink = useMemo(() => {
-    if (!doc) return null;
-    try {
-      const link = androidUrl(doc);
-      return link.length <= 8000 ? link : null;
-    } catch { return null; }
-  }, [doc]);
+  const importCandidate = importDraft.candidate;
+  const importHandoff = useMemo(() => importCandidate && androidHandoff(importCandidate), [importCandidate]);
+  // Building the app link validates and deflates the whole document: do it once
+  // typing pauses, not on every keystroke.
+  const handoffDoc = useSettledDocument(doc, 400);
+  const editorHandoff = useMemo(() => handoffDoc && androidHandoff(handoffDoc), [handoffDoc]);
+  function handoffHint(handoff, problem) {
+    if (handoff?.link) return t.appDirectHint;
+    const error = handoff?.reason === 'too-large' ? null : handoff?.error || problem;
+    return error ? t.appInvalid + ' ' + describeError(error, t) : t.appLarge;
+  }
+  /** The visible link may lag behind the last keystrokes: send the latest document. */
+  function openLatestInApp(event) {
+    if (handoffDoc === doc) return;
+    const latest = androidHandoff(doc);
+    if (latest.link) { event.currentTarget.href = latest.link; return; }
+    event.preventDefault();
+    setError(latest.reason === 'too-large' ? t.appLarge : latest.error);
+  }
 
 
   function edit(mutator) {
@@ -447,11 +581,24 @@ export default function CharacterWorkshop({ locale = 'en' }) {
       mutator(copy);
       return copy;
     });
-    setUrl(''); setQr(''); setMessage(''); setError('');
+    setUrl(''); setQr(null); setMessage(''); setError('');
+  }
+  /** Replaces the open document, asking before unsaved edits are discarded. */
+  function openDocument(create) {
+    if (dirty && !window.confirm(t.unsavedConfirm)) return;
+    const next = create();
+    setDoc(next); setBaseline(JSON.stringify(next)); setUrl(''); setQr(null);
+  }
+  function closeBrokenDocument() {
+    setDoc(null); setBaseline(null); setUrl(''); setQr(null);
   }
   async function save() {
-    try { validateDocument(doc); await saveDocument(doc); await refresh(); setMessage(t.saved); setError(''); }
-    catch (e) { setError(e.message); }
+    const snapshot = doc;
+    try {
+      validateDocument(snapshot); await saveDocument(snapshot); setBaseline(JSON.stringify(snapshot));
+      await refresh(); setMessage(t.saved); setError('');
+    }
+    catch (e) { setError(e); }
   }
   async function upgradeStarter() {
     if (!doc || !canUpgradeLegacyStarterWeaponRolls(doc) || !window.confirm(t.upgradeConfirm)) return;
@@ -459,54 +606,74 @@ export default function CharacterWorkshop({ locale = 'en' }) {
       const upgraded = upgradeLegacyStarterWeaponRolls(doc);
       if (!upgraded) return;
       await saveDocument(upgraded);
-      setDoc(upgraded); setUrl(''); setQr(''); setError('');
+      setDoc(upgraded); setBaseline(JSON.stringify(upgraded)); setUrl(''); setQr(null); setError('');
       await refresh();
       setMessage(t.upgradeComplete);
-    } catch (e) { setError(e.message); }
+    } catch (e) { setError(e); }
   }
   async function deleteSaved(id) {
     if (!window.confirm(t.delete + '?')) return;
-    try { await removeDocument(id); if (doc?.character.id === id) setDoc(null); await refresh(); }
-    catch (e) { setError(e.message); }
+    try { await removeDocument(id); if (doc?.character.id === id) { setDoc(null); setBaseline(null); } await refresh(); }
+    catch (e) { setError(e); }
   }
   async function createShare() {
+    const snapshot = doc;
     try {
-      const link = shareUrl(doc, window.location.origin + import.meta.env.BASE_URL + 'workshop/');
-      const image = await QRCode.toDataURL(link, { errorCorrectionLevel: 'L', width: 340, margin: 2 });
-      setUrl(link); setQr(image); setMessage(t.ready); setError('');
-    } catch (e) { setQr(''); setUrl(''); setError(t.tooLong + ' ' + e.message); }
+      const link = shareUrl(snapshot, window.location.origin + import.meta.env.BASE_URL + 'workshop/');
+      const image = await renderShareQr(link);
+      setUrl(link); setQr(image); setShareHandoff(androidHandoff(snapshot)); setCopyStatus(null); setMessage(t.ready); setError('');
+    } catch (e) { setQr(null); setUrl(''); setError(failure('share-invalid', e)); }
+  }
+  async function copyLink() {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+      await navigator.clipboard.writeText(url);
+      setCopyStatus({ text: t.copied });
+    } catch {
+      // e.g. insecure context or permission denied: leave it ready for Ctrl+C.
+      setCopyStatus({ text: t.copyFailed });
+      shareLinkRef.current?.focus();
+      shareLinkRef.current?.select();
+    }
   }
   async function addShared() {
     try {
       if (!importCandidate) throw new Error(t.invalid);
       const copy = importAsCopy(importCandidate);
-      await saveDocument(copy); await refresh(); setPreview(null); setDoc(copy);
+      // The imported copy replaces the open document in the editor.
+      if (dirty && !window.confirm(t.unsavedConfirm)) return;
+      await saveDocument(copy); await refresh(); setPreview(null); setDoc(copy); setBaseline(JSON.stringify(copy));
       history.replaceState(null, '', location.pathname); setMessage(t.saved); setError('');
-    } catch (e) { setError(e.message); }
+    } catch (e) { setError(e); }
   }
   async function fileImport(event) {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      if (file.size > 128 * 1024) throw new Error('File too large');
-      const packet = JSON.parse(await file.text());
+      if (file.size > 128 * 1024) throw new Error(t.fileTooLarge);
+      let packet;
+      try { packet = JSON.parse(await file.text()); } catch { throw new Error(t.fileInvalid); }
       const imported = documentFromEnvelope(packet);
-      setPreview(imported);
+      showPreview(imported);
       setError(''); setMessage('');
       // The same explicit preview and confirmation now handles QR, link and file.
 
-    } catch (e) { setError(e.message); }
+    } catch (e) { setError(failure('read-failed', e)); }
     event.target.value = '';
   }
 
-  const isRogue2014 = doc?.character.tag.startsWith('D&D 5e (2014) Rogue sample');
-  const isFighter2014 = doc?.character.tag.startsWith('D&D 5e sample');
-  const isWizard2014 = doc?.character.tag.startsWith('D&D 5e (2014) Wizard sample');
-  const isRanger2014 = doc?.character.tag.startsWith('D&D 5e (2014) Ranger sample');
-  const isCleric2014 = doc?.character.tag.startsWith('D&D 5e (2014) Cleric sample');
-  const isPaladin2014 = doc?.character.tag.startsWith('D&D 5e (2014) Paladin sample');
-  const isBard2014 = doc?.character.tag.startsWith('D&D 5e (2014) Bard sample');
+  // Saved records are not re-validated on load: never assume a string tag.
+  const tag = typeof doc?.character.tag === 'string' ? doc.character.tag : '';
+  const isRogue2014 = tag.startsWith('D&D 5e (2014) Rogue sample');
+  const isFighter2014 = tag.startsWith('D&D 5e sample');
+  const isWizard2014 = tag.startsWith('D&D 5e (2014) Wizard sample');
+  const isRanger2014 = tag.startsWith('D&D 5e (2014) Ranger sample');
+  const isCleric2014 = tag.startsWith('D&D 5e (2014) Cleric sample');
+  const isPaladin2014 = tag.startsWith('D&D 5e (2014) Paladin sample');
+  const isBard2014 = tag.startsWith('D&D 5e (2014) Bard sample');
   const dndLevels = isBard2014 ? BARD_2014_LEVELS : isPaladin2014 ? PALADIN_2014_LEVELS : isCleric2014 ? CLERIC_2014_LEVELS : isRanger2014 ? RANGER_2014_LEVELS : isWizard2014 ? WIZARD_2014_LEVELS : isRogue2014 ? ROGUE_2014_LEVELS : FIGHTER_2014_LEVELS;
+  const checkGuidedRoll = roll => validateGuidedRoll(roll, doc.modifiers.map(m => m.name),
+    new Set([...SYSTEM_STYLES.map(s => s.id), ...doc.diceStyles.map(s => s.id)]));
 
   const renderRollEditor = (r,i) => (<details className="workshop-roll" key={r.id}>
               <summary><strong>{r.name || t.addRoll}</strong><span>{r.expression}</span>
@@ -521,7 +688,7 @@ export default function CharacterWorkshop({ locale = 'en' }) {
                   <select value={r.groupId || ''} onChange={e => edit(x => x.rolls[i].groupId = e.target.value || null)}>
                     <option value="">—</option>{doc.groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                   </select></label>
-                <Field label={t.minimum} type="number" min={1} value={r.minimumLevel || 1} onChange={v => edit(x => x.rolls[i].minimumLevel = v)} />
+                <NumberField label={t.minimum} min={1} value={r.minimumLevel || 1} onChange={v => edit(x => x.rolls[i].minimumLevel = v)} />
                 <label className="workshop-check"><input type="checkbox" checked={r.enabled !== false} onChange={e => edit(x => x.rolls[i].enabled = e.target.checked)} /> {t.enabled}</label>
                 <label className="workshop-check"><input type="checkbox" checked={!!r.doubleRollEnabled} onChange={e => edit(x => x.rolls[i].doubleRollEnabled = e.target.checked)} /> {t.double}</label>
               </div>
@@ -537,10 +704,10 @@ export default function CharacterWorkshop({ locale = 'en' }) {
                 <div className="workshop-inline">
                   <Field label={t.parts} value={p.name} onChange={v => edit(x => x.rolls[i].subgroups[j].name = v)} />
                   <FormulaField label={t.formula} doc={doc} t={t} value={p.expression} onChange={v => edit(x => { const roll = x.rolls[i]; roll.subgroups[j].expression = v; roll.expression = normalFormula(roll.subgroups); })} />
-                  <button disabled={isPartUsed(r, p.id)} title={isPartUsed(r, p.id) ? t.partUsed : t.remove} onClick={() => edit(x => removePartSafely(x.rolls[i], p.id, normalFormula))}>×</button>
+                  <button disabled={isPartUsed(r, p.id)} title={isPartUsed(r, p.id) ? t.partUsed : t.remove} aria-label={t.removePart + ': ' + p.name} onClick={() => edit(x => removePartSafely(x.rolls[i], p.id, normalFormula))}>×</button>
                 </div>
                 <div className="workshop-inline">
-                  <select value={p.operator || 'ADD'} onChange={e => edit(x => { const roll = x.rolls[i]; roll.subgroups[j].operator = e.target.value; roll.expression = normalFormula(roll.subgroups); })}>
+                  <select aria-label={t.operator} value={p.operator || 'ADD'} onChange={e => edit(x => { const roll = x.rolls[i]; roll.subgroups[j].operator = e.target.value; roll.expression = normalFormula(roll.subgroups); })}>
                     <option value="ADD">+</option><option value="SUBTRACT">−</option></select>
                   <label className="workshop-check"><input type="checkbox" checked={p.includeInNormalRoll !== false} disabled={p.includeInNormalRoll !== false && r.subgroups.filter(q => q.includeInNormalRoll !== false).length === 1} onChange={e => edit(x => { const roll = x.rolls[i]; roll.subgroups[j].includeInNormalRoll = e.target.checked; roll.expression = normalFormula(roll.subgroups); })} /> {t.initialThrow}</label>
                                     <label className="workshop-check"><input type="checkbox" checked={!!p.includeInDoubleRoll} onChange={e => edit(x => x.rolls[i].subgroups[j].includeInDoubleRoll = e.target.checked)} /> {t.doubleCandidate}</label>
@@ -548,21 +715,23 @@ export default function CharacterWorkshop({ locale = 'en' }) {
               </div>)}
               <div className="workshop-row-head"><h3>{t.rules}</h3><button onClick={() => edit(x => x.rolls[i].levelRules.push(newLevelRule()))}>{t.addRule}</button></div>
               {r.levelRules.map((rule,j) => <div className="workshop-inline" key={rule.id}>
-                <select value={rule.kind} onChange={e => edit(x => x.rolls[i].levelRules[j].kind = e.target.value)}>
-                  <option value="FROM_LEVEL">From level</option><option value="EVERY_LEVELS">Every N levels</option></select>
-                <Field label={rule.kind === 'EVERY_LEVELS' ? t.everyN : t.level} type="number" min={1} value={rule.trigger} onChange={v => edit(x => x.rolls[i].levelRules[j].trigger = v)} />
+                <select aria-label={t.ruleKind} value={rule.kind} onChange={e => edit(x => x.rolls[i].levelRules[j].kind = e.target.value)}>
+                  <option value="FROM_LEVEL">{t.fromLevel}</option><option value="EVERY_LEVELS">{t.everyN}</option></select>
+                <NumberField label={rule.kind === 'EVERY_LEVELS' ? t.everyN : t.level} min={1} value={rule.trigger} onChange={v => edit(x => x.rolls[i].levelRules[j].trigger = v)} />
                 {rule.kind === 'EVERY_LEVELS' && <>
-                  <OptionalNumberField label={t.periodicStart} value={rule.startLevel ?? ''} onChange={v => edit(x => { if (v == null) delete x.rolls[i].levelRules[j].startLevel; else x.rolls[i].levelRules[j].startLevel = Number(v); })} />
-                  <OptionalNumberField label={t.periodicMax} value={rule.maxRepeats ?? ''} onChange={v => edit(x => { if (v == null) delete x.rolls[i].levelRules[j].maxRepeats; else x.rolls[i].levelRules[j].maxRepeats = Number(v); })} />
+                  <NumberField optional label={t.periodicStart} min={1} value={rule.startLevel} onChange={v => edit(x => { if (v == null) delete x.rolls[i].levelRules[j].startLevel; else x.rolls[i].levelRules[j].startLevel = Number(v); })} />
+                  <NumberField optional label={t.periodicMax} min={1} value={rule.maxRepeats} onChange={v => edit(x => { if (v == null) delete x.rolls[i].levelRules[j].maxRepeats; else x.rolls[i].levelRules[j].maxRepeats = Number(v); })} />
                 </>}
                 <FormulaField label={t.formula} doc={doc} t={t} value={rule.expression} onChange={v => edit(x => x.rolls[i].levelRules[j].expression = v)} />
-                <button onClick={() => edit(x => x.rolls[i].levelRules.splice(j,1))}>×</button>
+                <button aria-label={t.removeRule + ' ' + (j + 1)} onClick={() => edit(x => x.rolls[i].levelRules.splice(j,1))}>×</button>
               </div>)}
               <GuidedRollEditor roll={r} doc={doc} t={t} onEdit={mutator => edit(x => mutator(x.rolls[i]))} />
               <details className="workshop-expert"><summary>{t.expertJson}</summary>
                 <p className="workshop-hint">{t.expertHelp}</p>
-                <JsonField label={t.effects} value={r.effects} onChange={v => edit(x => x.rolls[i].effects = v)} />
-                <JsonField label={t.appearance} value={r.diceAppearance || { mode: 'CHARACTER_DEFAULT' }} onChange={v => edit(x => x.rolls[i].diceAppearance = v)} />
+                <JsonField label={t.effects} value={r.effects} t={t} onChange={v => edit(x => x.rolls[i].effects = v)}
+                  validate={v => { if (!Array.isArray(v)) throw new Error(t.jsonArrayExpected); checkGuidedRoll({ ...r, effects: v }); }} />
+                <JsonField label={t.appearance} value={r.diceAppearance || { mode: 'CHARACTER_DEFAULT' }} t={t} onChange={v => edit(x => x.rolls[i].diceAppearance = v)}
+                  validate={v => { if (!v || typeof v !== 'object' || Array.isArray(v)) throw new Error(t.jsonObjectExpected); checkGuidedRoll({ ...r, diceAppearance: v }); }} />
               </details>
             </details>);
 
@@ -572,8 +741,8 @@ export default function CharacterWorkshop({ locale = 'en' }) {
       <h1>{t.title}</h1><p>{t.intro}</p>
       <p className="workshop-hint">{t.storage} · {t.noCloud}</p>
     </div>
-    {error && <p className="workshop-error" role="alert">{error}</p>}
-    {message && <p className="workshop-success" role="status">{message}</p>}
+    {error && <p className="workshop-error" role="alert">{describeError(error, t)}</p>}
+    <div role="status" aria-live="polite">{message && <p className="workshop-success">{message}</p>}</div>
     {preview && <section className="premium-panel workshop-preview" aria-label={t.preview}>
       <div className="workshop-row-head"><h2>{t.importCheck}</h2><span className="eyebrow">{t.importSource}</span></div>
       <div className="workshop-character-card">
@@ -606,26 +775,26 @@ export default function CharacterWorkshop({ locale = 'en' }) {
       <p className="workshop-hint">{t.importSettings}</p>
       <div className="workshop-fields">
         <Field label={t.characterName} value={previewName} onChange={setPreviewName} />
-        <Field label={t.level} type="number" min={1} max={9999} value={previewLevel} onChange={setPreviewLevel} />
+        <NumberField label={t.level} min={1} max={9999} value={previewLevel} onChange={setPreviewLevel} />
       </div>
       <p className="workshop-hint">{t.importExisting} {t.warning}</p>
       <div className="workshop-actions">
         <button className="primary" disabled={!importCandidate} onClick={addShared}>{t.add}</button>
-        {importAppLink && <a className="secondary" href={importAppLink}>{t.openApp}</a>}
+        {importHandoff?.link && <a className="secondary" href={importHandoff.link}>{t.openApp}</a>}
         <button onClick={() => { setPreview(null); history.replaceState(null, '', location.pathname); }}>{t.discard}</button>
       </div>
-      <p className="workshop-hint">{importAppLink ? t.appDirectHint : t.appLarge}</p>
+      <p className="workshop-hint">{handoffHint(importHandoff, importDraft.error)}</p>
     </section>}
     <div className="workshop-layout">
       <aside className="workshop-sidebar">
         <section className="premium-panel">
           <h2>{t.library}</h2>
-          <button className="primary" onClick={() => { setDoc(newCharacter()); setUrl(''); setQr(''); }}>{t.create}</button>
+          <button className="primary" onClick={() => openDocument(() => newCharacter())}>{t.create}</button>
           <label className="workshop-file-button">{t.import}<input type="file" accept=".json,application/json" onChange={fileImport} /></label>
           <div className="workshop-collection">
             {items.map(saved => <div className="workshop-list-item" key={saved.character.id}>
               <span><strong>{saved.character.name}</strong><small>Lv {saved.character.level} · {saved.rolls.length} rolls</small></span>
-              <div><button onClick={() => { setDoc(structuredClone(saved)); setQr(''); setUrl(''); }}>{t.load}</button>
+              <div><button onClick={() => openDocument(() => structuredClone(saved))}>{t.load}</button>
               <button className="workshop-remove" onClick={() => deleteSaved(saved.character.id)} aria-label={t.delete + ' ' + saved.character.name}>×</button></div>
             </div>)}
           </div>
@@ -635,20 +804,21 @@ export default function CharacterWorkshop({ locale = 'en' }) {
           <div className="workshop-collection">
             {templates.map(item => <div className="workshop-list-item" key={item.index}>
               <span><strong>{item.name}</strong><small>{item.category}</small></span>
-              <button onClick={() => { setDoc(instantiateTemplate(item.index)); setUrl(''); setQr(''); }}>{t.use}</button>
+              <button onClick={() => openDocument(() => instantiateTemplate(item.index))}>{t.use}</button>
             </div>)}
           </div>
         </section>
       </aside>
       <div className="workshop-editor">
+        <WorkshopErrorBoundary t={t} resetKey={doc} onClose={closeBrokenDocument}>{() => <>
         {!doc && <section className="premium-panel">{t.select}</section>}
         {doc && <>
           <section className="premium-panel">
             <div className="workshop-row-head"><h2>{t.details}</h2><span className="eyebrow">Lv {doc.character.level}</span></div>
             <div className="workshop-fields">
               <Field label={t.characterName} value={doc.character.name} onChange={value => edit(x => x.character.name = value)} />
-              <Field label={t.level} type="number" min={1} max={9999} value={doc.character.level} onChange={value => edit(x => x.character.level = value)} />
-              <Field label={t.tag} value={doc.character.tag} onChange={value => edit(x => x.character.tag = value)} />
+              <NumberField label={t.level} min={1} max={9999} value={doc.character.level} onChange={value => edit(x => x.character.level = value)} />
+              <Field label={t.tag} value={doc.character.tag} maxLength={MAX_TAG_LENGTH} onChange={value => edit(x => x.character.tag = value)} />
             </div>
             {(isFighter2014 || isRogue2014 || isWizard2014 || isRanger2014 || isCleric2014 || isPaladin2014 || isBard2014) && <details className="workshop-fighter-timeline">
               <summary>{isBard2014 ? t.bardProgression : isPaladin2014 ? t.paladinProgression : isCleric2014 ? t.clericProgression : isRanger2014 ? t.rangerProgression : isWizard2014 ? t.wizardProgression : isRogue2014 ? t.rogueProgression : t.fighterProgression}</summary>
@@ -683,32 +853,34 @@ export default function CharacterWorkshop({ locale = 'en' }) {
               {canUpgradeLegacyStarterWeaponRolls(doc) && <button type="button"
                 onClick={upgradeStarter}>{t.upgradeLegacy}</button>}
               <button onClick={createShare}>{t.share}</button>
-              {editorAppLink && <a className="secondary" href={editorAppLink}>{t.openApp}</a>}
+              {editorHandoff?.link && <a className="secondary" href={editorHandoff.link} onClick={openLatestInApp}>{t.openApp}</a>}
               <button onClick={() => downloadDocument(doc)}>{t.export}</button>
             </div>
-            <p className="workshop-hint">{editorAppLink ? t.appDirectHint : t.appLarge}</p>
+            <p className="workshop-hint">{handoffHint(editorHandoff)}</p>
             {url && <div className="workshop-share">
               <p className="workshop-hint">{t.warning}</p>
               {url.includes('#template=') && <p className="workshop-hint">{t.templateLinkNote}</p>}
-              <img src={qr} alt="QR code: character share URL" width="260" height="260"/>
-              <textarea readOnly aria-label="Shareable character link" value={url} rows={3} />
-              <div className="workshop-actions"><button onClick={() => navigator.clipboard.writeText(url)}>{t.copy}</button>
-                <a className="secondary" href={androidUrl(doc)}>{t.openApp}</a></div>
+              {qr && <img src={qr.src} alt={t.qrAlt} width={qr.size} height={qr.size}/>}
+              <textarea ref={shareLinkRef} readOnly aria-label={t.shareLink} value={url} rows={3} />
+              <div className="workshop-actions"><button onClick={copyLink}>{t.copy}</button>
+                {shareHandoff?.link && <a className="secondary" href={shareHandoff.link}>{t.openApp}</a>}
+                <span className="workshop-hint" role="status" aria-live="polite">{copyStatus?.text}</span></div>
+              {!shareHandoff?.link && <p className="workshop-hint">{handoffHint(shareHandoff)}</p>}
             </div>}
           </section>
           <section className="premium-panel">
             <div className="workshop-row-head"><h2>{t.modifiers}</h2><button onClick={() => edit(x => x.modifiers.push(newModifier(x.character.id)))}>{t.addModifier}</button></div>
             {doc.modifiers.map((m, index) => <div className="workshop-inline" key={m.id}>
               <Field label={t.modifiers} value={m.name} onChange={v => edit(x => x.modifiers[index].name = v)} />
-              <Field label="±" type="number" value={m.value} onChange={v => edit(x => x.modifiers[index].value = v)} />
-              <button onClick={() => edit(x => x.modifiers.splice(index, 1))} aria-label={t.remove}>×</button>
+              <NumberField label="±" value={m.value} onChange={v => edit(x => x.modifiers[index].value = v)} />
+              <button onClick={() => edit(x => x.modifiers.splice(index, 1))} aria-label={t.remove + ': ' + m.name}>×</button>
             </div>)}
           </section>
           <section className="premium-panel">
             <div className="workshop-row-head"><h2>{t.groups}</h2><button onClick={() => edit(x => { const group=newGroup(x.character.id); group.order=x.groups.length; x.groups.push(group); })}>{t.addGroup}</button></div>
             {doc.groups.map((g,i) => <div className="workshop-inline" key={g.id}>
               <Field label={t.group} value={g.name} onChange={v => edit(x => x.groups[i].name = v)} />
-              <button onClick={() => edit(x => { x.rolls.forEach(r => { if (r.groupId === g.id) r.groupId = null; }); x.groups.splice(i, 1); })} aria-label={t.remove}>×</button>
+              <button onClick={() => edit(x => { x.rolls.forEach(r => { if (r.groupId === g.id) r.groupId = null; }); x.groups.splice(i, 1); })} aria-label={t.remove + ': ' + g.name}>×</button>
             </div>)}
           </section>
           <section className="premium-panel">
@@ -732,9 +904,9 @@ export default function CharacterWorkshop({ locale = 'en' }) {
             {doc.diceStyles.map((style,i) => <div className="workshop-part" key={style.id}>
               <div className="workshop-inline">
                 <Field label={t.styles} value={style.name} onChange={v => edit(x => x.diceStyles[i].name = v)} />
-                <select value={style.material} onChange={e => edit(x => x.diceStyles[i].material = e.target.value)}>
-                  {['GLOSSY_RESIN','MATTE_RESIN','METAL','GEMSTONE'].map(s => <option key={s}>{s}</option>)}</select>
-                <button onClick={() => edit(x => { x.diceStyles.splice(i, 1);
+                <select aria-label={t.material} value={style.material} onChange={e => edit(x => x.diceStyles[i].material = e.target.value)}>
+                  {DICE_MATERIALS.map(s => <option key={s}>{s}</option>)}</select>
+                <button aria-label={t.removeStyle + ': ' + style.name} onClick={() => edit(x => { x.diceStyles.splice(i, 1);
                   const fallback = 'preset:arcane-blue';
                   const fix = id => id === style.id ? fallback : id;
                   x.character.defaultDiceStyleId = fix(x.character.defaultDiceStyleId);
@@ -768,6 +940,7 @@ export default function CharacterWorkshop({ locale = 'en' }) {
             </label>
           </section>
         </>}
+        </>}</WorkshopErrorBoundary>
       </div>
     </div>
   </section>;

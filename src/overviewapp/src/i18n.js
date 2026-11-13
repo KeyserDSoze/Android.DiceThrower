@@ -1,3 +1,5 @@
+import { readStorage } from './safe-storage.js';
+
 const languageList = [
   ['en', 'English'], ['it', 'Italiano'], ['es', 'Español'], ['fr', 'Français'],
   ['de', 'Deutsch'], ['pt', 'Português'], ['ru', 'Русский'], ['ar', 'العربية'],
@@ -86,7 +88,7 @@ export function normalizeLocale(tag) {
 }
 
 export function initialLocale() {
-  const saved = localStorage.getItem('dicethrower-site-language');
+  const saved = readStorage('dicethrower-site-language');
   if (saved && locales[saved]) return saved;
   for (const language of navigator.languages || [navigator.language]) {
     const normalized = normalizeLocale(language);

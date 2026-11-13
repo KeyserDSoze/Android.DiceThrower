@@ -9,7 +9,9 @@ export function resolveLevelTokens(expression, doc, level = doc.character.level)
   for (const modifier of doc.modifiers || []) {
     variables.set(modifier.name.trim().toLowerCase(), modifier.value);
   }
-  const expanded = expression.replace(/(?<=[0-9)}])(?=\{)/g, 'x')
+  // Implicit multiplication before a variable, e.g. 2{level} -> 2x{level}.
+  // No lookbehind: it is a syntax error that breaks the bundle on Safari < 16.4.
+  const expanded = expression.replace(/([0-9)}])(?=\{)/g, '$1x')
     .replace(/\{([^{}]+)\}/g, (match, name) => {
       const key = name.trim().toLowerCase();
       if (variables.has(key)) return String(variables.get(key));

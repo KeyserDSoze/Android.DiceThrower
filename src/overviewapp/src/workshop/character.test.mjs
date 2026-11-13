@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import pako from 'pako';
 import {
   templates, instantiateTemplate, validateDocument, envelope, documentFromEnvelope,
   encodeToken, decodeToken, importAsCopy, normalFormula, newPart, newRoll, newCharacter, newGroup, newModifier, shareUrl,
   canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences, androidUrl,
-  WIZARD_2014_SRD_SPELLS, WIZARD_2014_DICE_SPELLS,
+  WIZARD_2014_SRD_SPELLS, WIZARD_2014_DICE_SPELLS, MAX_TAG_LENGTH, DICE_MATERIALS, newLevelRule, newStyle, androidHandoff, MAX_APP_LINK_LENGTH,
   FIGHTER_2014_LEVELS, FIGHTER_2014_PROFICIENCY_STEPS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS, CLERIC_2014_LEVELS, PALADIN_2014_LEVELS, BARD_2014_LEVELS, readShareHash,
 } from './character.js';
 
@@ -1086,4 +1087,173 @@ test('periodic start and cap validate and legacy rules remain compatible',()=>{
   const bad=structuredClone(doc);
   bad.rolls.find(r=>r.name===name).levelRules[0].kind='FROM_LEVEL';
   assert.throws(()=>validateDocument(bad),/periodic/);
+});
+
+/** Compress any packet like a share link would, bypassing envelope() validation. */
+function rawToken(packet) {
+  return 'v1.' + Buffer.from(pako.deflate(new TextEncoder().encode(JSON.stringify(packet)))).toString('base64url');
+}
+
+test('character description must be a bounded string; missing native descriptions read as empty', () => {
+  for (const { index } of templates) assert.ok(instantiateTemplate(index).character.tag.length <= MAX_TAG_LENGTH);
+  const doc = instantiateTemplate(0);
+  for (const tag of [5, null, undefined, { evil: true }, ['D&D 5e sample'], 'x'.repeat(MAX_TAG_LENGTH + 1)]) {
+    const bad = structuredClone(doc);
+    bad.character.tag = tag;
+    assert.throws(() => validateDocument(bad), /Invalid character description/, String(tag));
+  }
+  const longest = structuredClone(doc);
+  longest.character.tag = 'x'.repeat(MAX_TAG_LENGTH);
+  validateDocument(longest);
+  // A shared link with a non-string tag used to crash the preview/editor.
+  const packet = envelope(doc);
+  packet.data.characters[0].tag = { evil: true };
+  assert.throws(() => decodeToken(rawToken(packet)), /Invalid character description/);
+  delete packet.data.characters[0].tag;
+  assert.equal(decodeToken(rawToken(packet)).character.tag, '');
+  packet.data.characters = [7];
+  assert.throws(() => documentFromEnvelope(packet), /Invalid character document/);
+});
+
+test('level rule kind, Part operator and dice appearance must use native shapes', () => {
+  const doc = instantiateTemplate(0);
+  const longsword = doc.rolls.find(r => r.name === 'Longsword');
+  longsword.levelRules.push(newLevelRule());
+  validateDocument(doc);
+  const cases = [
+    [x => x.rolls.find(r => r.name === 'Longsword').levelRules[0].kind = 'SOMETIMES', /level rule kind/],
+    [x => delete x.rolls.find(r => r.name === 'Longsword').levelRules[0].kind, /level rule kind/],
+    [x => x.rolls.find(r => r.name === 'Longsword').levelRules[0] = null, /rule ID/],
+    [x => x.rolls.find(r => r.name === 'Longsword').subgroups[1].operator = 'MULTIPLY', /Part operator/],
+    [x => x.rolls.find(r => r.name === 'Longsword').subgroups[0].operator = { op: 'ADD' }, /Part operator/],
+    [x => x.rolls.find(r => r.name === 'Longsword').subgroups[0] = 'part', /Part ID/],
+    [x => x.rolls[0].diceAppearance = 5, /Invalid dice appearance/],
+    [x => x.rolls[0].diceAppearance = [{ mode: 'UNIFORM' }], /Invalid dice appearance/],
+  ];
+  for (const [mutate, error] of cases) {
+    const bad = structuredClone(doc);
+    mutate(bad);
+    assert.throws(() => validateDocument(bad), error);
+  }
+  const subtract = structuredClone(doc);
+  const part = subtract.rolls.find(r => r.name === 'Longsword').subgroups[1];
+  part.operator = 'SUBTRACT';
+  subtract.rolls.find(r => r.name === 'Longsword').expression = normalFormula(subtract.rolls.find(r => r.name === 'Longsword').subgroups);
+  validateDocument(subtract);
+});
+
+test('custom dice style material and 32-bit ARGB colors are validated', () => {
+  const doc = instantiateTemplate(6);
+  doc.diceStyles.push(newStyle());
+  validateDocument(doc);
+  for (const material of DICE_MATERIALS) {
+    const ok = structuredClone(doc);
+    ok.diceStyles[0].material = material;
+    validateDocument(ok);
+  }
+  for (const [field, value] of [['primaryColorArgb', -1], ['primaryColorArgb', 0xffffffff],
+    ['secondaryColorArgb', -0x80000000], ['secondaryColorArgb', 0]]) {
+    const ok = structuredClone(doc);
+    ok.diceStyles[0][field] = value;
+    validateDocument(ok);
+  }
+  const cases = [
+    ['material', 'PLASTIC', /material/], ['material', undefined, /material/], ['material', 0, /material/],
+    ['primaryColorArgb', 2 ** 32, /color/], ['primaryColorArgb', -(2 ** 31) - 1, /color/],
+    ['primaryColorArgb', 1.5, /color/], ['secondaryColorArgb', '#ff0000', /color/],
+    ['secondaryColorArgb', null, /color/],
+  ];
+  for (const [field, value, error] of cases) {
+    const bad = structuredClone(doc);
+    bad.diceStyles[0][field] = value;
+    assert.throws(() => validateDocument(bad), error, field + '=' + String(value));
+    assert.throws(() => decodeToken(rawToken({ ...envelope(doc), data: { ...envelope(doc).data, diceStyles: bad.diceStyles } })), error);
+  }
+});
+
+function tokenBytes(token) { return Buffer.from(token.slice(3), 'base64url'); }
+function bytesToken(bytes) { return 'v1.' + Buffer.from(bytes).toString('base64url'); }
+const isLinkError = code => error => error.code === code && !(error instanceof SyntaxError) &&
+  !/JSON|Unexpected|Unterminated/.test(error.message);
+
+test('truncated or corrupted share tokens fail with a friendly coded error, never a JSON SyntaxError', () => {
+  for (const index of [6, 0]) {
+    // Template 6 inflates to < 4 KB; Fighter spans several 4 KB chunks, which
+    // previously surfaced "Unterminated string in JSON".
+    const token = encodeToken(instantiateTemplate(index));
+    const bytes = tokenBytes(token);
+    for (const cut of [4, 12, Math.floor(bytes.length / 2), bytes.length - 3]) {
+      assert.throws(() => decodeToken(bytesToken(bytes.subarray(0, cut))), isLinkError('link-invalid'), 'cut ' + cut);
+    }
+    for (const cut of [5, 37, Math.floor(token.length * 0.7), token.length - 1]) {
+      assert.throws(() => decodeToken(token.slice(0, cut)), isLinkError('link-invalid'), 'chars ' + cut);
+    }
+    const flipped = Uint8Array.from(bytes);
+    flipped[Math.floor(flipped.length / 2)] ^= 0xff;
+    assert.throws(() => decodeToken(bytesToken(flipped)), isLinkError('link-invalid'));
+  }
+  assert.throws(() => decodeToken(bytesToken(pako.deflate(new Uint8Array([0xff, 0xfe, 0x7b])))), isLinkError('link-invalid'));
+  assert.throws(() => decodeToken(bytesToken(pako.deflate(new TextEncoder().encode('{"format":')))), isLinkError('link-invalid'));
+  assert.throws(() => decodeToken('v1.'), isLinkError('link-invalid'));
+  assert.throws(() => decodeToken('v1.!'), /Invalid/);
+  assert.throws(() => decodeToken('v9.abc'), isLinkError('link-unsupported'));
+  assert.throws(() => decodeToken('not a token'), isLinkError('link-invalid'));
+});
+
+test('zip bombs and oversized tokens are still rejected as too large', () => {
+  const bomb = bytesToken(pako.deflate(new Uint8Array(200 * 1024).fill(32), { level: 9 }));
+  assert.ok(bomb.length < 1000, 'highly compressible payload');
+  assert.throws(() => decodeToken(bomb), error => error.code === 'link-too-large' && /too large/.test(error.message));
+  const justOver = bytesToken(pako.deflate(new Uint8Array(128 * 1024 + 1).fill(32)));
+  assert.throws(() => decodeToken(justOver), error => error.code === 'link-too-large');
+  assert.throws(() => decodeToken('v1.' + 'A'.repeat(120000)), error => error.code === 'link-too-large');
+  // Exactly at the 128 KB inflate limit is not a size error (just not a character).
+  const atLimit = bytesToken(pako.deflate(new Uint8Array(128 * 1024).fill(32)));
+  assert.throws(() => decodeToken(atLimit), error => error.code === 'link-invalid');
+});
+
+test('malformed #character= and #template= links report an error instead of being ignored', () => {
+  assert.equal(readShareHash(''), null);
+  assert.equal(readShareHash('#top'), null);
+  assert.equal(readShareHash('#template=not-supported&name=Someone&level=1'), null);
+  for (const hash of ['#character=', '#character=v1.', '#character=v1.abc$def', '#character=v1.QUJD']) {
+    assert.throws(() => readShareHash(hash), isLinkError('link-invalid'), hash);
+  }
+  assert.throws(() => readShareHash('#character=v2.QUJD'), isLinkError('link-unsupported'));
+  const token = encodeToken(instantiateTemplate(6));
+  assert.throws(() => readShareHash('#character=' + token.slice(0, -9)), isLinkError('link-invalid'));
+  assert.deepEqual(readShareHash('#character=' + token).rolls.map(r => r.name),
+    instantiateTemplate(6).rolls.map(r => r.name));
+  assert.throws(() => readShareHash('#template=fighter2014v1&name=%E0%A4%A&level=3'), isLinkError('link-invalid'));
+  assert.equal(readShareHash('#template=fighter2014v1&name=Ari%20Fighter&level=3').character.name, 'Ari Fighter');
+});
+
+test('Android app handoff is offered only for valid documents within the 8000-char deep-link bound', () => {
+  const fighter = androidHandoff(instantiateTemplate(0));
+  assert.match(fighter.link, /^dicethrower:\/\/import\?data=v1\./);
+  assert.ok(fighter.link.length <= MAX_APP_LINK_LENGTH);
+  assert.deepEqual(decodeToken(decodeURIComponent(fighter.link.split('data=')[1])).rolls.length,
+    instantiateTemplate(0).rolls.length);
+  // The stock Wizard needs ~24 KB: it must not get an oversized deep link.
+  const wizard = instantiateTemplate(2);
+  assert.ok(androidUrl(wizard).length > MAX_APP_LINK_LENGTH);
+  assert.deepEqual(androidHandoff(wizard), { link: null, reason: 'too-large' });
+  // Invalid characters report the validation problem, not "too large".
+  for (const [mutate, message] of [[x => x.character.name = ' ', /name/], [x => x.character.level = 0, /level/]]) {
+    const bad = instantiateTemplate(6);
+    mutate(bad);
+    const result = androidHandoff(bad);
+    assert.equal(result.link, null);
+    assert.equal(result.reason, 'invalid');
+    assert.match(result.error.message, message);
+  }
+  const huge = instantiateTemplate(6);
+  huge.character.tag = 'x'.repeat(400);
+  for (let i = 0; i < 140; i++) huge.rolls.push({ ...newRoll(huge.character.id), name: 'Roll ' + i, expression: '1d20+' + '1+'.repeat(700) + '1' });
+  const tooBig = androidHandoff(huge);
+  assert.equal(tooBig.reason, 'too-large');
+  assert.equal(tooBig.error.code, 'document-too-large');
+  const custom = structuredClone(wizard);
+  custom.character.tag = 'A different campaign';
+  assert.throws(() => shareUrl(custom, 'https://example.com/workshop/'), error => error.code === 'link-too-long');
 });
