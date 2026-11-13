@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  androidHandoff, decodeToken, documentFromEnvelope, envelope, importAsCopy, instantiateTemplate,
+  androidHandoff, documentFromEnvelope, envelope, importAsCopy, instantiateTemplate,
   listSaved, newCharacter, newGroup, newLevelRule, newModifier, newPart, newRoll, newStyle,
   normalFormula, readShareHash, removeDocument, saveDocument, shareUrl, templates, validateDocument,
   canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences,
@@ -378,8 +378,6 @@ const dictionary = {
     copied: 'Link copiato.', copyFailed: 'Copia non riuscita: il link è selezionato, copialo manualmente.',
   },
 };
-const uid = () => crypto.randomUUID();
-
 function Field({ label, value, onChange, maxLength, readOnly = false }) {
   return <label className="workshop-field"><span>{label}</span>
     <input maxLength={maxLength} readOnly={readOnly} value={value ?? ''} onChange={e => onChange(e.target.value)} />

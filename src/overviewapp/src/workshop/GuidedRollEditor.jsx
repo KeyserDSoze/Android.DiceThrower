@@ -1,5 +1,5 @@
 import {
-  ACTION_KINDS, APPEARANCE_MODES, COMPARISONS, EFFECT_TYPES, SCOPES, SOURCES,
+  ACTION_KINDS, APPEARANCE_MODES, COMPARISONS, EFFECT_TYPES, SCOPES,
   SYSTEM_STYLES, newAction, newActivationGroup, newCondition, newEffect,
   setActionKind, setDieStyle, setPartStyle,
 } from './guided.js';
@@ -23,7 +23,6 @@ function Check({ label, checked, onChange }) {
   return <label className="workshop-check"><input type="checkbox" checked={!!checked}
     onChange={e => onChange(e.target.checked)} /> {label}</label>;
 }
-const aria = (t, key) => t[key];
 const scopeOptions = (t) => SCOPES.map((id, i) => ({ id, name: [t.scopeDice, t.scopeModifiers, t.scopeTotal][i] }));
 const styleChoice = (doc, t) => [{ id: '', name: t.styleAuto }, ...SYSTEM_STYLES, ...doc.diceStyles.map(s => ({ id: s.id, name: s.name }))];
 
@@ -60,10 +59,10 @@ function ConditionEditor({ condition, roll, doc, t, onUpdate, onRemove, disabled
     <button type="button" className="workshop-remove" disabled={disabledRemove} onClick={onRemove} aria-label={t.removeCondition}>{t.removeCondition}</button>
   </div>;
 }
-function EffectEditor({ effect, index, roll, doc, t, onUpdate, onRemove }) {
+function EffectEditor({ effect, roll, doc, t, onUpdate, onRemove }) {
   const mutate = f => onUpdate(e => f(e));
   const parts = roll.subgroups || [];
-  return <details className="workshop-effect" key={effect.id}>
+  return <details className="workshop-effect">
     <summary><strong>{effect.type === 'BONUS' ? '✦' : '−'} {effect.name}</strong>
       <small>{effect.activationGroups.length} {t.orGroups} · {effect.actions.length} {t.actions}</small>
     </summary>
@@ -201,7 +200,7 @@ export default function GuidedRollEditor({ roll, doc, t, onEdit }) {
         </div>
       </div>
       {!roll.effects.length && <p className="workshop-hint">{t.noEffects}</p>}
-      {roll.effects.map((effect,index) => <EffectEditor key={effect.id} effect={effect} index={index}
+      {roll.effects.map((effect,index) => <EffectEditor key={effect.id} effect={effect}
         roll={roll} doc={doc} t={t}
         onUpdate={f => onEdit(r => f(r.effects[index]))}
         onRemove={() => onEdit(r => r.effects.splice(index, 1))} />)}
