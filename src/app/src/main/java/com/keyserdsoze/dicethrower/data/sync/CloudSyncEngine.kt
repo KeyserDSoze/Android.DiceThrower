@@ -58,7 +58,10 @@ class CloudSyncEngine(
         resolutions: Map<String, SyncConflictResolution> = emptyMap(),
     ): SyncRunResult = try {
         val snapshot = local.snapshot(clock())
-        sync(snapshot, conflictPolicy, resolutions)
+        // A journal rebuilt after corruption cannot vouch for the earlier state: until a pass
+        // completes without conflicts, differences are left to the user as on a first connection.
+        val policy = if (snapshot.journal.reconciliationRequired) ConflictPolicy.ASK else conflictPolicy
+        sync(snapshot, policy, resolutions)
     } catch (error: CancellationException) {
         throw error
     } catch (error: Exception) {
@@ -385,6 +388,7 @@ class CloudSyncEngine(
                 settings = settingsResult.commit,
                 successfulAt = completedAt,
                 catalog = catalogResult.commit,
+                reconciliationComplete = conflicts.isEmpty(),
             ),
         )
         val finalPending = pendingCount(commit.snapshot)

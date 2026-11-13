@@ -208,8 +208,7 @@ internal class InstallationWriterIdStore(
 
         val created = idFactory().trim()
         require(created.isNotBlank()) { "Writer ID cannot be blank" }
-        file.parentFile?.mkdirs()
-        file.writeText(created)
+        AtomicFileWriter.writeText(file, created)
         return created
     }
 }

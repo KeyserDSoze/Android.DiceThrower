@@ -1,6 +1,7 @@
 package com.keyserdsoze.dicethrower.data.sync
 
 import android.content.Context
+import com.keyserdsoze.dicethrower.data.AtomicFileWriter
 import java.io.File
 import org.json.JSONArray
 import org.json.JSONObject
@@ -19,20 +20,40 @@ class SyncJournalStore(context: Context) {
     }
 }
 
+/**
+ * The journal is replaced atomically and keeps the previous version as a backup. A journal that
+ * cannot be read (e.g. truncated by an older, non-atomic version) is never fatal: the last good
+ * copy, or else an empty journal, is restored with [LocalSyncJournal.reconciliationRequired] set,
+ * so the next sync asks before resolving any difference instead of trusting the rebuilt state.
+ */
 internal class SyncJournalFileStore(private val file: File) {
+    private val backup = File(file.path + ".bak")
+    private val corrupt = File(file.path + ".corrupt")
+
     fun load(): LocalSyncJournal {
-        val raw = file.takeIf(File::isFile)?.readText() ?: return LocalSyncJournal()
-        return decode(JSONObject(raw))
+        if (!file.exists() && !backup.exists()) return LocalSyncJournal()
+        read(file)?.let { return it }
+        // Keep the unreadable file for diagnosis, out of the way of the next backup rotation.
+        if (file.exists()) {
+            corrupt.delete()
+            if (!file.renameTo(corrupt)) file.delete()
+        }
+        val recovered = (read(backup) ?: LocalSyncJournal()).copy(reconciliationRequired = true)
+        save(recovered)
+        return recovered
     }
 
     fun save(journal: LocalSyncJournal) {
-        file.parentFile?.mkdirs()
-        file.writeText(encode(journal).toString())
+        AtomicFileWriter.writeText(file, encode(journal).toString(), backup)
     }
+
+    private fun read(source: File): LocalSyncJournal? =
+        if (!source.isFile) null else runCatching { decode(JSONObject(source.readText())) }.getOrNull()
 
     private fun encode(journal: LocalSyncJournal): JSONObject = JSONObject()
         .put("version", 1)
         .put("lastSuccessfulSyncAt", journal.lastSuccessfulSyncAt ?: JSONObject.NULL)
+        .apply { if (journal.reconciliationRequired) put("reconciliationRequired", true) }
         .put("pendingDeletions", JSONArray().apply {
             journal.pendingDeletions.sortedBy { it.characterId }.forEach { deletion ->
                 put(JSONObject()
@@ -90,7 +111,10 @@ internal class SyncJournalFileStore(private val file: File) {
                 baseRevision = if (item.isNull("baseRevision")) null else item.getString("baseRevision"),
             ).also(::validateSettingsMetadata)
         }
-        return LocalSyncJournal(pending, settings, lastSuccess, catalog)
+        return LocalSyncJournal(
+            pending, settings, lastSuccess, catalog,
+            reconciliationRequired = json.optBoolean("reconciliationRequired", false),
+        )
     }
 
     private fun validateDeletion(deletion: PendingCharacterDeletion) {

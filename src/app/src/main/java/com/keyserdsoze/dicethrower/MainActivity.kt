@@ -131,6 +131,12 @@ class MainActivity : ComponentActivity() {
             local = AndroidSyncLocalGateway(store),
             remote = cloudRepository,
         )
+        // A sync journal rebuilt after corruption needs a full, user-confirmed reconciliation.
+        if (cloudAccountState.googleConnected && !cloudAccountState.initialReconciliationPending &&
+            store.loadSyncJournal().reconciliationRequired
+        ) {
+            updateCloudAccountState(cloudAccountState.copy(initialReconciliationPending = true))
+        }
         syncStatus = syncEngine.currentStatus(cloudAccountState.googleConnected)
         selectedLanguage = AppLocaleManager.selectedLanguage(this)
         enableEdgeToEdge()

@@ -52,6 +52,11 @@ data class LocalSyncJournal(
     val settingsMetadata: SettingsSyncMetadata? = null,
     val lastSuccessfulSyncAt: Long? = null,
     val diceCatalogMetadata: SettingsSyncMetadata? = null,
+    /**
+     * Set when the journal had to be rebuilt from a backup or from scratch: until a sync completes
+     * without conflicts, differences are never resolved automatically (as on a first connection).
+     */
+    val reconciliationRequired: Boolean = false,
 )
 
 enum class SyncStatusKind {

@@ -50,6 +50,8 @@ data class LocalSyncCommitPlan(
     val settings: SettingsSyncCommit?,
     val successfulAt: Long,
     val catalog: DiceCatalogSyncCommit? = null,
+    /** The pass left no conflict, so a journal rebuilt after corruption is trusted again. */
+    val reconciliationComplete: Boolean = false,
 )
 
 data class LocalSyncCommitResult(
@@ -211,6 +213,8 @@ class AndroidSyncLocalGateway(private val store: LocalStore) : SyncLocalGateway 
                 resolved[current.characterId] == current
             },
             lastSuccessfulSyncAt = plan.successfulAt,
+            reconciliationRequired = journal.reconciliationRequired &&
+                !(plan.reconciliationComplete && skipped.isEmpty() && !settingsSkipped),
         )
         store.saveSyncJournal(journal)
 

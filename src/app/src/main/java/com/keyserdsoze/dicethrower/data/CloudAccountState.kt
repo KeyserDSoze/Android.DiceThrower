@@ -70,8 +70,7 @@ internal class CloudAccountStateFileStore(private val file: File) {
     }
 
     fun save(state: CloudAccountState) {
-        file.parentFile?.mkdirs()
-        file.writeText(encode(state).toString())
+        AtomicFileWriter.writeText(file, encode(state).toString())
     }
 
     private fun encode(state: CloudAccountState): JSONObject = JSONObject()
