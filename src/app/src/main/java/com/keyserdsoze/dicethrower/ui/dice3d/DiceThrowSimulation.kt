@@ -132,6 +132,12 @@ internal object DiceThrowSimulator {
     private const val SETTLE_TAIL_SECONDS = 0.10f
     private const val TOPPLE_TAIL_SECONDS = 0.32f
 
+    private const val MAX_THROW_ATTEMPTS = 5
+    private const val SEED_STRIDE = -7046029254386353131L
+    /** The results panel covers the felt below about a third of the half height. */
+    private const val KEEP_OUT_FRACTION = 0.31f
+    private const val LONG_THROW_SECONDS = 3.0f
+
     /**
      * Resting pose with the chosen value on top, for still tables and previews. The numeral is
      * turned upright on screen; [yawRadians] only adds a small natural variation.
@@ -177,6 +183,39 @@ internal object DiceThrowSimulator {
         halfWidth: Float = DiceTableViewport.HALF_WIDTH,
         halfHeight: Float = DiceTableViewport.HALF_HEIGHT,
         spawnFromEdge: Boolean = false,
+    ): BakedDiceThrow {
+        // Every throw is fully natural; a throw that would leave a die resting under the results
+        // panel (or take too long) is simply not chosen and the next deterministic seed is tried.
+        var best: BakedDiceThrow? = null
+        var bestScore = Int.MAX_VALUE
+        for (attempt in 0 until MAX_THROW_ATTEMPTS) {
+            val candidate = bakeOnce(specs, seed + attempt * SEED_STRIDE, dieScale, halfWidth, halfHeight, spawnFromEdge)
+            val score = restingScore(candidate, specs, halfHeight)
+            if (score < bestScore) {
+                best = candidate
+                bestScore = score
+            }
+            if (score == 0) break
+        }
+        return best!!
+    }
+
+    /** Lower is better: dice hidden by the results panel weigh far more than a long throw. */
+    private fun restingScore(baked: BakedDiceThrow, specs: List<DieThrowSpec>, halfHeight: Float): Int {
+        val keepOutTop = -halfHeight * KEEP_OUT_FRACTION
+        val hidden = specs.indices.count { index ->
+            specs[index].fixedPose == null && specs[index].lane == null && baked.finalPose(index).position.y < keepOutTop
+        }
+        return hidden * 10 + if (baked.durationSeconds > LONG_THROW_SECONDS) 1 else 0
+    }
+
+    private fun bakeOnce(
+        specs: List<DieThrowSpec>,
+        seed: Long,
+        dieScale: Float,
+        halfWidth: Float,
+        halfHeight: Float,
+        spawnFromEdge: Boolean,
     ): BakedDiceThrow {
         val random = Random(seed)
         val bodies = specs.map { spec ->
@@ -382,7 +421,8 @@ internal object DiceThrowSimulator {
             val y = (launchY - row * rowSpacing + random.range(-0.06, 0.06)).coerceAtLeast(-halfHeight + bound * 1.05)
             val z = 1.65 + row * 0.24 + random.range(0.0, 0.55)
             // Dice leave the hand together but never in lockstep: each gets its own speed and line.
-            val dieSpeed = speed * random.range(0.84, 1.10)
+            // Back rows start lower on the felt, so they are thrown harder to reach the middle.
+            val dieSpeed = speed * random.range(0.84, 1.10) * (1.0 + row * 0.14)
             val dirX = sin(heading + random.range(-0.28, 0.28)) - x / halfWidth * 0.14
             val dirY = cos(heading)
             body.launch(x, y, z, dirX * dieSpeed, dirY * dieSpeed, random.range(0.8, 2.6), random)

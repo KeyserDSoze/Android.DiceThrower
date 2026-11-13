@@ -2,6 +2,7 @@ package com.keyserdsoze.dicethrower.ui.dice3d
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Typeface
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.GLUtils
@@ -11,10 +12,7 @@ import android.util.Log
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
@@ -22,6 +20,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.keyserdsoze.dicethrower.R
 import com.keyserdsoze.dicethrower.dice.CandidateVisualLighting
 import com.keyserdsoze.dicethrower.dice.DiceRollVisualEvent
 import com.keyserdsoze.dicethrower.model.DiceTableTheme
@@ -56,14 +55,15 @@ fun Dice3DScene(
     onSettled: (Long) -> Unit = {},
 ) {
     val sceneModifier = if (fullBleed) modifier else modifier.clip(RoundedCornerShape(24.dp))
-    var glView by remember { mutableStateOf<DiceGLView?>(null) }
+    // A plain holder (not state): the lifecycle observer reads it when events arrive, so creating
+    // the view never triggers an extra recomposition.
+    val viewHolder = remember { arrayOfNulls<DiceGLView>(1) }
     val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner, glView) {
-        val view = glView
+    DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, lifecycleEvent ->
             when (lifecycleEvent) {
-                Lifecycle.Event.ON_RESUME -> view?.onResume()
-                Lifecycle.Event.ON_PAUSE -> view?.onPause()
+                Lifecycle.Event.ON_RESUME -> viewHolder[0]?.onResume()
+                Lifecycle.Event.ON_PAUSE -> viewHolder[0]?.onPause()
                 else -> Unit
             }
         }
@@ -77,7 +77,7 @@ fun Dice3DScene(
                 it.onSettled = onSettled
                 it.setScene(event, tableTheme, tableImage, tableImageKey, animateRoll)
                 it.setWinnerRevealed(winnerRevealed)
-                glView = it
+                viewHolder[0] = it
             }
         },
         update = { view ->
@@ -101,6 +101,7 @@ private class DiceGLView(context: Context, previewMode: Boolean) : GLSurfaceView
         onSettled = { eventId -> post { onSettled(eventId) } },
         previewMode = previewMode,
         requestFrame = { requestRender() },
+        numeralTypeface = runCatching { context.resources.getFont(R.font.cinzel_black) }.getOrNull(),
     )
     private var lastSceneKey: SceneKey? = null
     private var lastWinnerRevealed: Boolean? = null
@@ -308,6 +309,7 @@ private class DiceSceneRenderer(
     private val onSettled: (Long) -> Unit,
     private val previewMode: Boolean,
     private val requestFrame: () -> Unit,
+    private val numeralTypeface: Typeface?,
 ) : GLSurfaceView.Renderer {
     private val projection = FloatArray(16)
     private val view = FloatArray(16)
@@ -772,7 +774,7 @@ private class DiceSceneRenderer(
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
-        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, glyphAtlas, 0)
+        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, glyphAtlas(numeralTypeface), 0)
         GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D)
         if (GLES20.glGetString(GLES20.GL_EXTENSIONS)?.contains("GL_EXT_texture_filter_anisotropic") == true) {
             GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, TEXTURE_MAX_ANISOTROPY, 4f)
@@ -855,8 +857,13 @@ private class DiceSceneRenderer(
         private const val PREVIEW_SCALE = 1.0f
         private const val TEXTURE_MAX_ANISOTROPY = 0x84FE
 
-        /** Shared, immutable numeral atlas (about 1 MB), painted once per process. */
-        private val glyphAtlas: Bitmap by lazy { DiceGlyphAtlas.render() }
+        @Volatile
+        private var sharedAtlas: Bitmap? = null
+
+        /** Shared, immutable numeral atlas (about 1 MB), painted once per process in the brand typeface. */
+        private fun glyphAtlas(typeface: Typeface?): Bitmap = sharedAtlas ?: synchronized(this) {
+            sharedAtlas ?: (typeface?.let(DiceGlyphAtlas::render) ?: DiceGlyphAtlas.render()).also { sharedAtlas = it }
+        }
 
         /** Minimal Lambert shading used only if a driver rejects the full material shader. */
         private const val FALLBACK_DICE_FRAGMENT = """

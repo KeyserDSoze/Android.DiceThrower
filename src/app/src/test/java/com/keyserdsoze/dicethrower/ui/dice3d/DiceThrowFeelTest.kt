@@ -47,8 +47,10 @@ class DiceThrowFeelTest {
         assertEquals("dice interpenetrating at rest", 0, overlaps)
         assertTrue("throws too abrupt", percentile(durations, .1f) >= 0.9f)
         assertTrue("throws too long", percentile(durations, .9f) <= 3.0f)
-        assertTrue("dice should rest mid-table", percentile(finalY, .5f) in -1.5f..2.0f)
-        assertTrue("dice hidden under the results panel", percentile(finalY, .05f) >= -3.4f)
+        assertTrue("dice should rest mid-table", percentile(finalY, .5f) in -1.5f..2.5f)
+        val hidden = finalY.count { it < -DiceTableViewport.HALF_HEIGHT * 0.31f }
+        println("dice resting under the results panel: $hidden of ${finalY.size}")
+        assertTrue("dice hidden under the results panel: $hidden", hidden <= finalY.size / 100)
         assertTrue("dice crowding the top rail", percentile(finalY, .95f) <= 4.8f)
         assertTrue("dice must visibly fly", highest > 1.6f)
     }
