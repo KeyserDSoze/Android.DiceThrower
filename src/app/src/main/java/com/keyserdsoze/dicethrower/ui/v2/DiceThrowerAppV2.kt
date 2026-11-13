@@ -9,6 +9,17 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.rounded.ArrowDownward
+import androidx.compose.material.icons.rounded.ArrowUpward
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.sp
+import com.keyserdsoze.dicethrower.ui.theme.Cinzel
+import com.keyserdsoze.dicethrower.ui.theme.DiceTheme
+import com.keyserdsoze.dicethrower.ui.theme.LightSystemBarIcons
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -737,8 +748,7 @@ private fun CharactersScreenV2(
                                 modifier = Modifier.fillMaxWidth().padding(18.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(Icons.Rounded.Casino, contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary)
+                                DieTile(20)
                                 Spacer(Modifier.width(14.dp))
                                 Text(
                                     stringResource(R.string.dice_library_entry),
@@ -932,12 +942,7 @@ private fun DashboardContentV2(
                         modifier = Modifier.padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Icon(
-                            Icons.Rounded.Casino,
-                            contentDescription = null,
-                            modifier = Modifier.size(46.dp),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
+                        DieGlyph(20, Modifier.size(56.dp))
                         Spacer(Modifier.height(12.dp))
                         Text(stringResource(R.string.no_rolls), fontWeight = FontWeight.Bold)
                     }
@@ -957,18 +962,8 @@ private fun DashboardContentV2(
                             modifier = Modifier.fillMaxWidth().padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Surface(
-                                shape = RoundedCornerShape(14.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer,
-                            ) {
-                                Icon(
-                                    Icons.Rounded.AutoAwesome,
-                                    contentDescription = null,
-                                    modifier = Modifier.padding(10.dp),
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                )
-                            }
-                            Spacer(Modifier.width(12.dp))
+                            DieGroupTile()
+                            Spacer(Modifier.width(14.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(group.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                                 Text(
@@ -1014,20 +1009,10 @@ private fun RollLaunchRowV2(
             .padding(horizontal = 4.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Surface(
-            shape = RoundedCornerShape(14.dp),
-            color = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-        ) {
-            Icon(
-                Icons.Rounded.Casino,
-                contentDescription = null,
-                modifier = Modifier.padding(10.dp),
-            )
-        }
-        Spacer(Modifier.width(12.dp))
+        DieTile(dominantDieSides(resolved ?: roll.expression))
+        Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
-            Text(roll.name, fontWeight = FontWeight.Bold)
+            Text(roll.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(
                 resolved ?: roll.expression,
                 style = MaterialTheme.typography.bodySmall,
@@ -1356,11 +1341,8 @@ internal fun CharacterEditContentV2(
                         },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(
-                        imageVector = if (entry is DashboardEntry.GroupEntry) Icons.Rounded.AutoAwesome else Icons.Rounded.Casino,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
+                    if (entry is DashboardEntry.GroupEntry) DieGroupTile(size = 38.dp)
+                    else DieTile(dominantDieSides((entry as DashboardEntry.RollEntry).roll.expression), size = 38.dp)
                     Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
                         Text(title, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -2077,18 +2059,8 @@ private fun RollEditorCardV2(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                ) {
-                    Icon(
-                        Icons.Rounded.Casino,
-                        contentDescription = null,
-                        modifier = Modifier.padding(10.dp),
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    )
-                }
-                Spacer(Modifier.width(10.dp))
+                DieTile(dominantDieSides(resolved ?: roll.expression))
+                Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(roll.name, fontWeight = FontWeight.Bold)
                     Text(roll.expression, style = MaterialTheme.typography.bodyMedium)
@@ -2542,6 +2514,7 @@ private fun RollScreenV2(
         onDispose { detector?.stop() }
     }
 
+    LightSystemBarIcons()
     ArcaneBackground {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             // Keep A/B identification for TalkBack without placing visible
@@ -2711,29 +2684,37 @@ private fun RollScreenV2(
                 }
             }
 
+            val accents = DiceTheme.accents
             Surface(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
                     .padding(horizontal = 12.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(24.dp),
-                color = Color.Black.copy(alpha = 0.58f),
-                contentColor = Color.White,
+                shape = RoundedCornerShape(28.dp),
+                color = accents.glass,
+                contentColor = Color(0xFFF3EDE0),
+                border = BorderStroke(
+                    1.dp,
+                    Brush.horizontalGradient(
+                        listOf(accents.glassBorder, Color(0x33FFFFFF), accents.glassBorder),
+                    ),
+                ),
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Rounded.ArrowBack,
                             contentDescription = stringResource(R.string.back),
-                            modifier = Modifier.size(28.dp),
+                            modifier = Modifier.size(26.dp),
                         )
                     }
                     Row(
                         modifier = Modifier
                             .weight(1f)
+                            .clip(RoundedCornerShape(16.dp))
                             .clickable { showStats = true }
                             .padding(horizontal = 8.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -2741,56 +2722,70 @@ private fun RollScreenV2(
                     ) {
                         Text(
                             roll.name,
+                            modifier = Modifier.weight(1f, fill = false),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Black,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
-                        Spacer(Modifier.width(7.dp))
+                        Spacer(Modifier.width(8.dp))
                         Icon(
                             Icons.Rounded.BarChart,
                             contentDescription = stringResource(R.string.statistics),
                             modifier = Modifier.size(19.dp),
-                            tint = Color.White.copy(alpha = 0.9f),
+                            tint = accents.goldBright.copy(alpha = 0.9f),
                         )
                     }
                     val waitingForDice = hasRolled && !resultRevealed
+                    fun emphasis(mode: DoubleRollMode) = if (!waitingForDice) 1f
+                        else if (lastThrowMode == mode) 0.72f else 0.30f
                     if (roll.doubleRollEnabled) {
                         IconButton(
                             onClick = { requestThrow(DoubleRollMode.WORST) },
                             enabled = !hasRolled || resultRevealed,
                         ) {
-                            Icon(
-                                Icons.Rounded.Casino,
+                            CandidateThrowIcon(
+                                sides = dominantDieSides(formula.expression),
+                                tint = accents.malus.copy(alpha = emphasis(DoubleRollMode.WORST)),
+                                arrow = Icons.Rounded.ArrowDownward,
                                 contentDescription = stringResource(R.string.double_roll_worst),
-                                modifier = Modifier.size(27.dp),
-                                tint = Color(0xFFF87171).copy(alpha = if (!waitingForDice) 1f
-                                    else if (lastThrowMode == DoubleRollMode.WORST) 0.72f else 0.30f),
                             )
                         }
                         IconButton(
                             onClick = { requestThrow(DoubleRollMode.BEST) },
                             enabled = !hasRolled || resultRevealed,
                         ) {
-                            Icon(
-                                Icons.Rounded.Casino,
+                            CandidateThrowIcon(
+                                sides = dominantDieSides(formula.expression),
+                                tint = accents.bonus.copy(alpha = emphasis(DoubleRollMode.BEST)),
+                                arrow = Icons.Rounded.ArrowUpward,
                                 contentDescription = stringResource(R.string.double_roll_best),
-                                modifier = Modifier.size(27.dp),
-                                tint = Color(0xFF86EFAC).copy(alpha = if (!waitingForDice) 1f
-                                    else if (lastThrowMode == DoubleRollMode.BEST) 0.72f else 0.30f),
                             )
                         }
                     }
-                    IconButton(
-                        onClick = { requestThrow() },
-                        enabled = !hasRolled || resultRevealed,
+                    val throwLabel = stringResource(if (hasRolled) R.string.roll_again else R.string.throw_dice)
+                    Box(
+                        modifier = Modifier
+                            .size(54.dp)
+                            .graphicsLayer { alpha = emphasis(DoubleRollMode.NORMAL) }
+                            .clip(CircleShape)
+                            .background(
+                                Brush.linearGradient(listOf(accents.goldBright, Color(0xFFE8C170), Color(0xFF9C7425))),
+                            )
+                            .border(1.dp, Color(0x99FFF4D6), CircleShape)
+                            .clickable(
+                                enabled = !hasRolled || resultRevealed,
+                                role = Role.Button,
+                                onClickLabel = throwLabel,
+                            ) { requestThrow() }
+                            .semantics { contentDescription = throwLabel },
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Icon(
-                            Icons.Rounded.Casino,
-                            contentDescription = stringResource(if (hasRolled) R.string.roll_again else R.string.throw_dice),
-                            modifier = Modifier.size(30.dp),
-                            tint = Color.White.copy(alpha = if (!waitingForDice) 1f
-                                else if (lastThrowMode == DoubleRollMode.NORMAL) 0.72f else 0.30f),
+                        DieGlyph(
+                            dominantDieSides(formula.expression),
+                            Modifier.size(32.dp),
+                            tint = Color(0xFF2A1C00),
+                            glow = Color(0xFF6B4A08),
                         )
                     }
                 }
@@ -3040,23 +3035,24 @@ private fun RollPartsReveal(
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         parts.forEachIndexed { index, part ->
+            val accents = DiceTheme.accents
             Surface(
                 modifier = Modifier.fillMaxWidth().testTag("roll-part-${index}"),
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
-                shape = RoundedCornerShape(16.dp),
+                color = accents.glass,
+                contentColor = Color(0xFFF3EDE0),
+                shape = RoundedCornerShape(18.dp),
+                border = BorderStroke(1.dp, Brush.horizontalGradient(listOf(accents.glassBorder, Color(0x22FFFFFF)))),
                 shadowElevation = 6.dp,
-                tonalElevation = 3.dp,
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 9.dp),
+                    modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Text(
                         part.subgroup.name.ifBlank { "${index + 1}" },
                         modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleSmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -3067,9 +3063,9 @@ private fun RollPartsReveal(
                         )
                         Text(
                             animatedTotal.toString(),
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = accents.goldBright,
                             maxLines = 1,
                             softWrap = false,
                         )
@@ -3077,7 +3073,7 @@ private fun RollPartsReveal(
                             Text(
                                 "${part.result.total} → $finalTotal",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = Color(0xB3F3EDE0),
                             )
                         }
                     }
@@ -3113,10 +3109,19 @@ private fun RollTotalReveal(total: Int, aboveAverage: Boolean,
         else scale.snapTo(1f)
     }
     val visibleTotal = animatedRollValue(originalTotal ?: total, total, animateValues)
+    val accents = DiceTheme.accents
     Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = if (aboveAverage) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-        shadowElevation = 8.dp,
+        shape = RoundedCornerShape(26.dp),
+        color = accents.glass,
+        contentColor = Color(0xFFF3EDE0),
+        border = BorderStroke(
+            if (aboveAverage) 1.5.dp else 1.dp,
+            Brush.linearGradient(
+                if (aboveAverage) listOf(accents.goldBright, Color(0xFFE8C170), Color(0xFF9C7425))
+                else listOf(accents.glassBorder, Color(0x33FFFFFF)),
+            ),
+        ),
+        shadowElevation = 10.dp,
         modifier = Modifier
             .testTag("roll-single-result")
             .graphicsLayer {
@@ -3126,15 +3131,23 @@ private fun RollTotalReveal(total: Int, aboveAverage: Boolean,
             },
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 26.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 34.dp, vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(stringResource(R.string.total), style = MaterialTheme.typography.labelMedium)
+            Text(
+                stringResource(R.string.total),
+                style = MaterialTheme.typography.labelMedium.copy(fontFamily = Cinzel, letterSpacing = 2.sp),
+                color = Color(0xCCF3EDE0),
+            )
             Text(
                 visibleTotal.toString(),
-                style = MaterialTheme.typography.headlineLarge,
+                style = MaterialTheme.typography.displayMedium.copy(
+                    brush = if (aboveAverage) Brush.verticalGradient(
+                        listOf(Color(0xFFFFF1C9), Color(0xFFE8C170), Color(0xFFB58A35)),
+                    ) else null,
+                ),
                 fontWeight = FontWeight.Black,
-                color = if (aboveAverage) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                color = if (aboveAverage) Color.Unspecified else Color(0xFFF3EDE0),
                 maxLines = 1,
             )
         }

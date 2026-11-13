@@ -46,6 +46,8 @@ internal object DiceShaders {
         uniform vec4 uTint;
         // x = felt height (world z), y = die size
         uniform vec2 uGround;
+        // die centre (world); w = normal curvature (faces read as subtly domed)
+        uniform vec4 uCenter;
         uniform float uInkPass;
         uniform sampler2D uGlyphs;
 
@@ -116,7 +118,9 @@ internal object DiceShaders {
             vec3 sharpEnv = environment(reflected);
             vec3 blurredEnv = mix(environment(normalize(mix(reflected, n, 0.55))), hemisphere * 1.4, 0.35);
             vec3 env = mix(sharpEnv, blurredEnv, clamp(roughness * 1.25, 0.0, 1.0));
-            vec3 reflection = env * fresnel * (1.0 - roughness * 0.55);
+            // Fine brushing on metal: anisotropic streaks catch the light as the die turns.
+            float brushed = 0.80 + 0.20 * sin(vLocal.y * 260.0 + sin(vLocal.x * 9.0 + vLocal.z * 7.0) * 3.0);
+            vec3 reflection = env * fresnel * (1.0 - roughness * 0.55) * mix(1.0, brushed, metal * 0.7);
 
             float coatFresnel = 0.04 + 0.96 * pow(1.0 - nv, 5.0);
             vec3 coat = clearcoat * coatFresnel * (environment(reflected) * 0.75 +
@@ -127,7 +131,10 @@ internal object DiceShaders {
         }
 
         void main() {
-            vec3 n = normalize(vNormal);
+            vec3 geometric = normalize(vNormal);
+            // Real dice faces are never perfectly flat: a hint of doming makes reflections travel
+            // across each face instead of filling it with one flat colour.
+            vec3 n = normalize(mix(geometric, normalize(vWorld - uCenter.xyz), uCenter.w));
             vec3 v = normalize(uCamera - vWorld);
             float brightness = uTint.w;
 

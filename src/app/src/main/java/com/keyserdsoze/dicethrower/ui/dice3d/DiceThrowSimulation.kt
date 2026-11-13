@@ -132,11 +132,20 @@ internal object DiceThrowSimulator {
     private const val SETTLE_TAIL_SECONDS = 0.10f
     private const val TOPPLE_TAIL_SECONDS = 0.32f
 
-    /** Resting pose with the chosen value on top, for still tables and previews. */
+    /**
+     * Resting pose with the chosen value on top, for still tables and previews. The numeral is
+     * turned upright on screen; [yawRadians] only adds a small natural variation.
+     */
     fun restingPose(sides: Int, value: Int, x: Float, y: Float, yawRadians: Float, scale: Float): DiePose {
         val geometry = DieGeometries.forSides(sides)
         val anchor = geometry.anchors[geometry.anchorIndicesForValue(value).first()]
-        val rotation = (Quat.fromAxisAngle(Vec3.UNIT_Z, yawRadians) * Quat.between(anchor, Vec3.UNIT_Z)).normalized()
+        val aligned = Quat.between(anchor, Vec3.UNIT_Z)
+        val glyph = geometry.glyphs.firstOrNull { it.normal.dot(anchor) > 0.999f }
+        val yaw = if (glyph == null) yawRadians else {
+            val up = aligned.rotate(glyph.up)
+            kotlin.math.atan2(up.x, up.y) + sin(yawRadians) * 0.20f
+        }
+        val rotation = (Quat.fromAxisAngle(Vec3.UNIT_Z, yaw) * aligned).normalized()
         val lowest = geometry.vertices.minOf { rotation.rotate(it).z }
         return DiePose(Vec3(x, y, -lowest * scale), rotation)
     }

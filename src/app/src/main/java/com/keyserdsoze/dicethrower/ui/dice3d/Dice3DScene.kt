@@ -299,6 +299,7 @@ private class DiceProgram(val id: Int) {
     val detail = GLES20.glGetUniformLocation(id, "uDetail")
     val tint = GLES20.glGetUniformLocation(id, "uTint")
     val ground = GLES20.glGetUniformLocation(id, "uGround")
+    val center = GLES20.glGetUniformLocation(id, "uCenter")
     val inkPass = GLES20.glGetUniformLocation(id, "uInkPass")
     val glyphs = GLES20.glGetUniformLocation(id, "uGlyphs")
 }
@@ -678,6 +679,7 @@ private class DiceSceneRenderer(
             val lighting = style.lighting
             GLES20.glUniform4f(program.surface, lighting.roughness, lighting.metalness, lighting.clearcoat, lighting.translucency)
             GLES20.glUniform4f(program.detail, lighting.swirl, lighting.innerGlow, lighting.sparkle, die.phase * 0.071f + index * 1.37f)
+            GLES20.glUniform4f(program.center, model[12], model[13], model[14], lighting.curvature)
             val glow = if (accent != null) 0.06f * flash / 0.2f else 0f
             GLES20.glUniform4f(
                 program.tint,

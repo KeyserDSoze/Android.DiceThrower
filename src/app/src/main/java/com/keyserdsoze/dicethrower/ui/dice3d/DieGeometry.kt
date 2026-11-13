@@ -234,7 +234,7 @@ internal object DieGeometries {
         )
         return faceNumbered(
             sides, vertices, faces, oppositeLabels(vertices, faces, pairs),
-            upMode = UpMode.EDGE, fill = 0.86f, bevel = 0.095f,
+            upMode = UpMode.EDGE, fill = 0.70f, bevel = 0.095f,
         )
     }
 

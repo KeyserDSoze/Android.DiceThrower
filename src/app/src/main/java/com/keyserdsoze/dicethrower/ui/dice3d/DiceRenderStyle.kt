@@ -38,6 +38,8 @@ internal data class MaterialLighting(
     /** Secondary-colour core glow (gemstones). */
     val innerGlow: Float,
     val sparkle: Float,
+    /** How strongly face normals bend towards the die centre (soft domed reflections). */
+    val curvature: Float,
 )
 
 internal data class DiceRenderStyle(
@@ -92,6 +94,7 @@ internal object DiceRenderStyleFactory {
             swirl = 0.92f,
             innerGlow = 0f,
             sparkle = 0f,
+            curvature = 0.10f,
         )
         DiceMaterial.MATTE_RESIN -> MaterialLighting(
             roughness = 0.78f,
@@ -101,15 +104,17 @@ internal object DiceRenderStyleFactory {
             swirl = 0.70f,
             innerGlow = 0f,
             sparkle = 0f,
+            curvature = 0.06f,
         )
         DiceMaterial.METAL -> MaterialLighting(
-            roughness = 0.26f,
+            roughness = 0.20f,
             metalness = 1f,
             clearcoat = 0f,
             translucency = 0f,
             swirl = 0f,
             innerGlow = 0f,
             sparkle = 0.15f,
+            curvature = 0.24f,
         )
         DiceMaterial.GEMSTONE -> MaterialLighting(
             roughness = 0.08f,
@@ -119,6 +124,7 @@ internal object DiceRenderStyleFactory {
             swirl = 0f,
             innerGlow = 0.55f,
             sparkle = 1f,
+            curvature = 0.03f,
         )
     }
 }
