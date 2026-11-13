@@ -19,7 +19,12 @@ import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import com.keyserdsoze.dicethrower.data.GoogleAccountIdentity
+import com.google.android.gms.tasks.Task
 import com.keyserdsoze.dicethrower.data.cloud.DRIVE_APPDATA_SCOPE
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 enum class GoogleConnectionFailure {
     CONFIGURATION,
@@ -32,6 +37,18 @@ sealed interface GoogleSignInResult {
     data class Success(val account: GoogleAccountIdentity) : GoogleSignInResult
     data object Canceled : GoogleSignInResult
     data class Failure(val reason: GoogleConnectionFailure) : GoogleSignInResult
+}
+
+sealed interface DriveAuthorizationResult {
+    data object Authorized : DriveAuthorizationResult
+    data class NeedsResolution(val request: IntentSenderRequest) : DriveAuthorizationResult
+    data object Failed : DriveAuthorizationResult
+}
+
+private suspend fun <T> Task<T>.await(): T = suspendCancellableCoroutine { continuation ->
+    addOnSuccessListener { continuation.resume(it) }
+    addOnFailureListener { continuation.resumeWithException(it) }
+    addOnCanceledListener { continuation.cancel() }
 }
 
 class GoogleAccountCoordinator(private val activity: Activity) {
@@ -81,30 +98,31 @@ class GoogleAccountCoordinator(private val activity: Activity) {
         }
     }
 
-    fun requestDriveAuthorization(
-        accountEmail: String,
-        onAuthorized: () -> Unit,
-        onResolution: (IntentSenderRequest) -> Unit,
-        onFailure: () -> Unit,
-    ) {
+    /** Awaited by the caller's coroutine, so a destroyed Activity (cancelled scope) never gets a late callback. */
+    suspend fun requestDriveAuthorization(accountEmail: String): DriveAuthorizationResult {
         val request = AuthorizationRequest.builder()
             .setAccount(Account(accountEmail, GOOGLE_ACCOUNT_TYPE))
             .setRequestedScopes(listOf(driveScope))
             .build()
-        authorizationClient.authorize(request)
-            .addOnSuccessListener { result ->
-                if (result.hasResolution()) {
-                    val pendingIntent = result.pendingIntent
-                    if (pendingIntent == null) {
-                        onFailure()
-                    } else {
-                        onResolution(IntentSenderRequest.Builder(pendingIntent.intentSender).build())
-                    }
+        return try {
+            val result = authorizationClient.authorize(request).await()
+            if (result.hasResolution()) {
+                val pendingIntent = result.pendingIntent
+                if (pendingIntent == null) {
+                    DriveAuthorizationResult.Failed
                 } else {
-                    onAuthorized()
+                    DriveAuthorizationResult.NeedsResolution(
+                        IntentSenderRequest.Builder(pendingIntent.intentSender).build(),
+                    )
                 }
+            } else {
+                DriveAuthorizationResult.Authorized
             }
-            .addOnFailureListener { onFailure() }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            DriveAuthorizationResult.Failed
+        }
     }
 
     fun finishDriveAuthorization(data: Intent?): Boolean {
@@ -115,20 +133,20 @@ class GoogleAccountCoordinator(private val activity: Activity) {
         }.getOrDefault(false)
     }
 
-    fun disconnect(
-        accountEmail: String,
-        onComplete: () -> Unit,
-        onFailure: () -> Unit,
-    ) {
+    /** Returns true when the Drive grant was revoked. */
+    suspend fun disconnect(accountEmail: String): Boolean {
         val request = RevokeAccessRequest.builder()
             .setAccount(Account(accountEmail, GOOGLE_ACCOUNT_TYPE))
             .setScopes(listOf(driveScope))
             .build()
-        authorizationClient.revokeAccess(request)
-            .addOnSuccessListener {
-                onComplete()
-            }
-            .addOnFailureListener { onFailure() }
+        return try {
+            authorizationClient.revokeAccess(request).await()
+            true
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            false
+        }
     }
 
     suspend fun clearCredentialSession() {
