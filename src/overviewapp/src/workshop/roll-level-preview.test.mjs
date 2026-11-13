@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { instantiateTemplate, envelope, validateDocument } from './character.js';
 import { resolveLevelTokens, rollLevelPreview } from './roll-level-preview.js';
 
@@ -92,4 +95,37 @@ test('Native Roll Parts remain separate and changing import preview level is non
   assert.match(active.formula,/1d20\+.*\+1\)/);
   assert.match(active.formula,/2d10/);
   assert.equal(JSON.stringify(fireBolt),before);
+});
+
+test('implicit multiplication before a variable keeps its meaning without regex lookbehind', () => {
+  const wizard = instantiateTemplate(2);
+  const intelligence = wizard.modifiers.find(m => m.name === 'Intelligence').value;
+  assert.equal(resolveLevelTokens('2{level}', wizard, 7), '2x7');
+  assert.equal(resolveLevelTokens('10{level}', wizard, 7), '10x7');
+  assert.equal(resolveLevelTokens('{level}{level}', wizard, 7), '7x7');
+  assert.equal(resolveLevelTokens('(1d6){level}', wizard, 7), '(1d6)x7');
+  assert.equal(resolveLevelTokens('{level}{Intelligence}{level}', wizard, 3), '3x' + intelligence + 'x3');
+  assert.equal(resolveLevelTokens('1d{level}', wizard, 8), '1d8');
+  assert.equal(resolveLevelTokens('{partId:a}{level}', wizard, 4), '{partId:a}x4');
+  // Same insertion points as the former /(?<=[0-9)}])(?=\{)/ implementation.
+  const lookbehind = new RegExp('(?<=[0-9)}])(?=\\{)', 'g');
+  const alphabet = ['1', '2', '(', ')', '{', '}', 'd', '+', 'x', 'level', ' '];
+  let seed = 7;
+  const next = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+  for (let i = 0; i < 500; i++) {
+    let text = '';
+    for (let n = Math.floor(next() * 14); n > 0; n--) text += alphabet[Math.floor(next() * alphabet.length)];
+    assert.equal(text.replace(/([0-9)}])(?=\{)/g, '$1x'), text.replace(lookbehind, 'x'), text);
+  }
+});
+
+test('shipped workshop sources avoid regex lookbehind (unsupported before Safari 16.4)', () => {
+  const root = fileURLToPath(new URL('..', import.meta.url));
+  const sources = readdirSync(root, { recursive: true })
+    .filter(name => /\.(js|jsx)$/.test(name) && !name.includes('node_modules'));
+  assert.ok(sources.length > 5);
+  for (const name of sources) {
+    const text = readFileSync(join(root, name), 'utf8');
+    assert.ok(!/\(\?<[=!]/.test(text), name + ' uses a regex lookbehind');
+  }
 });
