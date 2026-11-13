@@ -14,7 +14,6 @@ import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.sp
 import com.keyserdsoze.dicethrower.ui.theme.Cinzel
 import com.keyserdsoze.dicethrower.ui.theme.DiceTheme
