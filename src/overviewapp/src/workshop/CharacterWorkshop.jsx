@@ -5,6 +5,7 @@ import {
   listSaved, newCharacter, newGroup, newLevelRule, newModifier, newPart, newRoll, newStyle,
   normalFormula, readShareHash, removeDocument, saveDocument, shareUrl, templates, validateDocument,
   canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences,
+  DICE_MATERIALS, MAX_TAG_LENGTH,
   WIZARD_2014_SRD_SPELLS, FIGHTER_2014_LEVELS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS, CLERIC_2014_LEVELS, PALADIN_2014_LEVELS, BARD_2014_LEVELS,
 } from './character.js';
 import GuidedRollEditor from './GuidedRollEditor.jsx';
@@ -341,9 +342,9 @@ const dictionary = {
 };
 const uid = () => crypto.randomUUID();
 
-function Field({ label, value, onChange, type = 'text', min, max, readOnly = false }) {
+function Field({ label, value, onChange, type = 'text', min, max, maxLength, readOnly = false }) {
   return <label className="workshop-field"><span>{label}</span>
-    <input type={type} min={min} max={max} readOnly={readOnly} value={value ?? ''} onChange={e => onChange(type === 'number' ? Number(e.target.value) : e.target.value)} />
+    <input type={type} min={min} max={max} maxLength={maxLength} readOnly={readOnly} value={value ?? ''} onChange={e => onChange(type === 'number' ? Number(e.target.value) : e.target.value)} />
   </label>;
 }
 function FormulaField({ label, value, onChange, doc, t, readOnly = false }) {
@@ -499,13 +500,15 @@ export default function CharacterWorkshop({ locale = 'en' }) {
     event.target.value = '';
   }
 
-  const isRogue2014 = doc?.character.tag.startsWith('D&D 5e (2014) Rogue sample');
-  const isFighter2014 = doc?.character.tag.startsWith('D&D 5e sample');
-  const isWizard2014 = doc?.character.tag.startsWith('D&D 5e (2014) Wizard sample');
-  const isRanger2014 = doc?.character.tag.startsWith('D&D 5e (2014) Ranger sample');
-  const isCleric2014 = doc?.character.tag.startsWith('D&D 5e (2014) Cleric sample');
-  const isPaladin2014 = doc?.character.tag.startsWith('D&D 5e (2014) Paladin sample');
-  const isBard2014 = doc?.character.tag.startsWith('D&D 5e (2014) Bard sample');
+  // Saved records are not re-validated on load: never assume a string tag.
+  const tag = typeof doc?.character.tag === 'string' ? doc.character.tag : '';
+  const isRogue2014 = tag.startsWith('D&D 5e (2014) Rogue sample');
+  const isFighter2014 = tag.startsWith('D&D 5e sample');
+  const isWizard2014 = tag.startsWith('D&D 5e (2014) Wizard sample');
+  const isRanger2014 = tag.startsWith('D&D 5e (2014) Ranger sample');
+  const isCleric2014 = tag.startsWith('D&D 5e (2014) Cleric sample');
+  const isPaladin2014 = tag.startsWith('D&D 5e (2014) Paladin sample');
+  const isBard2014 = tag.startsWith('D&D 5e (2014) Bard sample');
   const dndLevels = isBard2014 ? BARD_2014_LEVELS : isPaladin2014 ? PALADIN_2014_LEVELS : isCleric2014 ? CLERIC_2014_LEVELS : isRanger2014 ? RANGER_2014_LEVELS : isWizard2014 ? WIZARD_2014_LEVELS : isRogue2014 ? ROGUE_2014_LEVELS : FIGHTER_2014_LEVELS;
 
   const renderRollEditor = (r,i) => (<details className="workshop-roll" key={r.id}>
@@ -648,7 +651,7 @@ export default function CharacterWorkshop({ locale = 'en' }) {
             <div className="workshop-fields">
               <Field label={t.characterName} value={doc.character.name} onChange={value => edit(x => x.character.name = value)} />
               <Field label={t.level} type="number" min={1} max={9999} value={doc.character.level} onChange={value => edit(x => x.character.level = value)} />
-              <Field label={t.tag} value={doc.character.tag} onChange={value => edit(x => x.character.tag = value)} />
+              <Field label={t.tag} value={doc.character.tag} maxLength={MAX_TAG_LENGTH} onChange={value => edit(x => x.character.tag = value)} />
             </div>
             {(isFighter2014 || isRogue2014 || isWizard2014 || isRanger2014 || isCleric2014 || isPaladin2014 || isBard2014) && <details className="workshop-fighter-timeline">
               <summary>{isBard2014 ? t.bardProgression : isPaladin2014 ? t.paladinProgression : isCleric2014 ? t.clericProgression : isRanger2014 ? t.rangerProgression : isWizard2014 ? t.wizardProgression : isRogue2014 ? t.rogueProgression : t.fighterProgression}</summary>
@@ -733,7 +736,7 @@ export default function CharacterWorkshop({ locale = 'en' }) {
               <div className="workshop-inline">
                 <Field label={t.styles} value={style.name} onChange={v => edit(x => x.diceStyles[i].name = v)} />
                 <select value={style.material} onChange={e => edit(x => x.diceStyles[i].material = e.target.value)}>
-                  {['GLOSSY_RESIN','MATTE_RESIN','METAL','GEMSTONE'].map(s => <option key={s}>{s}</option>)}</select>
+                  {DICE_MATERIALS.map(s => <option key={s}>{s}</option>)}</select>
                 <button onClick={() => edit(x => { x.diceStyles.splice(i, 1);
                   const fallback = 'preset:arcane-blue';
                   const fix = id => id === style.id ? fallback : id;

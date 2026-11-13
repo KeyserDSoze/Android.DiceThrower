@@ -78,6 +78,7 @@ export function validateGuidedRoll(roll, modifierNames, styleIds) {
   // in the effect-variable map, even though it is not a custom modifier.
   const modifierKeys = new Set(['level', ...modifierNames.map(x => x.trim().toLowerCase())]);
   const a = roll.diceAppearance || { mode: 'CHARACTER_DEFAULT' };
+  requireValid(validRecord(a), 'Invalid dice appearance');
   requireValid(APPEARANCE_MODES.includes(a.mode || 'CHARACTER_DEFAULT'), 'Invalid dice appearance mode');
   const checkStyle = style => requireValid(style == null || styleIds.has(style), 'Unknown dice appearance style');
   checkStyle(a.styleId);

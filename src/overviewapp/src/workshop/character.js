@@ -61,6 +61,16 @@ const isRecord = x => !!x && typeof x === 'object' && !Array.isArray(x);
 const validName = x => typeof x === 'string' && x.trim().length > 0 && x.length <= 160;
 const validId = x => typeof x === 'string' && x.length > 0 && x.length <= 180;
 const exprPattern = /^[\d\s()+\-*\/xXdD.%{}\p{L}\p{M}_:]+$/u;
+// Android has no description limit; this bound comfortably fits every starter
+// tag (up to ~115 characters) while keeping shared links from flooding the UI.
+export const MAX_TAG_LENGTH = 500;
+// Native enum names (Android LevelRuleKind, RollSubgroupOperator, DiceMaterial).
+const RULE_KINDS = ['FROM_LEVEL', 'EVERY_LEVELS'];
+const PART_OPERATORS = ['ADD', 'SUBTRACT'];
+export const DICE_MATERIALS = ['GLOSSY_RESIN', 'MATTE_RESIN', 'METAL', 'GEMSTONE'];
+// Android stores ARGB colors as a signed 32-bit Int; its JSON decoder also
+// accepts the unsigned spelling of the same 32 bits.
+const validArgb = x => Number.isInteger(x) && x >= -0x80000000 && x <= 0xffffffff;
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -71,6 +81,7 @@ export function validateDocument(doc) {
   const c = doc.character;
   assert(validId(c.id) && validName(c.name), 'Invalid character name or ID');
   assert(Number.isInteger(c.level) && c.level >= 1 && c.level <= 9999, 'Invalid character level');
+  assert(typeof c.tag === 'string' && c.tag.length <= MAX_TAG_LENGTH, 'Invalid character description');
   for (const field of ['modifiers', 'groups', 'rolls', 'diceStyles']) {
     assert(Array.isArray(doc[field]) && doc[field].length <= 250, 'Invalid ' + field);
   }
@@ -86,6 +97,10 @@ export function validateDocument(doc) {
   }
   const groupIds = new Set(doc.groups.map(g => g.id));
   const styleIds = new Set(doc.diceStyles.map(s => s.id));
+  for (const style of doc.diceStyles) {
+    assert(DICE_MATERIALS.includes(style.material), 'Invalid dice style material');
+    assert(validArgb(style.primaryColorArgb) && validArgb(style.secondaryColorArgb), 'Invalid dice style color');
+  }
   const allStyles = new Set([...styleIds, ...SYSTEM_STYLES.map(s => s.id)]);
   const checkStyle = id => assert(id == null || allStyles.has(id), 'Unknown dice style');
   checkStyle(c.defaultDiceStyleId); checkStyle(c.secondaryDiceStyleId);
@@ -116,17 +131,19 @@ export function validateDocument(doc) {
     assert(Array.isArray(roll.subgroups) && roll.subgroups.length <= 30, 'Invalid roll parts');
     assert(Array.isArray(roll.levelRules) && roll.levelRules.length <= 40, 'Invalid level rules');
     assert(Array.isArray(roll.effects) && roll.effects.length <= 40, 'Invalid effects');
+    for (const part of roll.subgroups) {
+      assert(isRecord(part) && validId(part.id) && !nestedIds.has(part.id), 'Invalid/duplicate Part ID'); nestedIds.add(part.id);
+      assert(validName(part.name), 'Invalid Part name');
+      assert(PART_OPERATORS.includes(part.operator), 'Invalid Part operator');
+      formula(part.expression);
+    }
     if (roll.subgroups.length) {
       assert(roll.subgroups.some(s => s.includeInNormalRoll !== false), 'At least one normal Part needed');
       assert(normalFormula(roll.subgroups) === roll.expression, 'Roll parts and formula do not match');
     }
-    for (const part of roll.subgroups) {
-      assert(validId(part.id) && !nestedIds.has(part.id), 'Invalid/duplicate Part ID'); nestedIds.add(part.id);
-      assert(validName(part.name), 'Invalid Part name');
-      formula(part.expression);
-    }
     for (const rule of roll.levelRules) {
-      assert(validId(rule.id) && !nestedIds.has(rule.id), 'Invalid/duplicate rule ID'); nestedIds.add(rule.id);
+      assert(isRecord(rule) && validId(rule.id) && !nestedIds.has(rule.id), 'Invalid/duplicate rule ID'); nestedIds.add(rule.id);
+      assert(RULE_KINDS.includes(rule.kind), 'Invalid level rule kind');
       assert(Number.isInteger(rule.trigger) && rule.trigger >= 1 && rule.trigger <= 9999, 'Invalid level rule');
       assert(rule.startLevel == null || (rule.kind === 'EVERY_LEVELS' &&
         Number.isInteger(rule.startLevel) && rule.startLevel >= 1 && rule.startLevel <= 9999),
@@ -169,7 +186,10 @@ export function documentFromEnvelope(packet) {
   assert(isRecord(packet) && packet.format === FORMAT && [FORMAT_VERSION,BOUNDED_RULE_FORMAT_VERSION].includes(packet.formatVersion), 'Unsupported character link');
   assert(isRecord(packet.data) && packet.data.characters?.length === 1, 'Link must contain exactly one character');
   assert(!packet.data.logs?.length && !packet.data.characterSyncMetadata?.length, 'Share contains private history or sync data');
-  const doc = { character: packet.data.characters[0], modifiers: packet.data.modifiers || [],
+  const character = packet.data.characters[0];
+  assert(isRecord(character), 'Invalid character document');
+  // Android reads a missing description as "" (optString); accept the same.
+  const doc = { character: character.tag == null ? { ...character, tag: '' } : character, modifiers: packet.data.modifiers || [],
     groups: packet.data.groups || [], rolls: packet.data.rolls || [], diceStyles: packet.data.diceStyles || [] };
   assert(doc.character.image == null && doc.character.diceTableImage == null && doc.character.imageUri == null, 'Images are not supported in links');
   return validateDocument(doc);

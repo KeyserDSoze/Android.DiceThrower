@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import pako from 'pako';
 import {
   templates, instantiateTemplate, validateDocument, envelope, documentFromEnvelope,
   encodeToken, decodeToken, importAsCopy, normalFormula, newPart, newRoll, newCharacter, newGroup, newModifier, shareUrl,
   canUpgradeLegacyStarterWeaponRolls, upgradeLegacyStarterWeaponRolls, withImportPreferences, androidUrl,
-  WIZARD_2014_SRD_SPELLS, WIZARD_2014_DICE_SPELLS,
+  WIZARD_2014_SRD_SPELLS, WIZARD_2014_DICE_SPELLS, MAX_TAG_LENGTH, DICE_MATERIALS, newLevelRule, newStyle,
   FIGHTER_2014_LEVELS, FIGHTER_2014_PROFICIENCY_STEPS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS, CLERIC_2014_LEVELS, PALADIN_2014_LEVELS, BARD_2014_LEVELS, readShareHash,
 } from './character.js';
 
@@ -1086,4 +1087,86 @@ test('periodic start and cap validate and legacy rules remain compatible',()=>{
   const bad=structuredClone(doc);
   bad.rolls.find(r=>r.name===name).levelRules[0].kind='FROM_LEVEL';
   assert.throws(()=>validateDocument(bad),/periodic/);
+});
+
+/** Compress any packet like a share link would, bypassing envelope() validation. */
+function rawToken(packet) {
+  return 'v1.' + Buffer.from(pako.deflate(new TextEncoder().encode(JSON.stringify(packet)))).toString('base64url');
+}
+
+test('character description must be a bounded string; missing native descriptions read as empty', () => {
+  for (const { index } of templates) assert.ok(instantiateTemplate(index).character.tag.length <= MAX_TAG_LENGTH);
+  const doc = instantiateTemplate(0);
+  for (const tag of [5, null, undefined, { evil: true }, ['D&D 5e sample'], 'x'.repeat(MAX_TAG_LENGTH + 1)]) {
+    const bad = structuredClone(doc);
+    bad.character.tag = tag;
+    assert.throws(() => validateDocument(bad), /Invalid character description/, String(tag));
+  }
+  const longest = structuredClone(doc);
+  longest.character.tag = 'x'.repeat(MAX_TAG_LENGTH);
+  validateDocument(longest);
+  // A shared link with a non-string tag used to crash the preview/editor.
+  const packet = envelope(doc);
+  packet.data.characters[0].tag = { evil: true };
+  assert.throws(() => decodeToken(rawToken(packet)), /Invalid character description/);
+  delete packet.data.characters[0].tag;
+  assert.equal(decodeToken(rawToken(packet)).character.tag, '');
+  packet.data.characters = [7];
+  assert.throws(() => documentFromEnvelope(packet), /Invalid character document/);
+});
+
+test('level rule kind, Part operator and dice appearance must use native shapes', () => {
+  const doc = instantiateTemplate(0);
+  const longsword = doc.rolls.find(r => r.name === 'Longsword');
+  longsword.levelRules.push(newLevelRule());
+  validateDocument(doc);
+  const cases = [
+    [x => x.rolls.find(r => r.name === 'Longsword').levelRules[0].kind = 'SOMETIMES', /level rule kind/],
+    [x => delete x.rolls.find(r => r.name === 'Longsword').levelRules[0].kind, /level rule kind/],
+    [x => x.rolls.find(r => r.name === 'Longsword').levelRules[0] = null, /rule ID/],
+    [x => x.rolls.find(r => r.name === 'Longsword').subgroups[1].operator = 'MULTIPLY', /Part operator/],
+    [x => x.rolls.find(r => r.name === 'Longsword').subgroups[0].operator = { op: 'ADD' }, /Part operator/],
+    [x => x.rolls.find(r => r.name === 'Longsword').subgroups[0] = 'part', /Part ID/],
+    [x => x.rolls[0].diceAppearance = 5, /Invalid dice appearance/],
+    [x => x.rolls[0].diceAppearance = [{ mode: 'UNIFORM' }], /Invalid dice appearance/],
+  ];
+  for (const [mutate, error] of cases) {
+    const bad = structuredClone(doc);
+    mutate(bad);
+    assert.throws(() => validateDocument(bad), error);
+  }
+  const subtract = structuredClone(doc);
+  const part = subtract.rolls.find(r => r.name === 'Longsword').subgroups[1];
+  part.operator = 'SUBTRACT';
+  subtract.rolls.find(r => r.name === 'Longsword').expression = normalFormula(subtract.rolls.find(r => r.name === 'Longsword').subgroups);
+  validateDocument(subtract);
+});
+
+test('custom dice style material and 32-bit ARGB colors are validated', () => {
+  const doc = instantiateTemplate(6);
+  doc.diceStyles.push(newStyle());
+  validateDocument(doc);
+  for (const material of DICE_MATERIALS) {
+    const ok = structuredClone(doc);
+    ok.diceStyles[0].material = material;
+    validateDocument(ok);
+  }
+  for (const [field, value] of [['primaryColorArgb', -1], ['primaryColorArgb', 0xffffffff],
+    ['secondaryColorArgb', -0x80000000], ['secondaryColorArgb', 0]]) {
+    const ok = structuredClone(doc);
+    ok.diceStyles[0][field] = value;
+    validateDocument(ok);
+  }
+  const cases = [
+    ['material', 'PLASTIC', /material/], ['material', undefined, /material/], ['material', 0, /material/],
+    ['primaryColorArgb', 2 ** 32, /color/], ['primaryColorArgb', -(2 ** 31) - 1, /color/],
+    ['primaryColorArgb', 1.5, /color/], ['secondaryColorArgb', '#ff0000', /color/],
+    ['secondaryColorArgb', null, /color/],
+  ];
+  for (const [field, value, error] of cases) {
+    const bad = structuredClone(doc);
+    bad.diceStyles[0][field] = value;
+    assert.throws(() => validateDocument(bad), error, field + '=' + String(value));
+    assert.throws(() => decodeToken(rawToken({ ...envelope(doc), data: { ...envelope(doc).data, diceStyles: bad.diceStyles } })), error);
+  }
 });
