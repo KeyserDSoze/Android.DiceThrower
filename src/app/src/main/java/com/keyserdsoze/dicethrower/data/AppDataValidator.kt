@@ -19,7 +19,10 @@ object AppDataValidator {
     private val revisionRegex = Regex("[0-9a-f]{64}")
     private val imageAssetIdRegex = Regex("img_[0-9a-f]{64}")
 
-    /** Full validation for data entering from imports, restores, sync and local edits. */
+    /**
+     * Full validation, used where data enters or leaves the app: backup restore and export,
+     * Drive documents and character transfers. Every roll must resolve at its character's level.
+     */
     fun validate(data: AppData): List<String> = validate(data, acceptedBaseline = null)
 
     /**
