@@ -32,6 +32,13 @@ internal object FantasyTableArtwork {
         else -> false
     }
 
+    /**
+     * ARGB colour of a hex literal: 0xRRGGBB values are opaque, 0xAARRGGBB values keep their
+     * explicit alpha. A bare toInt() would give 0xRRGGBB an alpha of zero, so shaders built from it
+     * (the background gradients) painted nothing.
+     */
+    internal fun colorOf(hex: Long): Int = (if (hex <= 0xFFFFFFL) hex or 0xFF000000L else hex).toInt()
+
     fun render(theme: DiceTableTheme, preview: Boolean = false): Bitmap {
         require(supports(theme)) { "No generated artwork for $theme" }
         val width = if (preview) PREVIEW_WIDTH else FULL_WIDTH
@@ -63,7 +70,7 @@ internal object FantasyTableArtwork {
     private class Painter(private val canvas: Canvas, private val rng: Random) {
         private val brush = Paint(Paint.ANTI_ALIAS_FLAG)
         private val bounds = RectF(0f, 0f, FULL_WIDTH.toFloat(), FULL_HEIGHT.toFloat())
-        private fun rgb(hex: Long) = hex.toInt()
+        private fun rgb(hex: Long) = colorOf(hex)
         private fun tint(color: Int, alpha: Int) = Color.argb(alpha.coerceIn(0, 255), Color.red(color), Color.green(color), Color.blue(color))
 
         private fun fill(color: Int, alpha: Int = 255) {
