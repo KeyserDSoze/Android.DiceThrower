@@ -1500,11 +1500,6 @@ internal fun DiceTablePickerV2(
     val imageAssetStore = remember(context) { CharacterImageAssetStore(context) }
     var imageImportFailed by remember { mutableStateOf(false) }
     var expanded by rememberSaveable(character.id) { mutableStateOf(false) }
-    val customPreview = remember(character.diceTableImage) {
-        character.diceTableImage
-            ?.let(imageAssetStore::loadVerified)
-            ?.let(::decodeTableBitmap)
-    }
     val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             runCatching { imageAssetStore.importFromUri(uri) }
@@ -1606,6 +1601,7 @@ internal fun DiceTablePickerV2(
             }
         }
 
+        val customPreview = rememberCustomTablePreviewBitmap(context, character.diceTableImage)
         if (customPreview != null) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -1615,7 +1611,7 @@ internal fun DiceTablePickerV2(
             ) {
                 Column {
                     Image(
-                        bitmap = customPreview.asImageBitmap(),
+                        bitmap = remember(customPreview) { customPreview.asImageBitmap() },
                         contentDescription = stringResource(R.string.image_selected),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier

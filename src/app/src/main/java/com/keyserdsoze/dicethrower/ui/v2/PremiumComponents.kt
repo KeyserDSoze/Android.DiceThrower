@@ -1,7 +1,5 @@
 package com.keyserdsoze.dicethrower.ui.v2
 
-import android.graphics.BitmapFactory
-import android.net.Uri
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -53,7 +51,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.keyserdsoze.dicethrower.R
-import com.keyserdsoze.dicethrower.data.CharacterImageAssetStore
 import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterProfile
 import kotlin.math.abs
@@ -137,24 +134,14 @@ fun CharacterAvatar(
     size: Int = 64,
 ) {
     val context = LocalContext.current
-    val bitmap = remember(character.image, character.imageUri) {
-        val portable = character.image?.let { ref ->
-            CharacterImageAssetStore(context).loadVerified(ref)?.let { bytes ->
-                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-            }
-        }
-        portable ?: character.imageUri?.let { raw ->
-            runCatching {
-                context.contentResolver.openInputStream(Uri.parse(raw)).use { stream ->
-                    BitmapFactory.decodeStream(stream)
-                }
-            }.getOrNull()
-        }
-    }
+    // Read, verified and decoded off the main thread, sampled to the avatar size and cached.
+    val sizePx = with(LocalDensity.current) { size.dp.roundToPx() }
+    val bitmap = rememberAvatarBitmap(context, character.image, character.imageUri, sizePx)
+    val image = remember(bitmap) { bitmap?.asImageBitmap() }
 
-    if (bitmap != null) {
+    if (image != null) {
         Image(
-            bitmap = bitmap.asImageBitmap(),
+            bitmap = image,
             contentDescription = character.name,
             modifier = modifier.size(size.dp).clip(CircleShape),
             contentScale = ContentScale.Crop,
