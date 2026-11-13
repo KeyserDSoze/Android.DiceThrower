@@ -1,7 +1,11 @@
 package com.keyserdsoze.dicethrower.ui.v2
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasScrollToIndexAction
@@ -16,6 +20,7 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInputSelection
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.text.TextRange
+import androidx.test.espresso.Espresso
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.RollDefinition
@@ -71,8 +76,10 @@ class EditorStateRestorationTest {
     @Test
     fun restorationDoesNotRegenerateTheNewRollPartId() {
         var saved: RollDefinition? = null
+        lateinit var focusManager: FocusManager
         val restoration = StateRestorationTester(composeRule)
         restoration.setContent {
+            focusManager = LocalFocusManager.current
             MaterialTheme {
                 RollBuilderScreenV2(
                     title = "New roll", character = hero, modifiers = emptyList(), groups = emptyList(),
@@ -80,15 +87,22 @@ class EditorStateRestorationTest {
                 )
             }
         }
+        fun saveDraft() {
+            // Text replacement requests focus and can open the real IME after the lazy-list
+            // scroll. Finish editing first, otherwise bring-into-view can remove Save again.
+            composeRule.runOnIdle { focusManager.clearFocus(force = true) }
+            Espresso.closeSoftKeyboard()
+            scrollToText("Save")
+            composeRule.onNodeWithText("Save").assertIsDisplayed().assertIsEnabled().performClick()
+            composeRule.waitForIdle()
+        }
         composeRule.onNodeWithText("Roll name").performTextReplacement("Prepared spell")
-        scrollToText("Save")
-        composeRule.onNodeWithText("Save").performClick()
-        val originalPartId = saved?.subgroups?.single()?.id
+        saveDraft()
+        val originalPartId = composeRule.runOnIdle { saved?.subgroups?.single()?.id }
         assertNotNull(originalPartId)
 
         restoration.emulateSavedInstanceStateRestore()
-        scrollToText("Save")
-        composeRule.onNodeWithText("Save").performClick()
+        saveDraft()
         composeRule.runOnIdle {
             assertEquals(originalPartId, saved?.subgroups?.single()?.id)
             assertEquals("Prepared spell", saved?.name)
