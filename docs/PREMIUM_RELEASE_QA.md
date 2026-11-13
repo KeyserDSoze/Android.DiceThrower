@@ -6,6 +6,8 @@
 - Release [`v0.0.25`](https://github.com/KeyserDSoze/Android.DiceThrower/releases/tag/v0.0.25),
   `versionCode=25`, pubblicata dal commit [`97b0215`](https://github.com/KeyserDSoze/Android.DiceThrower/commit/97b02158e42e12c2783316ffccb4dfe7abca7087)
   il 13 novembre 2026 alle 18:45:51 UTC, dopo il preflight remoto.
+- Follow-up esclusivamente test/documentazione: [`095c33a`](https://github.com/KeyserDSoze/Android.DiceThrower/commit/095c33ade0df069ed1ce32308a07c133620c79fc),
+  con nuova CI riuscita. Non modifica il runtime rispetto al tag della release.
 - Note di rilascio: [releases/0.0.25.md](releases/0.0.25.md).
 - Il workflow ha verificato firma stabile e configurazione OAuth e ha pubblicato APK, AAB,
   certificato pubblico e checksum. Gli artefatti scaricati sono stati ricontrollati separatamente.
@@ -25,7 +27,8 @@
 | Preflight Android `59ff832` | [CI #43481812469](https://github.com/KeyserDSoze/Android.DiceThrower/actions/runs/43481812469), job `test` e `instrumentation` | Riuscito |
 | Sito sullo stesso commit | [Pages #43481812262](https://github.com/KeyserDSoze/Android.DiceThrower/actions/runs/43481812262), build e deploy | Riuscito |
 | Smoke sito live | Chromium/Playwright: desktop 1440×1100 e mobile 390×844, tavolo 3D, rilancio e apertura Workshop | Riuscito |
-| CI del commit di versione `97b0215` | [CI #43485072291](https://github.com/KeyserDSoze/Android.DiceThrower/actions/runs/43485072291): job `test` riuscito; 55/56 test strumentali riusciti, inclusi tutti i 6 E2E | Fallito un test di ripristino editor; correzione in verifica |
+| CI del commit di versione `97b0215` | [CI #43485072291](https://github.com/KeyserDSoze/Android.DiceThrower/actions/runs/43485072291): job `test` riuscito; 55/56 test strumentali riusciti, inclusi tutti i 6 E2E | Fallito un test di ripristino editor; corretto nel follow-up `095c33a` |
+| CI dopo correzione test `095c33a` | [CI #43489489801](https://github.com/KeyserDSoze/Android.DiceThrower/actions/runs/43489489801): job `test` e `instrumentation`; XML remoto 56/56, zero errori o test saltati | Riuscita |
 | Release firmata v0.0.25 | [Release #43485072265](https://github.com/KeyserDSoze/Android.DiceThrower/actions/runs/43485072265), tag sul commit esatto `97b0215` | Riuscita |
 | Google Play Internal | Job `publish-play-internal` nello stesso run | Saltato; nessuna pubblicazione Play verificata |
 | Checksum e firma degli artefatti scaricati | APK/AAB, certificato esportato, note e versione ricontrollati | Verificati |
@@ -82,8 +85,12 @@ Dopo la correzione: **56/56** test strumentali locali riusciti sul nuovo AVD API
 esecuzioni consecutive del test interessato (15 con scala animazioni 0, 5 con scala 1).
 Passano anche i 3 test del runner. Report di stress:
 `/tmp/opencode/dice-release-qa/editor-restoration-after-fix/results.json`.
-La nuova verifica remota resta da registrare al completamento, senza cancellare l'esito
-storico. Diagnostici remoti scaricati in `/tmp/opencode/dice-release-qa/failed-ci/`.
+La nuova [CI #43489489801](https://github.com/KeyserDSoze/Android.DiceThrower/actions/runs/43489489801)
+è riuscita sul commit esatto `095c33a`. Ricontrollato anche l'XML dell'artefatto remoto:
+**56 test, zero failure/error/skipped**, inclusi il test corretto e tutti i 6 E2E.
+Il report locale di questa verifica è `/tmp/opencode/dice-release-qa/followup-ci-results.json`.
+L'esito storico del run precedente resta documentato; i suoi diagnostici sono in
+`/tmp/opencode/dice-release-qa/failed-ci/`.
 
 Le vecchie versioni non verificano il nuovo hash dei personaggi modificati con limiti delle
 regole periodiche: aggiornare insieme i dispositivi sincronizzati. Le espressioni legacy che
