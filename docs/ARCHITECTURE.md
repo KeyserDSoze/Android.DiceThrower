@@ -149,6 +149,8 @@ Each character owns a `CharacterSyncMetadata` record covering the complete chara
 
 `baseRevision` is the last known common remote revision. Conflict classification compares local and remote revisions against that base: equal content is `SAME`; one-sided divergence is `LOCAL_ONLY` or `REMOTE_ONLY`; divergence on both sides is `CONFLICT`. `updatedAt` is deliberately not required to establish a conflict and remains available for later user-facing/latest-wins policy.
 
+V2 edits do not call `LocalStore.saveData` on the main thread: `AsyncDataPersistence` keeps the in-memory `AppData` as the immediate UI state and queues saves on one process-wide writer thread, preserving stale-version checks, validation errors (the UI reverts to the last stored copy with the localized toast), metadata stamping and journal writes. After a stale/invalid result or a reload, queued jobs derived from the old copy are skipped (epoch handshake) so they can never overwrite newer data.
+
 If the model grows substantially, `LocalStore` is the boundary to replace, for example with Room.
 
 ## Optional Google account boundary

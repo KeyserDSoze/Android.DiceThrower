@@ -132,7 +132,8 @@ import com.keyserdsoze.dicethrower.data.AppDataValidator
 import com.keyserdsoze.dicethrower.data.DashboardDataOperations
 import com.keyserdsoze.dicethrower.data.LocalStore
 import com.keyserdsoze.dicethrower.data.RollLogRetention
-import com.keyserdsoze.dicethrower.data.StaleDataException
+import com.keyserdsoze.dicethrower.data.AsyncDataPersistence
+import com.keyserdsoze.dicethrower.data.PersistOutcome
 import com.keyserdsoze.dicethrower.data.sync.ConflictArea
 import com.keyserdsoze.dicethrower.data.sync.SyncConflict
 import com.keyserdsoze.dicethrower.data.sync.SyncConflictResolution
@@ -321,9 +322,11 @@ fun DiceThrowerAppV2(
         return
     }
 
-    var data by remember { mutableStateOf(store.loadData()) }
-    // Version of the stored document that `data` was loaded from (optimistic-concurrency token).
-    var dataVersion by remember { mutableStateOf(store.dataVersion()) }
+    val initialData = remember(store) { store.loadData() }
+    val persistence = remember(store) {
+        AsyncDataPersistence(store, initialData, store.dataVersion())
+    }
+    var data by remember { mutableStateOf(initialData) }
     var route by rememberSaveable { mutableStateOf(RouteV2.CHARACTERS) }
     var selectedCharacterId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedGroupId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -334,25 +337,36 @@ fun DiceThrowerAppV2(
     val stateHolder = rememberSaveableStateHolder()
     val context = LocalContext.current
 
+    fun applyOutcome(outcome: PersistOutcome) {
+        when (outcome) {
+            is PersistOutcome.Saved -> {
+                // Adopt the stamped copy only when no newer optimistic edit is still queued.
+                if (!persistence.hasPending()) data = outcome.data
+                onLocalDataChanged()
+            }
+            is PersistOutcome.Skipped -> Unit
+            is PersistOutcome.Reloaded -> data = outcome.data
+            is PersistOutcome.Stale -> {
+                // An import, a sync or another window saved meanwhile: never overwrite that newer
+                // content with this older copy; show the stored data instead.
+                data = outcome.data
+                Toast.makeText(context, R.string.change_not_saved_data_reloaded, Toast.LENGTH_LONG).show()
+            }
+            is PersistOutcome.Invalid -> {
+                // LocalStore refuses invalid data; restore the last saved state instead of crashing.
+                data = outcome.data
+                Toast.makeText(context, R.string.change_not_saved_invalid_rolls, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     fun reloadData() {
-        data = store.loadData()
-        dataVersion = store.dataVersion()
+        persistence.reload(::applyOutcome)
     }
 
     fun persist(updated: AppData) {
-        try {
-            data = store.saveData(updated, expectedVersion = dataVersion)
-            dataVersion = store.dataVersion()
-            onLocalDataChanged()
-        } catch (_: StaleDataException) {
-            // An import, a sync or another window saved meanwhile: never overwrite that newer
-            // content with this older copy; show the stored data instead.
-            reloadData()
-            Toast.makeText(context, R.string.change_not_saved_data_reloaded, Toast.LENGTH_LONG).show()
-        } catch (_: IllegalArgumentException) {
-            // LocalStore refuses invalid data; keep the last saved state instead of crashing.
-            Toast.makeText(context, R.string.change_not_saved_invalid_rolls, Toast.LENGTH_LONG).show()
-        }
+        data = updated
+        persistence.save(updated, ::applyOutcome)
     }
 
     fun navigateBack() {
@@ -390,7 +404,7 @@ fun DiceThrowerAppV2(
 
     // Pick up data saved elsewhere while this screen was not in the foreground.
     LifecycleResumeEffect(Unit) {
-        if (store.dataVersion() != dataVersion) reloadData()
+        if (persistence.isOutOfDate()) reloadData()
         onPauseOrDispose { }
     }
 
