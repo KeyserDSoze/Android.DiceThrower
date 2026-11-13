@@ -211,8 +211,8 @@ jobs:
           VERSION: ${{ needs.release.outputs.version }}
         run: |
           mkdir -p distribution/whatsnew
-          printf 'Dice Thrower %s: clearer percentile dice with true 0-9 units, distinct from standalone d10 rolls. Both dice of a percentile pair remain still during follow-up effects. Table capacity counts complete pairs so generated dice are not hidden. Numerical results, saved characters and roll history are unchanged. Added regression coverage for all percentile values and real OpenGL rendering.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
-          printf 'Dice Thrower %s: dadi percentuali più chiari, con unità 0-9 distinte dai d10 normali. Entrambi i dadi della coppia restano fermi durante gli effetti successivi. La capienza del tavolo conta le coppie complete senza nascondere i dadi aggiuntivi. Risultati numerici, personaggi salvati e storico invariati. Nuovi test su tutti i valori percentuali e sul rendering OpenGL reale.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
+          printf 'Dice Thrower %s: the web Character Workshop now validates roll formulas against Android grammar, integer overflow and dice/size limits before saving or sharing. Dynamic variables and expanded level rules use the same budgets. Existing browser characters remain editable without automatic rewrites. A shared 92-case corpus checks both platforms. JSON export reports errors in the UI. Android roll results and stored data are unchanged.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
+          printf 'Dice Thrower %s: il Character Workshop web controlla formule, overflow e limiti di dadi/dimensioni come Android prima di salvare o condividere. Variabili e regole di livello espanse rispettano gli stessi budget. I personaggi browser esistenti restano modificabili senza riscritture automatiche. Un corpus di 92 casi verifica entrambe le piattaforme. Export JSON mostra gli errori nella UI. Risultati e dati Android invariati.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
 
       - name: Upload to Google Play Internal testing
         uses: r0adkll/upload-google-play@v1.1.5

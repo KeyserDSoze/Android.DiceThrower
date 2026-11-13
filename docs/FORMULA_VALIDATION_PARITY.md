@@ -1,7 +1,8 @@
 # Formule Workshop / Android — follow-up EPIC #165
 
 Tracking: [EPIC #165](https://github.com/KeyserDSoze/Android.DiceThrower/issues/165).
-Sviluppo separato dalla release v0.0.26: branch `fix/web-native-formula-validation`, non ancora pubblicato.
+Codice integrato in `main` (`9446b9a`), proveniente da `fix/web-native-formula-validation`.
+Pubblicazione sito e release v0.0.27 in verifica: [FORMULA_RELEASE_QA.md](FORMULA_RELEASE_QA.md).
 L'EPIC resta aperta: questo intervento non completa QR fisico, App Links verificati, Drive web
 o tutte le localizzazioni.
 

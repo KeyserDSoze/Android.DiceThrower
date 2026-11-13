@@ -601,6 +601,10 @@ function Workshop({ locale }) {
     }
     catch (e) { setError(e); }
   }
+  function exportDocument() {
+    try { downloadDocument(doc); setError(''); }
+    catch (e) { setError(e); }
+  }
   async function upgradeStarter() {
     if (!doc || !canUpgradeLegacyStarterWeaponRolls(doc) || !window.confirm(t.upgradeConfirm)) return;
     try {
@@ -855,7 +859,7 @@ function Workshop({ locale }) {
                 onClick={upgradeStarter}>{t.upgradeLegacy}</button>}
               <button onClick={createShare}>{t.share}</button>
               {editorHandoff?.link && <a className="secondary" href={editorHandoff.link} onClick={openLatestInApp}>{t.openApp}</a>}
-              <button onClick={() => downloadDocument(doc)}>{t.export}</button>
+              <button onClick={exportDocument}>{t.export}</button>
             </div>
             <p className="workshop-hint">{handoffHint(editorHandoff)}</p>
             {url && <div className="workshop-share">
