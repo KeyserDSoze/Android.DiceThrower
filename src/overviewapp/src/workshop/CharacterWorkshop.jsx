@@ -15,6 +15,7 @@ import './workshop-fixes.css';
 import { rollLevelPreview } from './roll-level-preview.js';
 import { appendFormulaVariable, formulaVariables } from './formula-variables.js';
 import { isPartUsed, removePartSafely, SYSTEM_STYLES, validateGuidedRoll } from './guided.js';
+import { formatDiceFormulaError } from './formula-errors.js';
 
 function orderedGroups(characterDoc) {
   if (!characterDoc) return [];
@@ -46,6 +47,7 @@ function LevelFormulaPreview({doc, roll, t}) {
 
 const dictionary = {
   en: {
+    formulaErrorLocale: 'en',
     title: 'Character workshop', intro: 'Design a character on the web. Keep it privately in this browser, or share by link or QR. Large unchanged starter templates may use a versioned template reference.',
     storage: 'Saved on this device · IndexedDB', noCloud: 'Not synced with Google Drive yet. Clearing browser data may delete these characters.',
     library: 'Your characters', starter: 'Starter characters', create: 'New character', load: 'Edit', delete: 'Delete', use: 'Use template',
@@ -208,6 +210,7 @@ const dictionary = {
     copied: 'Link copied.', copyFailed: 'Copy failed: the link is selected, copy it manually.',
   },
   it: {
+    formulaErrorLocale: 'it',
     title: 'Laboratorio personaggi', intro: 'Crea il personaggio sul sito. Salvalo privatamente nel browser oppure condividilo via link o QR. I modelli standard più grandi possono usare un riferimento alla versione del modello.',
     storage: 'Salvato su questo dispositivo · IndexedDB', noCloud: 'Non ancora sincronizzato con Google Drive. La pulizia dei dati del browser può cancellare i personaggi.',
     library: 'I tuoi personaggi', starter: 'Personaggi preimpostati', create: 'Nuovo personaggio', load: 'Modifica', delete: 'Elimina', use: 'Usa modello',
@@ -449,7 +452,7 @@ function JsonField({ label, value, onChange, validate, t }) {
     {error && <small role="alert">{error}</small>}
   </label>;
 }
-// Coded errors from character.js get localized text; others keep their message.
+// Formula, link and storage diagnostics get localized text; unrelated errors keep their message.
 const errorText = {
   'link-invalid': 'linkInvalid', 'link-too-large': 'linkTooLarge', 'link-unsupported': 'linkUnsupported',
   'link-too-long': 'tooLong', 'document-too-large': 'documentTooLarge',
@@ -461,6 +464,8 @@ const failure = (code, error) => error?.code ? error
   : Object.assign(new Error(error?.message || String(error)), { code });
 function describeError(error, t) {
   if (!error || typeof error === 'string') return error || '';
+  const formulaError = formatDiceFormulaError(error, t.formulaErrorLocale);
+  if (formulaError) return formulaError;
   if (errorPrefix[error.code]) return t[errorPrefix[error.code]] + ': ' + error.message;
   if (error.code === 'storage-failed') return t.storageFailed + ' ' + (error.cause?.message || error.cause?.name || '');
   return errorText[error.code] ? t[errorText[error.code]] : error.message || String(error);

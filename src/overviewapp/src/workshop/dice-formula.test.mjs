@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { DICE_EXPRESSION_LIMITS, parseDiceExpression, resolveDiceTemplate, resolveRollFormula } from './dice-formula.js';
+import { DiceFormulaError, DICE_FORMULA_ERROR_REASONS } from './formula-errors.js';
 import { newCharacter, newRoll, newPart, newLevelRule, normalFormula, validateDocument,
   envelope, documentFromEnvelope, androidHandoff, withImportPreferences, instantiateTemplate } from './character.js';
 
@@ -11,7 +12,8 @@ const expression = record => '('.repeat(record.wrap || 0) + '-'.repeat(record.un
   ')'.repeat(record.wrap || 0) + ' '.repeat(record.padding || 0);
 function check(record, parse) {
   if (!record.valid) {
-    assert.throws(parse, error => error instanceof Error && !(error instanceof RangeError));
+    assert.throws(parse, error => error instanceof DiceFormulaError &&
+      error.code === 'dice-formula-invalid' && DICE_FORMULA_ERROR_REASONS.includes(error.reason));
     return;
   }
   const parsed = parse();
