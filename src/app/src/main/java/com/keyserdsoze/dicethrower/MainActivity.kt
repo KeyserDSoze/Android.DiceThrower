@@ -259,29 +259,30 @@ class MainActivity : ComponentActivity() {
             require(!token.isNullOrBlank()) { "Missing character payload" }
             pendingCharacterImport = CharacterTransferCodec.decodeToken(token)
             characterImportError = false
-            // The link stays on the intent until the preview is resolved, so a configuration
-            // change can restore the preview; finishLinkImport then consumes it.
+            // The preview survives a configuration change through STATE_LINK_IMPORT_PENDING;
+            // finishLinkImport marks it resolved.
             linkImportPending = true
         } catch (_: Exception) {
-            rejectCharacterLink(incoming)
+            rejectCharacterLink()
         } catch (_: StackOverflowError) {
             // Untrusted link: deeply nested JSON must never crash the app.
-            rejectCharacterLink(incoming)
+            rejectCharacterLink()
         }
     }
 
-    private fun rejectCharacterLink(incoming: Intent) {
+    private fun rejectCharacterLink() {
         pendingCharacterImport = null
         characterImportError = true
         linkImportPending = false
-        incoming.data = null
     }
 
-    /** Consumes the launch link once its import preview is confirmed or dismissed. */
+    /**
+     * Marks the launch link as resolved once its import preview is confirmed or dismissed.
+     * The Activity intent itself is never mutated: shouldHandleLaunchLink already prevents a
+     * second import after rotation, recreate() or a relaunch from Recents.
+     */
     private fun finishLinkImport() {
-        if (!linkImportPending) return
         linkImportPending = false
-        intent?.data = null
     }
 
     override fun onResume() {
