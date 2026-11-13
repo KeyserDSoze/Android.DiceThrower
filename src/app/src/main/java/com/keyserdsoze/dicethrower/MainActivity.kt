@@ -12,6 +12,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.res.stringResource
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -33,7 +36,6 @@ import com.keyserdsoze.dicethrower.data.sync.SyncErrorKind
 import com.keyserdsoze.dicethrower.data.sync.SyncStatus
 import com.keyserdsoze.dicethrower.data.sync.SyncStatusKind
 import com.keyserdsoze.dicethrower.model.AppSettings
-import com.keyserdsoze.dicethrower.ui.dice3d.Dice3DOverlayHost
 import com.keyserdsoze.dicethrower.ui.theme.DiceThrowerTheme
 import com.keyserdsoze.dicethrower.ui.v2.DiceThrowerAppV2
 import kotlinx.coroutines.launch
@@ -167,7 +169,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             DiceThrowerTheme(themeMode = settings.themeMode) {
-                Dice3DOverlayHost(enabled = settings.animationsEnabled) {
+                Box(modifier = Modifier.fillMaxSize()) {
                     DiceThrowerAppV2(
                         store = store,
                         settings = settings,
@@ -200,7 +202,7 @@ class MainActivity : ComponentActivity() {
                         onDeleteCloudData = ::deleteCloudData,
                         onLanguageChanged = { code ->
                             if (code != selectedLanguage) {
-                                AppLocaleManager.setLanguage(this, code)
+                                AppLocaleManager.setLanguage(this@MainActivity, code)
                                 selectedLanguage = code
                                 recreate()
                             }
