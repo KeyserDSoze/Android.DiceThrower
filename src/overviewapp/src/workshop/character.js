@@ -351,24 +351,68 @@ export function withImportPreferences(source, name, level) {
 }
 
 
+/**
+ * Browser storage failures carry a `code` for localized UI messages:
+ * storage-unavailable (IndexedDB missing or denied: private browsing,
+ * blocked cookies/site data), storage-quota, storage-blocked (another tab
+ * holds an incompatible connection) or storage-failed.
+ */
+function storageError(cause) {
+  const name = cause?.name;
+  const code = name === 'QuotaExceededError' ? 'storage-quota'
+    : ['SecurityError', 'InvalidStateError', 'UnknownError'].includes(name) ? 'storage-unavailable'
+      : 'storage-failed';
+  const error = codedError(code, 'Browser storage error: ' + (cause?.message || name || 'unknown'));
+  error.cause = cause;
+  return error;
+}
 function db() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
+    let request;
+    try {
+      // Accessing indexedDB itself throws in some blocked-storage contexts.
+      const factory = globalThis.indexedDB;
+      if (!factory) throw new DOMException('IndexedDB is not available', 'InvalidStateError');
+      request = factory.open(DB_NAME, 1);
+    } catch (error) {
+      reject(storageError(error));
+      return;
+    }
+    let settled = false;
     request.onupgradeneeded = () => { if (!request.result.objectStoreNames.contains(STORE))
       request.result.createObjectStore(STORE, { keyPath: 'character.id' }); };
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => { settled = true; reject(storageError(request.error)); };
+    request.onblocked = () => {
+      settled = true;
+      reject(codedError('storage-blocked', 'Browser storage is blocked by another open tab'));
+    };
+    request.onsuccess = () => {
+      const database = request.result;
+      // Opened after we already gave up (blocked): do not leak the connection.
+      if (settled) { database.close(); return; }
+      settled = true;
+      database.onversionchange = () => database.close();
+      resolve(database);
+    };
   });
 }
 async function transaction(mode, run) {
   const database = await db();
   try {
     return await new Promise((resolve, reject) => {
-      const tx = database.transaction(STORE, mode);
-      const request = run(tx.objectStore(STORE));
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-      tx.onabort = () => reject(tx.error);
+      try {
+        const tx = database.transaction(STORE, mode);
+        let result;
+        const request = run(tx.objectStore(STORE));
+        request.onsuccess = () => { result = request.result; };
+        // A successful request is not a committed write: the transaction can
+        // still abort (e.g. quota). Resolve only once it completes.
+        tx.oncomplete = () => resolve(result);
+        tx.onerror = event => reject(storageError(event?.target?.error || tx.error));
+        tx.onabort = () => reject(storageError(tx.error || new DOMException('Transaction aborted', 'AbortError')));
+      } catch (error) {
+        reject(storageError(error));
+      }
     });
   } finally { database.close(); }
 }
