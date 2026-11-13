@@ -1170,3 +1170,60 @@ test('custom dice style material and 32-bit ARGB colors are validated', () => {
     assert.throws(() => decodeToken(rawToken({ ...envelope(doc), data: { ...envelope(doc).data, diceStyles: bad.diceStyles } })), error);
   }
 });
+
+function tokenBytes(token) { return Buffer.from(token.slice(3), 'base64url'); }
+function bytesToken(bytes) { return 'v1.' + Buffer.from(bytes).toString('base64url'); }
+const isLinkError = code => error => error.code === code && !(error instanceof SyntaxError) &&
+  !/JSON|Unexpected|Unterminated/.test(error.message);
+
+test('truncated or corrupted share tokens fail with a friendly coded error, never a JSON SyntaxError', () => {
+  for (const index of [6, 0]) {
+    // Template 6 inflates to < 4 KB; Fighter spans several 4 KB chunks, which
+    // previously surfaced "Unterminated string in JSON".
+    const token = encodeToken(instantiateTemplate(index));
+    const bytes = tokenBytes(token);
+    for (const cut of [4, 12, Math.floor(bytes.length / 2), bytes.length - 3]) {
+      assert.throws(() => decodeToken(bytesToken(bytes.subarray(0, cut))), isLinkError('link-invalid'), 'cut ' + cut);
+    }
+    for (const cut of [5, 37, Math.floor(token.length * 0.7), token.length - 1]) {
+      assert.throws(() => decodeToken(token.slice(0, cut)), isLinkError('link-invalid'), 'chars ' + cut);
+    }
+    const flipped = Uint8Array.from(bytes);
+    flipped[Math.floor(flipped.length / 2)] ^= 0xff;
+    assert.throws(() => decodeToken(bytesToken(flipped)), isLinkError('link-invalid'));
+  }
+  assert.throws(() => decodeToken(bytesToken(pako.deflate(new Uint8Array([0xff, 0xfe, 0x7b])))), isLinkError('link-invalid'));
+  assert.throws(() => decodeToken(bytesToken(pako.deflate(new TextEncoder().encode('{"format":')))), isLinkError('link-invalid'));
+  assert.throws(() => decodeToken('v1.'), isLinkError('link-invalid'));
+  assert.throws(() => decodeToken('v1.!'), /Invalid/);
+  assert.throws(() => decodeToken('v9.abc'), isLinkError('link-unsupported'));
+  assert.throws(() => decodeToken('not a token'), isLinkError('link-invalid'));
+});
+
+test('zip bombs and oversized tokens are still rejected as too large', () => {
+  const bomb = bytesToken(pako.deflate(new Uint8Array(200 * 1024).fill(32), { level: 9 }));
+  assert.ok(bomb.length < 1000, 'highly compressible payload');
+  assert.throws(() => decodeToken(bomb), error => error.code === 'link-too-large' && /too large/.test(error.message));
+  const justOver = bytesToken(pako.deflate(new Uint8Array(128 * 1024 + 1).fill(32)));
+  assert.throws(() => decodeToken(justOver), error => error.code === 'link-too-large');
+  assert.throws(() => decodeToken('v1.' + 'A'.repeat(120000)), error => error.code === 'link-too-large');
+  // Exactly at the 128 KB inflate limit is not a size error (just not a character).
+  const atLimit = bytesToken(pako.deflate(new Uint8Array(128 * 1024).fill(32)));
+  assert.throws(() => decodeToken(atLimit), error => error.code === 'link-invalid');
+});
+
+test('malformed #character= and #template= links report an error instead of being ignored', () => {
+  assert.equal(readShareHash(''), null);
+  assert.equal(readShareHash('#top'), null);
+  assert.equal(readShareHash('#template=not-supported&name=Someone&level=1'), null);
+  for (const hash of ['#character=', '#character=v1.', '#character=v1.abc$def', '#character=v1.QUJD']) {
+    assert.throws(() => readShareHash(hash), isLinkError('link-invalid'), hash);
+  }
+  assert.throws(() => readShareHash('#character=v2.QUJD'), isLinkError('link-unsupported'));
+  const token = encodeToken(instantiateTemplate(6));
+  assert.throws(() => readShareHash('#character=' + token.slice(0, -9)), isLinkError('link-invalid'));
+  assert.deepEqual(readShareHash('#character=' + token).rolls.map(r => r.name),
+    instantiateTemplate(6).rolls.map(r => r.name));
+  assert.throws(() => readShareHash('#template=fighter2014v1&name=%E0%A4%A&level=3'), isLinkError('link-invalid'));
+  assert.equal(readShareHash('#template=fighter2014v1&name=Ari%20Fighter&level=3').character.name, 'Ari Fighter');
+});

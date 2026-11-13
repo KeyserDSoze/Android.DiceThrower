@@ -12,6 +12,9 @@ export const FORMAT_VERSION = 1;
 export const BOUNDED_RULE_FORMAT_VERSION = 2;
 export const MAX_LINK_LENGTH = 2600;
 const MAX_RAW_LENGTH = 128 * 1024;
+// Same bound as Android CharacterTransferCodec.MAX_TOKEN_LENGTH.
+const MAX_TOKEN_LENGTH = 120000;
+const INVALID_LINK = 'Invalid or incomplete character link';
 const DB_NAME = 'dicethrower-workshop';
 const STORE = 'characters';
 const uid = () => crypto.randomUUID();
@@ -74,6 +77,11 @@ const validArgb = x => Number.isInteger(x) && x >= -0x80000000 && x <= 0xfffffff
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+function codedError(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
 }
 
 export function validateDocument(doc) {
@@ -201,7 +209,7 @@ function toBase64(bytes) {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 function fromBase64(string) {
-  assert(/^[A-Za-z0-9_-]+$/.test(string) && string.length <= 120000, 'Invalid link payload');
+  assert(/^[A-Za-z0-9_-]+$/.test(string), 'Invalid link payload');
   const base = string.replace(/-/g, '+').replace(/_/g, '/');
   const decoded = atob(base + '='.repeat((4 - base.length % 4) % 4));
   return Uint8Array.from(decoded, value => value.charCodeAt(0));
@@ -210,23 +218,40 @@ export function encodeToken(doc) {
   const compressed = pako.deflate(new TextEncoder().encode(JSON.stringify(envelope(doc))), { level: 9 });
   return 'v1.' + toBase64(compressed);
 }
+/**
+ * Link decode failures carry a stable `code` (link-invalid, link-too-large,
+ * link-unsupported) so the UI can show a localized message instead of a raw
+ * SyntaxError/DOMException. Document validation errors are thrown unchanged.
+ */
 export function decodeToken(token) {
-  assert(typeof token === 'string' && token.startsWith('v1.'), 'Unsupported link');
-  // Inflate in bounded chunks to reject malicious highly-compressible zip bombs.
-  const inflater = new pako.Inflate({ chunkSize: 4096 });
-  const chunks = [];
-  let total = 0;
-  inflater.onData = (chunk) => {
-    total += chunk.length;
-    assert(total <= MAX_RAW_LENGTH, 'Character too large');
-    chunks.push(chunk);
-  };
-  inflater.push(fromBase64(token.slice(3)), true);
-  assert(!inflater.err, 'Invalid compressed character');
-  const bytes = new Uint8Array(total);
-  let position = 0;
-  for (const chunk of chunks) { bytes.set(chunk, position); position += chunk.length; }
-  return documentFromEnvelope(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)));
+  if (typeof token !== 'string' || !token.startsWith('v1.')) {
+    throw /^v\d+\./.test(token) ? codedError('link-unsupported', 'Unsupported link')
+      : codedError('link-invalid', INVALID_LINK);
+  }
+  if (token.length > MAX_TOKEN_LENGTH) throw codedError('link-too-large', 'Character link too large');
+  let tooLarge = false;
+  let packet;
+  try {
+    // Inflate in bounded chunks to reject malicious highly-compressible zip bombs.
+    const inflater = new pako.Inflate({ chunkSize: 4096 });
+    const chunks = [];
+    let total = 0;
+    inflater.onData = (chunk) => {
+      total += chunk.length;
+      if (total > MAX_RAW_LENGTH) { tooLarge = true; throw new Error('Character too large'); }
+      chunks.push(chunk);
+    };
+    inflater.push(fromBase64(token.slice(3)), true);
+    // A truncated stream reports no error but never ends: never parse partial output.
+    assert(!inflater.err && inflater.ended, 'Invalid compressed character');
+    const bytes = new Uint8Array(total);
+    let position = 0;
+    for (const chunk of chunks) { bytes.set(chunk, position); position += chunk.length; }
+    packet = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+  } catch {
+    throw tooLarge ? codedError('link-too-large', 'Character too large') : codedError('link-invalid', INVALID_LINK);
+  }
+  return documentFromEnvelope(packet);
 }
 /**
  * Canonical shape fingerprint for version-pinned, unmodified local starter
@@ -306,11 +331,13 @@ export function readShareHash(hash = window.location.hash) {
   const preset = hash.match(/^#template=(fighter2014v1|rogue2014v1|wizard2014v1|wizard2014v2|wizard2014v3|ranger2014v1|cleric2014v1|paladin2014v1|bard2014v1)&name=([^&]+)&level=([0-9]+)$/);
   if (preset) {
     const definition = shortSharePresets.find(item => item.key === preset[1]);
+    let name;
+    try { name = decodeURIComponent(preset[2]); } catch { throw codedError('link-invalid', INVALID_LINK); }
     return withImportPreferences(
-      instantiateTemplate(definition.index, definition.wizardVersion), decodeURIComponent(preset[2]), Number(preset[3]));
+      instantiateTemplate(definition.index, definition.wizardVersion), name, Number(preset[3]));
   }
-  const match = hash.match(/^#character=(v1\.[A-Za-z0-9_-]+)$/);
-  return match ? decodeToken(match[1]) : null;
+  // A damaged or truncated #character= link is an error, not "no link".
+  return hash.startsWith('#character=') ? decodeToken(hash.slice('#character='.length)) : null;
 }
 export function androidUrl(doc) { return 'dicethrower://import?data=' + encodeURIComponent(encodeToken(doc)); }
 
