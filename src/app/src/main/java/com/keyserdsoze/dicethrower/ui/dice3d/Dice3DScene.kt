@@ -23,6 +23,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.keyserdsoze.dicethrower.R
 import com.keyserdsoze.dicethrower.dice.CandidateVisualLighting
 import com.keyserdsoze.dicethrower.dice.DiceRollVisualEvent
+import com.keyserdsoze.dicethrower.dice.DiceVisualProjection
 import com.keyserdsoze.dicethrower.model.DiceTableTheme
 import com.keyserdsoze.dicethrower.model.EffectType
 import com.keyserdsoze.dicethrower.model.RollVisualEffectsSettings
@@ -184,7 +185,7 @@ private class DiceEglConfigChooser : GLSurfaceView.EGLConfigChooser {
 }
 
 private data class VisualDie(
-    val sides: Int,
+    val meshKey: DiceMeshKey,
     val value: Int,
     val phase: Float,
     val renderStyle: DiceRenderStyle,
@@ -192,7 +193,9 @@ private data class VisualDie(
     val effectAccent: EffectType? = null,
     val candidateGroup: Int? = null,
     val chosenCandidate: Boolean = false,
-)
+) {
+    val sides: Int get() = meshKey.sides
+}
 
 private class GpuMesh(
     val bodyBuffer: Int,
@@ -329,7 +332,7 @@ private class DiceSceneRenderer(
     private var glyphTexture = 0
     private var tableBuffer = 0
     private var shadowBuffer = 0
-    private val gpuMeshes = HashMap<Int, GpuMesh>()
+    private val gpuMeshes = HashMap<DiceMeshKey, GpuMesh>()
 
     private var visualDice: List<VisualDie> = emptyList()
     private var baked: BakedDiceThrow? = null
@@ -375,44 +378,28 @@ private class DiceSceneRenderer(
         animateRoll: Boolean,
     ) {
         val now = SystemClock.elapsedRealtimeNanos()
+        val projection = DiceVisualProjection.project(event.result, event.persistentDiceCount)
         // Keep already-settled dice exactly where they stopped; effect stages add new dice only.
         val previous = settledPoses()
-        val keep = if (animateRoll && event.persistentDiceCount > 0 && previous.size >= event.persistentDiceCount)
-            previous.take(event.persistentDiceCount) else emptyList()
+        val keep = if (animateRoll && projection.persistentDiceCount > 0 && previous.size >= projection.persistentDiceCount)
+            previous.take(projection.persistentDiceCount) else emptyList()
         val appearanceBySlot = event.appearances.associateBy { it.slotKey }
         visualSettings = event.visualSettings
         effectImpactStartedNanos = if (animateRoll && visualSettings.cameraImpact &&
             event.effectAccentComponents.isNotEmpty()) now else 0L
         winnerRevealed = false
-        visualDice = buildList {
-            event.result.components.forEachIndexed { componentIndex, component ->
-                if (!DieGeometries.isSupported(component.sides)) return@forEachIndexed
-                component.rolls.forEachIndexed { index, value ->
-                    val style = DiceRenderStyleFactory.create(appearanceBySlot["$componentIndex:$index"])
-                    // A d100 is thrown like real percentile dice: a tens die (00-90) plus a units
-                    // d10 (the 10 face reads as 0). Visual only: the exact 1..100 stays logical.
-                    val faces = if (component.sides == 100)
-                        listOf(100 to value, 10 to (if (value % 10 == 0) 10 else value % 10))
-                    else listOf(component.sides to value)
-                    faces.forEach { (sides, faceValue) ->
-                        if (size < MAX_VISIBLE_DICE) {
-                            add(
-                                VisualDie(
-                                    sides = sides,
-                                    value = faceValue,
-                                    phase = ((sides * 37 + faceValue * 19 + index * 53) % 360).toFloat(),
-                                    renderStyle = style,
-                                    dimmed = componentIndex in event.dimmedComponentIndices,
-                                    effectAccent = event.effectAccentComponents[componentIndex],
-                                    candidateGroup = event.candidateGroupByComponent[componentIndex]
-                                        .takeIf { event.visualSettings.groupLanes },
-                                    chosenCandidate = componentIndex in event.chosenCandidateComponents,
-                                ),
-                            )
-                        }
-                    }
-                }
-            }
+        visualDice = projection.faces.map { face ->
+            VisualDie(
+                meshKey = DiceMeshKey(face.sides, face.percentileUnits),
+                value = face.value,
+                phase = ((face.sides * 37 + face.value * 19 + face.rollIndex * 53) % 360).toFloat(),
+                renderStyle = DiceRenderStyleFactory.create(appearanceBySlot["${face.componentIndex}:${face.rollIndex}"]),
+                dimmed = face.componentIndex in event.dimmedComponentIndices,
+                effectAccent = event.effectAccentComponents[face.componentIndex],
+                candidateGroup = event.candidateGroupByComponent[face.componentIndex]
+                    .takeIf { event.visualSettings.groupLanes },
+                chosenCandidate = face.componentIndex in event.chosenCandidateComponents,
+            )
         }
         setTable(tableTheme, tableImage)
         this.animateRoll = animateRoll
@@ -628,7 +615,7 @@ private class DiceSceneRenderer(
         GLES20.glEnableVertexAttribArray(corner)
         GLES20.glVertexAttribPointer(corner, 2, GLES20.GL_FLOAT, false, 8, 0)
         poses.forEachIndexed { index, pose ->
-            val mesh = gpuMesh(visualDice[index].sides) ?: return@forEachIndexed
+            val mesh = gpuMesh(visualDice[index].meshKey) ?: return@forEachIndexed
             val height = (pose.position.z - mesh.restHeight * dieScale).coerceAtLeast(0f) / dieScale
             val size = dieScale * (0.98f + 0.45f * height)
             GLES20.glUniform3f(
@@ -667,7 +654,7 @@ private class DiceSceneRenderer(
         val revealAge = (now - winnerRevealNanos) / 1_000_000_000f
 
         visualDice.forEachIndexed { index, die ->
-            val mesh = gpuMesh(die.sides) ?: return@forEachIndexed
+            val mesh = gpuMesh(die.meshKey) ?: return@forEachIndexed
             val pose = poses[index]
             pose.rotation.toMatrix(rotation)
             for (column in 0..2) for (row in 0..2) model[column * 4 + row] = rotation[column * 4 + row] * dieScale
@@ -759,18 +746,18 @@ private class DiceSceneRenderer(
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
     }
 
-    private fun gpuMesh(sides: Int): GpuMesh? {
-        gpuMeshes[sides]?.let { return it }
-        if (!DieGeometries.isSupported(sides)) return null
-        val mesh = DiceMeshFactory.create(sides)
-        val geometry = DieGeometries.forSides(sides)
+    private fun gpuMesh(key: DiceMeshKey): GpuMesh? {
+        gpuMeshes[key]?.let { return it }
+        if (!DieGeometries.isSupported(key.sides)) return null
+        val mesh = DiceMeshFactory.create(key.sides, key.percentileUnits)
+        val geometry = DieGeometries.forSides(key.sides)
         return GpuMesh(
             bodyBuffer = uploadBuffer(mesh.body),
             bodyVertexCount = mesh.bodyVertexCount,
             glyphBuffer = if (mesh.glyphVertexCount > 0) uploadBuffer(mesh.glyphs) else 0,
             glyphVertexCount = mesh.glyphVertexCount,
             restHeight = geometry.inradius,
-        ).also { gpuMeshes[sides] = it }
+        ).also { gpuMeshes[key] = it }
     }
 
     private fun ensureTableTexture(): Int {
@@ -883,7 +870,6 @@ private class DiceSceneRenderer(
 
     companion object {
         private const val TAG = "Dice3DScene"
-        private const val MAX_VISIBLE_DICE = 12
         private const val PREVIEW_SCALE = 1.0f
         private const val TEXTURE_MAX_ANISOTROPY = 0x84FE
 

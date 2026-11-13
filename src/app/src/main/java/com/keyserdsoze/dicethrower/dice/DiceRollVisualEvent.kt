@@ -9,6 +9,7 @@ data class DiceRollVisualEvent(
     val appearances: List<ResolvedDiceAppearance>,
     val dimmedComponentIndices: Set<Int> = emptySet(),
     val effectAccentComponents: Map<Int, EffectType> = emptyMap(),
+    /** Previous logical samples; the renderer expands percentile pairs before retaining poses. */
     val persistentDiceCount: Int = 0,
     /** 0 = original candidate (upper lane), 1 = alternative (lower lane). */
     val candidateGroupByComponent: Map<Int, Int> = emptyMap(),

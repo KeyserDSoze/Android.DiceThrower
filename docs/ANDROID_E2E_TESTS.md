@@ -34,6 +34,16 @@ Runner locale/CI: `scripts/run-android-ui-tests.sh`.
 Gli altri test strumentali continuano a coprire editor, import da link, temi, gesture,
 concorrenza della persistenza e ripristino delle bozze.
 
+### Regressione OpenGL dei percentili
+
+`e2e/PercentileRenderingTest.kt` aggiunge una prova mirata del renderer, distinta dai sei
+percorsi sull'app: nella stessa scena mostra un d100=100 (`00 + 0`) e un d10=10, poi anima
+un d4 generato da un effetto mantenendo i tre corpi precedenti. Usa valori già fissati,
+attende frame e arresto del renderer e raccoglie screenshot prima/dopo con la stessa regola
+diagnostica. I test JVM verificano tutti i valori 1–100, UV dell'atlante, numerazione delle
+facce, budget dei corpi e immobilità di entrambe le pose del percentile durante l'effetto.
+Gli screenshot servono alla review visiva, non a un confronto golden o a un'asserzione OCR.
+
 I selettori `testTag` non dipendono dalla lingua dell'interfaccia. Le attese usano la presenza,
 l'abilitazione e i valori dei nodi, non pause arbitrarie. Per il tavolo il test aspetta anche
 `RollTableRenderedKey`: frame OpenGL e texture effettivamente inviati al renderer, con un
@@ -59,6 +69,10 @@ bash scripts/run-android-ui-tests.sh
 # Soltanto i sei scenari del tavolo.
 bash scripts/run-android-ui-tests.sh \
   -Pandroid.testInstrumentationRunnerArguments.class=com.keyserdsoze.dicethrower.e2e.RollJourneyE2ETest
+
+# Soltanto la regressione del renderer d100/d10 e dell'effetto aggiuntivo.
+bash scripts/run-android-ui-tests.sh \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.keyserdsoze.dicethrower.e2e.PercentileRenderingTest
 ```
 
 Il runner abilita gli screenshot dei checkpoint. Per lanciare direttamente Gradle, da `src`:

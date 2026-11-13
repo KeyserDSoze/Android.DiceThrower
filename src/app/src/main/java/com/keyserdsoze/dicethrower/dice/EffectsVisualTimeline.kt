@@ -11,7 +11,7 @@ data class EffectsVisualStage(
     val result: DiceRollResult,
     val componentOwners: Map<Int, String>,
     val accentByComponentIndex: Map<Int, EffectType> = emptyMap(),
-    /** The previous dice remain on the table; only the additional dice animate. */
+    /** Previous logical dice remain on the table; percentile pairs are expanded by the renderer. */
     val persistentDiceCount: Int = 0,
     val effectId: String? = null,
     val actionKind: EffectActionType? = null,
@@ -21,7 +21,7 @@ data class EffectsVisualStage(
 )
 
 object EffectsVisualTimeline {
-    const val MAX_VISIBLE_DICE = 12
+    const val MAX_VISIBLE_DICE = DiceVisualProjection.MAX_VISIBLE_DICE
     const val MAX_STAGES = 12
 
     fun build(
@@ -40,15 +40,15 @@ object EffectsVisualTimeline {
         var replacedComponents = emptySet<Int>()
         var retainsBaseline = true
         val stages = mutableListOf(original)
-        var displayedDice = baseline.components.sumOf { it.rolls.size }
+        var displayedDice = DiceVisualProjection.diceCount(components)
         for (sample in execution.generatedDice.take(MAX_STAGES - 1)) {
             val added = sample.result.components
             if (added.isEmpty()) continue
-            val addedCount = added.sumOf { it.rolls.size }
+            val addedCount = DiceVisualProjection.diceCount(added)
             val overflow = displayedDice + addedCount > MAX_VISIBLE_DICE
             // Rendering is bounded. When the table fills, show the newly generated
             // dice in a fresh phase rather than silently dropping them.
-            val previousCount = if (overflow) 0 else displayedDice
+            val previousCount = if (overflow) 0 else components.sumOf { it.rolls.size }
             val offset = if (overflow) 0 else components.size
             if (overflow) {
                 replacedComponents = emptySet()
@@ -65,7 +65,7 @@ object EffectsVisualTimeline {
             if (accent != null) {
                 accents = accents + added.indices.associate { offset + it to accent }
             }
-            displayedDice = components.sumOf { it.rolls.size }
+            displayedDice = DiceVisualProjection.diceCount(components)
             stages += EffectsVisualStage(
                 result = DiceRollResult(
                     total = components.sumOf { it.subtotal },

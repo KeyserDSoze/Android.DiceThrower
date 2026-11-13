@@ -26,7 +26,7 @@ internal object DiceGlyphAtlasLayout {
     const val COLUMNS = 6
     /** Square cells in a square power-of-two texture (mipmaps require POT on GLES2). */
     const val ROWS = 6
-    val labels: List<String> = ((1..20).map(Int::toString) + (0..9).map { "${it}0" }).distinct()
+    val labels: List<String> = ((1..20).map(Int::toString) + (0..9).map { "${it}0" } + "0").distinct()
 
     init {
         require(labels.size <= COLUMNS * ROWS)
@@ -52,20 +52,34 @@ internal object DiceGlyphAtlasLayout {
     }
 }
 
+/** The same d10 body has distinct glyphs for standalone rolls (1–10) and units (0–9). */
+internal data class DiceMeshKey(val sides: Int, val percentileUnits: Boolean = false) {
+    init {
+        require(!percentileUnits || sides == 10) { "Only d10 meshes can use percentile units" }
+    }
+}
+
 object DiceMeshFactory {
     private const val GLYPH_LIFT = 0.006f
     private const val MAX_ARC_STEP_RADIANS = 0.40f
-    private val cache = mutableMapOf<Int, DiceRenderMesh>()
+    private val cache = mutableMapOf<DiceMeshKey, DiceRenderMesh>()
 
-    internal fun create(sides: Int): DiceRenderMesh = synchronized(cache) {
-        cache.getOrPut(sides) { build(DieGeometries.forSides(sides)) }
+    internal fun create(sides: Int, percentileUnits: Boolean = false): DiceRenderMesh = synchronized(cache) {
+        cache.getOrPut(DiceMeshKey(sides, percentileUnits)) {
+            build(DieGeometries.forSides(sides), percentileUnits)
+        }
     }
 
-    private fun build(geometry: DieGeometry): DiceRenderMesh {
+    private fun build(geometry: DieGeometry, percentileUnits: Boolean): DiceRenderMesh {
         val body = FloatBuilder()
         appendRoundedBody(geometry, body)
         val glyphs = FloatBuilder()
-        geometry.glyphs.forEach { appendGlyph(it, glyphs) }
+        geometry.glyphs.forEach { glyph ->
+            // Shift the complete numbering, keeping opposite units faces summing to 9.
+            // Only replacing 10 with 0 would break that real percentile-die convention.
+            val painted = if (percentileUnits) glyph.copy(label = (glyph.label.toInt() - 1).toString()) else glyph
+            appendGlyph(painted, glyphs)
+        }
         return DiceRenderMesh(body.toArray(), glyphs.toArray())
     }
 

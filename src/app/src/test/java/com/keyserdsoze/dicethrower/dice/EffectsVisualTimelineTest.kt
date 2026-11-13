@@ -110,6 +110,56 @@ class EffectsVisualTimelineTest {
     }
 
     @Test
+    fun sixPercentilePairsLeaveNoSpaceForAnAdditionalEffectDie() {
+        val full = DiceRollResult(60, listOf(DiceComponent(6, 100, 1, List(6) { 10 })), 0)
+        val stages = EffectsVisualTimeline.build(full, emptyMap(), execution(followUp),
+            mapOf("bonus" to EffectType.BONUS), animate = true)
+        assertEquals(0, stages.last().persistentDiceCount)
+        assertFalse(stages.last().retainsBaseline)
+        assertEquals(followUp.result.components, stages.last().result.components)
+    }
+
+    @Test
+    fun generatedPercentilePairRequiresTwoFreeSpacesRatherThanOne() {
+        val almostFull = DiceRollResult(11, listOf(DiceComponent(11, 6, 1, List(11) { 1 })), 0)
+        val percentile = followUp.copy(result = DiceRollResult(65, listOf(DiceComponent(1, 100, 1, listOf(65))), 0))
+        val stages = EffectsVisualTimeline.build(almostFull, emptyMap(), execution(percentile),
+            mapOf("bonus" to EffectType.BONUS), animate = true)
+        val last = stages.last()
+        assertEquals(0, last.persistentDiceCount)
+        assertFalse(last.retainsBaseline)
+        assertEquals(percentile.result.components, last.result.components)
+        assertEquals(listOf(100, 10), DiceVisualProjection.project(last.result).faces.map { it.sides })
+    }
+
+    @Test
+    fun mixedBaselineAtElevenBodiesCanKeepItsLogicalPrefixAndAddOneEffectDie() {
+        val baseline = DiceRollResult(51, listOf(
+            DiceComponent(5, 100, 1, List(5) { 10 }), DiceComponent(1, 6, 1, listOf(1)),
+        ), 0)
+        val stages = EffectsVisualTimeline.build(baseline, emptyMap(), execution(followUp),
+            mapOf("bonus" to EffectType.BONUS), animate = true)
+        val last = stages.last()
+        assertTrue(last.retainsBaseline)
+        assertEquals(6, last.persistentDiceCount)
+        val projection = DiceVisualProjection.project(last.result, last.persistentDiceCount)
+        assertEquals(11, projection.persistentDiceCount)
+        assertEquals(12, projection.faces.size)
+        assertEquals(4, projection.faces.last().sides)
+    }
+
+    @Test
+    fun consecutiveEffectsRetainBothBodiesOfEarlierPercentileSamples() {
+        val baseline = DiceRollResult(100, listOf(DiceComponent(1, 100, 1, listOf(100))), 0)
+        val stages = EffectsVisualTimeline.build(baseline, emptyMap(), execution(followUp, malusReroll),
+            mapOf("bonus" to EffectType.BONUS, "malus" to EffectType.MALUS), animate = true)
+        assertEquals(listOf(0, 1, 2), stages.map { it.persistentDiceCount })
+        assertEquals(listOf(0, 2, 3), stages.map {
+            DiceVisualProjection.project(it.result, it.persistentDiceCount).persistentDiceCount
+        })
+    }
+
+    @Test
     fun visualStageLimitPreventsUnboundedRendererChanges() {
         val samples = Array(40) { i -> followUp.copy(actionId = "extra-$i") }
         val stages = EffectsVisualTimeline.build(base, emptyMap(), execution(*samples),

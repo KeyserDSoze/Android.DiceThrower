@@ -1,6 +1,9 @@
 package com.keyserdsoze.dicethrower.ui.dice3d
 
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.abs
@@ -70,5 +73,70 @@ class DiceMeshFactoryTest {
         assertTrue(uv[0] < uv[2] && uv[1] < uv[3])
         assertTrue(DiceGlyphAtlasLayout.needsUnderline("6") && DiceGlyphAtlasLayout.needsUnderline("9"))
         assertTrue(!DiceGlyphAtlasLayout.needsUnderline("60"))
+    }
+
+    @Test
+    fun percentileUnitsPaintZeroThroughNineWithoutChangingTheD10Body() {
+        val standard = DiceMeshFactory.create(10)
+        val units = DiceMeshFactory.create(10, percentileUnits = true)
+        assertArrayEquals(standard.body, units.body, 0f)
+        assertEquals(standard.glyphVertexCount, units.glyphVertexCount)
+        DieGeometries.forSides(10).glyphs.forEachIndexed { index, glyph ->
+            val label = (glyph.label.toInt() - 1).toString()
+            val uv = DiceGlyphAtlasLayout.uvRect(label)
+            val expected = floatArrayOf(uv[0], uv[3], uv[2], uv[3], uv[2], uv[1],
+                uv[0], uv[3], uv[2], uv[1], uv[0], uv[1])
+            val actual = FloatArray(12) { coordinate ->
+                units.glyphs[(index * 6 + coordinate / 2) * DiceRenderMesh.GLYPH_STRIDE + 6 + coordinate % 2]
+            }
+            assertArrayEquals("percentile glyph $label", expected, actual, 0f)
+            for (vertex in 0 until 6) for (component in 0 until 6) {
+                val offset = (index * 6 + vertex) * DiceRenderMesh.GLYPH_STRIDE + component
+                assertEquals("unchanged glyph position/normal", standard.glyphs[offset], units.glyphs[offset], 0f)
+            }
+        }
+        assertTrue("standalone d10 still has 10", "10" in DieGeometries.forSides(10).anchorLabels)
+    }
+
+    @Test
+    fun oppositePercentileUnitFacesSumToNine() {
+        val geometry = DieGeometries.forSides(10)
+        val units = DiceMeshFactory.create(10, percentileUnits = true)
+        val paintedLabels = geometry.glyphs.indices.map { index ->
+            val offset = index * 6 * DiceRenderMesh.GLYPH_STRIDE
+            val u = units.glyphs[offset + 6]
+            val v = units.glyphs[offset + 7]
+            DiceGlyphAtlasLayout.labels.single { label ->
+                val rectangle = DiceGlyphAtlasLayout.uvRect(label)
+                rectangle[0] == u && rectangle[3] == v
+            }.toInt()
+        }
+        assertEquals((0..9).toSet(), paintedLabels.toSet())
+        geometry.glyphs.forEachIndexed { index, glyph ->
+            val opposite = geometry.glyphs.indexOfFirst { it.normal.dot(glyph.normal) < -0.999f }
+            assertTrue(opposite >= 0)
+            assertEquals(9, paintedLabels[index] + paintedLabels[opposite])
+        }
+    }
+
+    @Test
+    fun standaloneAndPercentileD10MeshesUseIndependentCacheEntries() {
+        val standard = DiceMeshFactory.create(10)
+        val units = DiceMeshFactory.create(10, percentileUnits = true)
+        assertNotSame(standard, units)
+        assertSame(standard, DiceMeshFactory.create(10))
+        assertSame(units, DiceMeshFactory.create(10, percentileUnits = true))
+    }
+
+    @Test
+    fun zeroHasItsOwnAtlasCellDistinctFromTenAndDoubleZero() {
+        assertTrue("0" in DiceGlyphAtlasLayout.labels)
+        assertTrue(DiceGlyphAtlasLayout.cellOf("0") != DiceGlyphAtlasLayout.cellOf("10"))
+        assertTrue(DiceGlyphAtlasLayout.cellOf("0") != DiceGlyphAtlasLayout.cellOf("00"))
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun percentileUnitsCannotBeRequestedForOtherDieBodies() {
+        DiceMeshFactory.create(6, percentileUnits = true)
     }
 }

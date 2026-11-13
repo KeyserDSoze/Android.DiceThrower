@@ -1,5 +1,8 @@
 package com.keyserdsoze.dicethrower.ui.dice3d
 
+import com.keyserdsoze.dicethrower.dice.DiceComponent
+import com.keyserdsoze.dicethrower.dice.DiceRollResult
+import com.keyserdsoze.dicethrower.dice.DiceVisualProjection
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -113,6 +116,34 @@ class DiceThrowSimulationTest {
         listOf(1 to 3, 2 to 5).forEach { (index, value) ->
             val geometry = DieGeometries.forSides(6)
             assertEquals(value.toString(), geometry.anchorLabels[geometry.upAnchorIndex(baked.finalPose(index).rotation)])
+        }
+    }
+
+    @Test
+    fun projectedPercentilePairsKeepBothPosesThroughoutAnAdditionalEffectThrow() {
+        for (value in listOf(10, 65, 100)) {
+            val baseline = DiceRollResult(value, listOf(DiceComponent(1, 100, 1, listOf(value))), 0)
+            val first = DiceVisualProjection.project(baseline)
+            val scale = DiceTableViewport.dieScaleFor(first.faces.size)
+            val original = bake(first.faces.map { DieThrowSpec(it.sides, it.value) }, value.toLong(), scale)
+            val previous = first.faces.indices.map { original.finalPose(it) }
+            val added = DiceComponent(1, 4, 1, listOf(3))
+            val next = DiceVisualProjection.project(
+                baseline.copy(total = value + 3, components = baseline.components + added), 1,
+            )
+            assertEquals(2, next.persistentDiceCount)
+            val fixed = previous.take(next.persistentDiceCount)
+            val specs = next.faces.mapIndexed { index, face ->
+                DieThrowSpec(face.sides, face.value, fixedPose = fixed.getOrNull(index))
+            }
+            val effect = bake(specs, value + 200L, scale, edge = true)
+            var time = 0f
+            while (time <= effect.durationSeconds) {
+                previous.indices.forEach { index -> assertEquals(previous[index], effect.pose(index, time)) }
+                time += 0.1f
+            }
+            assertEquals(previous[0], effect.finalPose(0))
+            assertEquals(previous[1], effect.finalPose(1))
         }
     }
 
