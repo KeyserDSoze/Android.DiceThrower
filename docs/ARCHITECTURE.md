@@ -412,3 +412,12 @@ Single QR codes are bounded by physical payload capacity. The workshop favors fu
 `DiceExpression.parse` tokenizes before parsing: whitespace only separates tokens, so adjacent numbers (`3 1d6`, or `2 {level}` after resolution) are errors, and numbers use ASCII `0`–`9` only, as in `RollFormulaResolver` and `EffectFormulaInterpreter`. Expressions are limited to 4096 characters, nesting depth 32, 500 dice and 1000 terms, and are rejected when any intermediate total, constant, die sign or subtotal could leave the `Int` range. `RollFormulaResolver` checks the dice/term/length totals of level-rule repetitions before building them. A subtracting Roll Part's default Effect formula is `-(expression)`, normal or support-only.
 
 `AppDataValidator.validate` also bounds character levels to 1–9999 and resolves every roll at its character's level, so restores, Drive documents and character transfers cannot bring in rolls that cannot be thrown. `validate(data, acceptedBaseline)` keeps levels and rolls that are unchanged from previously accepted data (same definition, level and modifiers) accepted: stored data is loaded with itself as baseline and local saves, sync commits and imports use the stored data, so stricter rules never stop old data from loading or unrelated edits from saving. The UI pre-checks edits with `validateEdit`, and the roll screen returns to the list for a stored roll that no longer resolves.
+
+## Sync integrity, round 3
+
+- `deleteAllData` re-lists the managed set until empty (bounded) so a racing writer cannot leave files behind. `MainActivity` cancels and joins the running sync before deleting or disconnecting and refuses `syncNow` while a delete or account flow is busy.
+- Log retention is per character (`RollLogRetention.append`): logs are part of each `CharacterRevision`, so trimming must never touch another character.
+- `LocalStore.replaceAll` (restore) records no deletions for characters absent from the backup, clears all base revisions (`SyncTransitions`) and sets `reconciliationRequired`; `MainActivity` raises `initialReconciliationPending` on resume. The restore dialog says cloud data will be reconciled.
+- Backups are written in streaming form (compact JSON, one image at a time) and read with a 256 MiB cap, on `Dispatchers.IO`.
+- Play Services `authorize`/`revokeAccess` tasks are awaited in `lifecycleScope` (`suspendCancellableCoroutine`); the pending account is saved in `onSaveInstanceState` once the consent screen is launched.
+- Drive retry backoff uses `delay`, so cancellation interrupts it.
