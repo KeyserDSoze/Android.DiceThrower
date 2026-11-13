@@ -72,6 +72,7 @@ import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -92,6 +93,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -130,10 +132,8 @@ import com.keyserdsoze.dicethrower.data.CharacterImageAssetStore
 import com.keyserdsoze.dicethrower.data.CloudAccountState
 import com.keyserdsoze.dicethrower.data.AppDataValidator
 import com.keyserdsoze.dicethrower.data.DashboardDataOperations
-import com.keyserdsoze.dicethrower.data.LocalStore
 import com.keyserdsoze.dicethrower.data.RollLogRetention
-import com.keyserdsoze.dicethrower.data.AsyncDataPersistence
-import com.keyserdsoze.dicethrower.data.PersistOutcome
+import com.keyserdsoze.dicethrower.ui.AppDataViewModel
 import com.keyserdsoze.dicethrower.data.sync.ConflictArea
 import com.keyserdsoze.dicethrower.data.sync.SyncConflict
 import com.keyserdsoze.dicethrower.data.sync.SyncConflictResolution
@@ -188,6 +188,7 @@ import java.text.DateFormat
 import java.util.Date
 import java.util.UUID
 import kotlin.random.Random
+import kotlinx.coroutines.delay
 
 internal enum class RouteV2 { CHARACTERS, DICE_LIBRARY, CHARACTER, GROUP, ROLL, SETTINGS, LOGS }
 
@@ -290,7 +291,7 @@ private sealed interface DashboardEntry {
 
 @Composable
 fun DiceThrowerAppV2(
-    store: LocalStore,
+    dataModel: AppDataViewModel,
     settings: AppSettings,
     selectedLanguage: String,
     languageOptions: List<AppLanguageOption>,
@@ -322,11 +323,47 @@ fun DiceThrowerAppV2(
         return
     }
 
-    val initialData = remember(store) { store.loadData() }
-    val persistence = remember(store) {
-        AsyncDataPersistence(store, initialData, store.dataVersion())
+    val context = LocalContext.current
+    val latestOnDataChanged by rememberUpdatedState(onLocalDataChanged)
+    LaunchedEffect(dataModel) {
+        dataModel.notices.collect { notice ->
+            if (notice == AppDataViewModel.Notice.SAVED) {
+                latestOnDataChanged()
+            } else {
+                val message = when (notice) {
+                    AppDataViewModel.Notice.STALE -> R.string.change_not_saved_data_reloaded
+                    AppDataViewModel.Notice.INVALID -> R.string.change_not_saved_invalid_rolls
+                    else -> R.string.local_data_unavailable
+                }
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            }
+        }
     }
-    var data by remember { mutableStateOf(initialData) }
+    LaunchedEffect(dataRefreshVersion) {
+        if (dataRefreshVersion > 0) dataModel.reload()
+    }
+    LifecycleResumeEffect(dataModel) {
+        dataModel.refreshIfNeeded()
+        onPauseOrDispose { }
+    }
+    if (!dataModel.ready) {
+        ArcaneBackground {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(24.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                if (dataModel.loadFailed) {
+                    Text(stringResource(R.string.local_data_unavailable))
+                    TextButton(onClick = dataModel::reload) { Text(stringResource(R.string.try_again)) }
+                } else {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+        return
+    }
+    val data = dataModel.data
     var route by rememberSaveable { mutableStateOf(RouteV2.CHARACTERS) }
     var selectedCharacterId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedGroupId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -335,41 +372,13 @@ fun DiceThrowerAppV2(
     var editMode by rememberSaveable { mutableStateOf(false) }
     var editingActiveRoll by rememberSaveable { mutableStateOf(false) }
     val stateHolder = rememberSaveableStateHolder()
-    val context = LocalContext.current
-
-    fun applyOutcome(outcome: PersistOutcome) {
-        when (outcome) {
-            is PersistOutcome.Saved -> {
-                // Adopt the stamped copy only when no newer optimistic edit is still queued.
-                if (!persistence.hasPending()) data = outcome.data
-                onLocalDataChanged()
-            }
-            is PersistOutcome.Skipped -> Unit
-            is PersistOutcome.Reloaded -> data = outcome.data
-            is PersistOutcome.Stale -> {
-                // An import, a sync or another window saved meanwhile: never overwrite that newer
-                // content with this older copy; show the stored data instead.
-                data = outcome.data
-                Toast.makeText(context, R.string.change_not_saved_data_reloaded, Toast.LENGTH_LONG).show()
-            }
-            is PersistOutcome.Invalid -> {
-                // LocalStore refuses invalid data; restore the last saved state instead of crashing.
-                data = outcome.data
-                Toast.makeText(context, R.string.change_not_saved_invalid_rolls, Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-
-    fun reloadData() {
-        persistence.reload(::applyOutcome)
-    }
 
     fun persist(updated: AppData) {
-        data = updated
-        persistence.save(updated, ::applyOutcome)
+        dataModel.save(updated)
     }
 
     fun navigateBack() {
+        if (route == RouteV2.ROLL) dataModel.clearRollSession()
         val hasRollReturnGroup = rollReturnGroupId != null &&
             selectedCharacterId != null &&
             data.groups.any { group ->
@@ -396,16 +405,6 @@ fun DiceThrowerAppV2(
         } else {
             navigateBack()
         }
-    }
-
-    LaunchedEffect(dataRefreshVersion) {
-        if (dataRefreshVersion > 0) reloadData()
-    }
-
-    // Pick up data saved elsewhere while this screen was not in the foreground.
-    LifecycleResumeEffect(Unit) {
-        if (persistence.isOutOfDate()) reloadData()
-        onPauseOrDispose { }
     }
 
     syncStatus.conflicts.firstOrNull()?.let { conflict ->
@@ -470,6 +469,7 @@ fun DiceThrowerAppV2(
                     onToggleMode = { editMode = !editMode },
                     onOpenLogs = { route = RouteV2.LOGS },
                     onOpenRoll = { rollId ->
+                        dataModel.clearRollSession()
                         selectedRollId = rollId
                         rollReturnGroupId = null
                         editingActiveRoll = false
@@ -499,6 +499,7 @@ fun DiceThrowerAppV2(
                     editMode = editMode,
                     onBack = ::navigateBack,
                     onOpenRoll = { rollId ->
+                        dataModel.clearRollSession()
                         selectedRollId = rollId
                         rollReturnGroupId = group.id
                         editingActiveRoll = false
@@ -536,6 +537,7 @@ fun DiceThrowerAppV2(
                     )
                 } else {
                     RollScreenV2(
+                        dataModel = dataModel,
                         character = character,
                         modifiers = characterModifiers,
                         diceStyles = data.diceStyles,
@@ -676,7 +678,7 @@ private fun CharactersScreenV2(
     onImportCharacterFile: () -> Unit,
     onCustomizeDice: () -> Unit,
 ) {
-    var showAdd by remember { mutableStateOf(false) }
+    var showAdd by rememberSaveable { mutableStateOf(false) }
 
     ArcaneBackground {
         Scaffold(
@@ -712,10 +714,12 @@ private fun CharactersScreenV2(
                 )
             },
             floatingActionButton = {
+                val newCharacterLabel = stringResource(R.string.new_character)
                 ExtendedFloatingActionButton(
                     onClick = { showAdd = true },
+                    modifier = Modifier.semantics { contentDescription = newCharacterLabel },
                     icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
-                    text = { Text(stringResource(R.string.new_character)) },
+                    text = { Text(newCharacterLabel) },
                 )
             },
         ) { padding ->
@@ -753,7 +757,8 @@ private fun CharactersScreenV2(
                 ) {
                     items(characters, key = { it.id }) { character ->
                         PremiumCard(
-                            modifier = Modifier.fillMaxWidth().clickable { onOpenCharacter(character.id) },
+                            modifier = Modifier.fillMaxWidth().testTag("character-${character.id}")
+                                .clickable { onOpenCharacter(character.id) },
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -871,7 +876,7 @@ private fun CharacterScreenV2(
     onOpenGroup: (String) -> Unit,
     onDataChanged: (AppData) -> Unit,
  ) {
-    var childEditorVisible by remember(character.id) { mutableStateOf(false) }
+    var childEditorVisible by rememberSaveable(character.id) { mutableStateOf(false) }
     var showShare by remember(character.id) { mutableStateOf(false) }
     if (showShare) {
         CharacterShareDialog(character = character, data = data, onDismiss = { showShare = false })
@@ -996,7 +1001,8 @@ private fun DashboardContentV2(
                     val group = entry.group
                     val groupRolls = activeRolls.filter { it.groupId == group.id }.sortedBy { it.order }
                     PremiumCard(
-                        modifier = Modifier.fillMaxWidth().clickable { onOpenGroup(group.id) },
+                        modifier = Modifier.fillMaxWidth().testTag("group-${group.id}")
+                            .clickable { onOpenGroup(group.id) },
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -1045,6 +1051,7 @@ private fun RollLaunchRowV2(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .testTag("launch-roll-${roll.id}")
             .clickable { onOpenRoll(roll.id) }
             .padding(horizontal = 4.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -1072,21 +1079,27 @@ internal fun CharacterEditContentV2(
     onEditorVisibilityChanged: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    var showAddModifier by remember { mutableStateOf(false) }
-    var editingModifierId by remember { mutableStateOf<String?>(null) }
-    var showAddGroup by remember { mutableStateOf(false) }
-    var showAddRoll by remember { mutableStateOf(false) }
-    var editingRollId by remember { mutableStateOf<String?>(null) }
-    var addRuleRollId by remember { mutableStateOf<String?>(null) }
-    var levelText by remember(character.id) { mutableStateOf(character.level.toString()) }
-    var levelRejected by remember(character.id) { mutableStateOf(false) }
+    var showAddModifier by rememberSaveable(character.id) { mutableStateOf(false) }
+    var editingModifierId by rememberSaveable(character.id) { mutableStateOf<String?>(null) }
+    var showAddGroup by rememberSaveable(character.id) { mutableStateOf(false) }
+    var showAddRoll by rememberSaveable(character.id) { mutableStateOf(false) }
+    var editingRollId by rememberSaveable(character.id) { mutableStateOf<String?>(null) }
+    var addRuleRollId by rememberSaveable(character.id) { mutableStateOf<String?>(null) }
+    var levelText by rememberSaveable(character.id) { mutableStateOf(character.level.toString()) }
+    var levelRejected by rememberSaveable(character.id) { mutableStateOf(false) }
+    var lastStoredLevel by rememberSaveable(character.id) { mutableStateOf(character.level) }
     val context = LocalContext.current
     // Keep the edit list's position while the nested roll builder replaces its content.
     val editListState = rememberLazyListState()
 
     LaunchedEffect(character.level) {
-        if (levelText.toIntOrNull() != character.level) levelText = character.level.toString()
-        levelRejected = false
+        // Preserve incomplete/rejected text on recreation; only an actual persisted level change
+        // (including one from another device) replaces the draft.
+        if (lastStoredLevel != character.level) {
+            levelText = character.level.toString()
+            levelRejected = false
+            lastStoredLevel = character.level
+        }
     }
 
     // Level and modifier edits are checked as a save would check them, so an edit that would
@@ -1690,7 +1703,7 @@ private fun GroupScreenV2(
     onDeleteGroup: () -> Unit,
     onDataChanged: (AppData) -> Unit,
 ) {
-    var childEditorVisible by remember(group.id) { mutableStateOf(false) }
+    var childEditorVisible by rememberSaveable(group.id) { mutableStateOf(false) }
     ArcaneBackground {
         Scaffold(
             containerColor = Color.Transparent,
@@ -1793,9 +1806,9 @@ internal fun GroupEditContentV2(
 ) {
     var detailedRollId by rememberSaveable(group.id) { mutableStateOf<String?>(null) }
     val editListState = rememberLazyListState()
-    var showAddRoll by remember { mutableStateOf(false) }
-    var editingRollId by remember { mutableStateOf<String?>(null) }
-    var addRuleRollId by remember { mutableStateOf<String?>(null) }
+    var showAddRoll by rememberSaveable(group.id) { mutableStateOf(false) }
+    var editingRollId by rememberSaveable(group.id) { mutableStateOf<String?>(null) }
+    var addRuleRollId by rememberSaveable(group.id) { mutableStateOf<String?>(null) }
 
     val groups = data.groups.filter { it.characterId == character.id }.sortedBy { it.order }
     val allCharacterRolls = data.rolls.filter { it.characterId == character.id }
@@ -2332,6 +2345,7 @@ internal fun Modifier.dismissStatsOnDoubleTap(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RollScreenV2(
+    dataModel: AppDataViewModel,
     character: CharacterProfile,
     modifiers: List<CharacterModifier>,
     diceStyles: List<DiceStyle>,
@@ -2382,30 +2396,40 @@ private fun RollScreenV2(
             appearances = previewAppearances,
         )
     }
-    // Level changes can alter dice counts, modifiers and rules; never reuse a
-    // previous result or settled animation for a new level/formula.
-    var visualEvent by remember(roll.id, character.level, formula.expression) { mutableStateOf(previewEvent) }
-    var outcome by remember(roll.id, character.level, formula.expression) { mutableStateOf<DiceRollResult?>(null) }
-    var doubleEvaluation by remember(roll.id, character.level, formula.expression) {
-        mutableStateOf<DoubleRollEvaluation?>(null)
+    val sessionKey = remember(roll, character.level, modifiers, formula.expression) {
+        RollSessionKey(roll, character.level, modifiers, formula.expression)
     }
-    var effectsExecution by remember(roll.id, character.level, formula.expression, roll.effects) {
-        mutableStateOf<EffectExecutionResult?>(null)
+    val session = remember(dataModel, sessionKey) { dataModel.rollSessionFor(sessionKey, previewEvent) }
+    var visualEvent by session.visualEvent
+    var outcome by session.outcome
+    var doubleEvaluation by session.doubleEvaluation
+    var effectsExecution by session.effectsExecution
+    var finalRollTotal by session.finalRollTotal
+    var visualStages by session.visualStages
+    var visualStageIndex by session.visualStageIndex
+    var visualSeed by session.visualSeed
+    var hasRolled by session.hasRolled
+    var resultRevealed by session.resultRevealed
+    var showStats by session.showStats
+    var lastThrowMode by session.lastThrowMode
+    var restored by session.restored
+    // Render readiness belongs to this GL view, not the retained logical session.
+    var renderedEventId by remember(session) { mutableStateOf<Long?>(null) }
+    var renderedTexture by remember(session) { mutableStateOf(false) }
+    val lastRequestNanos by session.lastThrowRequestAtNanos
+    val controlsReady = session.controlsReady
+    DisposableEffect(session) {
+        onDispose { session.detach() }
     }
-    var finalRollTotal by remember(roll.id, character.level, formula.expression, roll.effects) {
-        mutableStateOf<Int?>(null)
+    LaunchedEffect(session, lastRequestNanos) {
+        lastRequestNanos?.let { requested ->
+            if (!session.cooldownReady.value) {
+                val remaining = RollSession.REQUEST_COOLDOWN_NANOS - (System.nanoTime() - requested)
+                if (remaining > 0) delay((remaining + 999_999L) / 1_000_000L)
+                session.completeCooldown(requested)
+            }
+        }
     }
-    var visualStages by remember(roll.id, character.level, formula.expression, roll.effects) {
-        mutableStateOf<List<EffectsVisualStage>>(emptyList())
-    }
-    var visualStageIndex by remember(roll.id, character.level, formula.expression, roll.effects) {
-        mutableStateOf(0)
-    }
-    var visualSeed by remember(roll.id) { mutableStateOf(0L) }
-    var hasRolled by remember(roll.id, character.level, formula.expression) { mutableStateOf(false) }
-    var resultRevealed by remember(roll.id, character.level, formula.expression) { mutableStateOf(false) }
-    var showStats by remember(roll.id) { mutableStateOf(false) }
-    var lastThrowMode by remember(roll.id, character.level, formula.expression) { mutableStateOf(DoubleRollMode.NORMAL) }
     val cinematic = settings.effectiveVisualEffects()
 
     fun throwDice(requestedMode: DoubleRollMode = DoubleRollMode.NORMAL) {
@@ -2476,25 +2500,29 @@ private fun RollScreenV2(
         lastThrowMode = evaluation.mode
         visualSeed = System.nanoTime()
         val firstStage = timeline.first()
-        visualEvent = DiceRollVisualEvent(
-            id = visualSeed,
-            result = firstStage.result,
+        fun eventFor(stage: EffectsVisualStage, eventId: Long) = DiceRollVisualEvent(
+            id = eventId,
+            result = stage.result,
             appearances = DiceAppearanceResolver.resolve(
                 character = character,
                 styles = diceStyles,
                 appearance = roll.diceAppearance,
-                result = firstStage.result,
-                subgroupIdByComponentIndex = firstStage.componentOwners,
+                result = stage.result,
+                subgroupIdByComponentIndex = stage.componentOwners,
                 random = Random(visualSeed),
                 secondaryCandidateComponentIndices = candidatePlan.groups
-                    .filterValues { it == 1 }.keys.takeIf { firstStage.retainsBaseline }.orEmpty(),
+                    .filterValues { it == 1 }.keys.takeIf { stage.retainsBaseline }.orEmpty(),
             ),
-            dimmedComponentIndices = (if (firstStage.retainsBaseline) evaluation.dimmedComponentIndices else emptySet()) + firstStage.rerolledComponentIndices,
-            effectAccentComponents = firstStage.accentByComponentIndex,
-            candidateGroupByComponent = candidatePlan.groups.takeIf { firstStage.retainsBaseline }.orEmpty(),
-            chosenCandidateComponents = candidatePlan.chosen.takeIf { firstStage.retainsBaseline }.orEmpty(),
+            dimmedComponentIndices = (if (stage.retainsBaseline) evaluation.dimmedComponentIndices else emptySet()) + stage.rerolledComponentIndices,
+            effectAccentComponents = stage.accentByComponentIndex,
+            candidateGroupByComponent = candidatePlan.groups.takeIf { stage.retainsBaseline }.orEmpty(),
+            chosenCandidateComponents = candidatePlan.chosen.takeIf { stage.retainsBaseline }.orEmpty(),
             visualSettings = cinematic,
         )
+        visualEvent = eventFor(firstStage, visualSeed)
+        // Prepared from the same immutable samples; restoring the screen never invokes the engine.
+        session.finalVisualEvent.value = eventFor(timeline.last(), System.nanoTime())
+        restored = false
         doubleEvaluation = evaluation
         effectsExecution = execution
         finalRollTotal = adjustedTotal
@@ -2549,13 +2577,8 @@ private fun RollScreenV2(
         )
     }
 
-    var lastThrowRequestAtNanos by remember(roll.id) { mutableStateOf(0L) }
-
     fun requestThrow(mode: DoubleRollMode = DoubleRollMode.NORMAL) {
-        if (hasRolled && !resultRevealed) return
-        val now = System.nanoTime()
-        if (now - lastThrowRequestAtNanos < 450_000_000L) return
-        lastThrowRequestAtNanos = now
+        if (!session.acceptRequest(System.nanoTime())) return
         throwDice(mode)
     }
 
@@ -2573,7 +2596,7 @@ private fun RollScreenV2(
 
     LightSystemBarIcons()
     ArcaneBackground {
-        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize().testTag("roll-screen")) {
             // Keep A/B identification for TalkBack without placing visible
             // chips over the dice or blocking the central play area.
             val candidateDescription = if (hasRolled && visualEvent.candidateGroupByComponent.isNotEmpty()) {
@@ -2590,14 +2613,18 @@ private fun RollScreenV2(
                 event = visualEvent,
                 tableTheme = character.diceTableTheme,
                 tableImage = tableBitmap,
-                // The scene re-reads its table only when this key or the event changes. Artwork that
-                // finishes loading after a throw is applied with the next throw, never by replaying it.
-                tableImageKey = if (tableBitmap == null && !hasRolled) "$tableImageKey:loading" else tableImageKey,
+                tableImageKey = tableImageKey,
                 fullBleed = true,
-                animateRoll = hasRolled && settings.animationsEnabled,
+                animateRoll = hasRolled && settings.animationsEnabled && !restored,
                 winnerRevealed = resultRevealed,
+                onFrameRendered = { eventId, textured ->
+                    if (eventId == visualEvent.id) {
+                        renderedEventId = eventId
+                        renderedTexture = textured
+                    }
+                },
                 onSettled = { eventId ->
-                    if (hasRolled && eventId == visualEvent.id) {
+                    if (session.acceptsSettledEvent(eventId)) {
                         if (settings.animationsEnabled && visualStageIndex < visualStages.lastIndex) {
                             val nextIndex = visualStageIndex + 1
                             val stage = visualStages[nextIndex]
@@ -2632,7 +2659,9 @@ private fun RollScreenV2(
                         }
                     }
                 },
-                modifier = Modifier.fillMaxSize().then(
+                modifier = Modifier.fillMaxSize().testTag("roll-table").semantics {
+                    this[RollTableRenderedKey] = renderedEventId == visualEvent.id && renderedTexture
+                }.then(
                     if (candidateDescription == null) Modifier
                     else Modifier.semantics { contentDescription = candidateDescription },
                 ),
@@ -2653,7 +2682,7 @@ private fun RollScreenV2(
                     }
                 }
             }
-            if (resultRevealed && settings.animationsEnabled && !showStats) {
+            if (resultRevealed && settings.animationsEnabled && !restored && !showStats) {
                 CinematicActionSequenceV2(
                     rollSeed = visualSeed,
                     moments = cinematicMoments,
@@ -2694,8 +2723,9 @@ private fun RollScreenV2(
                         effectName = activeEffect.name,
                         type = activeEffect.type,
                         rollAfter = currentEffectId != null && !resultRevealed,
-                        animate = settings.animationsEnabled && !resultRevealed,
+                        animate = settings.animationsEnabled && !restored && !resultRevealed,
                         modifier = Modifier.align(Alignment.TopCenter)
+                            .testTag("roll-effect-cue")
                             .statusBarsPadding().padding(top = 22.dp),
                     )
                 }
@@ -2703,7 +2733,7 @@ private fun RollScreenV2(
 
             val tapTriggerEnabled = if (hasRolled) settings.rerollTapEnabled else settings.firstRollTapEnabled
             val swipeTriggerEnabled = if (hasRolled) settings.rerollSwipeEnabled else settings.firstRollSwipeEnabled
-            val gestureTriggerReady = !hasRolled || resultRevealed
+            val gestureTriggerReady = controlsReady
             RollTableGestureLayerV2(
                 tapToRollEnabled = tapTriggerEnabled,
                 swipeToRollEnabled = swipeTriggerEnabled,
@@ -2730,7 +2760,7 @@ private fun RollScreenV2(
                             ),
                         total = finalRollTotal ?: value.total,
                         originalTotal = value.total.takeIf { it != finalRollTotal },
-                        animateValues = cinematic.resultTransitions && settings.animationsEnabled,
+                        animateValues = cinematic.resultTransitions && settings.animationsEnabled && !restored,
                         partTotalsById = effectsExecution?.finalSnapshot?.parts?.mapValues { it.value.total }.orEmpty(),
                         aboveAverage = (finalRollTotal ?: value.total) > value.expectedTotal(),
                         modifier = Modifier
@@ -2763,7 +2793,7 @@ private fun RollScreenV2(
                     modifier = Modifier.fillMaxWidth().padding(start = 4.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = onBack, modifier = Modifier.testTag("roll-back")) {
                         Icon(
                             Icons.AutoMirrored.Rounded.ArrowBack,
                             contentDescription = stringResource(R.string.back),
@@ -2773,6 +2803,7 @@ private fun RollScreenV2(
                     Row(
                         modifier = Modifier
                             .weight(1f)
+                            .testTag("roll-statistics")
                             .clip(RoundedCornerShape(16.dp))
                             .clickable { showStats = true }
                             .padding(horizontal = 8.dp, vertical = 12.dp),
@@ -2795,13 +2826,14 @@ private fun RollScreenV2(
                             tint = accents.goldBright.copy(alpha = 0.9f),
                         )
                     }
-                    val waitingForDice = hasRolled && !resultRevealed
+                    val waitingForDice = !controlsReady
                     fun emphasis(mode: DoubleRollMode) = if (!waitingForDice) 1f
                         else if (lastThrowMode == mode) 0.72f else 0.30f
                     if (roll.doubleRollEnabled) {
                         IconButton(
                             onClick = { requestThrow(DoubleRollMode.WORST) },
-                            enabled = !hasRolled || resultRevealed,
+                            modifier = Modifier.testTag("roll-worst"),
+                            enabled = controlsReady,
                         ) {
                             CandidateThrowIcon(
                                 sides = dominantDieSides(formula.expression),
@@ -2812,7 +2844,8 @@ private fun RollScreenV2(
                         }
                         IconButton(
                             onClick = { requestThrow(DoubleRollMode.BEST) },
-                            enabled = !hasRolled || resultRevealed,
+                            modifier = Modifier.testTag("roll-best"),
+                            enabled = controlsReady,
                         ) {
                             CandidateThrowIcon(
                                 sides = dominantDieSides(formula.expression),
@@ -2826,6 +2859,7 @@ private fun RollScreenV2(
                     Box(
                         modifier = Modifier
                             .size(54.dp)
+                            .testTag("roll-normal")
                             .graphicsLayer { alpha = emphasis(DoubleRollMode.NORMAL) }
                             .clip(CircleShape)
                             .background(
@@ -2833,7 +2867,7 @@ private fun RollScreenV2(
                             )
                             .border(1.dp, Color(0x99FFF4D6), CircleShape)
                             .clickable(
-                                enabled = !hasRolled || resultRevealed,
+                                enabled = controlsReady,
                                 role = Role.Button,
                                 onClickLabel = throwLabel,
                             ) { requestThrow() }
@@ -2874,7 +2908,7 @@ private fun RollScreenV2(
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Black,
                     )
-                    TextButton(onClick = onEditRoll) {
+                    TextButton(onClick = { showStats = false; onEditRoll() }, modifier = Modifier.testTag("roll-edit")) {
                         Icon(Icons.Rounded.Edit, contentDescription = null)
                         Spacer(Modifier.width(6.dp))
                         Text(stringResource(R.string.edit_roll))
@@ -2910,6 +2944,7 @@ private fun RollScreenV2(
                             )
                             IconButton(
                                 enabled = character.level > 1 && canChangeLevel(character.level - 1),
+                                modifier = Modifier.testTag("roll-level-down"),
                                 onClick = { onLevelChanged(character.level - 1) },
                             ) {
                                 Icon(
@@ -2919,6 +2954,7 @@ private fun RollScreenV2(
                             }
                             IconButton(
                                 enabled = character.level < 9999 && canChangeLevel(character.level + 1),
+                                modifier = Modifier.testTag("roll-level-up"),
                                 onClick = { onLevelChanged(character.level + 1) },
                             ) {
                                 Icon(
@@ -3278,8 +3314,8 @@ private fun SettingsScreenV2(
     onBack: () -> Unit,
 ) {
     var languageMenu by remember { mutableStateOf(false) }
-    var confirmDisconnect by remember { mutableStateOf(false) }
-    var confirmCloudDelete by remember { mutableStateOf(false) }
+    var confirmDisconnect by rememberSaveable { mutableStateOf(false) }
+    var confirmCloudDelete by rememberSaveable { mutableStateOf(false) }
 
     if (confirmDisconnect) {
         AlertDialog(
@@ -3924,11 +3960,13 @@ private fun CharacterDialogV2(
     onCreate: (CharacterProfile) -> Unit,
 ) {
     val context = LocalContext.current
-    var name by remember { mutableStateOf("") }
-    var tag by remember { mutableStateOf("") }
-    var levelText by remember { mutableStateOf("1") }
-    var image by remember { mutableStateOf<CharacterImageRef?>(null) }
-    var imageImportFailed by remember { mutableStateOf(false) }
+    var name by rememberSaveable { mutableStateOf("") }
+    var tag by rememberSaveable { mutableStateOf("") }
+    var levelText by rememberSaveable { mutableStateOf("1") }
+    var image by rememberSaveable(stateSaver = CharacterImageStateSaver) {
+        mutableStateOf<CharacterImageRef?>(null)
+    }
+    var imageImportFailed by rememberSaveable { mutableStateOf(false) }
     val imageAssetStore = remember(context) { CharacterImageAssetStore(context) }
 
     val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -3970,7 +4008,7 @@ private fun CharacterDialogV2(
         },
         confirmButton = {
             Button(
-                enabled = name.isNotBlank() && level != null && level >= 1,
+                enabled = name.isNotBlank() && level != null && level in 1..AppDataValidator.MAX_CHARACTER_LEVEL,
                 onClick = {
                     onCreate(
                         CharacterProfile(
@@ -3998,8 +4036,8 @@ private fun ModifierDialogV2(
     onDismiss: () -> Unit,
     onSave: (CharacterModifier) -> Unit,
 ) {
-    var name by remember(existing?.id) { mutableStateOf(existing?.name ?: "") }
-    var valueText by remember(existing?.id) { mutableStateOf(existing?.value?.toString() ?: "0") }
+    var name by rememberSaveable(characterId, existing?.id) { mutableStateOf(existing?.name ?: "") }
+    var valueText by rememberSaveable(characterId, existing?.id) { mutableStateOf(existing?.value?.toString() ?: "0") }
     val value = valueText.toIntOrNull()
     val normalized = name.trim()
     val duplicate = existingNames.any { it.equals(normalized, ignoreCase = true) }
@@ -4056,7 +4094,7 @@ private fun GroupDialogV2(
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
 ) {
-    var name by remember { mutableStateOf("") }
+    var name by rememberSaveable { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.new_group)) },
@@ -4090,23 +4128,17 @@ internal fun RollBuilderScreenV2(
     onSave: (RollDefinition) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var name by remember(existing?.id) { mutableStateOf(existing?.name ?: "") }
-    var groupId by remember(existing?.id, initialGroupId) { mutableStateOf(existing?.groupId ?: initialGroupId) }
+    var draft by rememberSaveable(
+        character.id, existing?.id, initialGroupId,
+        stateSaver = RollBuilderDraft.StateSaver,
+    ) { mutableStateOf(RollBuilderDraft.create(existing, initialGroupId)) }
+    val name = draft.name
+    val groupId = draft.groupId
+    val doubleRollEnabled = draft.doubleRollEnabled
+    val minimumLevelText = draft.minimumLevelText
+    val effects = draft.effects
+    val subgroups = draft.subgroups
     var groupMenu by remember(existing?.id) { mutableStateOf(false) }
-    var doubleRollEnabled by remember(existing?.id) { mutableStateOf(existing?.doubleRollEnabled ?: true) }
-    var minimumLevelText by remember(existing?.id) { mutableStateOf((existing?.minimumLevel ?: 1).toString()) }
-    var effects by remember(existing?.id) { mutableStateOf(existing?.effects.orEmpty()) }
-    var subgroups by remember(existing?.id) {
-        mutableStateOf(
-            existing?.subgroups?.takeIf { it.isNotEmpty() } ?: listOf(
-                RollSubgroup(
-                    id = UUID.randomUUID().toString(),
-                    expression = existing?.expression ?: "1d20",
-                    includeInDoubleRoll = existing == null,
-                ),
-            ),
-        )
-    }
     // Roll Parts are the only editable source of truth. Storage always receives
     // their canonical expression, including the parentheses required for a single part.
     val expressionToSave = runCatching {
@@ -4124,7 +4156,7 @@ internal fun RollBuilderScreenV2(
     val valid = name.isNotBlank() && groupsValid && expressionValid && effectsToSave != null &&
         minimumLevel != null && minimumLevel in 1..9999
     fun updateSubgroups(updated: List<RollSubgroup>) {
-        subgroups = updated
+        draft = draft.copy(subgroups = updated)
     }
 
     // Own the full edit screen irrespective of the entry point (table, character, group).
@@ -4169,15 +4201,15 @@ internal fun RollBuilderScreenV2(
                 ) {
                     OutlinedTextField(
                         value = name,
-                        onValueChange = { name = it },
+                        onValueChange = { draft = draft.copy(name = it) },
                         label = { Text(stringResource(R.string.roll_name)) },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().testTag("roll-name"),
                     )
                     RollTriggerToggle(
                         label = stringResource(R.string.double_roll_enable),
                         checked = doubleRollEnabled,
-                        onChecked = { doubleRollEnabled = it },
+                        onChecked = { draft = draft.copy(doubleRollEnabled = it) },
                     )
                     Text(
                         stringResource(R.string.double_roll_explained),
@@ -4187,7 +4219,9 @@ internal fun RollBuilderScreenV2(
                     OutlinedTextField(
                         value = minimumLevelText,
                         onValueChange = { input ->
-                            if (input.length <= 4 && input.all(Char::isDigit)) minimumLevelText = input
+                            if (input.length <= 4 && input.all(Char::isDigit)) {
+                                draft = draft.copy(minimumLevelText = input)
+                            }
                         },
                         label = { Text(stringResource(R.string.from_level)) },
                         supportingText = { Text(stringResource(R.string.roll_min_level_help)) },
@@ -4204,7 +4238,7 @@ internal fun RollBuilderScreenV2(
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.ungrouped)) },
                                 onClick = {
-                                    groupId = null
+                                    draft = draft.copy(groupId = null)
                                     groupMenu = false
                                 },
                             )
@@ -4212,7 +4246,7 @@ internal fun RollBuilderScreenV2(
                                 DropdownMenuItem(
                                     text = { Text(group.name) },
                                     onClick = {
-                                        groupId = group.id
+                                        draft = draft.copy(groupId = group.id)
                                         groupMenu = false
                                     },
                                 )
@@ -4383,7 +4417,7 @@ internal fun RollBuilderScreenV2(
                 effects = effects,
                 parts = subgroups,
                 variableNames = RollFormulaResolver.variableNames(modifiers),
-                onChange = { effects = it },
+                onChange = { draft = draft.copy(effects = it) },
             )
             if (effectsToSave == null) {
                 Text(
@@ -4399,7 +4433,7 @@ internal fun RollBuilderScreenV2(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f).testTag("roll-editor-cancel")) {
                     Text(stringResource(R.string.cancel))
                 }
                 Button(
@@ -4450,19 +4484,21 @@ private fun GuidedExpressionEditorV2(
     modifiers: List<CharacterModifier>,
     onValueChange: (String) -> Unit,
 ) {
-    var countText by remember { mutableStateOf("1") }
+    var countText by rememberSaveable { mutableStateOf("1") }
     var countMenu by remember { mutableStateOf(false) }
-    var constantMode by remember { mutableStateOf(false) }
-    var sides by remember { mutableStateOf(20) }
+    var constantMode by rememberSaveable { mutableStateOf(false) }
+    var sides by rememberSaveable { mutableStateOf(20) }
     var sidesMenu by remember { mutableStateOf(false) }
     var operatorMenu by remember { mutableStateOf(false) }
-    var nextOperator by remember { mutableStateOf("+") }
+    var nextOperator by rememberSaveable { mutableStateOf("+") }
     val valid = RollFormulaResolver.validateTemplate(value, character.level, modifiers)
     val composer = remember(value, character.level, modifiers) {
         FormulaComposer.parse(value, character.level, modifiers)
     }
     // Editing a term must not drop the selection when its expression updates.
-    var selected by remember { mutableStateOf(emptySet<Int>()) }
+    var selected by rememberSaveable(stateSaver = ComposerSelectionStateSaver) {
+        mutableStateOf(emptySet<Int>())
+    }
     val editingIndex = selected.singleOrNull()?.takeIf { index ->
         composer?.getOrNull(index)?.let(FormulaComposer::simpleInput) != null
     }
@@ -4506,7 +4542,9 @@ private fun GuidedExpressionEditorV2(
 
     // Reflect builder edits in the same composition, without an asynchronous
     // effect that briefly exposes stale text. Preserve cursor during direct input.
-    var editingValue by remember { mutableStateOf(TextFieldValue(value)) }
+    var editingValue by rememberSaveable(stateSaver = TextFieldValue.Saver) {
+        mutableStateOf(TextFieldValue(value))
+    }
     val visibleValue = if (editingValue.text == value) editingValue else TextFieldValue(value)
     ParameterizedExpressionField(
         value = visibleValue,
@@ -4607,7 +4645,7 @@ private fun GuidedExpressionEditorV2(
                             }
                         }
                         if (term.isGroup) {
-                            var factor by remember(value, index) {
+                            var factor by rememberSaveable(value, index) {
                                 mutableStateOf(term.multiplier ?: "1")
                             }
                             var factorMenu by remember { mutableStateOf(false) }
@@ -4878,11 +4916,13 @@ private fun LevelRuleDialogV2(
     onDismiss: () -> Unit,
     onSave: (RollLevelRule) -> Unit,
 ) {
-    var kind by remember { mutableStateOf(LevelRuleKind.FROM_LEVEL) }
-    var triggerText by remember { mutableStateOf("2") }
-    var startLevelText by remember { mutableStateOf("") }
-    var maxRepeatsText by remember { mutableStateOf("") }
-    var expression by remember { mutableStateOf(TextFieldValue("")) }
+    var kind by rememberSaveable(character.id) { mutableStateOf(LevelRuleKind.FROM_LEVEL) }
+    var triggerText by rememberSaveable(character.id) { mutableStateOf("2") }
+    var startLevelText by rememberSaveable(character.id) { mutableStateOf("") }
+    var maxRepeatsText by rememberSaveable(character.id) { mutableStateOf("") }
+    var expression by rememberSaveable(character.id, stateSaver = TextFieldValue.Saver) {
+        mutableStateOf(TextFieldValue(""))
+    }
     val trigger = triggerText.toIntOrNull()
     val startLevel = startLevelText.toIntOrNull()
     val maxRepeats = maxRepeatsText.toIntOrNull()

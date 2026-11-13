@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.ViewModelProvider
 import com.keyserdsoze.dicethrower.data.CloudAccountState
 import com.keyserdsoze.dicethrower.data.CloudAccountStore
 import com.keyserdsoze.dicethrower.data.CloudAccountTransitions
@@ -37,11 +38,14 @@ import com.keyserdsoze.dicethrower.data.sync.SyncStatus
 import com.keyserdsoze.dicethrower.data.sync.SyncStatusKind
 import com.keyserdsoze.dicethrower.model.AppSettings
 import com.keyserdsoze.dicethrower.ui.theme.DiceThrowerTheme
+import com.keyserdsoze.dicethrower.ui.AppDataViewModel
 import com.keyserdsoze.dicethrower.ui.v2.DiceThrowerAppV2
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private const val STATE_LINK_IMPORT_PENDING = "dicethrower.linkImportPending"
 private const val STATE_PENDING_ACCOUNT_ID = "dicethrower.pendingAccountId"
@@ -59,6 +63,7 @@ internal fun shouldHandleLaunchLink(restored: Boolean, importPreviewPending: Boo
 
 class MainActivity : ComponentActivity() {
     private lateinit var store: LocalStore
+    private lateinit var dataModel: AppDataViewModel
     private lateinit var cloudAccountStore: CloudAccountStore
     private lateinit var googleAccountCoordinator: GoogleAccountCoordinator
     private lateinit var syncEngine: CloudSyncEngine
@@ -73,6 +78,7 @@ class MainActivity : ComponentActivity() {
     private var syncStatus by mutableStateOf(SyncStatus(SyncStatusKind.LOCAL_ONLY))
     private var dataRefreshVersion by mutableStateOf(0)
     private var syncJob: Job? = null
+    private var pendingStatusJob: Job? = null
     private var cloudDeleteBusy by mutableStateOf(false)
     private var cloudDeleteFailed by mutableStateOf(false)
     private var pendingCharacterImport by mutableStateOf<AppData?>(null)
@@ -133,6 +139,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         AppLocaleManager.syncFrameworkLocale(this)
         store = LocalStore(this)
+        dataModel = ViewModelProvider(this, AppDataViewModel.Factory(this))[AppDataViewModel::class.java]
         cloudAccountStore = CloudAccountStore(this)
         googleAccountCoordinator = GoogleAccountCoordinator(this)
         settings = store.loadSettings()
@@ -143,7 +150,7 @@ class MainActivity : ComponentActivity() {
             remote = cloudRepository,
         )
         requireReconciliationIfJournalSaysSo()
-        syncStatus = syncEngine.currentStatus(cloudAccountState.googleConnected)
+        refreshPendingStatus()
         // Recreated while the Drive consent screen was open: its result arrives after this.
         val restoredEmail = savedInstanceState?.getString(STATE_PENDING_ACCOUNT_EMAIL)
         if (restoredEmail != null) {
@@ -171,7 +178,7 @@ class MainActivity : ComponentActivity() {
             DiceThrowerTheme(themeMode = settings.themeMode) {
                 Box(modifier = Modifier.fillMaxSize()) {
                     DiceThrowerAppV2(
-                        store = store,
+                        dataModel = dataModel,
                         settings = settings,
                         selectedLanguage = selectedLanguage,
                         languageOptions = AppLocaleManager.supportedLanguages,
@@ -221,10 +228,12 @@ class MainActivity : ComponentActivity() {
                                     val configured = CharacterTransferCodec.withRecipientPreferences(
                                         incoming, name, level,
                                     )
-                                    val merged = CharacterTransferCodec.importCopy(
-                                        store.loadData(), configured,
-                                    )
-                                    store.saveData(merged)
+                                    store.withDataLock {
+                                        val merged = CharacterTransferCodec.importCopy(
+                                            store.loadData(), configured,
+                                        )
+                                        store.saveData(merged)
+                                    }
                                     dataRefreshVersion++
                                     refreshPendingStatus()
                                 } catch (_: Exception) {
@@ -432,7 +441,19 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun refreshPendingStatus() {
-        syncStatus = syncEngine.currentStatus(cloudAccountState.googleConnected)
+        pendingStatusJob?.cancel()
+        val connected = cloudAccountState.googleConnected
+        val previousStatus = syncStatus
+        pendingStatusJob = lifecycleScope.launch {
+            val status = withContext(Dispatchers.IO) { syncEngine.currentStatus(connected) }
+            // A background status refresh must not overwrite a newer sync result, disconnect or
+            // deletion. Reading/hashing the local snapshot no longer runs after each edit on main.
+            if (cloudAccountState.googleConnected == connected && syncStatus == previousStatus &&
+                syncJob?.isActive != true && !cloudDeleteBusy
+            ) {
+                syncStatus = status
+            }
+        }
     }
 
     private fun syncNow() {
@@ -448,9 +469,13 @@ class MainActivity : ComponentActivity() {
 
     private fun syncNow(resolutions: Map<String, SyncConflictResolution>) {
         if (!cloudAccountState.googleConnected || cloudDeleteBusy || accountFlowBusy || syncJob?.isActive == true) return
+        pendingStatusJob?.cancel()
         syncStatus = syncStatus.copy(kind = SyncStatusKind.SYNCING, error = null, conflicts = emptyList())
+        val policy = settings.conflictPolicy
         syncJob = lifecycleScope.launch {
-            val result = syncEngine.sync(settings.conflictPolicy, resolutions)
+            // Local snapshot validation/hashing and the final sync commit also perform disk work.
+            // LocalStore's shared transaction lock keeps them safe against the background writer.
+            val result = withContext(Dispatchers.IO) { syncEngine.sync(policy, resolutions) }
             if (result.status.error == SyncErrorKind.AUTHORIZATION) {
                 updateCloudAccountState(CloudAccountTransitions.authorizationRevoked())
                 syncStatus = SyncStatus(SyncStatusKind.LOCAL_ONLY)

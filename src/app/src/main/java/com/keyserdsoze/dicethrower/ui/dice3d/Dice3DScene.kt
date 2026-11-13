@@ -53,6 +53,7 @@ fun Dice3DScene(
     previewMode: Boolean = false,
     winnerRevealed: Boolean = false,
     onSettled: (Long) -> Unit = {},
+    onFrameRendered: (Long, Boolean) -> Unit = { _, _ -> },
 ) {
     val sceneModifier = if (fullBleed) modifier else modifier.clip(RoundedCornerShape(24.dp))
     // A plain holder (not state): the lifecycle observer reads it when events arrive, so creating
@@ -75,6 +76,7 @@ fun Dice3DScene(
         factory = { context ->
             DiceGLView(context, previewMode).also {
                 it.onSettled = onSettled
+                it.onFrameRendered = onFrameRendered
                 it.setScene(event, tableTheme, tableImage, tableImageKey, animateRoll)
                 it.setWinnerRevealed(winnerRevealed)
                 viewHolder[0] = it
@@ -82,28 +84,25 @@ fun Dice3DScene(
         },
         update = { view ->
             view.onSettled = onSettled
+            view.onFrameRendered = onFrameRendered
             view.setScene(event, tableTheme, tableImage, tableImageKey, animateRoll)
             view.setWinnerRevealed(winnerRevealed)
         },
     )
 }
 
-private data class SceneKey(
-    val eventId: Long,
-    val tableTheme: DiceTableTheme,
-    val tableImageKey: String?,
-    val animateRoll: Boolean,
-)
-
 private class DiceGLView(context: Context, previewMode: Boolean) : GLSurfaceView(context) {
     var onSettled: (Long) -> Unit = {}
+    var onFrameRendered: (Long, Boolean) -> Unit = { _, _ -> }
     private val diceRenderer = DiceSceneRenderer(
         onSettled = { eventId -> post { onSettled(eventId) } },
         previewMode = previewMode,
         requestFrame = { requestRender() },
         numeralTypeface = runCatching { context.resources.getFont(R.font.cinzel_black) }.getOrNull(),
+        onRendered = { eventId, textured -> postOnAnimation { onFrameRendered(eventId, textured) } },
     )
-    private var lastSceneKey: SceneKey? = null
+    private var lastSceneKey: DiceSceneKey? = null
+    private var lastTableImage: Bitmap? = null
     private var lastWinnerRevealed: Boolean? = null
 
     init {
@@ -123,10 +122,15 @@ private class DiceGLView(context: Context, previewMode: Boolean) : GLSurfaceView
         tableImageKey: String?,
         animateRoll: Boolean,
     ) {
-        val key = SceneKey(event.id, tableTheme, tableImageKey, animateRoll)
-        if (key == lastSceneKey) return
+        val key = DiceSceneKey(event.id, tableTheme, tableImageKey, animateRoll)
+        val update = diceSceneUpdate(lastSceneKey, key, lastTableImage !== tableImage)
+        if (update == DiceSceneUpdate.NONE) return
         lastSceneKey = key
-        queueEvent { diceRenderer.setEvent(event, tableTheme, tableImage, animateRoll) }
+        lastTableImage = tableImage
+        queueEvent {
+            if (update == DiceSceneUpdate.ROLL) diceRenderer.setEvent(event, tableTheme, tableImage, animateRoll)
+            else diceRenderer.setTable(tableTheme, tableImage)
+        }
         requestRender()
     }
 
@@ -310,6 +314,7 @@ private class DiceSceneRenderer(
     private val previewMode: Boolean,
     private val requestFrame: () -> Unit,
     private val numeralTypeface: Typeface?,
+    private val onRendered: (Long, Boolean) -> Unit,
 ) : GLSurfaceView.Renderer {
     private val projection = FloatArray(16)
     private val view = FloatArray(16)
@@ -347,10 +352,20 @@ private class DiceSceneRenderer(
     private var viewportAspect = DiceTableViewport.HALF_WIDTH / DiceTableViewport.HALF_HEIGHT
     private var visualBounds = DiceTableVisualBounds(DiceTableViewport.HALF_WIDTH, DiceTableViewport.HALF_HEIGHT)
     private var tableGeometryDirty = true
+    private var renderWarmupFrames = 2
 
     fun setWinnerRevealed(revealed: Boolean) {
         if (revealed && !winnerRevealed) winnerRevealNanos = SystemClock.elapsedRealtimeNanos()
         winnerRevealed = revealed
+    }
+
+    fun setTable(theme: DiceTableTheme, image: Bitmap?) {
+        tableTheme = theme
+        if (tableImage !== image) {
+            tableImage = image
+            tableTextureDirty = true
+        }
+        renderWarmupFrames = 2
     }
 
     fun setEvent(
@@ -399,11 +414,7 @@ private class DiceSceneRenderer(
                 }
             }
         }
-        this.tableTheme = tableTheme
-        if (this.tableImage !== tableImage) {
-            this.tableImage = tableImage
-            tableTextureDirty = true
-        }
+        setTable(tableTheme, tableImage)
         this.animateRoll = animateRoll
         currentEventId = event.id
         persistentCount = keep.size
@@ -439,6 +450,7 @@ private class DiceSceneRenderer(
         // The clock starts after the (few millisecond) pre-simulation, so no frame is skipped.
         throwStartedNanos = SystemClock.elapsedRealtimeNanos()
         settledReported = false
+        renderWarmupFrames = 2
     }
 
     private fun settledPoses(): List<DiePose> {
@@ -492,6 +504,7 @@ private class DiceSceneRenderer(
         tableTexture = 0
         tableTextureDirty = tableImage != null
         tableGeometryDirty = true
+        renderWarmupFrames = 2
         dice = (createProgram(DiceShaders.DICE_VERTEX, DiceShaders.DICE_FRAGMENT)
             ?: createProgram(DiceShaders.DICE_VERTEX, FALLBACK_DICE_FRAGMENT))?.let(::DiceProgram)
         tableProgram = createProgram(DiceShaders.TABLE_VERTEX, DiceShaders.TABLE_FRAGMENT) ?: 0
@@ -538,7 +551,14 @@ private class DiceSceneRenderer(
             settledReported = true
             onSettled(currentEventId)
         }
-        val pulsing = winnerRevealed && visualSettings.winnerSpotlight && (now - winnerRevealNanos) < 1_150_000_000L
+        // A second frame guarantees that the first has passed through GLSurfaceView's buffer
+        // swap. Report once per scene/table update, not on every animated frame.
+        if (renderWarmupFrames > 0) {
+            renderWarmupFrames--
+            if (renderWarmupFrames == 0) onRendered(currentEventId, tableTexture != 0)
+            else requestFrame()
+        }
+        val pulsing = animateRoll && winnerRevealed && visualSettings.winnerSpotlight && (now - winnerRevealNanos) < 1_150_000_000L
         val shaking = impactStrength > 0f
         if (throwing || pulsing || shaking) requestFrame()
     }
@@ -663,7 +683,9 @@ private class DiceSceneRenderer(
             val style = die.renderStyle
             // The less favourable candidate stays visible but recedes once the verdict is revealed.
             val brightness = CandidateVisualLighting.brightness(winnerRevealed, visualSettings.winnerSpotlight, die.dimmed)
-            val pulse = CandidateVisualLighting.chosenPulse(winnerRevealed, visualSettings.winnerSpotlight, die.chosenCandidate, revealAge)
+            val pulse = if (animateRoll) CandidateVisualLighting.chosenPulse(
+                winnerRevealed, visualSettings.winnerSpotlight, die.chosenCandidate, revealAge,
+            ) else 0f
             // Effect accents are visual only: green/cyan bonuses, crimson maluses.
             val accent = when (die.effectAccent) {
                 EffectType.BONUS -> floatArrayOf(0.20f, 0.95f, 0.62f)

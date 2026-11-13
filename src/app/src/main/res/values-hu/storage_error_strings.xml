@@ -1,0 +1,4 @@
+<resources>
+    <string name="local_data_unavailable">A helyi adatok nem olvashatók vagy menthetők. Próbálja újra.</string>
+    <string name="try_again">Újrapróbálás</string>
+</resources>

@@ -1,0 +1,4 @@
+<resources>
+    <string name="local_data_unavailable">ਸਥਾਨਕ ਡਾਟਾ ਪੜ੍ਹਿਆ ਜਾਂ ਸੁਰੱਖਿਅਤ ਨਹੀਂ ਕੀਤਾ ਜਾ ਸਕਿਆ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।</string>
+    <string name="try_again">ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ</string>
+</resources>

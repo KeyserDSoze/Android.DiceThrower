@@ -1,0 +1,4 @@
+<resources>
+    <string name="local_data_unavailable">خواندن یا ذخیرهٔ داده‌های محلی ممکن نشد. لطفاً دوباره تلاش کنید.</string>
+    <string name="try_again">تلاش دوباره</string>
+</resources>

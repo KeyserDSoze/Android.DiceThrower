@@ -1,0 +1,4 @@
+<resources>
+    <string name="local_data_unavailable">உள்ளூர் தரவைப் படிக்கவோ சேமிக்கவோ முடியவில்லை. மீண்டும் முயற்சிக்கவும்.</string>
+    <string name="try_again">மீண்டும் முயற்சிக்கவும்</string>
+</resources>

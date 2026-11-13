@@ -23,8 +23,11 @@ class LocalStore(context: Context) {
     )
     private val syncJournalStore = SyncJournalStore(context)
 
-    fun loadData(): AppData {
-        val raw = document.read() ?: return AppData()
+    /** Shared by every LocalStore instance: UI, imports, backups and sync are now concurrent. */
+    internal fun <T> withDataLock(operation: () -> T): T = synchronized(STORE_LOCK) { operation() }
+
+    fun loadData(): AppData = withDataLock {
+        val raw = document.read() ?: return@withDataLock AppData()
         val decoded = decodeStoredData(raw)
         val portableImages = SharedDiceStyleCatalog.migrateLegacy(imageAssetStore.migrateLegacyImages(decoded))
         val migrated = SyncMetadataManager.ensureMetadata(
@@ -34,7 +37,7 @@ class LocalStore(context: Context) {
         )
         if (migrated != decoded) persistData(migrated)
         imageAssetStore.cleanupOrphans(migrated)
-        return migrated
+        migrated
     }
 
     /** Version of the stored data document; it increases with every write. */
@@ -44,7 +47,7 @@ class LocalStore(context: Context) {
      * Saves [data] as the next local edit. A caller that passes the [expectedVersion] its copy was
      * loaded at gets a [StaleDataException] instead of overwriting newer stored content.
      */
-    fun saveData(data: AppData, expectedVersion: Long? = null): AppData {
+    fun saveData(data: AppData, expectedVersion: Long? = null): AppData = withDataLock {
         document.requireVersion(expectedVersion)
         val previous = loadData()
         val now = System.currentTimeMillis()
@@ -59,17 +62,17 @@ class LocalStore(context: Context) {
         persistData(stamped)
         recordDataTransition(previous, stamped, writerId, now)
         imageAssetStore.cleanupOrphans(stamped)
-        return stamped
+        stamped
     }
 
-    fun installationWriterId(): String = writerIdStore.getOrCreate()
+    fun installationWriterId(): String = withDataLock { writerIdStore.getOrCreate() }
 
     fun loadSettings(): AppSettings {
         val raw = prefs.getString(KEY_SETTINGS, null) ?: return AppSettings()
         return decodeStoredSettings(raw)
     }
 
-    fun saveSettings(settings: AppSettings) {
+    fun saveSettings(settings: AppSettings): Unit = withDataLock {
         val previous = loadSettings()
         prefs.edit()
             .putString(KEY_SETTINGS, AppDataJsonCodec.encodeSettings(settings).toString())
@@ -81,7 +84,7 @@ class LocalStore(context: Context) {
         data: AppData,
         settings: AppSettings,
         imageAssets: List<PortableCharacterImageAsset> = emptyList(),
-    ) {
+    ): Unit = withDataLock {
         val previousData = loadData()
         val previousSettings = loadSettings()
         val now = System.currentTimeMillis()
@@ -111,22 +114,22 @@ class LocalStore(context: Context) {
     fun loadImageAsset(ref: CharacterImageRef): PortableCharacterImageAsset? =
         imageAssetStore.loadVerified(ref)?.let { PortableCharacterImageAsset(ref, it) }
 
-    fun loadSyncJournal(): LocalSyncJournal = syncJournalStore.load()
+    fun loadSyncJournal(): LocalSyncJournal = withDataLock { syncJournalStore.load() }
 
-    fun saveSyncJournal(journal: LocalSyncJournal) = syncJournalStore.save(journal)
+    fun saveSyncJournal(journal: LocalSyncJournal) = withDataLock { syncJournalStore.save(journal) }
 
     fun applySyncedData(
         data: AppData,
         imageAssets: List<PortableCharacterImageAsset>,
         acceptedBaseline: AppData? = null,
-    ) {
+    ): Unit = withDataLock {
         AppDataValidator.requireValid(data, acceptedBaseline)
         imageAssetStore.restorePortableAssets(imageAssets)
         persistData(data)
         imageAssetStore.cleanupOrphans(data)
     }
 
-    fun applySyncedSettings(settings: AppSettings) {
+    fun applySyncedSettings(settings: AppSettings): Unit = withDataLock {
         prefs.edit()
             .putString(KEY_SETTINGS, AppDataJsonCodec.encodeSettings(settings).toString())
             .apply()
@@ -184,6 +187,7 @@ class LocalStore(context: Context) {
     }
 
     companion object {
+        private val STORE_LOCK = Any()
         private const val PREFS = "dice_thrower_store"
         private const val KEY_DATA = "data_v1"
         private const val KEY_DATA_VERSION = "data_v1_version"

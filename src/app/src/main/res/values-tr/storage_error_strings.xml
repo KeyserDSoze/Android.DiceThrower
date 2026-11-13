@@ -1,0 +1,4 @@
+<resources>
+    <string name="local_data_unavailable">Yerel veriler okunamadı veya kaydedilemedi. Lütfen tekrar deneyin.</string>
+    <string name="try_again">Tekrar dene</string>
+</resources>

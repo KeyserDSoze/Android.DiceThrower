@@ -1,0 +1,4 @@
+<resources>
+    <string name="local_data_unavailable">Data lokal tidak dapat dibaca atau disimpan. Silakan coba lagi.</string>
+    <string name="try_again">Coba lagi</string>
+</resources>

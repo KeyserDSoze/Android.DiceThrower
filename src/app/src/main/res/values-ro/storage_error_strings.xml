@@ -1,0 +1,4 @@
+<resources>
+    <string name="local_data_unavailable">Datele locale nu au putut fi citite sau salvate. Încercați din nou.</string>
+    <string name="try_again">Încercați din nou</string>
+</resources>

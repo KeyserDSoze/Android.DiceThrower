@@ -1,0 +1,4 @@
+<resources>
+    <string name="local_data_unavailable">Impossibile leggere o salvare i dati locali. Riprova.</string>
+    <string name="try_again">Riprova</string>
+</resources>

@@ -1,0 +1,4 @@
+<resources>
+    <string name="local_data_unavailable">Không thể đọc hoặc lưu dữ liệu cục bộ. Vui lòng thử lại.</string>
+    <string name="try_again">Thử lại</string>
+</resources>

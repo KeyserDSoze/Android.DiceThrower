@@ -1,0 +1,4 @@
+<resources>
+    <string name="local_data_unavailable">تعذّرت قراءة البيانات المحلية أو حفظها. يُرجى المحاولة مرة أخرى.</string>
+    <string name="try_again">المحاولة مرة أخرى</string>
+</resources>

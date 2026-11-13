@@ -1,0 +1,4 @@
+<resources>
+    <string name="local_data_unavailable">Místní data se nepodařilo přečíst nebo uložit. Zkuste to znovu.</string>
+    <string name="try_again">Zkusit znovu</string>
+</resources>

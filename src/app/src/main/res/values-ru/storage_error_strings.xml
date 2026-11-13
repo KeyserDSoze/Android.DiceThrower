@@ -1,0 +1,4 @@
+<resources>
+    <string name="local_data_unavailable">Не удалось прочитать или сохранить локальные данные. Попробуйте ещё раз.</string>
+    <string name="try_again">Повторить</string>
+</resources>

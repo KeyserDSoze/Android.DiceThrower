@@ -21,3 +21,9 @@ src/overviewapp/dist/
 # OS
 .DS_Store
 Thumbs.db
+
+# Python validation/test caches
+__pycache__/
+
+# Local GitHub CLI state (never part of the application)
+.local/state/gh/

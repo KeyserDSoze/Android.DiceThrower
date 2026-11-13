@@ -69,7 +69,9 @@ interface SyncLocalGateway {
 }
 
 class AndroidSyncLocalGateway(private val store: LocalStore) : SyncLocalGateway {
-    override fun snapshot(now: Long): LocalSyncSnapshot {
+    override fun snapshot(now: Long): LocalSyncSnapshot = store.withDataLock { snapshotLocked(now) }
+
+    private fun snapshotLocked(now: Long): LocalSyncSnapshot {
         val data = store.loadData()
         val settings = store.loadSettings()
         val writerId = store.installationWriterId()
@@ -104,7 +106,9 @@ class AndroidSyncLocalGateway(private val store: LocalStore) : SyncLocalGateway 
     override fun readImageAsset(ref: CharacterImageRef): PortableCharacterImageAsset? =
         store.loadImageAsset(ref)
 
-    override fun commit(plan: LocalSyncCommitPlan): LocalSyncCommitResult {
+    override fun commit(plan: LocalSyncCommitPlan): LocalSyncCommitResult = store.withDataLock { commitLocked(plan) }
+
+    private fun commitLocked(plan: LocalSyncCommitPlan): LocalSyncCommitResult {
         val writerId = store.installationWriterId()
         val stored = store.loadData()
         var data = stored

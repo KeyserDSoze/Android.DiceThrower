@@ -1,0 +1,4 @@
+<resources>
+    <string name="local_data_unavailable">مقامی ڈیٹا پڑھا یا محفوظ نہیں کیا جا سکا۔ براہِ کرم دوبارہ کوشش کریں۔</string>
+    <string name="try_again">دوبارہ کوشش کریں</string>
+</resources>

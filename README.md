@@ -191,6 +191,19 @@ gradle :app:testDebugUnitTest :app:assembleDebug
 
 La CI pubblica inoltre l'APK debug installabile come artifact GitHub Actions per 14 giorni.
 
+### Test UI Android, simili ai percorsi Playwright
+
+I test nativi usano Compose UI Test, ActivityScenario ed Espresso sull'app reale. Verificano
+navigazione, rilanci, Best/Worst, effetti, statistiche, editor e rotazione, con screenshot e
+diagnostici raccolti anche quando un test fallisce. Con un emulatore di test già avviato:
+
+```bash
+bash scripts/run-android-ui-tests.sh
+```
+
+Usare un'installazione di test senza dati personali. Comandi per selezionare gli scenari,
+artefatti della CI e limiti del collaudo: [docs/ANDROID_E2E_TESTS.md](docs/ANDROID_E2E_TESTS.md).
+
 ## Sito
 
 GitHub Pages è distribuito automaticamente dalla workflow dedicata:

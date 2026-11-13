@@ -1,0 +1,4 @@
+<resources>
+    <string name="local_data_unavailable">പ്രാദേശിക ഡാറ്റ വായിക്കാനോ സംരക്ഷിക്കാനോ കഴിഞ്ഞില്ല. വീണ്ടും ശ്രമിക്കുക.</string>
+    <string name="try_again">വീണ്ടും ശ്രമിക്കുക</string>
+</resources>

@@ -8,12 +8,16 @@ on:
       - 'VERSION'
       - '.github/workflows/ci.yml'
       - '.github/workflows/release.yml'
+      - 'scripts/run-android-ui-tests.sh'
+      - 'scripts/tests/**'
   pull_request:
     paths:
       - 'src/**'
       - 'VERSION'
       - '.github/workflows/ci.yml'
       - '.github/workflows/release.yml'
+      - 'scripts/run-android-ui-tests.sh'
+      - 'scripts/tests/**'
   workflow_dispatch:
 
 permissions:
@@ -54,6 +58,9 @@ jobs:
       - name: Validate all advertised localizations
         run: python3 scripts/validate_localizations.py
 
+      - name: Test native UI runner exit status and diagnostics collection
+        run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'
+
       - name: Test and compile app and instrumentation APKs
         working-directory: src
         run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest :app:assembleRelease :app:lintDebug
@@ -89,6 +96,9 @@ jobs:
           packages: ''
           log-accepted-android-sdk-licenses: false
 
+      - name: Install Android 37 SDK for instrumentation builds
+        run: sdkmanager --channel=3 "platforms;android-37.0" "build-tools;37.0.0" "platform-tools"
+
       - name: Set up Gradle 9.6
         uses: gradle/actions/setup-gradle@v5
         with:
@@ -108,8 +118,11 @@ jobs:
           api-level: 35
           arch: x86_64
           profile: pixel_6
+          cores: 2
+          ram-size: 2560M
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader -feature -Vulkan
           disable-animations: true
-          script: cd src && gradle --no-daemon --stacktrace --info :app:connectedDebugAndroidTest
+          script: bash scripts/run-android-ui-tests.sh --max-workers=2 -Dorg.gradle.jvmargs=-Xmx1536m
 
       - name: Upload instrumentation reports
         if: always()
@@ -119,6 +132,7 @@ jobs:
           path: |
             src/app/build/reports/androidTests/connected/**
             src/app/build/outputs/androidTest-results/connected/**
+            src/app/build/outputs/e2e-artifacts/**
           if-no-files-found: warn
           retention-days: 14
 

@@ -1,0 +1,4 @@
+<resources>
+    <string name="local_data_unavailable">ಸ್ಥಳೀಯ ಡೇಟಾವನ್ನು ಓದಲು ಅಥವಾ ಉಳಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
+    <string name="try_again">ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ</string>
+</resources>

@@ -1,0 +1,4 @@
+<resources>
+    <string name="local_data_unavailable">સ્થાનિક ડેટા વાંચી અથવા સાચવી શકાયો નથી. કૃપા કરીને ફરી પ્રયાસ કરો.</string>
+    <string name="try_again">ફરી પ્રયાસ કરો</string>
+</resources>

@@ -1,0 +1,4 @@
+<resources>
+    <string name="local_data_unavailable">স্থানীয় ডেটা পড়া বা সংরক্ষণ করা যায়নি। অনুগ্রহ করে আবার চেষ্টা করুন।</string>
+    <string name="try_again">আবার চেষ্টা করুন</string>
+</resources>

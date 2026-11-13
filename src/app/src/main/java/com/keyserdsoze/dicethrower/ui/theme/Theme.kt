@@ -12,7 +12,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
@@ -189,6 +190,12 @@ private val LightAccents = DiceAccents(
 
 val LocalDiceAccents = staticCompositionLocalOf { DarkAccents }
 
+private class SystemBarOverrides {
+    val lightContentRequests = mutableIntStateOf(0)
+}
+
+private val LocalSystemBarOverrides = staticCompositionLocalOf<SystemBarOverrides?> { null }
+
 object DiceTheme {
     val accents: DiceAccents
         @Composable get() = LocalDiceAccents.current
@@ -205,18 +212,26 @@ fun DiceThrowerTheme(
         ThemeMode.DARK -> true
     }
     val view = LocalView.current
+    val systemBars = remember(view) { SystemBarOverrides() }
+    val lightContentRequests = systemBars.lightContentRequests.intValue
     if (!view.isInEditMode) {
         // Status/navigation icons follow the in-app theme, not only the system night mode.
-        SideEffect {
+        DisposableEffect(view, dark, lightContentRequests) {
             (view.context as? Activity)?.window?.let { window ->
                 WindowCompat.getInsetsController(window, view).apply {
-                    isAppearanceLightStatusBars = !dark
-                    isAppearanceLightNavigationBars = !dark
+                    // Read the current count: a child may have acquired its override in this commit.
+                    val darkIcons = !dark && systemBars.lightContentRequests.intValue == 0
+                    isAppearanceLightStatusBars = darkIcons
+                    isAppearanceLightNavigationBars = darkIcons
                 }
             }
+            onDispose { }
         }
     }
-    CompositionLocalProvider(LocalDiceAccents provides if (dark) DarkAccents else LightAccents) {
+    CompositionLocalProvider(
+        LocalDiceAccents provides if (dark) DarkAccents else LightAccents,
+        LocalSystemBarOverrides provides systemBars,
+    ) {
         MaterialTheme(
             colorScheme = if (dark) DarkColors else LightColors,
             typography = diceTypography(),
@@ -231,14 +246,18 @@ fun DiceThrowerTheme(
 fun LightSystemBarIcons() {
     val view = LocalView.current
     val dark = DiceTheme.accents.isDark
-    DisposableEffect(view, dark) {
+    val overrides = LocalSystemBarOverrides.current
+    DisposableEffect(view, dark, overrides) {
+        overrides?.lightContentRequests?.let { it.intValue++ }
         val window = (view.context as? Activity)?.window
         val controller = window?.let { WindowCompat.getInsetsController(it, view) }
         controller?.isAppearanceLightStatusBars = false
         controller?.isAppearanceLightNavigationBars = false
         onDispose {
-            controller?.isAppearanceLightStatusBars = !dark
-            controller?.isAppearanceLightNavigationBars = !dark
+            overrides?.lightContentRequests?.let { it.intValue = (it.intValue - 1).coerceAtLeast(0) }
+            val darkIcons = !dark && (overrides?.lightContentRequests?.intValue ?: 0) == 0
+            controller?.isAppearanceLightStatusBars = darkIcons
+            controller?.isAppearanceLightNavigationBars = darkIcons
         }
     }
 }

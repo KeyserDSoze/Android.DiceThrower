@@ -1,0 +1,4 @@
+<resources>
+    <string name="local_data_unavailable">ไม่สามารถอ่านหรือบันทึกข้อมูลในเครื่องได้ โปรดลองอีกครั้ง</string>
+    <string name="try_again">ลองอีกครั้ง</string>
+</resources>

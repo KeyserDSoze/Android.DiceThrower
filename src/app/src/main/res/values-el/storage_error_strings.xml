@@ -1,0 +1,4 @@
+<resources>
+    <string name="local_data_unavailable">Δεν ήταν δυνατή η ανάγνωση ή αποθήκευση των τοπικών δεδομένων. Δοκιμάστε ξανά.</string>
+    <string name="try_again">Δοκιμάστε ξανά</string>
+</resources>

@@ -1,0 +1,4 @@
+<resources>
+    <string name="local_data_unavailable">စက်တွင်းဒေတာကို ဖတ်ရှုခြင်း သို့မဟုတ် သိမ်းဆည်းခြင်း မပြုလုပ်နိုင်ပါ။ ပြန်လည်ကြိုးစားပါ။</string>
+    <string name="try_again">ပြန်လည်ကြိုးစားရန်</string>
+</resources>
