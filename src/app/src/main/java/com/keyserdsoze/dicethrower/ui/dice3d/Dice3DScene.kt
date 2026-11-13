@@ -373,20 +373,28 @@ private class DiceSceneRenderer(
             event.result.components.forEachIndexed { componentIndex, component ->
                 if (!DieGeometries.isSupported(component.sides)) return@forEachIndexed
                 component.rolls.forEachIndexed { index, value ->
-                    if (size < MAX_VISIBLE_DICE) {
-                        add(
-                            VisualDie(
-                                sides = component.sides,
-                                value = value,
-                                phase = ((component.sides * 37 + value * 19 + index * 53) % 360).toFloat(),
-                                renderStyle = DiceRenderStyleFactory.create(appearanceBySlot["$componentIndex:$index"]),
-                                dimmed = componentIndex in event.dimmedComponentIndices,
-                                effectAccent = event.effectAccentComponents[componentIndex],
-                                candidateGroup = event.candidateGroupByComponent[componentIndex]
-                                    .takeIf { event.visualSettings.groupLanes },
-                                chosenCandidate = componentIndex in event.chosenCandidateComponents,
-                            ),
-                        )
+                    val style = DiceRenderStyleFactory.create(appearanceBySlot["$componentIndex:$index"])
+                    // A d100 is thrown like real percentile dice: a tens die (00-90) plus a units
+                    // d10 (the 10 face reads as 0). Visual only: the exact 1..100 stays logical.
+                    val faces = if (component.sides == 100)
+                        listOf(100 to value, 10 to (if (value % 10 == 0) 10 else value % 10))
+                    else listOf(component.sides to value)
+                    faces.forEach { (sides, faceValue) ->
+                        if (size < MAX_VISIBLE_DICE) {
+                            add(
+                                VisualDie(
+                                    sides = sides,
+                                    value = faceValue,
+                                    phase = ((sides * 37 + faceValue * 19 + index * 53) % 360).toFloat(),
+                                    renderStyle = style,
+                                    dimmed = componentIndex in event.dimmedComponentIndices,
+                                    effectAccent = event.effectAccentComponents[componentIndex],
+                                    candidateGroup = event.candidateGroupByComponent[componentIndex]
+                                        .takeIf { event.visualSettings.groupLanes },
+                                    chosenCandidate = componentIndex in event.chosenCandidateComponents,
+                                ),
+                            )
+                        }
                     }
                 }
             }
