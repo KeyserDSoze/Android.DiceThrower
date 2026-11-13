@@ -103,6 +103,19 @@ class AppBackupCodecTest {
     }
 
     @Test
+    fun negativeLogRetentionFromABackupFallsBackToTheDefault() {
+        // Retention trims history after every roll, where a negative count would throw.
+        val raw = JSONObject(AppBackupCodec.encode(AppData(), AppSettings(logRetention = 50), "en"))
+        raw.getJSONObject("settings").put("logRetention", -1)
+
+        assertEquals(20, AppBackupCodec.decode(raw.toString()).settings.logRetention)
+        assertEquals(20, AppDataJsonCodec.decodeSettings(JSONObject().put("logRetention", Int.MIN_VALUE)).logRetention)
+        // Zero keeps the whole history and stays valid.
+        assertEquals(0, AppDataJsonCodec.decodeSettings(JSONObject().put("logRetention", 0)).logRetention)
+        assertEquals(100, AppDataJsonCodec.decodeSettings(JSONObject().put("logRetention", 100)).logRetention)
+    }
+
+    @Test
     fun doubleTapPreferenceDefaultsOnForLegacyBackupAndPersistsWhenDisabled() {
         val legacySettings = AppDataJsonCodec.encodeSettings(AppSettings())
             .apply { remove("doubleTapStatsEnabled") }
