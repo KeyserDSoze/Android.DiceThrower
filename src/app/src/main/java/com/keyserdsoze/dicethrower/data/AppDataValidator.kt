@@ -123,7 +123,7 @@ object AppDataValidator {
             }
             if (!revisionRegex.matches(metadata.revision)) {
                 errors += "Sync metadata for ${metadata.characterId} has an invalid revision"
-            } else if (metadata.revision != CharacterRevision.revision(data, metadata.characterId)) {
+            } else if (!CharacterRevision.matches(metadata.revision, data, metadata.characterId)) {
                 errors += "Sync metadata for ${metadata.characterId} does not match character content"
             }
             if (metadata.writerId.isBlank()) {
