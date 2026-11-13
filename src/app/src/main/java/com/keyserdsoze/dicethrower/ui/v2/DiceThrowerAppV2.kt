@@ -79,7 +79,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -108,6 +107,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.keyserdsoze.dicethrower.AppLanguageOption
 import com.keyserdsoze.dicethrower.AppLocaleManager
 import com.keyserdsoze.dicethrower.GoogleConnectionFailure
@@ -2553,11 +2553,15 @@ private fun RollScreenV2(
     }
 
     val shakeTriggerEnabled = if (hasRolled) settings.rerollShakeEnabled else settings.shakeEnabled
-    DisposableEffect(shakeTriggerEnabled, hasRolled, resultRevealed, roll.id, formula.expression) {
-        val detector = if (shakeTriggerEnabled && (!hasRolled || resultRevealed)) {
-            ShakeDetector(context) { requestThrow() }.also { it.start() }
+    val shakeArmed = shakeTriggerEnabled && (!hasRolled || resultRevealed)
+    // The detector outlives recompositions: always throw with the current formula and state.
+    val currentRequestThrow by rememberUpdatedState<() -> Unit>({ requestThrow() })
+    // Listen only while the screen is resumed, so a stopped Activity never throws dice.
+    LifecycleResumeEffect(shakeArmed) {
+        val detector = if (shakeArmed) {
+            ShakeDetector(context) { currentRequestThrow() }.also { it.start() }
         } else null
-        onDispose { detector?.stop() }
+        onPauseOrDispose { detector?.stop() }
     }
 
     ArcaneBackground {
