@@ -176,11 +176,12 @@ class DiceExpression private constructor(
         val supportedSides = setOf(2, 3, 4, 6, 8, 10, 12, 20, 100)
 
         fun parse(raw: String): DiceExpression {
-            val normalized = raw.replace("\\s+".toRegex(), "")
-            require(normalized.isNotBlank()) { "Expression cannot be empty" }
-            val root = Parser(normalized).parse()
+            // Whitespace only separates tokens: "3 1d6" or "2 4" are errors, never 31d6 or 24.
+            val tokens = tokenize(raw)
+            require(tokens.isNotEmpty()) { "Expression cannot be empty" }
+            val root = Parser(tokens).parse()
             require(isLinear(root)) { "Multiplication between two dice expressions is not supported" }
-            return DiceExpression(source = normalized, root = root)
+            return DiceExpression(source = tokens.joinToString("") { it.text }, root = root)
         }
 
         private fun isLinear(node: Node): Boolean = when (node) {
@@ -201,78 +202,124 @@ class DiceExpression private constructor(
             is Node.Negate -> containsDice(node.value)
         }
 
-        private class Parser(private val source: String) {
+        private enum class TokenType { NUMBER, DIE, PLUS, MINUS, TIMES, OPEN, CLOSE }
+
+        private class Token(val type: TokenType, val text: String, val position: Int)
+
+        /** Only ASCII digits form numbers, consistently with RollFormulaResolver and Effect formulas. */
+        private fun tokenize(raw: String): List<Token> {
+            val tokens = ArrayList<Token>()
+            var index = 0
+            while (index < raw.length) {
+                val char = raw[index]
+                when {
+                    char.isWhitespace() -> index++
+                    char in '0'..'9' -> {
+                        val start = index
+                        while (index < raw.length && raw[index] in '0'..'9') index++
+                        tokens += Token(TokenType.NUMBER, raw.substring(start, index), start)
+                    }
+                    else -> {
+                        val type = when (char) {
+                            'd', 'D' -> TokenType.DIE
+                            '+' -> TokenType.PLUS
+                            '-' -> TokenType.MINUS
+                            '*', 'x', 'X', '×' -> TokenType.TIMES
+                            '(' -> TokenType.OPEN
+                            ')' -> TokenType.CLOSE
+                            else -> throw IllegalArgumentException("Unexpected character near position $index")
+                        }
+                        tokens += Token(type, char.toString(), index)
+                        index++
+                    }
+                }
+            }
+            return tokens
+        }
+
+        private class Parser(private val tokens: List<Token>) {
             private var cursor = 0
 
             fun parse(): Node {
                 val result = parseAddSubtract()
-                require(cursor == source.length) { "Invalid dice expression near position $cursor" }
-                return result
-            }
-
-            private fun parseAddSubtract(): Node {
-                var result = parseMultiply()
-                while (cursor < source.length && (source[cursor] == '+' || source[cursor] == '-')) {
-                    val operator = source[cursor++]
-                    val right = parseMultiply()
-                    result = if (operator == '+') Node.Add(result, right) else Node.Subtract(result, right)
+                require(cursor == tokens.size) {
+                    "Invalid dice expression near position ${tokens[cursor].position}"
                 }
                 return result
             }
 
+            private fun peek(): TokenType? = tokens.getOrNull(cursor)?.type
+
+            private fun positionText(): String =
+                tokens.getOrNull(cursor)?.position?.toString() ?: "end"
+
+            private fun parseAddSubtract(): Node {
+                var result = parseMultiply()
+                while (true) {
+                    result = when (peek()) {
+                        TokenType.PLUS -> {
+                            cursor++
+                            Node.Add(result, parseMultiply())
+                        }
+                        TokenType.MINUS -> {
+                            cursor++
+                            Node.Subtract(result, parseMultiply())
+                        }
+                        else -> return result
+                    }
+                }
+            }
+
             private fun parseMultiply(): Node {
                 var result = parseUnary()
-                while (cursor < source.length && source[cursor] in charArrayOf('*', 'x', 'X', '×')) {
+                while (peek() == TokenType.TIMES) {
                     cursor++
                     result = Node.Multiply(result, parseUnary())
                 }
                 return result
             }
 
-            private fun parseUnary(): Node {
-                if (cursor < source.length && source[cursor] == '+') {
+            private fun parseUnary(): Node = when (peek()) {
+                TokenType.PLUS -> {
                     cursor++
-                    return parseUnary()
+                    parseUnary()
                 }
-                if (cursor < source.length && source[cursor] == '-') {
+                TokenType.MINUS -> {
                     cursor++
-                    return Node.Negate(parseUnary())
+                    Node.Negate(parseUnary())
                 }
-                return parsePrimary()
+                else -> parsePrimary()
             }
 
-            private fun parsePrimary(): Node {
-                require(cursor < source.length) { "Unexpected end of dice expression" }
-                if (source[cursor] == '(') {
+            private fun parsePrimary(): Node = when (peek()) {
+                null -> throw IllegalArgumentException("Unexpected end of dice expression")
+                TokenType.OPEN -> {
                     cursor++
-                    val nested = parseAddSubtract()
-                    require(cursor < source.length && source[cursor] == ')') {
-                        "Missing closing parenthesis near position $cursor"
+                    val inner = parseAddSubtract()
+                    require(peek() == TokenType.CLOSE) {
+                        "Missing closing parenthesis near position ${positionText()}"
                     }
                     cursor++
-                    return nested
+                    inner
                 }
-
-                val countOrValue = readDigits()
-                if (cursor < source.length && (source[cursor] == 'd' || source[cursor] == 'D')) {
-                    cursor++
-                    val sidesText = readDigits()
-                    require(sidesText.isNotEmpty()) { "Missing die sides near position $cursor" }
-                    val count = countOrValue.ifEmpty { "1" }.toInt()
-                    val sides = sidesText.toInt()
-                    require(count in 1..100) { "Dice count must be between 1 and 100" }
-                    require(sides in supportedSides) { "Unsupported die d$sides" }
-                    return Node.Dice(count, sides)
-                }
-
-                require(countOrValue.isNotEmpty()) { "Expected a number or die near position $cursor" }
-                return Node.Constant(countOrValue.toInt())
+                TokenType.NUMBER, TokenType.DIE -> parseTerm()
+                else -> throw IllegalArgumentException(
+                    "Expected a number or die near position ${positionText()}",
+                )
             }
 
-            private fun readDigits(): String {
-                val start = cursor
-                while (cursor < source.length && source[cursor].isDigit()) cursor++
-                return source.substring(start, cursor)
+            private fun parseTerm(): Node {
+                val countText = if (peek() == TokenType.NUMBER) tokens[cursor++].text else null
+                if (peek() != TokenType.DIE) {
+                    return Node.Constant(requireNotNull(countText).toInt())
+                }
+                cursor++
+                require(peek() == TokenType.NUMBER) { "Missing die sides near position ${positionText()}" }
+                val sides = tokens[cursor++].text.toInt()
+                val count = countText?.toInt() ?: 1
+                require(count in 1..100) { "Dice count must be between 1 and 100" }
+                require(sides in supportedSides) { "Unsupported die d$sides" }
+                return Node.Dice(count, sides)
             }
         }
     }

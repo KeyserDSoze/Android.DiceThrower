@@ -339,4 +339,21 @@ class RollFormulaResolverTest {
         }
     }
 
+    @Test
+    fun whitespaceBeforeAVariableNeverConcatenatesDigits() {
+        // "2 {level}" used to become "2 4" and then silently 24 once whitespace was stripped.
+        listOf("2 {level}", "{level} {level}", "3 1d6", "1d20+1 {Intelligenza}").forEach { formula ->
+            assertFalse("Accepted $formula", RollFormulaResolver.validateTemplate(formula, character.level, modifiers))
+        }
+        assertEquals("1d20+3+4", RollFormulaResolver.resolveTemplate("1d20 + {Intelligenza} + {level}", 4, modifiers))
+        assertEquals("4x4", RollFormulaResolver.resolveTemplate("{level}{level}", 4, modifiers))
+    }
+
+    @Test
+    fun nonAsciiDigitsAreRejectedConsistently() {
+        listOf("٢{level}", "١d٦", "1d20+٥", "{levelstep:٥}").forEach { formula ->
+            assertFalse("Accepted $formula", RollFormulaResolver.validateTemplate(formula, character.level, modifiers))
+        }
+    }
+
 }

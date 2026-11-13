@@ -3,6 +3,7 @@ package com.keyserdsoze.dicethrower.dice
 import kotlin.random.Random
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 
 class DiceExpressionTest {
@@ -76,5 +77,32 @@ class DiceExpressionTest {
     @Test(expected = IllegalArgumentException::class)
     fun rejectsDiceToDiceMultiplicationToKeepStatisticsLinear() {
         DiceExpression.parse("1d6*1d8")
+    }
+
+    @Test
+    fun whitespaceSeparatesTokensButNeverConcatenatesDigits() {
+        assertEquals("1d20+5", DiceExpression.parse(" 1d20 +\t5 ").source)
+        assertEquals("2d6x3", DiceExpression.parse("2d6 x 3").source)
+        listOf("3 1d6", "2 4", "1d6 6", "1d2 0", "(1d4) 2").forEach { expression ->
+            assertRejected(expression)
+        }
+    }
+
+    @Test
+    fun onlyAsciiDigitsFormNumbers() {
+        // Arabic-Indic and Extended Arabic-Indic (Persian) digits.
+        listOf("١d٦", "1d٢٠", "٣", "1d20+٥", "۲d6").forEach { expression ->
+            assertRejected(expression)
+        }
+        assertEquals(7, DiceExpression.parse("3+4").evaluate(Random(1)).total)
+    }
+
+    private fun assertRejected(expression: String) {
+        try {
+            DiceExpression.parse(expression)
+            fail("Accepted invalid expression: $expression")
+        } catch (_: IllegalArgumentException) {
+            // Expected: invalid user data is reported as an argument error.
+        }
     }
 }
