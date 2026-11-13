@@ -104,7 +104,8 @@ class AndroidSyncLocalGateway(private val store: LocalStore) : SyncLocalGateway 
 
     override fun commit(plan: LocalSyncCommitPlan): LocalSyncCommitResult {
         val writerId = store.installationWriterId()
-        var data = store.loadData()
+        val stored = store.loadData()
+        var data = stored
         var dataChanged = false
         val skipped = mutableSetOf<String>()
 
@@ -174,8 +175,10 @@ class AndroidSyncLocalGateway(private val store: LocalStore) : SyncLocalGateway 
             }
         }
         if (dataChanged) {
-            AppDataValidator.requireValid(data)
-            store.applySyncedData(data, plan.downloadedAssets)
+            // Downloaded graphs were fully validated when decoded; untouched local rolls keep
+            // the acceptance they had when they were stored.
+            AppDataValidator.requireValid(data, acceptedBaseline = stored)
+            store.applySyncedData(data, plan.downloadedAssets, acceptedBaseline = stored)
         }
 
         var settings = store.loadSettings()

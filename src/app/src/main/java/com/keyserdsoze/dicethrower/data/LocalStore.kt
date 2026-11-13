@@ -45,7 +45,7 @@ class LocalStore(context: Context) {
             writerId = writerId,
             now = now,
         )
-        AppDataValidator.requireValid(stamped)
+        AppDataValidator.requireValid(stamped, acceptedBaseline = previous)
         persistData(stamped)
         recordDataTransition(previous, stamped, writerId, now)
         imageAssetStore.cleanupOrphans(stamped)
@@ -103,8 +103,12 @@ class LocalStore(context: Context) {
 
     fun saveSyncJournal(journal: LocalSyncJournal) = syncJournalStore.save(journal)
 
-    fun applySyncedData(data: AppData, imageAssets: List<PortableCharacterImageAsset>) {
-        AppDataValidator.requireValid(data)
+    fun applySyncedData(
+        data: AppData,
+        imageAssets: List<PortableCharacterImageAsset>,
+        acceptedBaseline: AppData? = null,
+    ) {
+        AppDataValidator.requireValid(data, acceptedBaseline)
         imageAssetStore.restorePortableAssets(imageAssets)
         persistData(data)
         imageAssetStore.cleanupOrphans(data)
@@ -184,8 +188,9 @@ class LocalStore(context: Context) {
     }
 }
 
+/** Stored data was accepted when it was written; newer rollability rules must not block loading it. */
 internal fun decodeStoredData(raw: String): AppData =
-    AppDataJsonCodec.decodeData(JSONObject(raw)).also(AppDataValidator::requireValid)
+    AppDataJsonCodec.decodeData(JSONObject(raw)).also { AppDataValidator.requireValid(it, acceptedBaseline = it) }
 
 internal fun decodeStoredSettings(raw: String): AppSettings =
     AppDataJsonCodec.decodeSettings(JSONObject(raw))

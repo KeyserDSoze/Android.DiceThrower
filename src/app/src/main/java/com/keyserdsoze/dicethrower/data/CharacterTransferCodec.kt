@@ -195,7 +195,8 @@ object CharacterTransferCodec {
             diceStyles = existing.diceStyles + duplicated.diceStyles
                 .filter { it.characterId == fresh.id }.map { it.copy(characterId = null) },
         )
-        AppDataValidator.requireValid(merged)
+        // The incoming copy is new data and fully checked; existing local data keeps its acceptance.
+        AppDataValidator.requireValid(merged, acceptedBaseline = existing)
         return merged
     }
 }
