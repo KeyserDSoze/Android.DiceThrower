@@ -191,6 +191,13 @@ const dictionary = {
     crashTitle: 'Something went wrong', crashBody: 'This part of the workshop could not be displayed. Characters saved in this browser are not affected.',
     crashRetry: 'Try again', crashClose: 'Close character',
     unsavedConfirm: 'The open character has unsaved changes. Discard them?',
+    linkInvalid: 'This character link is damaged or incomplete. Ask for a new link or QR code, or import the JSON file instead.',
+    linkTooLarge: 'This character link is too large to open safely. Import the JSON file instead.',
+    linkUnsupported: 'This character link uses an unsupported format. Reload the page for the latest workshop, or import the JSON file.',
+    storageUnavailable: 'Browser storage is unavailable (private browsing, or cookies and site data are blocked). Characters cannot be saved here: export them as JSON.',
+    storageQuota: 'Browser storage is full. Free up space or export your characters as JSON.',
+    storageBlocked: 'Browser storage is busy in another tab. Close other workshop tabs and reload this page.',
+    storageFailed: 'Browser storage error:', fileTooLarge: 'The file is too large (max 128 KB).', fileInvalid: 'The file is not valid JSON.',
   },
   it: {
     title: 'Laboratorio personaggi', intro: 'Crea il personaggio sul sito. Salvalo privatamente nel browser oppure condividilo via link o QR. I modelli standard più grandi possono usare un riferimento alla versione del modello.',
@@ -349,6 +356,13 @@ const dictionary = {
     crashTitle: 'Si è verificato un problema', crashBody: 'Questa parte del laboratorio non può essere mostrata. I personaggi salvati nel browser non sono stati modificati.',
     crashRetry: 'Riprova', crashClose: 'Chiudi personaggio',
     unsavedConfirm: 'Il personaggio aperto ha modifiche non salvate. Vuoi scartarle?',
+    linkInvalid: 'Il link del personaggio è danneggiato o incompleto. Chiedi un nuovo link o QR oppure importa il file JSON.',
+    linkTooLarge: 'Il link del personaggio è troppo grande per essere aperto in sicurezza. Importa il file JSON.',
+    linkUnsupported: 'Il link del personaggio usa un formato non supportato. Ricarica la pagina per avere il laboratorio aggiornato oppure importa il file JSON.',
+    storageUnavailable: 'L’archivio del browser non è disponibile (navigazione privata oppure cookie e dati dei siti bloccati). Qui non è possibile salvare: esporta i personaggi in JSON.',
+    storageQuota: 'L’archivio del browser è pieno. Libera spazio oppure esporta i personaggi in JSON.',
+    storageBlocked: 'L’archivio del browser è occupato da un’altra scheda. Chiudi le altre schede del laboratorio e ricarica la pagina.',
+    storageFailed: 'Errore dell’archivio del browser:', fileTooLarge: 'Il file è troppo grande (massimo 128 KB).', fileInvalid: 'Il file non contiene JSON valido.',
   },
 };
 const uid = () => crypto.randomUUID();
@@ -409,6 +423,20 @@ function JsonField({ label, value, onChange, validate, t }) {
     {error && <small role="alert">{error}</small>}
   </label>;
 }
+// Coded errors from character.js get localized text; others keep their message.
+const errorText = {
+  'link-invalid': 'linkInvalid', 'link-too-large': 'linkTooLarge', 'link-unsupported': 'linkUnsupported',
+  'storage-unavailable': 'storageUnavailable', 'storage-quota': 'storageQuota', 'storage-blocked': 'storageBlocked',
+};
+/** A received character that fails validation keeps its specific message. */
+const readFailure = error => error?.code ? error
+  : Object.assign(new Error(error?.message || String(error)), { code: 'read-failed' });
+function describeError(error, t) {
+  if (!error || typeof error === 'string') return error || '';
+  if (error.code === 'read-failed') return t.invalid + ': ' + error.message;
+  if (error.code === 'storage-failed') return t.storageFailed + ' ' + (error.cause?.message || error.cause?.name || '');
+  return errorText[error.code] ? t[errorText[error.code]] : error.message || String(error);
+}
 function downloadDocument(characterDoc) {
   const blob = new Blob([JSON.stringify(envelope(characterDoc), null, 2)], { type: 'application/json' });
   const href = URL.createObjectURL(blob);
@@ -445,13 +473,25 @@ function Workshop({ locale }) {
   }, [dirty]);
   async function refresh() {
     try { setItems((await listSaved()).sort((a,b) => a.character.name.localeCompare(b.character.name))); }
-    catch (e) { setError('IndexedDB: ' + e.message); }
+    catch (e) { setError(e); }
   }
   useEffect(() => {
     refresh();
-    if (window.location.hash.startsWith('#character=') || window.location.hash.startsWith('#template=')) {
-      try { setPreview(readShareHash()); } catch (e) { setError(e.message); }
+    function openSharedLink(event) {
+      const hash = window.location.hash;
+      if (!hash.startsWith('#character=') && !hash.startsWith('#template=')) return;
+      try {
+        const shared = readShareHash(hash);
+        // e.g. a #template= reference this version of the site does not know.
+        if (!shared) throw Object.assign(new Error('Unsupported link'), { code: 'link-unsupported' });
+        setPreview(shared); setError('');
+      } catch (e) { setPreview(null); setError(readFailure(e)); }
+      // A link opened in the same tab: bring the preview/error into view.
+      if (event) window.scrollTo(0, 0);
     }
+    openSharedLink();
+    window.addEventListener('hashchange', openSharedLink);
+    return () => window.removeEventListener('hashchange', openSharedLink);
   }, []);
   useEffect(() => {
     if (preview) {
@@ -505,7 +545,7 @@ function Workshop({ locale }) {
       validateDocument(snapshot); await saveDocument(snapshot); setBaseline(JSON.stringify(snapshot));
       await refresh(); setMessage(t.saved); setError('');
     }
-    catch (e) { setError(e.message); }
+    catch (e) { setError(e); }
   }
   async function upgradeStarter() {
     if (!doc || !canUpgradeLegacyStarterWeaponRolls(doc) || !window.confirm(t.upgradeConfirm)) return;
@@ -516,12 +556,12 @@ function Workshop({ locale }) {
       setDoc(upgraded); setBaseline(JSON.stringify(upgraded)); setUrl(''); setQr(''); setError('');
       await refresh();
       setMessage(t.upgradeComplete);
-    } catch (e) { setError(e.message); }
+    } catch (e) { setError(e); }
   }
   async function deleteSaved(id) {
     if (!window.confirm(t.delete + '?')) return;
     try { await removeDocument(id); if (doc?.character.id === id) { setDoc(null); setBaseline(null); } await refresh(); }
-    catch (e) { setError(e.message); }
+    catch (e) { setError(e); }
   }
   async function createShare() {
     try {
@@ -538,20 +578,21 @@ function Workshop({ locale }) {
       if (dirty && !window.confirm(t.unsavedConfirm)) return;
       await saveDocument(copy); await refresh(); setPreview(null); setDoc(copy); setBaseline(JSON.stringify(copy));
       history.replaceState(null, '', location.pathname); setMessage(t.saved); setError('');
-    } catch (e) { setError(e.message); }
+    } catch (e) { setError(e); }
   }
   async function fileImport(event) {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      if (file.size > 128 * 1024) throw new Error('File too large');
-      const packet = JSON.parse(await file.text());
+      if (file.size > 128 * 1024) throw new Error(t.fileTooLarge);
+      let packet;
+      try { packet = JSON.parse(await file.text()); } catch { throw new Error(t.fileInvalid); }
       const imported = documentFromEnvelope(packet);
       setPreview(imported);
       setError(''); setMessage('');
       // The same explicit preview and confirmation now handles QR, link and file.
 
-    } catch (e) { setError(e.message); }
+    } catch (e) { setError(readFailure(e)); }
     event.target.value = '';
   }
 
@@ -634,7 +675,7 @@ function Workshop({ locale }) {
       <h1>{t.title}</h1><p>{t.intro}</p>
       <p className="workshop-hint">{t.storage} · {t.noCloud}</p>
     </div>
-    {error && <p className="workshop-error" role="alert">{error}</p>}
+    {error && <p className="workshop-error" role="alert">{describeError(error, t)}</p>}
     {message && <p className="workshop-success" role="status">{message}</p>}
     {preview && <section className="premium-panel workshop-preview" aria-label={t.preview}>
       <div className="workshop-row-head"><h2>{t.importCheck}</h2><span className="eyebrow">{t.importSource}</span></div>
