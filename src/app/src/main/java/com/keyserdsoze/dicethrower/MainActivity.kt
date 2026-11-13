@@ -38,9 +38,13 @@ import com.keyserdsoze.dicethrower.ui.theme.DiceThrowerTheme
 import com.keyserdsoze.dicethrower.ui.v2.DiceThrowerAppV2
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.CancellationException
 
 private const val STATE_LINK_IMPORT_PENDING = "dicethrower.linkImportPending"
+private const val STATE_PENDING_ACCOUNT_ID = "dicethrower.pendingAccountId"
+private const val STATE_PENDING_ACCOUNT_EMAIL = "dicethrower.pendingAccountEmail"
+private const val STATE_PENDING_ACCOUNT_NAME = "dicethrower.pendingAccountName"
 
 /**
  * A dicethrower://import launch link is handled on a fresh launch only, never when Android
@@ -63,6 +67,7 @@ class MainActivity : ComponentActivity() {
     private var accountFlowBusy by mutableStateOf(false)
     private var accountFailure by mutableStateOf<GoogleConnectionFailure?>(null)
     private var pendingGoogleAccount: GoogleAccountIdentity? = null
+    private var driveConsentLaunched = false
     private var syncStatus by mutableStateOf(SyncStatus(SyncStatusKind.LOCAL_ONLY))
     private var dataRefreshVersion by mutableStateOf(0)
     private var syncJob: Job? = null
@@ -135,13 +140,19 @@ class MainActivity : ComponentActivity() {
             local = AndroidSyncLocalGateway(store),
             remote = cloudRepository,
         )
-        // A sync journal rebuilt after corruption needs a full, user-confirmed reconciliation.
-        if (cloudAccountState.googleConnected && !cloudAccountState.initialReconciliationPending &&
-            store.loadSyncJournal().reconciliationRequired
-        ) {
-            updateCloudAccountState(cloudAccountState.copy(initialReconciliationPending = true))
-        }
+        requireReconciliationIfJournalSaysSo()
         syncStatus = syncEngine.currentStatus(cloudAccountState.googleConnected)
+        // Recreated while the Drive consent screen was open: its result arrives after this.
+        val restoredEmail = savedInstanceState?.getString(STATE_PENDING_ACCOUNT_EMAIL)
+        if (restoredEmail != null) {
+            pendingGoogleAccount = GoogleAccountIdentity(
+                uniqueId = savedInstanceState.getString(STATE_PENDING_ACCOUNT_ID).orEmpty(),
+                email = restoredEmail,
+                displayName = savedInstanceState.getString(STATE_PENDING_ACCOUNT_NAME),
+            )
+            driveConsentLaunched = true
+            accountFlowBusy = true
+        }
         selectedLanguage = AppLocaleManager.selectedLanguage(this)
         enableEdgeToEdge()
         // Handle the launch link once: not again after rotation, recreate() or a relaunch from
@@ -248,6 +259,12 @@ class MainActivity : ComponentActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putBoolean(STATE_LINK_IMPORT_PENDING, linkImportPending && pendingCharacterImport != null)
+        val account = pendingGoogleAccount
+        if (driveConsentLaunched && account != null) {
+            outState.putString(STATE_PENDING_ACCOUNT_ID, account.uniqueId)
+            outState.putString(STATE_PENDING_ACCOUNT_EMAIL, account.email)
+            outState.putString(STATE_PENDING_ACCOUNT_NAME, account.displayName)
+        }
     }
 
     private fun handleIncomingCharacterLink(incoming: Intent?) {
@@ -285,8 +302,18 @@ class MainActivity : ComponentActivity() {
         linkImportPending = false
     }
 
+    /** A rebuilt journal or a restored backup needs a full, user-confirmed reconciliation. */
+    private fun requireReconciliationIfJournalSaysSo() {
+        if (cloudAccountState.googleConnected && !cloudAccountState.initialReconciliationPending &&
+            store.loadSyncJournal().reconciliationRequired
+        ) {
+            updateCloudAccountState(cloudAccountState.copy(initialReconciliationPending = true))
+        }
+    }
+
     override fun onResume() {
         super.onResume()
+        if (::syncEngine.isInitialized) requireReconciliationIfJournalSaysSo()
         if (::syncEngine.isInitialized && cloudAccountState.googleConnected) syncNow()
     }
 
@@ -298,16 +325,19 @@ class MainActivity : ComponentActivity() {
             when (val result = googleAccountCoordinator.signIn(getString(R.string.google_web_client_id))) {
                 is GoogleSignInResult.Success -> {
                     pendingGoogleAccount = result.account
-                    googleAccountCoordinator.requestDriveAuthorization(
-                        accountEmail = result.account.email,
-                        onAuthorized = ::completeGoogleConnection,
-                        onResolution = { request -> driveAuthorizationLauncher.launch(request) },
-                        onFailure = {
+                    when (val authorization = googleAccountCoordinator.requestDriveAuthorization(result.account.email)) {
+                        DriveAuthorizationResult.Authorized -> completeGoogleConnection()
+                        is DriveAuthorizationResult.NeedsResolution -> {
+                            // Only now does the consent screen own the pending account across rotation.
+                            driveConsentLaunched = true
+                            driveAuthorizationLauncher.launch(authorization.request)
+                        }
+                        DriveAuthorizationResult.Failed -> {
                             pendingGoogleAccount = null
                             accountFlowBusy = false
                             accountFailure = GoogleConnectionFailure.DRIVE_AUTHORIZATION
-                        },
-                    )
+                        }
+                    }
                 }
                 GoogleSignInResult.Canceled -> cancelGoogleConnection()
                 is GoogleSignInResult.Failure -> {
@@ -319,6 +349,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun completeGoogleConnection() {
+        driveConsentLaunched = false
         val account = pendingGoogleAccount ?: run {
             accountFlowBusy = false
             accountFailure = GoogleConnectionFailure.DRIVE_AUTHORIZATION
@@ -332,6 +363,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun cancelGoogleConnection() {
+        driveConsentLaunched = false
         pendingGoogleAccount = null
         updateCloudAccountState(CloudAccountTransitions.connectionCanceled(cloudAccountState))
         accountFlowBusy = false
@@ -339,25 +371,24 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun disconnectGoogle() {
-        if (accountFlowBusy) return
+        if (accountFlowBusy || cloudDeleteBusy) return
         val email = cloudAccountState.account?.email ?: return
         accountFlowBusy = true
         accountFailure = null
-        googleAccountCoordinator.disconnect(
-            accountEmail = email,
-            onComplete = {
-                lifecycleScope.launch {
-                    googleAccountCoordinator.clearCredentialSession()
-                    updateCloudAccountState(CloudAccountTransitions.disconnect())
-                    syncStatus = SyncStatus(SyncStatusKind.LOCAL_ONLY)
-                    accountFlowBusy = false
-                }
-            },
-            onFailure = {
+        val running = syncJob
+        lifecycleScope.launch {
+            // A late sync result must not overwrite the status set below.
+            running?.cancelAndJoin()
+            if (googleAccountCoordinator.disconnect(email)) {
+                googleAccountCoordinator.clearCredentialSession()
+                updateCloudAccountState(CloudAccountTransitions.disconnect())
+                syncStatus = SyncStatus(SyncStatusKind.LOCAL_ONLY)
+                accountFlowBusy = false
+            } else {
                 accountFlowBusy = false
                 accountFailure = GoogleConnectionFailure.DISCONNECT
-            },
-        )
+            }
+        }
     }
 
     private fun deleteCloudData() {
@@ -366,7 +397,10 @@ class MainActivity : ComponentActivity() {
         cloudDeleteBusy = true
         cloudDeleteFailed = false
         accountFailure = null
+        val running = syncJob
         lifecycleScope.launch {
+            // No sync may run (or recreate files) while the dataset is being deleted.
+            running?.cancelAndJoin()
             try {
                 cloudRepository.deleteAllData()
             } catch (error: CancellationException) {
@@ -374,25 +408,19 @@ class MainActivity : ComponentActivity() {
             } catch (_: Exception) {
                 cloudDeleteBusy = false
                 cloudDeleteFailed = true
+                refreshPendingStatus()
                 return@launch
             }
 
             // Stop sync before revoking the grant so the intentionally deleted dataset cannot be re-uploaded.
             updateCloudAccountState(CloudAccountTransitions.useStandalone())
             syncStatus = SyncStatus(SyncStatusKind.LOCAL_ONLY)
-            googleAccountCoordinator.disconnect(
-                accountEmail = email,
-                onComplete = {
-                    lifecycleScope.launch {
-                        googleAccountCoordinator.clearCredentialSession()
-                        cloudDeleteBusy = false
-                    }
-                },
-                onFailure = {
-                    cloudDeleteBusy = false
-                    accountFailure = GoogleConnectionFailure.DISCONNECT
-                },
-            )
+            if (googleAccountCoordinator.disconnect(email)) {
+                googleAccountCoordinator.clearCredentialSession()
+            } else {
+                accountFailure = GoogleConnectionFailure.DISCONNECT
+            }
+            cloudDeleteBusy = false
         }
     }
 
@@ -417,7 +445,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun syncNow(resolutions: Map<String, SyncConflictResolution>) {
-        if (!cloudAccountState.googleConnected || syncJob?.isActive == true) return
+        if (!cloudAccountState.googleConnected || cloudDeleteBusy || accountFlowBusy || syncJob?.isActive == true) return
         syncStatus = syncStatus.copy(kind = SyncStatusKind.SYNCING, error = null, conflicts = emptyList())
         syncJob = lifecycleScope.launch {
             val result = syncEngine.sync(settings.conflictPolicy, resolutions)

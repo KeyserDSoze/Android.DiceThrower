@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">ਜੇ Google Drive ਜੁੜਿਆ ਹੈ, ਤਾਂ ਬਹਾਲੀ ਤੁਹਾਡੇ ਕਲਾਊਡ ਡੇਟਾ ਵਿੱਚੋਂ ਕੁਝ ਨਹੀਂ ਹਟਾਉਂਦੀ। ਅਗਲੀ ਸਿੰਕ ਵੇਲੇ ਪੁੱਛਿਆ ਜਾਵੇਗਾ ਕਿ ਇਸਨੂੰ ਇਸ ਬੈਕਅੱਪ ਨਾਲ ਕਿਵੇਂ ਮਿਲਾਉਣਾ ਹੈ।</string>
+    <string name="backup_too_large">ਇਹ ਬੈਕਅੱਪ ਫ਼ਾਈਲ 256 MiB ਤੋਂ ਵੱਡੀ ਹੈ ਅਤੇ ਪੜ੍ਹੀ ਨਹੀਂ ਜਾ ਸਕਦੀ।</string>
+</resources>

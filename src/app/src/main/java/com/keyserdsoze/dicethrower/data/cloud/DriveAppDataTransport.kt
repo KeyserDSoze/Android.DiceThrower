@@ -7,6 +7,7 @@ import java.net.URL
 import java.net.URLEncoder
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -85,7 +86,7 @@ internal object DriveRetryPolicy {
 
 class DriveRestTransport(
     private val tokenProvider: DriveAccessTokenProvider,
-    private val sleeper: (Long) -> Unit = Thread::sleep,
+    private val sleeper: suspend (Long) -> Unit = { delay(it) },
     private val jitterMillis: () -> Long = { (0L..250L).random() },
 ) : DriveAppDataTransport {
     override suspend fun list(): List<DriveAppDataFile> = withContext(Dispatchers.IO) {

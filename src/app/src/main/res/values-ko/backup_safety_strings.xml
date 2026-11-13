@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Google Drive가 연결되어 있어도 복원 시 클라우드 데이터는 삭제되지 않습니다. 다음 동기화 때 이 백업과 어떻게 맞출지 묻습니다.</string>
+    <string name="backup_too_large">이 백업 파일은 256 MiB보다 커서 읽을 수 없습니다.</string>
+</resources>

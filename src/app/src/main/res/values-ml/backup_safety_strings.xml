@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Google Drive ബന്ധിപ്പിച്ചിട്ടുണ്ടെങ്കിൽ, പുനഃസ്ഥാപിക്കുന്നത് നിങ്ങളുടെ ക്ലൗഡ് ഡാറ്റയിൽ നിന്ന് ഒന്നും ഇല്ലാതാക്കില്ല. അടുത്ത സമന്വയത്തിൽ ഇത് ഈ ബാക്കപ്പുമായി എങ്ങനെ ഒത്തുചേർക്കണമെന്ന് ചോദിക്കും.</string>
+    <string name="backup_too_large">ഈ ബാക്കപ്പ് ഫയൽ 256 MiB-യേക്കാൾ വലുതാണ്, വായിക്കാൻ കഴിയില്ല.</string>
+</resources>

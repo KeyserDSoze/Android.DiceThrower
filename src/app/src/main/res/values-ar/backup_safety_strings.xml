@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">إذا كان Google Drive متصلاً، فإن الاستعادة لا تحذف أي شيء من بياناتك السحابية. في المزامنة التالية سيُطلب منك كيفية مطابقتها مع هذه النسخة الاحتياطية.</string>
+    <string name="backup_too_large">ملف النسخة الاحتياطية هذا أكبر من 256 MiB ولا يمكن قراءته.</string>
+</resources>

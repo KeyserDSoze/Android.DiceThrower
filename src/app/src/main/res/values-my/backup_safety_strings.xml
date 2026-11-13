@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Google Drive ချိတ်ဆက်ထားပါက ပြန်လည်ရယူခြင်းသည် သင့်ကလောက်ဒ်ဒေတာမှ ဘာမျှမဖျက်ပါ။ နောက်တစ်ကြိမ် ထပ်တူပြုချိန်တွင် ဤဘက်ခ်အပ်နှင့် မည်သို့ ညှိမည်ကို မေးပါမည်။</string>
+    <string name="backup_too_large">ဤဘက်ခ်အပ်ဖိုင်သည် 256 MiB ထက်ကြီးပြီး ဖတ်၍မရပါ။</string>
+</resources>

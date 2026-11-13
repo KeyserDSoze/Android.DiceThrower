@@ -115,6 +115,23 @@ class DriveCloudRepositoryTest {
         assertEquals("other-app.json", transport.files.values.single().file.name)
     }
 
+    @Test
+    fun deleteAllDataRepeatsUntilFilesRecreatedByALateWriterAreGone() = runBlocking {
+        val transport = FakeDriveTransport()
+        val repository = DriveCloudRepository(transport)
+        repository.putCharacter(characterDocument())
+        var recreated = false
+        transport.onDelete = {
+            if (!recreated) {
+                recreated = true
+                runBlocking { repository.putManifest(CloudManifest(1, 10L, "device-a", emptyList())) }
+            }
+        }
+
+        assertEquals(2, repository.deleteAllData())
+        assertEquals(0, transport.files.size)
+    }
+
     private fun characterDocument(): CloudCharacterDocument {
         val data = SyncMetadataManager.ensureMetadata(
             AppData(characters = listOf(CharacterProfile("hero", "Hero"))),
@@ -221,6 +238,7 @@ class DriveCloudRepositoryTest {
         var listCalls = 0
         var createCalls = 0
         var updateCalls = 0
+        var onDelete: () -> Unit = {}
         private var nextId = 1
 
         override suspend fun list(): List<DriveAppDataFile> {
@@ -268,6 +286,7 @@ class DriveCloudRepositoryTest {
 
         override suspend fun delete(fileId: String) {
             if (files.remove(fileId) == null) throw CloudNotFoundException("missing $fileId")
+            onDelete()
         }
 
         data class Stored(val file: DriveAppDataFile, val bytes: ByteArray)

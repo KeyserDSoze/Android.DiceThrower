@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">אם Google Drive מחובר, השחזור לא מוחק דבר מנתוני הענן שלך. בסנכרון הבא תישאל כיצד ליישב אותם עם הגיבוי הזה.</string>
+    <string name="backup_too_large">קובץ הגיבוי הזה גדול מ-256 MiB ולא ניתן לקרוא אותו.</string>
+</resources>

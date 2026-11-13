@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">如果已连接 Google Drive，恢复不会删除任何云端数据。下次同步时，系统会询问您如何将其与此备份进行协调。</string>
+    <string name="backup_too_large">此备份文件超过 256 MiB，无法读取。</string>
+</resources>

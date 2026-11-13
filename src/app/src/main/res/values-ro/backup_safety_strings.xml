@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Dacă Google Drive este conectat, restaurarea nu șterge nimic din datele tale din cloud. La următoarea sincronizare vei fi întrebat cum să le reconciliezi cu această copie.</string>
+    <string name="backup_too_large">Acest fișier de backup depășește 256 MiB și nu poate fi citit.</string>
+</resources>

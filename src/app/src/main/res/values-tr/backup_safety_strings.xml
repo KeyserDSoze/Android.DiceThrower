@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Google Drive bağlıysa geri yükleme bulut verilerinizden hiçbir şeyi silmez. Bir sonraki eşitlemede bunları bu yedekle nasıl uzlaştıracağınız sorulacak.</string>
+    <string name="backup_too_large">Bu yedek dosyası 256 MiB\'tan büyük ve okunamıyor.</string>
+</resources>

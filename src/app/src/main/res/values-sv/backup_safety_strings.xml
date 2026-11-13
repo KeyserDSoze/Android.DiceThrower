@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Om Google Drive är anslutet raderar återställningen ingenting i dina molndata. Vid nästa synkronisering får du frågan hur de ska stämmas av mot den här säkerhetskopian.</string>
+    <string name="backup_too_large">Den här säkerhetskopian är större än 256 MiB och kan inte läsas.</string>
+</resources>

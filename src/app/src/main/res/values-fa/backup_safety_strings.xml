@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">اگر Google Drive متصل باشد، بازیابی چیزی از داده‌های ابری شما حذف نمی‌کند. در همگام‌سازی بعدی از شما پرسیده می‌شود که چگونه با این پشتیبان تطبیق داده شود.</string>
+    <string name="backup_too_large">این فایل پشتیبان بزرگ‌تر از 256 MiB است و خوانده نمی‌شود.</string>
+</resources>

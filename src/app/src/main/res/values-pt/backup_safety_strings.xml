@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Se o Google Drive estiver conectado, a restauração não apaga nada dos seus dados na nuvem. Na próxima sincronização, será perguntado como conciliá-los com este backup.</string>
+    <string name="backup_too_large">Este arquivo de backup tem mais de 256 MiB e não pode ser lido.</string>
+</resources>

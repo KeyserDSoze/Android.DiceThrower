@@ -131,6 +131,7 @@ import com.keyserdsoze.dicethrower.data.CloudAccountState
 import com.keyserdsoze.dicethrower.data.AppDataValidator
 import com.keyserdsoze.dicethrower.data.DashboardDataOperations
 import com.keyserdsoze.dicethrower.data.LocalStore
+import com.keyserdsoze.dicethrower.data.RollLogRetention
 import com.keyserdsoze.dicethrower.data.StaleDataException
 import com.keyserdsoze.dicethrower.data.sync.ConflictArea
 import com.keyserdsoze.dicethrower.data.sync.SyncConflict
@@ -541,10 +542,7 @@ fun DiceThrowerAppV2(
                             }
                         },
                         onLogged = { log ->
-                            val logs = (data.logs + log).let { all ->
-                                if (settings.logRetention == 0) all
-                                else all.sortedByDescending { it.timestamp }.take(settings.logRetention)
-                            }
+                            val logs = RollLogRetention.append(data.logs, log, settings.logRetention)
                             persist(data.copy(logs = logs))
                         },
                     )

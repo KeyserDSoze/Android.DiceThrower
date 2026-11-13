@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Αν το Google Drive είναι συνδεδεμένο, η επαναφορά δεν διαγράφει τίποτα από τα δεδομένα σας στο cloud. Στον επόμενο συγχρονισμό θα ερωτηθείτε πώς να τα συμφιλιώσετε με αυτό το αντίγραφο.</string>
+    <string name="backup_too_large">Αυτό το αρχείο αντιγράφου ασφαλείας ξεπερνά τα 256 MiB και δεν μπορεί να διαβαστεί.</string>
+</resources>

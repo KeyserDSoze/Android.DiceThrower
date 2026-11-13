@@ -86,19 +86,22 @@ class LocalStore(context: Context) {
         val previousSettings = loadSettings()
         val now = System.currentTimeMillis()
         val writerId = installationWriterId()
-        val migrated = SyncMetadataManager.ensureMetadata(
+        val stamped = SyncMetadataManager.ensureMetadata(
             data = SharedDiceStyleCatalog.migrateLegacy(data),
             writerId = writerId,
             now = now,
         )
+        val migrated = SyncTransitions.neutralizeBaseRevisions(stamped)
         AppDataValidator.requireValid(migrated)
         imageAssetStore.restorePortableAssets(imageAssets)
         imageAssetStore.requireReferencedAssetsAvailable(migrated)
         document.write(AppDataJsonCodec.encodeData(migrated).toString()) {
             putString(KEY_SETTINGS, AppDataJsonCodec.encodeSettings(settings).toString())
         }
-        recordDataTransition(previousData, migrated, writerId, now)
+        // Characters absent from the backup are not deliberate deletions: never propagate them.
+        recordDataTransition(previousData, migrated, writerId, now, recordDeletions = false)
         recordSettingsTransition(previousSettings, settings, writerId, now)
+        requireReconciliationAfterRestore()
         imageAssetStore.cleanupOrphans(migrated)
     }
 
@@ -134,23 +137,12 @@ class LocalStore(context: Context) {
         current: AppData,
         writerId: String,
         now: Long,
+        recordDeletions: Boolean = true,
     ) {
-        val currentIds = current.characters.mapTo(mutableSetOf()) { it.id }
         val journal = syncJournalStore.load()
-        val pendingById = journal.pendingDeletions.associateByTo(linkedMapOf()) { it.characterId }
-        previous.characters.filterNot { it.id in currentIds }.forEach { removed ->
-            val metadata = previous.characterSyncMetadata.firstOrNull { it.characterId == removed.id }
-                ?: return@forEach
-            pendingById[removed.id] = PendingCharacterDeletion(
-                characterId = removed.id,
-                deletedAt = maxOf(now, metadata.updatedAt + 1L),
-                writerId = writerId,
-                baseRevision = metadata.baseRevision ?: metadata.revision,
-                deletedRevision = metadata.revision,
-            )
-        }
-        currentIds.forEach(pendingById::remove)
-        val updated = pendingById.values.sortedBy { it.characterId }
+        val updated = SyncTransitions.pendingDeletions(
+            previous, current, journal.pendingDeletions, writerId, now, recordDeletions,
+        )
         val previousRevision = SharedDiceStyleCatalog.revision(previous.diceStyles.filter { it.characterId == null })
         val currentRevision = SharedDiceStyleCatalog.revision(current.diceStyles.filter { it.characterId == null })
         val priorCatalog = journal.diceCatalogMetadata
@@ -163,6 +155,10 @@ class LocalStore(context: Context) {
         if (updated != journal.pendingDeletions || catalog != priorCatalog) {
             syncJournalStore.save(journal.copy(pendingDeletions = updated, diceCatalogMetadata = catalog))
         }
+    }
+
+    private fun requireReconciliationAfterRestore() {
+        syncJournalStore.save(SyncTransitions.journalAfterRestore(syncJournalStore.load()))
     }
 
     private fun recordSettingsTransition(

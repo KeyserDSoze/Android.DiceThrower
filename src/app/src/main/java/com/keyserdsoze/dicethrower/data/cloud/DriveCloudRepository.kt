@@ -24,15 +24,23 @@ class DriveCloudRepository(
     private val transport: DriveAppDataTransport,
 ) : CloudRemoteRepository {
     override suspend fun deleteAllData(): Int {
-        val files = managedFiles()
         var deleted = 0
-        files.forEach { file ->
-            try {
-                transport.delete(file.id)
-                deleted++
-            } catch (_: CloudNotFoundException) {
-                // Deletion is idempotent: a previous partial attempt may already have removed it.
+        // A concurrent writer may recreate files after they were listed: repeat until nothing
+        // managed is left (bounded), so access is never revoked with leftovers behind.
+        repeat(DELETE_ALL_MAX_ROUNDS) {
+            val files = managedFiles()
+            if (files.isEmpty()) return deleted
+            files.forEach { file ->
+                try {
+                    transport.delete(file.id)
+                    deleted++
+                } catch (_: CloudNotFoundException) {
+                    // Deletion is idempotent: a previous partial attempt may already have removed it.
+                }
             }
+        }
+        if (managedFiles().isNotEmpty()) {
+            throw CloudTransientException("Cloud data is still being recreated; delete did not complete")
         }
         return deleted
     }
@@ -291,6 +299,7 @@ class DriveCloudRepository(
     private fun stableName(value: String): String = CharacterImageAssets.sha256(value.toByteArray(Charsets.UTF_8))
 
     private companion object {
+        const val DELETE_ALL_MAX_ROUNDS = 5
         const val APP_ID = "dice_thrower"
         const val JSON_MIME = "application/json"
         const val MANIFEST_KEY = "manifest:v1"

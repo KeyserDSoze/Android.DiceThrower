@@ -40,6 +40,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.keyserdsoze.dicethrower.data.AppBackupCodec
+import com.keyserdsoze.dicethrower.data.BackupTooLargeException
+import com.keyserdsoze.dicethrower.data.CloudAccountStore
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import androidx.compose.runtime.rememberCoroutineScope
 import com.keyserdsoze.dicethrower.data.LocalStore
 import com.keyserdsoze.dicethrower.ui.theme.DiceThrowerTheme
 import com.keyserdsoze.dicethrower.ui.v2.ArcaneBackground
@@ -66,7 +73,6 @@ class BackupActivity : ComponentActivity() {
                     store = store,
                     onClose = { finish() },
                     onRestoreCommitted = { payload ->
-                        store.replaceAll(payload.data, payload.settings, payload.imageAssets)
                         AppLocaleManager.setLanguage(this, payload.language)
                         val restart = Intent(this, MainActivity::class.java).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -88,35 +94,49 @@ private fun BackupScreen(
     onRestoreCommitted: (AppBackupCodec.BackupPayload) -> Unit,
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var busy by remember { mutableStateOf(false) }
+    val cloudConnected = remember { CloudAccountStore(context).load().googleConnected }
     var status by remember { mutableStateOf<String?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var pendingImport by remember { mutableStateOf<AppBackupCodec.BackupPayload?>(null) }
     val exportSuccess = stringResource(R.string.backup_export_success)
     val unknownError = stringResource(R.string.backup_unknown_error)
     val invalidFile = stringResource(R.string.backup_invalid_file)
+    val tooLarge = stringResource(R.string.backup_too_large)
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument(BACKUP_MIME_TYPE),
     ) { uri ->
-        if (uri != null) {
-            runCatching {
-                val data = store.loadData()
-                val raw = AppBackupCodec.encode(
-                    data = data,
-                    settings = store.loadSettings(),
-                    language = AppLocaleManager.selectedLanguage(context),
-                    imageAssets = store.backupImageAssets(data),
-                )
-                context.contentResolver.openOutputStream(uri, "wt")?.bufferedWriter().use { writer ->
-                    requireNotNull(writer) { "Unable to open backup destination" }
-                    writer.write(raw)
+        if (uri != null && !busy) {
+            busy = true
+            scope.launch {
+                val outcome = withContext(Dispatchers.IO) {
+                    runCatching {
+                        val data = store.loadData()
+                        val assets = store.backupImageAssets(data)
+                        val stream = context.contentResolver.openOutputStream(uri, "wt")
+                        requireNotNull(stream) { "Unable to open backup destination" }
+                        stream.bufferedWriter(Charsets.UTF_8).use { writer ->
+                            AppBackupCodec.encodeTo(
+                                out = writer,
+                                data = data,
+                                settings = store.loadSettings(),
+                                language = AppLocaleManager.selectedLanguage(context),
+                                imageAssets = assets,
+                            )
+                        }
+                    }
                 }
-            }.onSuccess {
-                error = null
-                status = exportSuccess
-            }.onFailure { failure ->
-                status = null
-                error = failure.message ?: unknownError
+                busy = false
+                outcome.onSuccess {
+                    error = null
+                    status = exportSuccess
+                }.onFailure { failure ->
+                    if (failure is CancellationException) throw failure
+                    status = null
+                    error = if (failure is OutOfMemoryError) unknownError else failure.message ?: unknownError
+                }
             }
         }
     }
@@ -124,20 +144,58 @@ private fun BackupScreen(
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
     ) { uri ->
-        if (uri != null) {
-            runCatching {
-                val raw = context.contentResolver.openInputStream(uri)?.bufferedReader().use { reader ->
-                    requireNotNull(reader) { "Unable to open backup file" }
-                    reader.readText()
+        if (uri != null && !busy) {
+            busy = true
+            scope.launch {
+                val outcome = withContext(Dispatchers.IO) {
+                    try {
+                        val stream = context.contentResolver.openInputStream(uri)
+                        requireNotNull(stream) { "Unable to open backup file" }
+                        Result.success(AppBackupCodec.decode(stream.use { AppBackupCodec.readCapped(it) }))
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (error: OutOfMemoryError) {
+                        Result.failure(BackupTooLargeException())
+                    } catch (error: Exception) {
+                        Result.failure(error)
+                    }
                 }
-                AppBackupCodec.decode(raw)
-            }.onSuccess { payload ->
-                error = null
+                busy = false
+                outcome.onSuccess { payload ->
+                    error = null
+                    status = null
+                    pendingImport = payload
+                }.onFailure { failure ->
+                    status = null
+                    error = if (failure is BackupTooLargeException) tooLarge else failure.message ?: invalidFile
+                }
+            }
+        }
+    }
+
+    val restoreFailed = unknownError
+    fun commitRestore(payload: AppBackupCodec.BackupPayload) {
+        if (busy) return
+        busy = true
+        scope.launch {
+            val outcome = withContext(Dispatchers.IO) {
+                try {
+                    store.replaceAll(payload.data, payload.settings, payload.imageAssets)
+                    Result.success(Unit)
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    Result.failure(error)
+                } catch (error: OutOfMemoryError) {
+                    Result.failure(RuntimeException("Out of memory"))
+                }
+            }
+            busy = false
+            outcome.onSuccess {
+                onRestoreCommitted(payload)
+            }.onFailure {
                 status = null
-                pendingImport = payload
-            }.onFailure { failure ->
-                status = null
-                error = failure.message ?: invalidFile
+                error = restoreFailed
             }
         }
     }
@@ -303,14 +361,14 @@ private fun BackupScreen(
                         R.string.backup_import_confirm_body,
                         payload.data.characters.size,
                         payload.data.rolls.size,
-                    ),
+                    ) + if (cloudConnected) "\n\n" + stringResource(R.string.backup_import_cloud_note) else "",
                 )
             },
             confirmButton = {
                 Button(
                     onClick = {
                         pendingImport = null
-                        onRestoreCommitted(payload)
+                        commitRestore(payload)
                     },
                 ) {
                     Text(stringResource(R.string.backup_import_replace_action))

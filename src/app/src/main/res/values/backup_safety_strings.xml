@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">If Google Drive is connected, restoring deletes nothing from your cloud data. On the next sync you will be asked how to reconcile it with this backup.</string>
+    <string name="backup_too_large">This backup file is larger than 256 MiB and cannot be read.</string>
+</resources>

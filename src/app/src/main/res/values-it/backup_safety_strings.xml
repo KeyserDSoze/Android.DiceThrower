@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Se Google Drive è collegato, il ripristino non cancella nulla dai dati cloud. Alla prossima sincronizzazione ti verrà chiesto come riconciliarli con questo backup.</string>
+    <string name="backup_too_large">Questo file di backup supera i 256 MiB e non può essere letto.</string>
+</resources>

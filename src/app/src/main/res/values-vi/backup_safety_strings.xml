@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Nếu Google Drive đã được kết nối, việc khôi phục không xóa bất cứ thứ gì khỏi dữ liệu đám mây của bạn. Ở lần đồng bộ tiếp theo, bạn sẽ được hỏi cách đối chiếu với bản sao lưu này.</string>
+    <string name="backup_too_large">Tệp sao lưu này lớn hơn 256 MiB và không thể đọc được.</string>
+</resources>

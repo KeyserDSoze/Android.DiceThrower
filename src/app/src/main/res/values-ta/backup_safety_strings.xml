@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Google Drive இணைக்கப்பட்டிருந்தால், மீட்டமைப்பு உங்கள் கிளவுட் தரவிலிருந்து எதையும் நீக்காது. அடுத்த ஒத்திசைவில் இந்த காப்புப்பிரதியுடன் எப்படி சமரசம் செய்வது என்று கேட்கப்படும்.</string>
+    <string name="backup_too_large">இந்த காப்புப்பிரதி கோப்பு 256 MiB-ஐ விடப் பெரியது; படிக்க முடியாது.</string>
+</resources>

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Google Drive が接続されている場合、復元してもクラウド上のデータは削除されません。次回の同期時に、このバックアップとどう整合させるか確認されます。</string>
+    <string name="backup_too_large">このバックアップファイルは 256 MiB を超えているため読み込めません。</string>
+</resources>
