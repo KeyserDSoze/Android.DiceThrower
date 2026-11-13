@@ -190,6 +190,7 @@ const dictionary = {
     jsonArrayExpected: 'Expected a JSON array of effects.', jsonObjectExpected: 'Expected a JSON object.', jsonNotApplied: 'Not applied:',
     crashTitle: 'Something went wrong', crashBody: 'This part of the workshop could not be displayed. Characters saved in this browser are not affected.',
     crashRetry: 'Try again', crashClose: 'Close character',
+    unsavedConfirm: 'The open character has unsaved changes. Discard them?',
   },
   it: {
     title: 'Laboratorio personaggi', intro: 'Crea il personaggio sul sito. Salvalo privatamente nel browser oppure condividilo via link o QR. I modelli standard più grandi possono usare un riferimento alla versione del modello.',
@@ -347,6 +348,7 @@ const dictionary = {
     jsonArrayExpected: 'Serve un array JSON di effetti.', jsonObjectExpected: 'Serve un oggetto JSON.', jsonNotApplied: 'Non applicato:',
     crashTitle: 'Si è verificato un problema', crashBody: 'Questa parte del laboratorio non può essere mostrata. I personaggi salvati nel browser non sono stati modificati.',
     crashRetry: 'Riprova', crashClose: 'Chiudi personaggio',
+    unsavedConfirm: 'Il personaggio aperto ha modifiche non salvate. Vuoi scartarle?',
   },
 };
 const uid = () => crypto.randomUUID();
@@ -432,7 +434,15 @@ function Workshop({ locale }) {
   const [qr, setQr] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-
+  // JSON of the open document as it was opened or last saved.
+  const [baseline, setBaseline] = useState(null);
+  const dirty = useMemo(() => !!doc && JSON.stringify(doc) !== baseline, [doc, baseline]);
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = event => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
   async function refresh() {
     try { setItems((await listSaved()).sort((a,b) => a.character.name.localeCompare(b.character.name))); }
     catch (e) { setError('IndexedDB: ' + e.message); }
@@ -480,11 +490,21 @@ function Workshop({ locale }) {
     });
     setUrl(''); setQr(''); setMessage(''); setError('');
   }
+  /** Replaces the open document, asking before unsaved edits are discarded. */
+  function openDocument(create) {
+    if (dirty && !window.confirm(t.unsavedConfirm)) return;
+    const next = create();
+    setDoc(next); setBaseline(JSON.stringify(next)); setUrl(''); setQr('');
+  }
   function closeBrokenDocument() {
-    setDoc(null); setUrl(''); setQr('');
+    setDoc(null); setBaseline(null); setUrl(''); setQr('');
   }
   async function save() {
-    try { validateDocument(doc); await saveDocument(doc); await refresh(); setMessage(t.saved); setError(''); }
+    const snapshot = doc;
+    try {
+      validateDocument(snapshot); await saveDocument(snapshot); setBaseline(JSON.stringify(snapshot));
+      await refresh(); setMessage(t.saved); setError('');
+    }
     catch (e) { setError(e.message); }
   }
   async function upgradeStarter() {
@@ -493,14 +513,14 @@ function Workshop({ locale }) {
       const upgraded = upgradeLegacyStarterWeaponRolls(doc);
       if (!upgraded) return;
       await saveDocument(upgraded);
-      setDoc(upgraded); setUrl(''); setQr(''); setError('');
+      setDoc(upgraded); setBaseline(JSON.stringify(upgraded)); setUrl(''); setQr(''); setError('');
       await refresh();
       setMessage(t.upgradeComplete);
     } catch (e) { setError(e.message); }
   }
   async function deleteSaved(id) {
     if (!window.confirm(t.delete + '?')) return;
-    try { await removeDocument(id); if (doc?.character.id === id) setDoc(null); await refresh(); }
+    try { await removeDocument(id); if (doc?.character.id === id) { setDoc(null); setBaseline(null); } await refresh(); }
     catch (e) { setError(e.message); }
   }
   async function createShare() {
@@ -514,7 +534,9 @@ function Workshop({ locale }) {
     try {
       if (!importCandidate) throw new Error(t.invalid);
       const copy = importAsCopy(importCandidate);
-      await saveDocument(copy); await refresh(); setPreview(null); setDoc(copy);
+      // The imported copy replaces the open document in the editor.
+      if (dirty && !window.confirm(t.unsavedConfirm)) return;
+      await saveDocument(copy); await refresh(); setPreview(null); setDoc(copy); setBaseline(JSON.stringify(copy));
       history.replaceState(null, '', location.pathname); setMessage(t.saved); setError('');
     } catch (e) { setError(e.message); }
   }
@@ -660,12 +682,12 @@ function Workshop({ locale }) {
       <aside className="workshop-sidebar">
         <section className="premium-panel">
           <h2>{t.library}</h2>
-          <button className="primary" onClick={() => { setDoc(newCharacter()); setUrl(''); setQr(''); }}>{t.create}</button>
+          <button className="primary" onClick={() => openDocument(() => newCharacter())}>{t.create}</button>
           <label className="workshop-file-button">{t.import}<input type="file" accept=".json,application/json" onChange={fileImport} /></label>
           <div className="workshop-collection">
             {items.map(saved => <div className="workshop-list-item" key={saved.character.id}>
               <span><strong>{saved.character.name}</strong><small>Lv {saved.character.level} · {saved.rolls.length} rolls</small></span>
-              <div><button onClick={() => { setDoc(structuredClone(saved)); setQr(''); setUrl(''); }}>{t.load}</button>
+              <div><button onClick={() => openDocument(() => structuredClone(saved))}>{t.load}</button>
               <button className="workshop-remove" onClick={() => deleteSaved(saved.character.id)} aria-label={t.delete + ' ' + saved.character.name}>×</button></div>
             </div>)}
           </div>
@@ -675,7 +697,7 @@ function Workshop({ locale }) {
           <div className="workshop-collection">
             {templates.map(item => <div className="workshop-list-item" key={item.index}>
               <span><strong>{item.name}</strong><small>{item.category}</small></span>
-              <button onClick={() => { setDoc(instantiateTemplate(item.index)); setUrl(''); setQr(''); }}>{t.use}</button>
+              <button onClick={() => openDocument(() => instantiateTemplate(item.index))}>{t.use}</button>
             </div>)}
           </div>
         </section>
