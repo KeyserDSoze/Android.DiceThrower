@@ -120,9 +120,9 @@ internal object DiceRenderStyleFactory {
             roughness = 0.08f,
             metalness = 0f,
             clearcoat = 1f,
-            translucency = 0.85f,
+            translucency = 0.45f,
             swirl = 0f,
-            innerGlow = 0.55f,
+            innerGlow = 0.50f,
             sparkle = 1f,
             curvature = 0.03f,
         )

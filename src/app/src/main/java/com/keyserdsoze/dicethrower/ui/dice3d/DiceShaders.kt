@@ -160,11 +160,12 @@ internal object DiceShaders {
 
             if (uDetail.y > 0.0) {
                 float nv = max(dot(n, v), 0.0);
-                // Gemstone: light trapped in the crystal, strongest through the face centres.
+                // Gemstone: light trapped in the crystal, strongest through the face centres, in the
+                // stone's own colour with only a hint of the secondary sparkle.
                 float core = pow(nv, 1.6) * (0.55 + 0.45 * marble(vLocal * 0.6 + 3.1));
-                color += uAccent * uDetail.y * (0.18 + 0.55 * core);
+                color += mix(uBase, uAccent, 0.30) * uDetail.y * (0.06 + 0.42 * core);
                 vec3 refracted = refract(-v, n, 0.66);
-                color += uBase * environment(refracted) * 0.45 * uDetail.y;
+                color += uBase * environment(refracted) * 0.30 * uDetail.y;
             }
             if (uDetail.z > 0.0) {
                 vec3 facet = floor(vLocal * 9.0 + 0.5);
