@@ -7,26 +7,37 @@ import android.opengl.GLSurfaceView
 import android.opengl.GLUtils
 import android.opengl.Matrix
 import android.os.SystemClock
+import android.util.Log
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.keyserdsoze.dicethrower.dice.DiceRollVisualEvent
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.keyserdsoze.dicethrower.dice.CandidateVisualLighting
-import com.keyserdsoze.dicethrower.model.EffectType
+import com.keyserdsoze.dicethrower.dice.DiceRollVisualEvent
 import com.keyserdsoze.dicethrower.model.DiceTableTheme
+import com.keyserdsoze.dicethrower.model.EffectType
 import com.keyserdsoze.dicethrower.model.RollVisualEffectsSettings
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
+import javax.microedition.khronos.egl.EGL10
 import javax.microedition.khronos.egl.EGLConfig
+import javax.microedition.khronos.egl.EGLDisplay
 import javax.microedition.khronos.opengles.GL10
-import kotlin.math.acos
+import kotlin.math.PI
 import kotlin.math.ceil
-import kotlin.math.cos
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.math.tan
@@ -45,6 +56,20 @@ fun Dice3DScene(
     onSettled: (Long) -> Unit = {},
 ) {
     val sceneModifier = if (fullBleed) modifier else modifier.clip(RoundedCornerShape(24.dp))
+    var glView by remember { mutableStateOf<DiceGLView?>(null) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, glView) {
+        val view = glView
+        val observer = LifecycleEventObserver { _, lifecycleEvent ->
+            when (lifecycleEvent) {
+                Lifecycle.Event.ON_RESUME -> view?.onResume()
+                Lifecycle.Event.ON_PAUSE -> view?.onPause()
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     AndroidView(
         modifier = sceneModifier,
         factory = { context ->
@@ -52,6 +77,7 @@ fun Dice3DScene(
                 it.onSettled = onSettled
                 it.setScene(event, tableTheme, tableImage, tableImageKey, animateRoll)
                 it.setWinnerRevealed(winnerRevealed)
+                glView = it
             }
         },
         update = { view ->
@@ -71,15 +97,22 @@ private data class SceneKey(
 
 private class DiceGLView(context: Context, previewMode: Boolean) : GLSurfaceView(context) {
     var onSettled: (Long) -> Unit = {}
-    private val diceRenderer = DiceSceneRenderer({ eventId -> post { onSettled(eventId) } }, previewMode)
+    private val diceRenderer = DiceSceneRenderer(
+        onSettled = { eventId -> post { onSettled(eventId) } },
+        previewMode = previewMode,
+        requestFrame = { requestRender() },
+    )
     private var lastSceneKey: SceneKey? = null
+    private var lastWinnerRevealed: Boolean? = null
 
     init {
         setEGLContextClientVersion(2)
-        setEGLConfigChooser(8, 8, 8, 8, 24, 0)
-        setPreserveEGLContextOnPause(true)
+        setEGLConfigChooser(DiceEglConfigChooser())
+        preserveEGLContextOnPause = true
         setRenderer(diceRenderer)
-        renderMode = RENDERMODE_CONTINUOUSLY
+        // Frames are requested only while something moves: a settled table costs no GPU time.
+        renderMode = RENDERMODE_WHEN_DIRTY
+        if (!previewMode) DiceThrowSimulator.warmUpInBackground()
     }
 
     fun setScene(
@@ -93,15 +126,55 @@ private class DiceGLView(context: Context, previewMode: Boolean) : GLSurfaceView
         if (key == lastSceneKey) return
         lastSceneKey = key
         queueEvent { diceRenderer.setEvent(event, tableTheme, tableImage, animateRoll) }
+        requestRender()
     }
 
     fun setWinnerRevealed(revealed: Boolean) {
+        if (lastWinnerRevealed == revealed) return
+        lastWinnerRevealed = revealed
         queueEvent { diceRenderer.setWinnerRevealed(revealed) }
+        requestRender()
     }
 
     override fun onDetachedFromWindow() {
         onPause()
         super.onDetachedFromWindow()
+    }
+}
+
+/** 4x MSAA when available, otherwise the best plain configuration. */
+private class DiceEglConfigChooser : GLSurfaceView.EGLConfigChooser {
+    override fun chooseConfig(egl: EGL10, display: EGLDisplay): EGLConfig {
+        val base = intArrayOf(
+            EGL10.EGL_RED_SIZE, 8, EGL10.EGL_GREEN_SIZE, 8, EGL10.EGL_BLUE_SIZE, 8, EGL10.EGL_ALPHA_SIZE, 8,
+            EGL10.EGL_DEPTH_SIZE, 24, EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+        )
+        val attempts = listOf(
+            base + intArrayOf(EGL10.EGL_SAMPLE_BUFFERS, 1, EGL10.EGL_SAMPLES, 4, EGL10.EGL_NONE),
+            base + intArrayOf(EGL10.EGL_NONE),
+            intArrayOf(EGL10.EGL_DEPTH_SIZE, 16, EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT, EGL10.EGL_NONE),
+        )
+        attempts.forEach { attributes -> choose(egl, display, attributes)?.let { return it } }
+        throw IllegalArgumentException("No OpenGL ES 2 configuration available")
+    }
+
+    private fun choose(egl: EGL10, display: EGLDisplay, attributes: IntArray): EGLConfig? {
+        val count = IntArray(1)
+        if (!egl.eglChooseConfig(display, attributes, null, 0, count) || count[0] <= 0) return null
+        val configs = arrayOfNulls<EGLConfig>(count[0])
+        if (!egl.eglChooseConfig(display, attributes, configs, count[0], count)) return null
+        val value = IntArray(1)
+        fun attribute(config: EGLConfig, name: Int): Int =
+            if (egl.eglGetConfigAttrib(display, config, name, value)) value[0] else 0
+        return configs.filterNotNull().firstOrNull { config ->
+            attribute(config, EGL10.EGL_RED_SIZE) == 8 &&
+                attribute(config, EGL10.EGL_GREEN_SIZE) == 8 &&
+                attribute(config, EGL10.EGL_BLUE_SIZE) == 8
+        } ?: configs.firstOrNull()
+    }
+
+    private companion object {
+        const val EGL_OPENGL_ES2_BIT = 4
     }
 }
 
@@ -116,14 +189,13 @@ private data class VisualDie(
     val chosenCandidate: Boolean = false,
 )
 
-private data class GpuMesh(
-    val positions: FloatBuffer,
-    val normals: FloatBuffer,
-    val vertexCount: Int,
-    val numberPositions: FloatBuffer,
-    val numberNormals: FloatBuffer,
-    val numberVertexCount: Int,
-    val valueFaceNormals: FloatArray,
+private class GpuMesh(
+    val bodyBuffer: Int,
+    val bodyVertexCount: Int,
+    val glyphBuffer: Int,
+    val glyphVertexCount: Int,
+    /** Centre height of the die resting on a face, per unit scale. */
+    val restHeight: Float,
 )
 
 internal data class DiceTableVisualBounds(
@@ -161,62 +233,25 @@ internal object DiceTableViewport {
             halfHeight = halfHeight,
         )
     }
-}
 
-internal data class DiceAxisAngle(
-    val angleDegrees: Float,
-    val axis: Vec3,
-)
-
-internal fun rotateFaceNormal(
-    normal: Vec3,
-    angleXDegrees: Float,
-    angleYDegrees: Float,
-    angleZDegrees: Float,
-): Vec3 {
-    fun radians(value: Float) = Math.toRadians(value.toDouble())
-    var value = normal
-
-    run {
-        val a = radians(angleZDegrees)
-        val c = cos(a).toFloat()
-        val si = sin(a).toFloat()
-        value = Vec3(value.x * c - value.y * si, value.x * si + value.y * c, value.z)
+    /** Visual die size (circumradius) for a throw; fewer dice are shown larger, crowded lanes smaller. */
+    fun dieScaleFor(count: Int, largestLane: Int = 0): Float {
+        val byCount = when {
+            count <= 1 -> 0.86f
+            count <= 2 -> 0.80f
+            count <= 4 -> 0.72f
+            count <= 8 -> 0.62f
+            else -> 0.54f
+        }
+        val byLane = when {
+            largestLane <= 0 -> byCount
+            largestLane <= 3 -> 0.62f
+            largestLane <= 6 -> 0.50f
+            largestLane <= 9 -> 0.44f
+            else -> 0.40f
+        }
+        return min(byCount, byLane)
     }
-    run {
-        val a = radians(angleYDegrees)
-        val c = cos(a).toFloat()
-        val si = sin(a).toFloat()
-        value = Vec3(value.x * c + value.z * si, value.y, -value.x * si + value.z * c)
-    }
-    run {
-        val a = radians(angleXDegrees)
-        val c = cos(a).toFloat()
-        val si = sin(a).toFloat()
-        value = Vec3(value.x, value.y * c - value.z * si, value.y * si + value.z * c)
-    }
-    return value.normalized()
-}
-
-internal fun faceAlignmentCorrection(
-    currentNormal: Vec3,
-    progress: Float,
-): DiceAxisAngle {
-    val normalized = currentNormal.normalized()
-    val nz = normalized.z.coerceIn(-1f, 1f)
-    val axisLength = sqrt(normalized.x * normalized.x + normalized.y * normalized.y)
-    val fullAngle = Math.toDegrees(acos(nz).toDouble()).toFloat()
-    val easedProgress = progress.coerceIn(0f, 1f)
-    val axis = when {
-        axisLength > 0.0001f -> Vec3(
-            normalized.y / axisLength,
-            -normalized.x / axisLength,
-            0f,
-        )
-        nz < 0f -> Vec3(1f, 0f, 0f)
-        else -> Vec3(0f, 0f, 1f)
-    }
-    return DiceAxisAngle(fullAngle * easedProgress, axis)
 }
 
 internal fun tableTextureCoordinatesFor(
@@ -249,54 +284,66 @@ internal fun tableTextureCoordinatesFor(
     )
 }
 
+private class DiceProgram(val id: Int) {
+    val position = GLES20.glGetAttribLocation(id, "aPosition")
+    val normal = GLES20.glGetAttribLocation(id, "aNormal")
+    val uv = GLES20.glGetAttribLocation(id, "aUv")
+    val mvp = GLES20.glGetUniformLocation(id, "uMvp")
+    val model = GLES20.glGetUniformLocation(id, "uModel")
+    val camera = GLES20.glGetUniformLocation(id, "uCamera")
+    val base = GLES20.glGetUniformLocation(id, "uBase")
+    val accent = GLES20.glGetUniformLocation(id, "uAccent")
+    val ink = GLES20.glGetUniformLocation(id, "uInk")
+    val floor = GLES20.glGetUniformLocation(id, "uFloor")
+    val surface = GLES20.glGetUniformLocation(id, "uSurface")
+    val detail = GLES20.glGetUniformLocation(id, "uDetail")
+    val tint = GLES20.glGetUniformLocation(id, "uTint")
+    val ground = GLES20.glGetUniformLocation(id, "uGround")
+    val inkPass = GLES20.glGetUniformLocation(id, "uInkPass")
+    val glyphs = GLES20.glGetUniformLocation(id, "uGlyphs")
+}
+
 private class DiceSceneRenderer(
     private val onSettled: (Long) -> Unit,
     private val previewMode: Boolean,
+    private val requestFrame: () -> Unit,
 ) : GLSurfaceView.Renderer {
-    private var program = 0
-    private var positionHandle = 0
-    private var normalHandle = 0
-    private var mvpHandle = 0
-    private var modelHandle = 0
-    private var primaryColorHandle = 0
-    private var secondaryColorHandle = 0
-    private var materialLightingHandle = 0
-    private var materialAccentHandle = 0
-    private var textureCoordHandle = 0
-    private var useTextureHandle = 0
-    private var textureHandle = 0
-
     private val projection = FloatArray(16)
     private val view = FloatArray(16)
+    private val viewProjection = FloatArray(16)
     private val model = FloatArray(16)
-    private val viewModel = FloatArray(16)
     private val mvp = FloatArray(16)
+    private val rotation = FloatArray(16)
 
-    private val gpuMeshes = mutableMapOf<Int, GpuMesh>()
-    private var dice: List<VisualDie> = emptyList()
-    private var persistentStates: List<DiceTablePhysics.State> = emptyList()
+    private var dice: DiceProgram? = null
+    private var tableProgram = 0
+    private var shadowProgram = 0
+    private var glyphTexture = 0
+    private var tableBuffer = 0
+    private var shadowBuffer = 0
+    private val gpuMeshes = HashMap<Int, GpuMesh>()
+
+    private var visualDice: List<VisualDie> = emptyList()
+    private var baked: BakedDiceThrow? = null
+    private var staticPoses: List<DiePose> = emptyList()
+    private var dieScale = DiceTableViewport.dieScaleFor(1)
+    private var throwStartedNanos = 0L
+    private var persistentCount = 0
     private var tableTheme = DiceTableTheme.ARCANE
-    private var physics: DiceTablePhysics? = null
     private var animateRoll = true
     private var winnerRevealed = false
     private var winnerRevealNanos = 0L
     private var visualSettings = RollVisualEffectsSettings()
     private var effectImpactStartedNanos = 0L
     private var currentEventId = 0L
-    private var lastFrameAt = SystemClock.elapsedRealtimeNanos()
     private var settledReported = false
     private var cameraDistance = 14f
     private var tableImage: Bitmap? = null
     private var tableTexture = 0
     private var tableTextureDirty = false
-
     private var viewportAspect = DiceTableViewport.HALF_WIDTH / DiceTableViewport.HALF_HEIGHT
-    private var tablePositions = tablePositionsFor(
-        DiceTableViewport.HALF_WIDTH,
-        DiceTableViewport.HALF_HEIGHT,
-    )
-    private val tableNormals = FloatArray(18) { index -> if (index % 3 == 2) 1f else 0f }.toFloatBuffer()
-    private var tableTextureCoordinates = tableTextureCoordinatesFor(null, viewportAspect).toFloatBuffer()
+    private var visualBounds = DiceTableVisualBounds(DiceTableViewport.HALF_WIDTH, DiceTableViewport.HALF_HEIGHT)
+    private var tableGeometryDirty = true
 
     fun setWinnerRevealed(revealed: Boolean) {
         if (revealed && !winnerRevealed) winnerRevealNanos = SystemClock.elapsedRealtimeNanos()
@@ -309,28 +356,27 @@ private class DiceSceneRenderer(
         tableImage: Bitmap?,
         animateRoll: Boolean,
     ) {
-        // Preserve the already-settled bodies before changing the scene. New
-        // effect-generated dice animate independently, without replaying old throws.
-        val previousPositions = persistentStates + (physics?.states().orEmpty())
-        persistentStates = if (animateRoll && event.persistentDiceCount > 0 &&
-            previousPositions.size >= event.persistentDiceCount
-        ) previousPositions.take(event.persistentDiceCount) else emptyList()
+        val now = SystemClock.elapsedRealtimeNanos()
+        // Keep already-settled dice exactly where they stopped; effect stages add new dice only.
+        val previous = settledPoses()
+        val keep = if (animateRoll && event.persistentDiceCount > 0 && previous.size >= event.persistentDiceCount)
+            previous.take(event.persistentDiceCount) else emptyList()
         val appearanceBySlot = event.appearances.associateBy { it.slotKey }
         visualSettings = event.visualSettings
         effectImpactStartedNanos = if (animateRoll && visualSettings.cameraImpact &&
-            event.effectAccentComponents.isNotEmpty()) SystemClock.elapsedRealtimeNanos() else 0L
+            event.effectAccentComponents.isNotEmpty()) now else 0L
         winnerRevealed = false
-        dice = buildList {
+        visualDice = buildList {
             event.result.components.forEachIndexed { componentIndex, component ->
+                if (!DieGeometries.isSupported(component.sides)) return@forEachIndexed
                 component.rolls.forEachIndexed { index, value ->
                     if (size < MAX_VISIBLE_DICE) {
-                        val slotKey = "$componentIndex:$index"
                         add(
                             VisualDie(
                                 sides = component.sides,
                                 value = value,
                                 phase = ((component.sides * 37 + value * 19 + index * 53) % 360).toFloat(),
-                                renderStyle = DiceRenderStyleFactory.create(appearanceBySlot[slotKey]),
+                                renderStyle = DiceRenderStyleFactory.create(appearanceBySlot["$componentIndex:$index"]),
                                 dimmed = componentIndex in event.dimmedComponentIndices,
                                 effectAccent = event.effectAccentComponents[componentIndex],
                                 candidateGroup = event.candidateGroupByComponent[componentIndex]
@@ -349,39 +395,99 @@ private class DiceSceneRenderer(
         }
         this.animateRoll = animateRoll
         currentEventId = event.id
-        physics = if (animateRoll) DiceTablePhysics(
-            dice.size - persistentStates.size, event.id,
-            laneByDieIndex = dice.drop(persistentStates.size)
-                .mapIndexedNotNull { index, die ->
-                    die.candidateGroup?.let { index to it }
-                }.toMap(),
-            spawnFromEdge = event.visualSettings.actionCues &&
-                event.effectAccentComponents.isNotEmpty(),
-        ) else null
-        lastFrameAt = SystemClock.elapsedRealtimeNanos()
+        persistentCount = keep.size
+        dieScale = when {
+            previewMode -> PREVIEW_SCALE
+            keep.isNotEmpty() -> dieScale
+            else -> DiceTableViewport.dieScaleFor(
+                visualDice.size,
+                visualDice.mapNotNull { it.candidateGroup }.groupingBy { it }.eachCount().values.maxOrNull() ?: 0,
+            )
+        }
+        if (animateRoll && !previewMode) {
+            val specs = visualDice.mapIndexed { index, die ->
+                DieThrowSpec(die.sides, die.value, die.candidateGroup, keep.getOrNull(index))
+            }
+            val bakeStarted = SystemClock.elapsedRealtimeNanos()
+            baked = runCatching {
+                DiceThrowSimulator.bake(
+                    specs = specs,
+                    seed = event.id,
+                    dieScale = dieScale,
+                    spawnFromEdge = event.visualSettings.actionCues && event.effectAccentComponents.isNotEmpty(),
+                )
+            }.onFailure { Log.e(TAG, "Dice simulation failed; showing resting dice", it) }.getOrNull()
+            if (Log.isLoggable(TAG, Log.DEBUG)) {
+                Log.d(TAG, "Baked ${specs.size} dice in ${(SystemClock.elapsedRealtimeNanos() - bakeStarted) / 1_000_000} ms")
+            }
+            staticPoses = if (baked == null) restingLayout(visualDice) else emptyList()
+        } else {
+            baked = null
+            staticPoses = restingLayout(visualDice)
+        }
+        // The clock starts after the (few millisecond) pre-simulation, so no frame is skipped.
+        throwStartedNanos = SystemClock.elapsedRealtimeNanos()
         settledReported = false
+    }
+
+    private fun settledPoses(): List<DiePose> {
+        val current = baked
+        return if (current != null) List(current.dieCount) { current.finalPose(it) } else staticPoses
+    }
+
+    private fun restingLayout(dice: List<VisualDie>): List<DiePose> {
+        if (dice.isEmpty()) return emptyList()
+        if (previewMode) return dice.map { die ->
+            val resting = DiceThrowSimulator.restingPose(die.sides, die.value, 0f, 0f, 0.38f, dieScale)
+            val tilt = Quat.fromAxisAngle(Vec3.UNIT_X, -0.46f) * Quat.fromAxisAngle(Vec3.UNIT_Y, 0.30f)
+            DiePose(Vec3(0f, 0.04f, 0.32f), (tilt * resting.rotation).normalized())
+        }
+        val poses = arrayOfNulls<DiePose>(dice.size)
+        dice.indices.groupBy { dice[it].candidateGroup }.forEach { (lane, members) ->
+            val count = members.size
+            val columns = ceil(sqrt(count.toFloat())).toInt().coerceAtLeast(1)
+            val rows = ceil(count.toFloat() / columns).toInt().coerceAtLeast(1)
+            val centerY = when (lane) {
+                null -> if (dice.any { it.candidateGroup != null }) -3.9f else 0.4f
+                else -> CandidateLaneLayout.staticCenter(lane)
+            }
+            members.forEachIndexed { order, dieIndex ->
+                val row = order / columns
+                val column = order % columns
+                val rowCount = (count - row * columns).coerceAtMost(columns)
+                val x = (column - (rowCount - 1) / 2f) * dieScale * 2.35f
+                var y = centerY + ((rows - 1) / 2f - row) * dieScale * 2.25f
+                if (lane != null) {
+                    val (minY, maxY) = CandidateLaneLayout.band(lane, DiceTableViewport.HALF_HEIGHT)
+                    y = y.coerceIn(minY + dieScale, maxY - dieScale)
+                }
+                val die = dice[dieIndex]
+                poses[dieIndex] = DiceThrowSimulator.restingPose(
+                    die.sides, die.value, x, y, die.phase * (PI.toFloat() / 180f), dieScale,
+                )
+            }
+        }
+        return poses.map { it!! }
     }
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(0.018f, 0.022f, 0.04f, 1f)
         GLES20.glEnable(GLES20.GL_DEPTH_TEST)
+        GLES20.glDepthFunc(GLES20.GL_LEQUAL)
         GLES20.glEnable(GLES20.GL_CULL_FACE)
         GLES20.glCullFace(GLES20.GL_BACK)
-
-        program = createProgram(VERTEX_SHADER, FRAGMENT_SHADER)
-        positionHandle = GLES20.glGetAttribLocation(program, "aPosition")
-        normalHandle = GLES20.glGetAttribLocation(program, "aNormal")
-        mvpHandle = GLES20.glGetUniformLocation(program, "uMvp")
-        modelHandle = GLES20.glGetUniformLocation(program, "uModel")
-        primaryColorHandle = GLES20.glGetUniformLocation(program, "uPrimaryColor")
-        secondaryColorHandle = GLES20.glGetUniformLocation(program, "uSecondaryColor")
-        materialLightingHandle = GLES20.glGetUniformLocation(program, "uMaterialLighting")
-        materialAccentHandle = GLES20.glGetUniformLocation(program, "uMaterialAccent")
-        textureCoordHandle = GLES20.glGetAttribLocation(program, "aTexCoord")
-        useTextureHandle = GLES20.glGetUniformLocation(program, "uUseTexture")
-        textureHandle = GLES20.glGetUniformLocation(program, "uTexture")
+        // A new EGL context invalidates every GPU object.
+        gpuMeshes.clear()
         tableTexture = 0
         tableTextureDirty = tableImage != null
+        tableGeometryDirty = true
+        dice = (createProgram(DiceShaders.DICE_VERTEX, DiceShaders.DICE_FRAGMENT)
+            ?: createProgram(DiceShaders.DICE_VERTEX, FALLBACK_DICE_FRAGMENT))?.let(::DiceProgram)
+        tableProgram = createProgram(DiceShaders.TABLE_VERTEX, DiceShaders.TABLE_FRAGMENT) ?: 0
+        shadowProgram = createProgram(DiceShaders.SHADOW_VERTEX, DiceShaders.SHADOW_FRAGMENT) ?: 0
+        glyphTexture = uploadGlyphAtlas()
+        shadowBuffer = uploadBuffer(floatArrayOf(-1f, -1f, 1f, -1f, 1f, 1f, -1f, -1f, 1f, 1f, -1f, 1f))
+        tableBuffer = 0
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -389,237 +495,248 @@ private class DiceSceneRenderer(
         val aspect = if (height == 0) 1f else width.toFloat() / height.toFloat()
         viewportAspect = aspect.coerceAtLeast(0.25f)
         // Standalone dice previews need a close-up camera, unlike the full throwing table.
-        // Do not change the main table's collision bounds or camera framing.
         cameraDistance = if (previewMode) 4.2f else DiceTableViewport.cameraDistanceFor(viewportAspect)
-        val visualBounds = DiceTableViewport.visualBoundsFor(viewportAspect, cameraDistance)
-        tablePositions = tablePositionsFor(visualBounds.halfWidth, visualBounds.halfHeight)
-        tableTextureCoordinates = tableTextureCoordinatesFor(
-            tableImage?.takeUnless(Bitmap::isRecycled)?.let { it.width.toFloat() / it.height.toFloat() },
-            viewportAspect,
-        ).toFloatBuffer()
+        visualBounds = DiceTableViewport.visualBoundsFor(viewportAspect, cameraDistance)
+        tableGeometryDirty = true
         Matrix.perspectiveM(projection, 0, DiceTableViewport.FOV_DEGREES, viewportAspect, 0.1f, 60f)
     }
 
     override fun onDrawFrame(gl: GL10?) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
-        if (program == 0) return
-
+        val program = dice ?: return
         val now = SystemClock.elapsedRealtimeNanos()
-        val deltaSeconds = (now - lastFrameAt) / 1_000_000_000f
-        lastFrameAt = now
-        physics?.step(deltaSeconds)
+        val elapsed = (now - throwStartedNanos).coerceAtLeast(0L) / 1_000_000_000f
+        val bakedThrow = baked
+        val poses = if (bakedThrow != null) List(visualDice.size) { bakedThrow.pose(it, elapsed) } else staticPoses
+        val throwing = bakedThrow != null && elapsed < bakedThrow.durationSeconds
 
-        val count = dice.size
-        val dieScale = physics?.radius?.times(0.92f) ?: when {
-            count <= 1 -> 0.72f
-            count <= 4 -> 0.62f
-            count <= 8 -> 0.52f
-            else -> 0.44f
-        }
-        val states = if (persistentStates.isNotEmpty()) {
-            persistentStates + (physics?.states() ?: emptyList())
-        } else physics?.states() ?: staticStates(count, dieScale).mapIndexed { index, state ->
-            val lane = dice[index].candidateGroup
-            if (lane == null) state else {
-                val (minY, maxY) = CandidateLaneLayout.bounds(
-                    lane, dieScale, DiceTableViewport.HALF_HEIGHT,
-                )
-                state.copy(
-                    y = (CandidateLaneLayout.staticCenter(lane) + state.y * 0.40f)
-                        .coerceIn(minY, maxY),
-                )
-            }
-        }
-        val settleProgress = if (animateRoll) physics?.settleProgress ?: 1f else 1f
-
-        val impactAge = if (effectImpactStartedNanos > 0L)
-            (now - effectImpactStartedNanos) / 1_000_000_000f else 10f
+        val impactAge = if (effectImpactStartedNanos > 0L) (now - effectImpactStartedNanos) / 1_000_000_000f else 10f
         val impactStrength = if (animateRoll && visualSettings.cameraImpact)
             (1f - impactAge / 0.48f).coerceIn(0f, 1f) * 0.045f else 0f
-        val impactX = sin(impactAge * 93f) * impactStrength
-        val impactY = sin(impactAge * 117f) * impactStrength * 0.62f
-        Matrix.setLookAtM(view, 0, impactX, -0.12f + impactY,
-            cameraDistance, 0f, 0f, 0f, 0f, 1f, 0f)
-        GLES20.glUseProgram(program)
-        GLES20.glEnableVertexAttribArray(positionHandle)
-        GLES20.glEnableVertexAttribArray(normalHandle)
-        GLES20.glUniform1f(useTextureHandle, 0f)
+        val eyeX = sin(impactAge * 93f) * impactStrength
+        val eyeY = -0.12f + sin(impactAge * 117f) * impactStrength * 0.62f
+        Matrix.setLookAtM(view, 0, eyeX, eyeY, cameraDistance, 0f, 0f, 0f, 0f, 1f, 0f)
+        Matrix.multiplyMM(viewProjection, 0, projection, 0, view, 0)
 
         drawTable()
+        drawShadows(poses)
+        drawDice(program, poses, now, throwing, eyeX, eyeY)
 
-        dice.forEachIndexed { index, die ->
-            val state = states[index]
-
-            Matrix.setIdentityM(model, 0)
-            Matrix.translateM(model, 0, state.x, state.y, 0f)
-            val gpuMesh = gpuMesh(die.sides)
-            val alreadySettled = index < persistentStates.size
-            if (animateRoll) {
-                val angleX = state.angleX + die.phase * 0.17f
-                val angleY = state.angleY + die.value * 3.7f
-                val angleZ = state.angleZ
-                resolvedFaceNormal(die, gpuMesh)?.let { localNormal ->
-                    val movingNormal = rotateFaceNormal(localNormal, angleX, angleY, angleZ)
-                    val correction = faceAlignmentCorrection(
-                        movingNormal, if (alreadySettled) 1f else settleProgress,
-                    )
-                    if (correction.angleDegrees > 0.0001f) {
-                        // Pre-multiply a progressively stronger world-space correction before
-                        // the physical rotations. The engine-selected value never changes; the
-                        // visible die naturally converges to that face while angular motion dies.
-                        Matrix.rotateM(
-                            model,
-                            0,
-                            correction.angleDegrees,
-                            correction.axis.x,
-                            correction.axis.y,
-                            correction.axis.z,
-                        )
-                    }
-                }
-                Matrix.rotateM(model, 0, angleX, 1f, 0f, 0f)
-                Matrix.rotateM(model, 0, angleY, 0f, 1f, 0f)
-                Matrix.rotateM(model, 0, angleZ, 0f, 0f, 1f)
-            } else {
-                Matrix.rotateM(model, 0, die.phase, 0f, 0f, 1f)
-                alignResolvedFace(model, die, gpuMesh)
-            }
-            Matrix.scaleM(model, 0, dieScale, dieScale, dieScale)
-
-            Matrix.multiplyMM(viewModel, 0, view, 0, model, 0)
-            Matrix.multiplyMM(mvp, 0, projection, 0, viewModel, 0)
-
-            gpuMesh.positions.position(0)
-            gpuMesh.normals.position(0)
-            GLES20.glVertexAttribPointer(positionHandle, 3, GLES20.GL_FLOAT, false, 0, gpuMesh.positions)
-            GLES20.glVertexAttribPointer(normalHandle, 3, GLES20.GL_FLOAT, false, 0, gpuMesh.normals)
-            GLES20.glUniformMatrix4fv(mvpHandle, 1, false, mvp, 0)
-            GLES20.glUniformMatrix4fv(modelHandle, 1, false, model, 0)
-
-            val style = die.renderStyle
-            // The less favorable sampled candidate stays visible, but recedes visually.
-            // Both candidates are full-brightness during physics. Only after
-            // all stages settle does the chosen set glow and the other dim.
-            val candidateBrightness = CandidateVisualLighting.brightness(
-                revealed = winnerRevealed, enabled = visualSettings.winnerSpotlight, discarded = die.dimmed,
-            )
-            val selectedFlash = CandidateVisualLighting.chosenPulse(
-                revealed = winnerRevealed, enabled = visualSettings.winnerSpotlight,
-                chosen = die.chosenCandidate,
-                elapsedSeconds = (now - winnerRevealNanos) / 1_000_000_000f,
-            )
-            // Accent is visual-only: green/cyan for bonuses and warm crimson
-            // for maluses. No GPU path can change the sampled die value.
-            val accentRgb = when (die.effectAccent) {
-                EffectType.BONUS -> floatArrayOf(0.20f, 0.95f, 0.62f)
-                EffectType.MALUS -> floatArrayOf(0.99f, 0.25f, 0.35f)
-                null -> null
-            }
-            val flash = if (animateRoll && accentRgb != null && !alreadySettled) {
-                (0.20f + 0.12f * sin(now / 240_000_000.0).toFloat())
-            } else 0.16f
-            fun toned(base: Float, target: Float, mix: Float): Float =
-                ((base * (1f - mix) + target * mix) * candidateBrightness).coerceIn(0f, 1f)
-            val effectiveRed = if (accentRgb == null) style.primary.red * candidateBrightness
-                else toned(style.primary.red, accentRgb[0], flash)
-            val effectiveGreen = if (accentRgb == null) style.primary.green * candidateBrightness
-                else toned(style.primary.green, accentRgb[1], flash)
-            val effectiveBlue = if (accentRgb == null) style.primary.blue * candidateBrightness
-                else toned(style.primary.blue, accentRgb[2], flash)
-            GLES20.glUniform4f(
-                primaryColorHandle, (effectiveRed + selectedFlash * 0.9f).coerceAtMost(1f),
-                (effectiveGreen + selectedFlash * 0.72f).coerceAtMost(1f),
-                (effectiveBlue + selectedFlash * 0.32f).coerceAtMost(1f), style.primary.alpha,
-            )
-            GLES20.glUniform4f(
-                secondaryColorHandle,
-                if (accentRgb == null) style.secondary.red * candidateBrightness
-                    else toned(style.secondary.red, accentRgb[0], 0.48f),
-                if (accentRgb == null) style.secondary.green * candidateBrightness
-                    else toned(style.secondary.green, accentRgb[1], 0.48f),
-                if (accentRgb == null) style.secondary.blue * candidateBrightness
-                    else toned(style.secondary.blue, accentRgb[2], 0.48f),
-                style.secondary.alpha,
-            )
-            GLES20.glUniform4f(
-                materialLightingHandle,
-                style.lighting.ambient,
-                style.lighting.diffuse,
-                style.lighting.specular,
-                style.lighting.shininess,
-            )
-            GLES20.glUniform4f(
-                materialAccentHandle,
-                (style.lighting.rim + (if (accentRgb != null) 0.25f else 0f) + selectedFlash).coerceAtMost(1f),
-                (style.lighting.accentMix + if (accentRgb != null) 0.20f else 0f).coerceAtMost(1f),
-                (style.lighting.innerGlow + if (accentRgb != null) 0.35f else 0f).coerceAtMost(1f),
-                0f,
-            )
-            GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, gpuMesh.vertexCount)
-
-            gpuMesh.numberPositions.position(0)
-            gpuMesh.numberNormals.position(0)
-            GLES20.glVertexAttribPointer(positionHandle, 3, GLES20.GL_FLOAT, false, 0, gpuMesh.numberPositions)
-            GLES20.glVertexAttribPointer(normalHandle, 3, GLES20.GL_FLOAT, false, 0, gpuMesh.numberNormals)
-            val luminance = effectiveRed * 0.299f + effectiveGreen * 0.587f + effectiveBlue * 0.114f
-            val numeral = if (luminance > 0.58f) 0.045f else 0.97f
-            GLES20.glUniform4f(primaryColorHandle, numeral, numeral, numeral, 1f)
-            GLES20.glUniform4f(secondaryColorHandle, numeral, numeral, numeral, 1f)
-            GLES20.glUniform4f(materialLightingHandle, 1f, 0.18f, 0f, 4f)
-            GLES20.glUniform4f(materialAccentHandle, 0f, 0f, 0f, 0f)
-            GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, gpuMesh.numberVertexCount)
-        }
-
-        GLES20.glDisableVertexAttribArray(positionHandle)
-        GLES20.glDisableVertexAttribArray(normalHandle)
-
-        val settled = physics?.isSettled == true || (!animateRoll && currentEventId != 0L)
+        val settled = if (bakedThrow != null) !throwing else currentEventId != 0L
         if (settled && !settledReported) {
             settledReported = true
             onSettled(currentEventId)
         }
+        val pulsing = winnerRevealed && visualSettings.winnerSpotlight && (now - winnerRevealNanos) < 1_150_000_000L
+        val shaking = impactStrength > 0f
+        if (throwing || pulsing || shaking) requestFrame()
     }
 
     private fun drawTable() {
-        Matrix.setIdentityM(model, 0)
-        Matrix.multiplyMM(viewModel, 0, view, 0, model, 0)
-        Matrix.multiplyMM(mvp, 0, projection, 0, viewModel, 0)
-        tablePositions.position(0)
-        tableNormals.position(0)
-        GLES20.glVertexAttribPointer(positionHandle, 3, GLES20.GL_FLOAT, false, 0, tablePositions)
-        GLES20.glVertexAttribPointer(normalHandle, 3, GLES20.GL_FLOAT, false, 0, tableNormals)
-        GLES20.glUniformMatrix4fv(mvpHandle, 1, false, mvp, 0)
-        GLES20.glUniformMatrix4fv(modelHandle, 1, false, model, 0)
-        val palette = tableTheme.palette()
-        GLES20.glUniform4f(primaryColorHandle, palette[0], palette[1], palette[2], 1f)
-        GLES20.glUniform4f(secondaryColorHandle, palette[3], palette[4], palette[5], 1f)
-        GLES20.glUniform4f(materialLightingHandle, 0.76f, 0.36f, 0.08f, 12f)
-        GLES20.glUniform4f(materialAccentHandle, 0.12f, 0.24f, 0f, 0f)
+        if (tableProgram == 0) return
         val texture = ensureTableTexture()
-        if (texture != 0) {
-            tableTextureCoordinates.position(0)
-            GLES20.glEnableVertexAttribArray(textureCoordHandle)
-            GLES20.glVertexAttribPointer(
-                textureCoordHandle,
-                2,
-                GLES20.GL_FLOAT,
-                false,
-                0,
-                tableTextureCoordinates,
+        if (tableGeometryDirty || tableBuffer == 0) {
+            val coordinates = tableTextureCoordinatesFor(
+                tableImage?.takeUnless(Bitmap::isRecycled)?.let { it.width.toFloat() / it.height.toFloat() },
+                viewportAspect,
             )
-            GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture)
-            GLES20.glUniform1i(textureHandle, 0)
-            GLES20.glUniform1f(useTextureHandle, 1f)
-        } else {
-            GLES20.glUniform1f(useTextureHandle, 0f)
+            val w = visualBounds.halfWidth
+            val h = visualBounds.halfHeight
+            val z = DiceTableViewport.TABLE_Z
+            val corners = floatArrayOf(-w, -h, w, -h, w, h, -w, -h, w, h, -w, h)
+            val data = FloatArray(6 * 5)
+            for (i in 0 until 6) {
+                data[i * 5] = corners[i * 2]
+                data[i * 5 + 1] = corners[i * 2 + 1]
+                data[i * 5 + 2] = z
+                data[i * 5 + 3] = coordinates[i * 2]
+                data[i * 5 + 4] = coordinates[i * 2 + 1]
+            }
+            if (tableBuffer != 0) GLES20.glDeleteBuffers(1, intArrayOf(tableBuffer), 0)
+            tableBuffer = uploadBuffer(data)
+            tableGeometryDirty = false
         }
+        GLES20.glUseProgram(tableProgram)
+        GLES20.glDisable(GLES20.GL_BLEND)
+        GLES20.glDepthMask(true)
+        val position = GLES20.glGetAttribLocation(tableProgram, "aPosition")
+        val uv = GLES20.glGetAttribLocation(tableProgram, "aUv")
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, tableBuffer)
+        GLES20.glEnableVertexAttribArray(position)
+        GLES20.glVertexAttribPointer(position, 3, GLES20.GL_FLOAT, false, 20, 0)
+        GLES20.glEnableVertexAttribArray(uv)
+        GLES20.glVertexAttribPointer(uv, 2, GLES20.GL_FLOAT, false, 20, 12)
+        GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(tableProgram, "uMvp"), 1, false, viewProjection, 0)
+        val palette = tableTheme.palette()
+        GLES20.glUniform3f(GLES20.glGetUniformLocation(tableProgram, "uFeltDark"), palette[0], palette[1], palette[2])
+        GLES20.glUniform3f(GLES20.glGetUniformLocation(tableProgram, "uFeltLight"), palette[3], palette[4], palette[5])
+        GLES20.glUniform2f(GLES20.glGetUniformLocation(tableProgram, "uHalf"), visualBounds.halfWidth, visualBounds.halfHeight)
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture)
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(tableProgram, "uTexture"), 0)
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(tableProgram, "uUseTexture"), if (texture != 0) 1f else 0f)
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 6)
-        if (texture != 0) {
-            GLES20.glUniform1f(useTextureHandle, 0f)
-            GLES20.glDisableVertexAttribArray(textureCoordHandle)
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0)
+        GLES20.glDisableVertexAttribArray(position)
+        GLES20.glDisableVertexAttribArray(uv)
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
+    }
+
+    private fun drawShadows(poses: List<DiePose>) {
+        if (shadowProgram == 0 || poses.isEmpty()) return
+        GLES20.glUseProgram(shadowProgram)
+        GLES20.glEnable(GLES20.GL_BLEND)
+        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+        GLES20.glDepthMask(false)
+        val corner = GLES20.glGetAttribLocation(shadowProgram, "aCorner")
+        val center = GLES20.glGetUniformLocation(shadowProgram, "uCenter")
+        val radius = GLES20.glGetUniformLocation(shadowProgram, "uRadius")
+        val opacity = GLES20.glGetUniformLocation(shadowProgram, "uOpacity")
+        val core = GLES20.glGetUniformLocation(shadowProgram, "uCore")
+        GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(shadowProgram, "uViewProjection"), 1, false, viewProjection, 0)
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, shadowBuffer)
+        GLES20.glEnableVertexAttribArray(corner)
+        GLES20.glVertexAttribPointer(corner, 2, GLES20.GL_FLOAT, false, 8, 0)
+        poses.forEachIndexed { index, pose ->
+            val mesh = gpuMesh(visualDice[index].sides) ?: return@forEachIndexed
+            val height = (pose.position.z - mesh.restHeight * dieScale).coerceAtLeast(0f) / dieScale
+            val size = dieScale * (0.98f + 0.45f * height)
+            GLES20.glUniform3f(
+                center,
+                pose.position.x + dieScale * (0.07f + 0.30f * height),
+                pose.position.y - dieScale * (0.09f + 0.36f * height),
+                DiceTableViewport.TABLE_Z + 0.004f,
+            )
+            GLES20.glUniform2f(radius, size, size * 0.94f)
+            val brightness = CandidateVisualLighting.brightness(winnerRevealed, visualSettings.winnerSpotlight, visualDice[index].dimmed)
+            GLES20.glUniform1f(opacity, 0.50f / (1f + 0.9f * height) * (0.55f + 0.45f * brightness))
+            GLES20.glUniform1f(core, 0.34f * (1f - height * 2.2f).coerceIn(0f, 1f))
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 6)
         }
+        GLES20.glDisableVertexAttribArray(corner)
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
+        GLES20.glDepthMask(true)
+        GLES20.glDisable(GLES20.GL_BLEND)
+    }
+
+    private fun drawDice(program: DiceProgram, poses: List<DiePose>, now: Long, throwing: Boolean, eyeX: Float, eyeY: Float) {
+        if (poses.isEmpty()) return
+        GLES20.glUseProgram(program.id)
+        GLES20.glUniform3f(program.camera, eyeX, eyeY, cameraDistance)
+        val floor = tableTheme.palette()
+        GLES20.glUniform3f(program.floor, floor[3] * floor[3], floor[4] * floor[4], floor[5] * floor[5])
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, glyphTexture)
+        GLES20.glUniform1i(program.glyphs, 0)
+        // Previews hold the die in the air: no contact occlusion there.
+        GLES20.glUniform2f(
+            program.ground,
+            if (previewMode) DiceTableViewport.TABLE_Z - 50f else DiceTableViewport.TABLE_Z,
+            dieScale * 1.15f,
+        )
+        val revealAge = (now - winnerRevealNanos) / 1_000_000_000f
+
+        visualDice.forEachIndexed { index, die ->
+            val mesh = gpuMesh(die.sides) ?: return@forEachIndexed
+            val pose = poses[index]
+            pose.rotation.toMatrix(rotation)
+            for (column in 0..2) for (row in 0..2) model[column * 4 + row] = rotation[column * 4 + row] * dieScale
+            model[3] = 0f; model[7] = 0f; model[11] = 0f
+            model[12] = pose.position.x
+            model[13] = pose.position.y
+            model[14] = pose.position.z + DiceTableViewport.TABLE_Z
+            model[15] = 1f
+            Matrix.multiplyMM(mvp, 0, viewProjection, 0, model, 0)
+            GLES20.glUniformMatrix4fv(program.mvp, 1, false, mvp, 0)
+            GLES20.glUniformMatrix4fv(program.model, 1, false, model, 0)
+
+            val style = die.renderStyle
+            // The less favourable candidate stays visible but recedes once the verdict is revealed.
+            val brightness = CandidateVisualLighting.brightness(winnerRevealed, visualSettings.winnerSpotlight, die.dimmed)
+            val pulse = CandidateVisualLighting.chosenPulse(winnerRevealed, visualSettings.winnerSpotlight, die.chosenCandidate, revealAge)
+            // Effect accents are visual only: green/cyan bonuses, crimson maluses.
+            val accent = when (die.effectAccent) {
+                EffectType.BONUS -> floatArrayOf(0.20f, 0.95f, 0.62f)
+                EffectType.MALUS -> floatArrayOf(0.99f, 0.25f, 0.35f)
+                null -> null
+            }
+            val alreadySettled = index < persistentCount
+            val flash = when {
+                accent == null -> 0f
+                throwing && !alreadySettled -> 0.22f + 0.12f * sin(now / 240_000_000.0).toFloat()
+                else -> 0.20f
+            }
+            val primary = style.primary.linear()
+            val base = if (accent == null) primary else FloatArray(3) { channel ->
+                val target = accent[channel] * accent[channel]
+                primary[channel] * (1f - flash) + target * flash
+            }
+            val secondary = style.secondary.linear()
+            val ink = style.ink.linear()
+            GLES20.glUniform3f(program.base, base[0], base[1], base[2])
+            GLES20.glUniform3f(program.accent, secondary[0], secondary[1], secondary[2])
+            GLES20.glUniform3f(program.ink, ink[0], ink[1], ink[2])
+            val lighting = style.lighting
+            GLES20.glUniform4f(program.surface, lighting.roughness, lighting.metalness, lighting.clearcoat, lighting.translucency)
+            GLES20.glUniform4f(program.detail, lighting.swirl, lighting.innerGlow, lighting.sparkle, die.phase * 0.071f + index * 1.37f)
+            val glow = if (accent != null) 0.06f * flash / 0.2f else 0f
+            GLES20.glUniform4f(
+                program.tint,
+                pulse * 0.42f + (accent?.get(0) ?: 0f) * glow,
+                pulse * 0.30f + (accent?.get(1) ?: 0f) * glow,
+                pulse * 0.10f + (accent?.get(2) ?: 0f) * glow,
+                brightness,
+            )
+
+            GLES20.glUniform1f(program.inkPass, 0f)
+            GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, mesh.bodyBuffer)
+            GLES20.glEnableVertexAttribArray(program.position)
+            GLES20.glVertexAttribPointer(program.position, 3, GLES20.GL_FLOAT, false, 24, 0)
+            GLES20.glEnableVertexAttribArray(program.normal)
+            GLES20.glVertexAttribPointer(program.normal, 3, GLES20.GL_FLOAT, false, 24, 12)
+            if (program.uv >= 0) {
+                GLES20.glDisableVertexAttribArray(program.uv)
+                GLES20.glVertexAttrib2f(program.uv, 0f, 0f)
+            }
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, mesh.bodyVertexCount)
+
+            if (mesh.glyphVertexCount > 0 && glyphTexture != 0) {
+                GLES20.glUniform1f(program.inkPass, 1f)
+                GLES20.glEnable(GLES20.GL_BLEND)
+                GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+                GLES20.glDepthMask(false)
+                GLES20.glEnable(GLES20.GL_POLYGON_OFFSET_FILL)
+                GLES20.glPolygonOffset(-1f, -2f)
+                GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, mesh.glyphBuffer)
+                GLES20.glVertexAttribPointer(program.position, 3, GLES20.GL_FLOAT, false, 32, 0)
+                GLES20.glVertexAttribPointer(program.normal, 3, GLES20.GL_FLOAT, false, 32, 12)
+                if (program.uv >= 0) {
+                    GLES20.glEnableVertexAttribArray(program.uv)
+                    GLES20.glVertexAttribPointer(program.uv, 2, GLES20.GL_FLOAT, false, 32, 24)
+                }
+                GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, mesh.glyphVertexCount)
+                if (program.uv >= 0) GLES20.glDisableVertexAttribArray(program.uv)
+                GLES20.glDisable(GLES20.GL_POLYGON_OFFSET_FILL)
+                GLES20.glDepthMask(true)
+                GLES20.glDisable(GLES20.GL_BLEND)
+            }
+        }
+        GLES20.glDisableVertexAttribArray(program.position)
+        GLES20.glDisableVertexAttribArray(program.normal)
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
+    }
+
+    private fun gpuMesh(sides: Int): GpuMesh? {
+        gpuMeshes[sides]?.let { return it }
+        if (!DieGeometries.isSupported(sides)) return null
+        val mesh = DiceMeshFactory.create(sides)
+        val geometry = DieGeometries.forSides(sides)
+        return GpuMesh(
+            bodyBuffer = uploadBuffer(mesh.body),
+            bodyVertexCount = mesh.bodyVertexCount,
+            glyphBuffer = if (mesh.glyphVertexCount > 0) uploadBuffer(mesh.glyphs) else 0,
+            glyphVertexCount = mesh.glyphVertexCount,
+            restHeight = geometry.inradius,
+        ).also { gpuMeshes[sides] = it }
     }
 
     private fun ensureTableTexture(): Int {
@@ -628,13 +745,10 @@ private class DiceSceneRenderer(
             GLES20.glDeleteTextures(1, intArrayOf(tableTexture), 0)
             tableTexture = 0
         }
+        tableGeometryDirty = true
+        tableTextureDirty = false
         val bitmap = tableImage
-        if (bitmap == null || bitmap.isRecycled) {
-            tableTextureDirty = false
-            tableTextureCoordinates = tableTextureCoordinatesFor(null, viewportAspect).toFloatBuffer()
-            return 0
-        }
-
+        if (bitmap == null || bitmap.isRecycled) return 0
         val ids = IntArray(1)
         GLES20.glGenTextures(1, ids, 0)
         tableTexture = ids[0]
@@ -645,39 +759,33 @@ private class DiceSceneRenderer(
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
         GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0)
-        tableTextureCoordinates = tableTextureCoordinatesFor(
-            imageAspect = bitmap.width.toFloat() / bitmap.height.toFloat(),
-            targetAspect = viewportAspect,
-        ).toFloatBuffer()
-        tableTextureDirty = false
         return tableTexture
     }
 
-    private fun tablePositionsFor(halfWidth: Float, halfHeight: Float): FloatBuffer = floatArrayOf(
-        -halfWidth, -halfHeight, DiceTableViewport.TABLE_Z,
-        halfWidth, -halfHeight, DiceTableViewport.TABLE_Z,
-        halfWidth, halfHeight, DiceTableViewport.TABLE_Z,
-        -halfWidth, -halfHeight, DiceTableViewport.TABLE_Z,
-        halfWidth, halfHeight, DiceTableViewport.TABLE_Z,
-        -halfWidth, halfHeight, DiceTableViewport.TABLE_Z,
-    ).toFloatBuffer()
-
-    private fun staticStates(count: Int, scale: Float): List<DiceTablePhysics.State> {
-        if (count == 0) return emptyList()
-        val columns = ceil(sqrt(count.toFloat())).toInt().coerceAtLeast(1)
-        val rows = ceil(count.toFloat() / columns).toInt().coerceAtLeast(1)
-        return List(count) { index ->
-            val row = index / columns
-            val column = index % columns
-            val rowCount = (count - row * columns).coerceAtMost(columns)
-            DiceTablePhysics.State(
-                x = (column - (rowCount - 1) / 2f) * scale * 2.35f,
-                y = ((rows - 1) / 2f - row) * scale * 2.15f,
-                angleX = 18f + index * 7f,
-                angleY = -24f + index * 19f,
-                angleZ = index * 13f,
-            )
+    private fun uploadGlyphAtlas(): Int {
+        val ids = IntArray(1)
+        GLES20.glGenTextures(1, ids, 0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, ids[0])
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR_MIPMAP_LINEAR)
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
+        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, glyphAtlas, 0)
+        GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D)
+        if (GLES20.glGetString(GLES20.GL_EXTENSIONS)?.contains("GL_EXT_texture_filter_anisotropic") == true) {
+            GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D, TEXTURE_MAX_ANISOTROPY, 4f)
         }
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0)
+        return ids[0]
+    }
+
+    private fun uploadBuffer(data: FloatArray): Int {
+        val ids = IntArray(1)
+        GLES20.glGenBuffers(1, ids, 0)
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, ids[0])
+        GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, data.size * Float.SIZE_BYTES, data.toFloatBuffer(), GLES20.GL_STATIC_DRAW)
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
+        return ids[0]
     }
 
     private fun DiceTableTheme.palette(): FloatArray = when (this) {
@@ -693,52 +801,6 @@ private class DiceSceneRenderer(
         DiceTableTheme.ASTRAL_VOID -> floatArrayOf(0.035f, 0.04f, 0.16f, 0.30f, 0.18f, 0.65f)
     }
 
-    private fun gpuMesh(sides: Int): GpuMesh = gpuMeshes.getOrPut(sides) {
-        val mesh = DiceMeshFactory.create(sides)
-        GpuMesh(
-            positions = mesh.positions.toFloatBuffer(),
-            normals = mesh.normals.toFloatBuffer(),
-            vertexCount = mesh.vertexCount,
-            numberPositions = mesh.numberPositions.toFloatBuffer(),
-            numberNormals = mesh.numberNormals.toFloatBuffer(),
-            numberVertexCount = mesh.numberVertexCount,
-            valueFaceNormals = mesh.valueFaceNormals,
-        )
-    }
-
-    private fun resolvedFaceNormal(die: VisualDie, mesh: GpuMesh): Vec3? {
-        val numberedFaceCount = mesh.valueFaceNormals.size / 3
-        if (numberedFaceCount == 0) return null
-        val faceIndex = if (die.sides == 100) {
-            // d100 uses the conventional percentile-d10 artwork (00..90), so the visual face
-            // represents the tens component while the logical result remains the exact 1..100.
-            if (die.value == 100) 0 else (die.value / 10).coerceIn(0, numberedFaceCount - 1)
-        } else {
-            (die.value - 1).coerceIn(0, numberedFaceCount - 1)
-        }
-        val offset = faceIndex * 3
-        return Vec3(
-            mesh.valueFaceNormals[offset],
-            mesh.valueFaceNormals[offset + 1],
-            mesh.valueFaceNormals[offset + 2],
-        ).normalized()
-    }
-
-    private fun alignResolvedFace(model: FloatArray, die: VisualDie, mesh: GpuMesh) {
-        val normal = resolvedFaceNormal(die, mesh) ?: return
-        val correction = faceAlignmentCorrection(normal, 1f)
-        if (correction.angleDegrees > 0.0001f) {
-            Matrix.rotateM(
-                model,
-                0,
-                correction.angleDegrees,
-                correction.axis.x,
-                correction.axis.y,
-                correction.axis.z,
-            )
-        }
-    }
-
     private fun FloatArray.toFloatBuffer(): FloatBuffer = ByteBuffer
         .allocateDirect(size * Float.SIZE_BYTES)
         .order(ByteOrder.nativeOrder())
@@ -748,97 +810,72 @@ private class DiceSceneRenderer(
             position(0)
         }
 
-    private fun createProgram(vertexSource: String, fragmentSource: String): Int {
-        val vertex = compileShader(GLES20.GL_VERTEX_SHADER, vertexSource)
-        val fragment = compileShader(GLES20.GL_FRAGMENT_SHADER, fragmentSource)
+    /** Returns 0-free program id, or null so a simpler fallback can be tried instead of crashing. */
+    private fun createProgram(vertexSource: String, fragmentSource: String): Int? {
+        val vertex = compileShader(GLES20.GL_VERTEX_SHADER, vertexSource) ?: return null
+        val fragment = compileShader(GLES20.GL_FRAGMENT_SHADER, fragmentSource) ?: run {
+            GLES20.glDeleteShader(vertex)
+            return null
+        }
         val result = GLES20.glCreateProgram()
         GLES20.glAttachShader(result, vertex)
         GLES20.glAttachShader(result, fragment)
         GLES20.glLinkProgram(result)
+        GLES20.glDeleteShader(vertex)
+        GLES20.glDeleteShader(fragment)
         val status = IntArray(1)
         GLES20.glGetProgramiv(result, GLES20.GL_LINK_STATUS, status, 0)
         if (status[0] == 0) {
-            val info = GLES20.glGetProgramInfoLog(result)
+            Log.e(TAG, "Unable to link dice shader: ${GLES20.glGetProgramInfoLog(result)}")
             GLES20.glDeleteProgram(result)
-            error("Unable to link dice shader: $info")
+            return null
         }
-        GLES20.glDeleteShader(vertex)
-        GLES20.glDeleteShader(fragment)
         return result
     }
 
-    private fun compileShader(type: Int, source: String): Int {
+    private fun compileShader(type: Int, source: String): Int? {
         val shader = GLES20.glCreateShader(type)
         GLES20.glShaderSource(shader, source)
         GLES20.glCompileShader(shader)
         val status = IntArray(1)
         GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, status, 0)
         if (status[0] == 0) {
-            val info = GLES20.glGetShaderInfoLog(shader)
+            Log.e(TAG, "Unable to compile dice shader: ${GLES20.glGetShaderInfoLog(shader)}")
             GLES20.glDeleteShader(shader)
-            error("Unable to compile dice shader: $info")
+            return null
         }
         return shader
     }
 
     companion object {
+        private const val TAG = "Dice3DScene"
         private const val MAX_VISIBLE_DICE = 12
+        private const val PREVIEW_SCALE = 1.0f
+        private const val TEXTURE_MAX_ANISOTROPY = 0x84FE
 
-        private const val VERTEX_SHADER = """
-            uniform mat4 uMvp;
-            uniform mat4 uModel;
-            attribute vec3 aPosition;
-            attribute vec3 aNormal;
-            attribute vec2 aTexCoord;
-            varying vec3 vNormal;
-            varying vec3 vPosition;
-            varying vec2 vTexCoord;
+        /** Shared, immutable numeral atlas (about 1 MB), painted once per process. */
+        private val glyphAtlas: Bitmap by lazy { DiceGlyphAtlas.render() }
 
-            void main() {
-                vec4 worldPosition = uModel * vec4(aPosition, 1.0);
-                gl_Position = uMvp * vec4(aPosition, 1.0);
-                vNormal = normalize((uModel * vec4(aNormal, 0.0)).xyz);
-                vPosition = worldPosition.xyz;
-                vTexCoord = aTexCoord;
-            }
-        """
-
-        private const val FRAGMENT_SHADER = """
+        /** Minimal Lambert shading used only if a driver rejects the full material shader. */
+        private const val FALLBACK_DICE_FRAGMENT = """
             precision mediump float;
-            uniform vec4 uPrimaryColor;
-            uniform vec4 uSecondaryColor;
-            uniform vec4 uMaterialLighting;
-            uniform vec4 uMaterialAccent;
-            uniform sampler2D uTexture;
-            uniform float uUseTexture;
+            uniform vec3 uBase;
+            uniform vec3 uInk;
+            uniform vec4 uTint;
+            uniform float uInkPass;
+            uniform sampler2D uGlyphs;
             varying vec3 vNormal;
-            varying vec3 vPosition;
-            varying vec2 vTexCoord;
-
+            varying vec2 vUv;
             void main() {
-                if (uUseTexture > 0.5) {
-                    gl_FragColor = texture2D(uTexture, vTexCoord);
+                vec3 n = normalize(vNormal);
+                float light = 0.35 + 0.65 * max(dot(n, vec3(-0.42, 0.53, 0.74)), 0.0);
+                if (uInkPass > 0.5) {
+                    float a = texture2D(uGlyphs, vUv).a;
+                    if (a < 0.01) discard;
+                    gl_FragColor = vec4(pow(uInk * light, vec3(0.4545)), a);
                     return;
                 }
-                vec3 normal = normalize(vNormal);
-                vec3 lightDirection = normalize(vec3(0.35, 0.78, 0.72));
-                vec3 viewDirection = normalize(vec3(0.0, 0.0, 6.5) - vPosition);
-                vec3 halfDirection = normalize(lightDirection + viewDirection);
-                float diffuse = max(dot(normal, lightDirection), 0.0);
-                float specular = pow(max(dot(normal, halfDirection), 0.0), uMaterialLighting.w);
-                float rim = pow(1.0 - max(dot(normal, viewDirection), 0.0), 2.0);
-                float accentAmount = clamp(
-                    uMaterialAccent.y * (0.20 + diffuse * 0.30) + rim * uMaterialAccent.x,
-                    0.0,
-                    0.82
-                );
-                vec3 baseColor = mix(uPrimaryColor.rgb, uSecondaryColor.rgb, accentAmount);
-                float surfaceLight = uMaterialLighting.x + diffuse * uMaterialLighting.y;
-                vec3 highlight = uSecondaryColor.rgb * specular * uMaterialLighting.z;
-                vec3 innerGlow = mix(uPrimaryColor.rgb, uSecondaryColor.rgb, 0.55)
-                    * (1.0 - diffuse) * uMaterialAccent.z;
-                vec3 color = baseColor * surfaceLight + highlight + innerGlow;
-                gl_FragColor = vec4(clamp(color, 0.0, 1.0), uPrimaryColor.a);
+                gl_FragColor = vec4(pow(uBase * light * uTint.w + uTint.rgb, vec3(0.4545)), 1.0);
             }
         """
     }

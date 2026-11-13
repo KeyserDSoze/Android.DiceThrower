@@ -1,0 +1,4 @@
+# Baseline profile: ahead-of-time compile the dice physics and renderer so the very first
+# throw after install is as smooth as the following ones (picked up by AGP for release builds).
+HSPLcom/keyserdsoze/dicethrower/ui/dice3d/**->**(**)**
+Lcom/keyserdsoze/dicethrower/ui/dice3d/**;

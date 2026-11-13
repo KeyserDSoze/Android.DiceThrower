@@ -1,433 +1,234 @@
 package com.keyserdsoze.dicethrower.ui.dice3d
 
-import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.acos
 import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.max
-import kotlin.math.sqrt
-import kotlin.math.sin
+import kotlin.math.ceil
 
-data class DiceMesh(
-    val positions: FloatArray,
-    val normals: FloatArray,
-    /** Triangle geometry for face numerals, slightly lifted to avoid z-fighting. */
-    val numberPositions: FloatArray,
-    val numberNormals: FloatArray,
-    /** Outward normal for each numbered face, in numeric/label order. */
-    val valueFaceNormals: FloatArray,
+/** GPU-ready interleaved geometry for one die type in unit (circumradius 1) body space. */
+internal class DiceRenderMesh(
+    /** position xyz + normal xyz per vertex, triangles. */
+    val body: FloatArray,
+    /** position xyz + normal xyz + glyph-atlas uv per vertex, triangles. */
+    val glyphs: FloatArray,
 ) {
-    val vertexCount: Int get() = positions.size / 3
-    val numberVertexCount: Int get() = numberPositions.size / 3
+    val bodyVertexCount: Int get() = body.size / BODY_STRIDE
+    val glyphVertexCount: Int get() = glyphs.size / GLYPH_STRIDE
+
+    companion object {
+        const val BODY_STRIDE = 6
+        const val GLYPH_STRIDE = 8
+    }
 }
 
-internal data class Vec3(
-    val x: Float,
-    val y: Float,
-    val z: Float,
-) {
-    operator fun plus(other: Vec3) = Vec3(x + other.x, y + other.y, z + other.z)
-    operator fun minus(other: Vec3) = Vec3(x - other.x, y - other.y, z - other.z)
-    operator fun times(value: Float) = Vec3(x * value, y * value, z * value)
+/** Cell layout of the numeral atlas shared by mesh UVs (pure) and bitmap painting (Android). */
+internal object DiceGlyphAtlasLayout {
+    const val COLUMNS = 6
+    /** Square cells in a square power-of-two texture (mipmaps require POT on GLES2). */
+    const val ROWS = 6
+    val labels: List<String> = ((1..20).map(Int::toString) + (0..9).map { "${it}0" }).distinct()
 
-    fun dot(other: Vec3): Float = x * other.x + y * other.y + z * other.z
+    init {
+        require(labels.size <= COLUMNS * ROWS)
+    }
 
-    fun cross(other: Vec3): Vec3 = Vec3(
-        y * other.z - z * other.y,
-        z * other.x - x * other.z,
-        x * other.y - y * other.x,
-    )
+    fun cellOf(label: String): Int = labels.indexOf(label).coerceAtLeast(0)
 
-    fun normalized(): Vec3 {
-        val length = sqrt(max(0.000001f, dot(this)))
-        return Vec3(x / length, y / length, z / length)
+    /** Classic dice convention: underline 6 and 9 so they cannot be confused. */
+    fun needsUnderline(label: String): Boolean = label == "6" || label == "9"
+
+    /** [u0, vTop, u1, vBottom] in texture space; bitmap row 0 is v = 0. */
+    fun uvRect(label: String): FloatArray {
+        val cell = cellOf(label)
+        val column = cell % COLUMNS
+        val row = cell / COLUMNS
+        val inset = 0.5f / 1024f
+        return floatArrayOf(
+            column.toFloat() / COLUMNS + inset,
+            row.toFloat() / ROWS + inset,
+            (column + 1f) / COLUMNS - inset,
+            (row + 1f) / ROWS - inset,
+        )
     }
 }
 
 object DiceMeshFactory {
-    private val supportedSides = setOf(2, 3, 4, 6, 8, 10, 12, 20, 100)
-    private val cache = mutableMapOf<Int, DiceMesh>()
+    private const val GLYPH_LIFT = 0.006f
+    private const val MAX_ARC_STEP_RADIANS = 0.40f
+    private val cache = mutableMapOf<Int, DiceRenderMesh>()
 
-    fun create(sides: Int): DiceMesh {
-        require(sides in supportedSides) { "Unsupported 3D die d$sides" }
-        return cache.getOrPut(sides) {
-            when (sides) {
-                2 -> coinMesh()
-                3 -> triangularPrismMesh()
-                4 -> tetrahedronMesh()
-                6 -> cubeMesh()
-                8 -> octahedronMesh()
-                10 -> pentagonalTrapezohedronMesh()
-                12 -> dodecahedronMesh()
-                20 -> icosahedronMesh()
-                100 -> percentileMesh()
-                else -> error("Unreachable")
-            }
-        }
+    internal fun create(sides: Int): DiceRenderMesh = synchronized(cache) {
+        cache.getOrPut(sides) { build(DieGeometries.forSides(sides)) }
     }
 
-    private fun coinMesh(): DiceMesh {
-        val segments = 20
-        val halfHeight = 0.20f
-        val radius = 1.0f
-        val vertices = mutableListOf<Vec3>()
-
-        repeat(segments) { i ->
-            val angle = 2.0 * PI * i / segments
-            vertices += Vec3(
-                (cos(angle) * radius).toFloat(),
-                halfHeight,
-                (sin(angle) * radius).toFloat(),
-            )
-        }
-        repeat(segments) { i ->
-            val angle = 2.0 * PI * i / segments
-            vertices += Vec3(
-                (cos(angle) * radius).toFloat(),
-                -halfHeight,
-                (sin(angle) * radius).toFloat(),
-            )
-        }
-
-        val faces = mutableListOf<List<Int>>()
-        faces += (0 until segments).toList()
-        faces += (segments until segments * 2).toList().reversed()
-        repeat(segments) { i ->
-            val next = (i + 1) % segments
-            faces += listOf(i, next, segments + next, segments + i)
-        }
-        return buildMesh(vertices, faces, labelFaceIndices = listOf(0, 1), labels = listOf("1", "2"))
-    }
-
-    private fun triangularPrismMesh(): DiceMesh {
-        val h = 0.78f
-        val top = listOf(
-            Vec3(0f, h, 1f),
-            Vec3(-0.866f, h, -0.5f),
-            Vec3(0.866f, h, -0.5f),
-        )
-        val bottom = top.map { it.copy(y = -h) }
-        val vertices = top + bottom
-        val faces = listOf(
-            listOf(0, 2, 1),
-            listOf(3, 4, 5),
-            listOf(0, 1, 4, 3),
-            listOf(1, 2, 5, 4),
-            listOf(2, 0, 3, 5),
-        )
-        return buildMesh(vertices, faces, labelFaceIndices = listOf(2, 3, 4), labels = listOf("1", "2", "3"))
-    }
-
-    private fun tetrahedronMesh(): DiceMesh {
-        val vertices = listOf(
-            Vec3(1f, 1f, 1f),
-            Vec3(-1f, -1f, 1f),
-            Vec3(-1f, 1f, -1f),
-            Vec3(1f, -1f, -1f),
-        ).normalizeRadius()
-        val faces = listOf(
-            listOf(0, 1, 2),
-            listOf(0, 3, 1),
-            listOf(0, 2, 3),
-            listOf(1, 3, 2),
-        )
-        return buildMesh(vertices, faces, labels = (1..4).map { it.toString() })
-    }
-
-    private fun cubeMesh(): DiceMesh {
-        val vertices = listOf(
-            Vec3(-1f, -1f, -1f), Vec3(1f, -1f, -1f),
-            Vec3(1f, 1f, -1f), Vec3(-1f, 1f, -1f),
-            Vec3(-1f, -1f, 1f), Vec3(1f, -1f, 1f),
-            Vec3(1f, 1f, 1f), Vec3(-1f, 1f, 1f),
-        ).normalizeRadius()
-        val faces = listOf(
-            listOf(0, 3, 2, 1),
-            listOf(4, 5, 6, 7),
-            listOf(0, 4, 7, 3),
-            listOf(1, 2, 6, 5),
-            listOf(3, 7, 6, 2),
-            listOf(0, 1, 5, 4),
-        )
-        return buildMesh(vertices, faces, labels = (1..6).map { it.toString() })
-    }
-
-    private fun octahedronMesh(): DiceMesh {
-        val vertices = listOf(
-            Vec3(1f, 0f, 0f), Vec3(-1f, 0f, 0f),
-            Vec3(0f, 1f, 0f), Vec3(0f, -1f, 0f),
-            Vec3(0f, 0f, 1f), Vec3(0f, 0f, -1f),
-        )
-        val faces = listOf(
-            listOf(2, 0, 4), listOf(2, 4, 1), listOf(2, 1, 5), listOf(2, 5, 0),
-            listOf(3, 4, 0), listOf(3, 1, 4), listOf(3, 5, 1), listOf(3, 0, 5),
-        )
-        return buildMesh(vertices, faces, labels = (1..8).map { it.toString() })
+    private fun build(geometry: DieGeometry): DiceRenderMesh {
+        val body = FloatBuilder()
+        appendRoundedBody(geometry, body)
+        val glyphs = FloatBuilder()
+        geometry.glyphs.forEach { appendGlyph(it, glyphs) }
+        return DiceRenderMesh(body.toArray(), glyphs.toArray())
     }
 
     /**
-     * A d10 is visually modelled as a pentagonal trapezohedron: two poles and ten
-     * alternating ring vertices create ten kite faces. The same shape is used for
-     * d100 because percentile dice are conventionally represented by a d10 form.
+     * Rounded die = (polyhedron shrunk by r) ⊕ sphere(r): flat faces stay on their original planes,
+     * edges become cylindrical strips and corners spherical patches with continuous normals.
      */
-    private fun pentagonalTrapezohedronMesh(): DiceMesh {
-        val halfHeight = 1.16f
-        val ringRadius = 0.94f
-        // This ratio makes each top/bottom kite approximately planar for a 36° ring step.
-        val ringHeight = halfHeight * 0.10557281f
-        val vertices = mutableListOf(
-            Vec3(0f, halfHeight, 0f),
-            Vec3(0f, -halfHeight, 0f),
-        )
-
-        repeat(10) { i ->
-            val angle = (2.0 * PI * i / 10.0) - PI / 2.0
-            vertices += Vec3(
-                (cos(angle) * ringRadius).toFloat(),
-                if (i % 2 == 0) ringHeight else -ringHeight,
-                (sin(angle) * ringRadius).toFloat(),
+    private fun appendRoundedBody(geometry: DieGeometry, out: FloatBuilder) {
+        val radius = geometry.bevelRadius
+        val normals = geometry.faceNormals
+        val facesOfVertex = geometry.vertices.indices.map { vertex ->
+            geometry.faces.indices.filter { vertex in geometry.faces[it] }
+        }
+        val inner = geometry.vertices.indices.map { vertex ->
+            offsetVertex(
+                planes = facesOfVertex[vertex].map { normals[it] to geometry.faceOffsets[it] - radius },
+                fallback = geometry.vertices[vertex],
             )
         }
 
-        val faces = mutableListOf<List<Int>>()
-        repeat(5) { i ->
-            val high = 2 + (2 * i) % 10
-            val low = 2 + (2 * i + 1) % 10
-            val highNext = 2 + (2 * i + 2) % 10
-            val lowNext = 2 + (2 * i + 3) % 10
-            faces += listOf(0, high, low, highNext)
-            faces += listOf(1, lowNext, highNext, low)
-        }
-
-        return buildMesh(vertices.normalizeRadius(), faces)
-    }
-
-    private fun percentileMesh(): DiceMesh {
-        val halfHeight = 1.16f
-        val ringRadius = 0.94f
-        val ringHeight = halfHeight * 0.10557281f
-        val vertices = mutableListOf(Vec3(0f, halfHeight, 0f), Vec3(0f, -halfHeight, 0f))
-        repeat(10) { i ->
-            val angle = (2.0 * PI * i / 10.0) - PI / 2.0
-            vertices += Vec3(
-                (cos(angle) * ringRadius).toFloat(),
-                if (i % 2 == 0) ringHeight else -ringHeight,
-                (sin(angle) * ringRadius).toFloat(),
-            )
-        }
-        val faces = mutableListOf<List<Int>>()
-        repeat(5) { i ->
-            val high = 2 + (2 * i) % 10
-            val low = 2 + (2 * i + 1) % 10
-            val highNext = 2 + (2 * i + 2) % 10
-            val lowNext = 2 + (2 * i + 3) % 10
-            faces += listOf(0, high, low, highNext)
-            faces += listOf(1, lowNext, highNext, low)
-        }
-        return buildMesh(
-            vertices.normalizeRadius(),
-            faces,
-            labels = listOf("00", "10", "20", "30", "40", "50", "60", "70", "80", "90"),
-        )
-    }
-
-    /**
-     * Builds a true twelve-faced dodecahedron as the dual of the icosahedron.
-     * Every triangular icosahedron face becomes a dodecahedron vertex, while
-     * the five faces around each icosahedron vertex become one pentagonal face.
-     */
-    private fun dodecahedronMesh(): DiceMesh {
-        val (icosaVertices, icosaFaces) = icosahedronGeometry()
-        val dualVertices = icosaFaces.map { face ->
-            val center = face
-                .map(icosaVertices::get)
-                .reduce(Vec3::plus) * (1f / face.size)
-            center.normalized()
-        }
-
-        val pentagons = icosaVertices.indices.map { vertexIndex ->
-            val adjacentFaces = icosaFaces.indices.filter { faceIndex ->
-                vertexIndex in icosaFaces[faceIndex]
-            }
-            require(adjacentFaces.size == 5)
-
-            val axis = icosaVertices[vertexIndex].normalized()
-            val reference = if (abs(axis.y) < 0.9f) Vec3(0f, 1f, 0f) else Vec3(1f, 0f, 0f)
-            val tangent = reference.cross(axis).normalized()
-            val bitangent = axis.cross(tangent).normalized()
-
-            adjacentFaces.sortedBy { faceIndex ->
-                val point = dualVertices[faceIndex]
-                atan2(point.dot(bitangent).toDouble(), point.dot(tangent).toDouble())
+        geometry.faces.forEachIndexed { faceIndex, face ->
+            val normal = normals[faceIndex]
+            val points = face.map { inner[it] + normal * radius }
+            for (i in 1 until points.lastIndex) {
+                out.triangle(points[0], points[i], points[i + 1], normal, normal, normal)
             }
         }
 
-        return buildMesh(dualVertices.normalizeRadius(), pentagons, labels = (1..12).map { it.toString() })
-    }
+        val edges = LinkedHashMap<Long, MutableList<Int>>()
+        geometry.faces.forEachIndexed { faceIndex, face ->
+            face.indices.forEach { k ->
+                val a = face[k]
+                val b = face[(k + 1) % face.size]
+                edges.getOrPut(edgeKey(a, b)) { mutableListOf() } += faceIndex
+            }
+        }
+        edges.forEach { (key, faces) ->
+            if (faces.size != 2) return@forEach
+            val a = (key shr 32).toInt()
+            val b = (key and 0xffffffffL).toInt()
+            val first = minOf(faces[0], faces[1])
+            val second = maxOf(faces[0], faces[1])
+            val steps = arcSteps(normals[first], normals[second])
+            for (s in 0 until steps) {
+                val n0 = arc(normals, first, second, s, steps)
+                val n1 = arc(normals, first, second, s + 1, steps)
+                val a0 = inner[a] + n0 * radius
+                val b0 = inner[b] + n0 * radius
+                val a1 = inner[a] + n1 * radius
+                val b1 = inner[b] + n1 * radius
+                out.triangle(a0, b0, b1, n0, n0, n1)
+                out.triangle(a0, b1, a1, n0, n1, n1)
+            }
+        }
 
-    private fun icosahedronMesh(): DiceMesh {
-        val (vertices, faces) = icosahedronGeometry()
-        return buildMesh(vertices, faces, labels = (1..20).map { it.toString() })
-    }
-
-    private fun icosahedronGeometry(): Pair<List<Vec3>, List<List<Int>>> {
-        val phi = ((1.0 + sqrt(5.0)) / 2.0).toFloat()
-        val vertices = listOf(
-            Vec3(-1f, phi, 0f), Vec3(1f, phi, 0f), Vec3(-1f, -phi, 0f), Vec3(1f, -phi, 0f),
-            Vec3(0f, -1f, phi), Vec3(0f, 1f, phi), Vec3(0f, -1f, -phi), Vec3(0f, 1f, -phi),
-            Vec3(phi, 0f, -1f), Vec3(phi, 0f, 1f), Vec3(-phi, 0f, -1f), Vec3(-phi, 0f, 1f),
-        ).normalizeRadius()
-        val faces = listOf(
-            listOf(0, 11, 5), listOf(0, 5, 1), listOf(0, 1, 7), listOf(0, 7, 10), listOf(0, 10, 11),
-            listOf(1, 5, 9), listOf(5, 11, 4), listOf(11, 10, 2), listOf(10, 7, 6), listOf(7, 1, 8),
-            listOf(3, 9, 4), listOf(3, 4, 2), listOf(3, 2, 6), listOf(3, 6, 8), listOf(3, 8, 9),
-            listOf(4, 9, 5), listOf(2, 4, 11), listOf(6, 2, 10), listOf(8, 6, 7), listOf(9, 8, 1),
-        )
-        return vertices to faces
-    }
-
-    private fun buildMesh(
-        vertices: List<Vec3>,
-        faces: List<List<Int>>,
-        labelFaceIndices: List<Int> = faces.indices.toList(),
-        labels: List<String> = labelFaceIndices.indices.map { (it + 1).toString() },
-    ): DiceMesh {
-        val positions = mutableListOf<Float>()
-        val normals = mutableListOf<Float>()
-        val numberPositions = mutableListOf<Float>()
-        val numberNormals = mutableListOf<Float>()
-        val valueFaceNormals = mutableListOf<Float>()
-
-        faces.forEach { polygon ->
-            require(polygon.size >= 3)
-            for (i in 1 until polygon.lastIndex) {
-                var a = vertices[polygon[0]]
-                var b = vertices[polygon[i]]
-                var c = vertices[polygon[i + 1]]
-                var normal = (b - a).cross(c - a).normalized()
-                val centroid = (a + b + c) * (1f / 3f)
-                if (normal.dot(centroid) < 0f) {
-                    val temp = b
-                    b = c
-                    c = temp
-                    normal = (b - a).cross(c - a).normalized()
-                }
-                listOf(a, b, c).forEach { point ->
-                    positions += point.x
-                    positions += point.y
-                    positions += point.z
-                    normals += normal.x
-                    normals += normal.y
-                    normals += normal.z
+        geometry.vertices.indices.forEach { vertex ->
+            val faces = facesOfVertex[vertex]
+            if (faces.size < 3) return@forEach
+            val axis = faces.map { normals[it] }.reduce(Vec3::plus).normalized()
+            val helper = if (abs(axis.x) < 0.9f) Vec3.UNIT_X else Vec3.UNIT_Y
+            val tangent = helper.cross(axis).normalized()
+            val bitangent = axis.cross(tangent)
+            val ordered = faces.sortedBy { atan2(normals[it].dot(bitangent), normals[it].dot(tangent)) }
+            val corner = inner[vertex]
+            ordered.indices.forEach { i ->
+                val fa = ordered[i]
+                val fb = ordered[(i + 1) % ordered.size]
+                val steps = arcSteps(normals[fa], normals[fb])
+                for (s in 0 until steps) {
+                    val p0 = arc(normals, fa, fb, s, steps)
+                    val p1 = arc(normals, fa, fb, s + 1, steps)
+                    val m0 = slerpUnit(axis, p0, 0.5f)
+                    val m1 = slerpUnit(axis, p1, 0.5f)
+                    out.triangle(corner + axis * radius, corner + m0 * radius, corner + m1 * radius, axis, m0, m1)
+                    out.triangle(corner + m0 * radius, corner + p0 * radius, corner + p1 * radius, m0, p0, p1)
+                    out.triangle(corner + m0 * radius, corner + p1 * radius, corner + m1 * radius, m0, p1, m1)
                 }
             }
         }
-
-        labelFaceIndices.zip(labels).forEach { (faceIndex, label) ->
-            val polygon = faces[faceIndex].map(vertices::get)
-            appendFaceNumber(polygon, label, numberPositions, numberNormals)
-            val normal = outwardFaceNormal(polygon)
-            valueFaceNormals += normal.x
-            valueFaceNormals += normal.y
-            valueFaceNormals += normal.z
-        }
-
-        return DiceMesh(
-            positions = positions.toFloatArray(),
-            normals = normals.toFloatArray(),
-            numberPositions = numberPositions.toFloatArray(),
-            numberNormals = numberNormals.toFloatArray(),
-            valueFaceNormals = valueFaceNormals.toFloatArray(),
-        )
     }
 
-    private fun appendFaceNumber(
-        polygon: List<Vec3>,
-        label: String,
-        positions: MutableList<Float>,
-        normals: MutableList<Float>,
-    ) {
-        val center = polygon.reduce(Vec3::plus) * (1f / polygon.size)
-        val normal = outwardFaceNormal(polygon)
-        val tangent = (polygon[0] - center).normalized()
-        val bitangent = normal.cross(tangent).normalized()
-        val faceRadius = polygon.minOf { point -> sqrt((point - center).dot(point - center)) }
-        // High-face-count dice (especially d20/d100) get crowded quickly. A slightly
-        // smaller face label preserves breathing room and makes neighbouring values easier
-        // to distinguish while the die is moving.
-        val digitScale = faceRadius * if (label.length == 1) 0.58f else 0.39f
-        val totalWidth = label.length * 0.72f * digitScale
-        val startX = -(totalWidth - 0.72f * digitScale) / 2f
+    private fun edgeKey(a: Int, b: Int): Long = (minOf(a, b).toLong() shl 32) or maxOf(a, b).toLong()
 
-        label.forEachIndexed { digitIndex, character ->
-            val digit = character.digitToIntOrNull() ?: return@forEachIndexed
-            val originX = startX + digitIndex * 0.72f * digitScale
-            DIGIT_SEGMENTS.getValue(digit).forEach { segmentIndex ->
-                val segment = SEGMENTS[segmentIndex]
-                appendQuad(
-                    center = center + tangent * (originX + segment.x * digitScale) +
-                        bitangent * (segment.y * digitScale) + normal * 0.018f,
-                    tangent = tangent,
-                    bitangent = bitangent,
-                    normal = normal,
-                    halfWidth = segment.width * digitScale * 0.5f,
-                    halfHeight = segment.height * digitScale * 0.5f,
-                    positions = positions,
-                    normals = normals,
-                )
+    private fun arcSteps(a: Vec3, b: Vec3): Int =
+        ceil(acos(a.dot(b).coerceIn(-1f, 1f)) / MAX_ARC_STEP_RADIANS).toInt().coerceIn(1, 6)
+
+    /** Canonical direction (lower face index first) so edge strips and corner fans share vertices exactly. */
+    private fun arc(normals: List<Vec3>, fa: Int, fb: Int, step: Int, steps: Int): Vec3 =
+        if (fa < fb) slerpUnit(normals[fa], normals[fb], step.toFloat() / steps)
+        else slerpUnit(normals[fb], normals[fa], (steps - step).toFloat() / steps)
+
+    /** Least-squares intersection of the inward-offset face planes meeting at a vertex. */
+    private fun offsetVertex(planes: List<Pair<Vec3, Float>>, fallback: Vec3): Vec3 {
+        val m = DoubleArray(9)
+        val rhs = DoubleArray(3)
+        planes.forEach { (normal, offset) ->
+            val n = doubleArrayOf(normal.x.toDouble(), normal.y.toDouble(), normal.z.toDouble())
+            for (row in 0..2) {
+                for (column in 0..2) m[row * 3 + column] += n[row] * n[column]
+                rhs[row] += n[row] * offset
             }
         }
-    }
-
-    private fun outwardFaceNormal(polygon: List<Vec3>): Vec3 {
-        val center = polygon.reduce(Vec3::plus) * (1f / polygon.size)
-        var normal = (polygon[1] - polygon[0]).cross(polygon[2] - polygon[0]).normalized()
-        if (normal.dot(center) < 0f) normal = normal * -1f
-        return normal
-    }
-
-    private fun appendQuad(
-        center: Vec3,
-        tangent: Vec3,
-        bitangent: Vec3,
-        normal: Vec3,
-        halfWidth: Float,
-        halfHeight: Float,
-        positions: MutableList<Float>,
-        normals: MutableList<Float>,
-    ) {
-        val a = center - tangent * halfWidth - bitangent * halfHeight
-        val b = center + tangent * halfWidth - bitangent * halfHeight
-        val c = center + tangent * halfWidth + bitangent * halfHeight
-        val d = center - tangent * halfWidth + bitangent * halfHeight
-        listOf(a, b, c, a, c, d).forEach { point ->
-            positions += point.x
-            positions += point.y
-            positions += point.z
-            normals += normal.x
-            normals += normal.y
-            normals += normal.z
+        val det = m[0] * (m[4] * m[8] - m[5] * m[7]) - m[1] * (m[3] * m[8] - m[5] * m[6]) + m[2] * (m[3] * m[7] - m[4] * m[6])
+        if (abs(det) < 1e-12) return fallback
+        fun replaced(column: Int): Double {
+            val c = m.copyOf()
+            for (row in 0..2) c[row * 3 + column] = rhs[row]
+            return c[0] * (c[4] * c[8] - c[5] * c[7]) - c[1] * (c[3] * c[8] - c[5] * c[6]) + c[2] * (c[3] * c[7] - c[4] * c[6])
         }
+        return Vec3((replaced(0) / det).toFloat(), (replaced(1) / det).toFloat(), (replaced(2) / det).toFloat())
     }
 
-    private fun List<Vec3>.normalizeRadius(): List<Vec3> {
-        val maxLength = maxOf { sqrt(it.dot(it)) }
-        return map { it * (1f / maxLength) }
+    private fun appendGlyph(glyph: GlyphPlacement, out: FloatBuilder) {
+        val center = glyph.center + glyph.normal * GLYPH_LIFT
+        val half = glyph.size * 0.5f
+        val right = glyph.right * half
+        val up = glyph.up * half
+        val uv = DiceGlyphAtlasLayout.uvRect(glyph.label)
+        val bottomLeft = center - right - up
+        val bottomRight = center + right - up
+        val topRight = center + right + up
+        val topLeft = center - right + up
+        out.glyphVertex(bottomLeft, glyph.normal, uv[0], uv[3])
+        out.glyphVertex(bottomRight, glyph.normal, uv[2], uv[3])
+        out.glyphVertex(topRight, glyph.normal, uv[2], uv[1])
+        out.glyphVertex(bottomLeft, glyph.normal, uv[0], uv[3])
+        out.glyphVertex(topRight, glyph.normal, uv[2], uv[1])
+        out.glyphVertex(topLeft, glyph.normal, uv[0], uv[1])
     }
 
-    private data class Segment(val x: Float, val y: Float, val width: Float, val height: Float)
+    private class FloatBuilder {
+        private var data = FloatArray(4096)
+        private var size = 0
 
-    private val SEGMENTS = listOf(
-        Segment(0f, 0.78f, 0.52f, 0.13f), Segment(0.29f, 0.39f, 0.13f, 0.62f),
-        Segment(0.29f, -0.39f, 0.13f, 0.62f), Segment(0f, -0.78f, 0.52f, 0.13f),
-        Segment(-0.29f, -0.39f, 0.13f, 0.62f), Segment(-0.29f, 0.39f, 0.13f, 0.62f),
-        Segment(0f, 0f, 0.52f, 0.13f),
-    )
+        private fun add(value: Float) {
+            if (size == data.size) data = data.copyOf(size * 2)
+            data[size++] = value
+        }
 
-    private val DIGIT_SEGMENTS = mapOf(
-        0 to listOf(0, 1, 2, 3, 4, 5), 1 to listOf(1, 2), 2 to listOf(0, 1, 6, 4, 3),
-        3 to listOf(0, 1, 6, 2, 3), 4 to listOf(5, 6, 1, 2), 5 to listOf(0, 5, 6, 2, 3),
-        6 to listOf(0, 5, 6, 4, 2, 3), 7 to listOf(0, 1, 2),
-        8 to listOf(0, 1, 2, 3, 4, 5, 6), 9 to listOf(0, 1, 2, 3, 5, 6),
-    )
+        private fun add(vector: Vec3) {
+            add(vector.x)
+            add(vector.y)
+            add(vector.z)
+        }
+
+        /** Emits an outward-facing triangle, fixing the winding against the vertex normals. */
+        fun triangle(p0: Vec3, p1: Vec3, p2: Vec3, n0: Vec3, n1: Vec3, n2: Vec3) {
+            val geometric = (p1 - p0).cross(p2 - p0)
+            if (geometric.dot(geometric) < 1e-14f) return
+            if (geometric.dot(n0 + n1 + n2) < 0f) {
+                add(p0); add(n0); add(p2); add(n2); add(p1); add(n1)
+            } else {
+                add(p0); add(n0); add(p1); add(n1); add(p2); add(n2)
+            }
+        }
+
+        fun glyphVertex(position: Vec3, normal: Vec3, u: Float, v: Float) {
+            add(position)
+            add(normal)
+            add(u)
+            add(v)
+        }
+
+        fun toArray(): FloatArray = data.copyOf(size)
+    }
 }

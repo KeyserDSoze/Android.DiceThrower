@@ -7,63 +7,68 @@ import kotlin.math.abs
 import kotlin.math.sqrt
 
 class DiceMeshFactoryTest {
+    private val allSides = listOf(2, 3, 4, 6, 8, 10, 12, 20, 100)
+
     @Test
-    fun allSupportedDiceProduceTrianglesAndNormals() {
-        listOf(2, 3, 4, 6, 8, 10, 12, 20, 100).forEach { sides ->
+    fun everyDieHasARoundedBodyAndOneQuadPerNumeral() {
+        allSides.forEach { sides ->
             val mesh = DiceMeshFactory.create(sides)
-            assertTrue("d$sides should have vertices", mesh.vertexCount > 0)
-            assertEquals(0, mesh.vertexCount % 3)
-            assertTrue("d$sides should have numbered faces", mesh.numberVertexCount > 0)
-            assertEquals(0, mesh.numberVertexCount % 3)
-            assertEquals(mesh.positions.size, mesh.normals.size)
-            assertEquals(mesh.numberPositions.size, mesh.numberNormals.size)
-            val expectedNumberedFaces = if (sides == 100) 10 else sides
-            assertEquals("d$sides face normals", expectedNumberedFaces * 3, mesh.valueFaceNormals.size)
+            val geometry = DieGeometries.forSides(sides)
+            assertTrue("d$sides body", mesh.bodyVertexCount > geometry.faces.size * 3)
+            assertEquals(0, mesh.bodyVertexCount % 3)
+            assertEquals("d$sides glyph quads", geometry.glyphs.size * 6, mesh.glyphVertexCount)
         }
     }
 
     @Test
-    fun canonicalPolyhedraHaveExpectedTriangleCounts() {
-        assertEquals(4 * 3, DiceMeshFactory.create(4).vertexCount)
-        assertEquals(12 * 3, DiceMeshFactory.create(6).vertexCount)
-        assertEquals(8 * 3, DiceMeshFactory.create(8).vertexCount)
-        // Ten quadrilateral kite faces -> 20 triangles.
-        assertEquals(20 * 3, DiceMeshFactory.create(10).vertexCount)
-        // Twelve pentagonal faces -> 36 triangles.
-        assertEquals(36 * 3, DiceMeshFactory.create(12).vertexCount)
-        assertEquals(20 * 3, DiceMeshFactory.create(20).vertexCount)
-        assertEquals(20 * 3, DiceMeshFactory.create(100).vertexCount)
-    }
-
-    @Test
-    fun d12IsMoreDetailedThanD20TriangleSurfaceCount() {
-        // A d12 has fewer faces than a d20, but each pentagon is triangulated into
-        // three triangles, so the render mesh has more triangles than the d20.
-        assertTrue(DiceMeshFactory.create(12).vertexCount > DiceMeshFactory.create(20).vertexCount)
-    }
-
-    @Test
-    fun generatedNormalsAreUnitLength() {
-        listOf(10, 12, 20).forEach { sides ->
-            val mesh = DiceMeshFactory.create(sides)
-            mesh.normals.toList().chunked(3).forEach { normal ->
-                val length = sqrt(
-                    normal[0] * normal[0] +
-                        normal[1] * normal[1] +
-                        normal[2] * normal[2],
-                )
-                assertTrue("d$sides normal length=$length", abs(length - 1f) < 0.001f)
+    fun normalsAreUnitLengthAndTrianglesFaceOutwards() {
+        allSides.forEach { sides ->
+            val body = DiceMeshFactory.create(sides).body
+            for (triangle in 0 until body.size / 18) {
+                val o = triangle * 18
+                val p0 = Vec3(body[o], body[o + 1], body[o + 2])
+                val p1 = Vec3(body[o + 6], body[o + 7], body[o + 8])
+                val p2 = Vec3(body[o + 12], body[o + 13], body[o + 14])
+                val normalSum = (0..2).map { k -> Vec3(body[o + k * 6 + 3], body[o + k * 6 + 4], body[o + k * 6 + 5]) }
+                normalSum.forEach { n -> assertEquals("d$sides normal", 1f, sqrt(n.dot(n)), 1e-3f) }
+                val geometric = (p1 - p0).cross(p2 - p0)
+                assertTrue("d$sides triangle $triangle winding", geometric.dot(normalSum.reduce(Vec3::plus)) > 0f)
             }
         }
     }
 
     @Test
-    fun numberedFaceNormalsAreUnitLength() {
-        listOf(2, 3, 4, 6, 8, 10, 12, 20, 100).forEach { sides ->
-            DiceMeshFactory.create(sides).valueFaceNormals.toList().chunked(3).forEach { normal ->
-                val length = sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2])
-                assertTrue("d$sides numbered face normal length=$length", abs(length - 1f) < 0.001f)
+    fun roundingNeverGrowsTheDieBeyondItsPhysicalHull() {
+        allSides.forEach { sides ->
+            val geometry = DieGeometries.forSides(sides)
+            val body = DiceMeshFactory.create(sides).body
+            for (vertex in 0 until body.size / 6) {
+                val p = Vec3(body[vertex * 6], body[vertex * 6 + 1], body[vertex * 6 + 2])
+                geometry.faceNormals.forEachIndexed { face, normal ->
+                    assertTrue("d$sides vertex outside face $face", normal.dot(p) <= geometry.faceOffsets[face] + 1e-4f)
+                }
+            }
+            // Faces keep their exact plane, so a resting rounded die still lies flat on the felt.
+            val touchesEveryFace = geometry.faceNormals.indices.all { face ->
+                (0 until body.size / 6).any { vertex ->
+                    val p = Vec3(body[vertex * 6], body[vertex * 6 + 1], body[vertex * 6 + 2])
+                    abs(geometry.faceNormals[face].dot(p) - geometry.faceOffsets[face]) < 1e-4f
+                }
+            }
+            assertTrue("d$sides flat faces", touchesEveryFace)
+        }
+    }
+
+    @Test
+    fun glyphAtlasHasACellForEveryLabel() {
+        allSides.forEach { sides ->
+            DieGeometries.forSides(sides).anchorLabels.forEach { label ->
+                assertTrue("missing atlas label $label", label in DiceGlyphAtlasLayout.labels)
             }
         }
+        val uv = DiceGlyphAtlasLayout.uvRect("20")
+        assertTrue(uv[0] < uv[2] && uv[1] < uv[3])
+        assertTrue(DiceGlyphAtlasLayout.needsUnderline("6") && DiceGlyphAtlasLayout.needsUnderline("9"))
+        assertTrue(!DiceGlyphAtlasLayout.needsUnderline("60"))
     }
 }
