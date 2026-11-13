@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import {
   androidUrl, decodeToken, documentFromEnvelope, envelope, importAsCopy, instantiateTemplate,
@@ -9,9 +9,10 @@ import {
   WIZARD_2014_SRD_SPELLS, FIGHTER_2014_LEVELS, ROGUE_2014_LEVELS, WIZARD_2014_LEVELS, RANGER_2014_LEVELS, CLERIC_2014_LEVELS, PALADIN_2014_LEVELS, BARD_2014_LEVELS,
 } from './character.js';
 import GuidedRollEditor from './GuidedRollEditor.jsx';
+import WorkshopErrorBoundary from './WorkshopErrorBoundary.jsx';
 import { rollLevelPreview } from './roll-level-preview.js';
 import { appendFormulaVariable, formulaVariables } from './formula-variables.js';
-import { isPartUsed, removePartSafely, SYSTEM_STYLES } from './guided.js';
+import { isPartUsed, removePartSafely, SYSTEM_STYLES, validateGuidedRoll } from './guided.js';
 
 function orderedGroups(characterDoc) {
   if (!characterDoc) return [];
@@ -185,6 +186,10 @@ const dictionary = {
     expertJson: 'Advanced native JSON (optional)', expertHelp: 'Only edit this if you know the Android schema. Guided controls preserve existing fields.',
     upgradeLegacy: 'Update old starter weapon rolls', upgradeConfirm: 'Replace the two original weapon Rolls with Attack and Damage Parts? Your other character data will be preserved and the result saved locally.', upgradeComplete: 'Starter weapon rolls updated and saved.',
     download: 'Download / keep backup', select: 'Open a character or create one.', saved: 'Saved locally.', ready: 'Link ready.',
+    invalidJson: 'Invalid JSON. The previous value is kept until the JSON is valid.',
+    jsonArrayExpected: 'Expected a JSON array of effects.', jsonObjectExpected: 'Expected a JSON object.', jsonNotApplied: 'Not applied:',
+    crashTitle: 'Something went wrong', crashBody: 'This part of the workshop could not be displayed. Characters saved in this browser are not affected.',
+    crashRetry: 'Try again', crashClose: 'Close character',
   },
   it: {
     title: 'Laboratorio personaggi', intro: 'Crea il personaggio sul sito. Salvalo privatamente nel browser oppure condividilo via link o QR. I modelli standard più grandi possono usare un riferimento alla versione del modello.',
@@ -338,6 +343,10 @@ const dictionary = {
     expertJson: 'JSON nativo avanzato (facoltativo)', expertHelp: 'Modificalo solo se conosci il formato Android. I controlli guidati preservano i campi esistenti.',
     upgradeLegacy: 'Aggiorna i vecchi tiri del modello', upgradeConfirm: 'Sostituire i due vecchi tiri dell’arma con le parti Attacco e Danno? Gli altri dati del personaggio saranno conservati e il risultato salvato in locale.', upgradeComplete: 'Tiri del modello aggiornati e salvati.',
     download: 'Scarica un backup', select: 'Apri un personaggio o creane uno.', saved: 'Salvato nel browser.', ready: 'Link pronto.',
+    invalidJson: 'JSON non valido. Resta attivo il valore precedente finché il JSON non è valido.',
+    jsonArrayExpected: 'Serve un array JSON di effetti.', jsonObjectExpected: 'Serve un oggetto JSON.', jsonNotApplied: 'Non applicato:',
+    crashTitle: 'Si è verificato un problema', crashBody: 'Questa parte del laboratorio non può essere mostrata. I personaggi salvati nel browser non sono stati modificati.',
+    crashRetry: 'Riprova', crashClose: 'Chiudi personaggio',
   },
 };
 const uid = () => crypto.randomUUID();
@@ -370,14 +379,30 @@ function OptionalNumberField({label,value,onChange}) {
       onChange={e=>onChange(e.target.value==='' ? null : Number(e.target.value))} />
   </label>;
 }
-function JsonField({ label, value, onChange }) {
-  const [draft, setDraft] = useState(JSON.stringify(value || [], null, 2));
+function JsonField({ label, value, onChange, validate, t }) {
+  const committed = JSON.stringify(value || []);
+  const [draft, setDraft] = useState(() => JSON.stringify(value || [], null, 2));
   const [error, setError] = useState('');
-  useEffect(() => { setDraft(JSON.stringify(value || [], null, 2)); }, [value]);
+  const lastCommitted = useRef(committed);
+  useEffect(() => {
+    // Reformat only for changes made elsewhere (guided editor, other document).
+    if (committed === lastCommitted.current) return;
+    lastCommitted.current = committed;
+    setDraft(JSON.stringify(JSON.parse(committed), null, 2));
+    setError('');
+  }, [committed]);
   return <label className="workshop-field"><span>{label}</span>
-    <textarea rows="3" spellCheck="false" value={draft} onChange={e => {
-      setDraft(e.target.value);
-      try { onChange(JSON.parse(e.target.value)); setError(''); } catch { setError('Invalid JSON'); }
+    <textarea rows="3" spellCheck="false" value={draft} aria-invalid={error ? true : undefined} onChange={e => {
+      const text = e.target.value;
+      setDraft(text);
+      let parsed;
+      try { parsed = JSON.parse(text); } catch { setError(t.invalidJson); return; }
+      // Keep the draft, but never commit a value of the wrong shape: the guided
+      // editor would crash on it (e.g. 5, {} or [1] as effects).
+      try { validate(parsed); } catch (problem) { setError(t.jsonNotApplied + ' ' + problem.message); return; }
+      setError('');
+      lastCommitted.current = JSON.stringify(parsed);
+      onChange(parsed);
     }} />
     {error && <small role="alert">{error}</small>}
   </label>;
@@ -392,6 +417,11 @@ function downloadDocument(characterDoc) {
   setTimeout(() => URL.revokeObjectURL(href), 1500);
 }
 export default function CharacterWorkshop({ locale = 'en' }) {
+  const t = dictionary[locale] || dictionary.en;
+  return <WorkshopErrorBoundary t={t}><Workshop locale={locale} /></WorkshopErrorBoundary>;
+}
+
+function Workshop({ locale }) {
   const t = dictionary[locale] || dictionary.en;
   const [items, setItems] = useState([]);
   const [doc, setDoc] = useState(null);
@@ -449,6 +479,9 @@ export default function CharacterWorkshop({ locale = 'en' }) {
       return copy;
     });
     setUrl(''); setQr(''); setMessage(''); setError('');
+  }
+  function closeBrokenDocument() {
+    setDoc(null); setUrl(''); setQr('');
   }
   async function save() {
     try { validateDocument(doc); await saveDocument(doc); await refresh(); setMessage(t.saved); setError(''); }
@@ -510,6 +543,8 @@ export default function CharacterWorkshop({ locale = 'en' }) {
   const isPaladin2014 = tag.startsWith('D&D 5e (2014) Paladin sample');
   const isBard2014 = tag.startsWith('D&D 5e (2014) Bard sample');
   const dndLevels = isBard2014 ? BARD_2014_LEVELS : isPaladin2014 ? PALADIN_2014_LEVELS : isCleric2014 ? CLERIC_2014_LEVELS : isRanger2014 ? RANGER_2014_LEVELS : isWizard2014 ? WIZARD_2014_LEVELS : isRogue2014 ? ROGUE_2014_LEVELS : FIGHTER_2014_LEVELS;
+  const checkGuidedRoll = roll => validateGuidedRoll(roll, doc.modifiers.map(m => m.name),
+    new Set([...SYSTEM_STYLES.map(s => s.id), ...doc.diceStyles.map(s => s.id)]));
 
   const renderRollEditor = (r,i) => (<details className="workshop-roll" key={r.id}>
               <summary><strong>{r.name || t.addRoll}</strong><span>{r.expression}</span>
@@ -564,8 +599,10 @@ export default function CharacterWorkshop({ locale = 'en' }) {
               <GuidedRollEditor roll={r} doc={doc} t={t} onEdit={mutator => edit(x => mutator(x.rolls[i]))} />
               <details className="workshop-expert"><summary>{t.expertJson}</summary>
                 <p className="workshop-hint">{t.expertHelp}</p>
-                <JsonField label={t.effects} value={r.effects} onChange={v => edit(x => x.rolls[i].effects = v)} />
-                <JsonField label={t.appearance} value={r.diceAppearance || { mode: 'CHARACTER_DEFAULT' }} onChange={v => edit(x => x.rolls[i].diceAppearance = v)} />
+                <JsonField label={t.effects} value={r.effects} t={t} onChange={v => edit(x => x.rolls[i].effects = v)}
+                  validate={v => { if (!Array.isArray(v)) throw new Error(t.jsonArrayExpected); checkGuidedRoll({ ...r, effects: v }); }} />
+                <JsonField label={t.appearance} value={r.diceAppearance || { mode: 'CHARACTER_DEFAULT' }} t={t} onChange={v => edit(x => x.rolls[i].diceAppearance = v)}
+                  validate={v => { if (!v || typeof v !== 'object' || Array.isArray(v)) throw new Error(t.jsonObjectExpected); checkGuidedRoll({ ...r, diceAppearance: v }); }} />
               </details>
             </details>);
 
@@ -644,6 +681,7 @@ export default function CharacterWorkshop({ locale = 'en' }) {
         </section>
       </aside>
       <div className="workshop-editor">
+        <WorkshopErrorBoundary t={t} resetKey={doc} onClose={closeBrokenDocument}>{() => <>
         {!doc && <section className="premium-panel">{t.select}</section>}
         {doc && <>
           <section className="premium-panel">
@@ -771,6 +809,7 @@ export default function CharacterWorkshop({ locale = 'en' }) {
             </label>
           </section>
         </>}
+        </>}</WorkshopErrorBoundary>
       </div>
     </div>
   </section>;
