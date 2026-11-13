@@ -203,8 +203,12 @@ object EffectSequenceExecutor {
         val before = part?.value(action.scope)
         val outcome = runCatching {
             require(id != null && part != null) { "Missing target Part" }
-            val expression = action.expression.ifBlank {
+            val expression = if (action.expression.isBlank()) {
                 requireNotNull(expressions[id]) { "Missing resolved Part expression" }
+            } else {
+                // The editor validates follow-up formulas as Roll templates ({level}, modifier
+                // names, {levelstep:…}); resolve them with this throw's values the same way.
+                RollFormulaResolver.resolveWithVariables(action.expression, snapshot.variables)
             }
             val shape = DiceExpression.parse(expression)
             if (action.scope == EffectValueScope.MODIFIERS_ONLY) {

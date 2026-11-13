@@ -196,6 +196,14 @@ object RollFormulaResolver {
         return resolveExpression(expression, variables)
     }
 
+    /**
+     * Resolves [expression] like a Roll formula with already computed [variables] (level and
+     * modifier values keyed by name, in any letter case), e.g. an Effect's follow-up dice formula
+     * at throw time. Unknown variables fail exactly as in [resolveTemplate].
+     */
+    fun resolveWithVariables(expression: String, variables: Map<String, Int>): String =
+        resolveExpression(expression, variables.mapKeys { normalizeName(it.key) })
+
     fun variableNames(modifiers: List<CharacterModifier>): List<String> =
         listOf(LEVEL_VARIABLE) + modifiers.map { it.name }
 

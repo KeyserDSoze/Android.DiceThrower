@@ -398,4 +398,17 @@ class RollFormulaResolverTest {
         assertEquals("1d20-1-1+1d4+3", resolved.expression)
     }
 
+    @Test
+    fun throwTimeVariablesResolveExactlyLikeTheTemplate() {
+        // Effects resolve follow-up formulas from the throw's variable map (raw modifier names).
+        val variables = mapOf("level" to character.level, "Intelligenza" to 3)
+        listOf("{level}d4", "1d6+{intelligenza}", "2{LEVEL}+1", "1d8+{levelstep:3:5}", "1d4-{Intelligenza}").forEach {
+            assertEquals(
+                RollFormulaResolver.resolveTemplate(it, character.level, modifiers),
+                RollFormulaResolver.resolveWithVariables(it, variables),
+            )
+        }
+        assertFalse(runCatching { RollFormulaResolver.resolveWithVariables("{Forza}d6", variables) }.isSuccess)
+    }
+
 }

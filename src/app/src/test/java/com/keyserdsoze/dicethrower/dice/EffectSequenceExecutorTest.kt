@@ -179,6 +179,54 @@ class EffectSequenceExecutorTest {
     }
 
     @Test
+    fun followUpDiceFormulasResolveLevelAndModifiersLikeTheRollFormula() {
+        val snapshot = EffectRollSnapshot(
+            roll = null,
+            partsById = mapOf("attack" to result(20), "damage" to result(4, modifier = 2, sides = 6)),
+            variables = mapOf("level" to 3, "Strength" to 2),
+        )
+        // The editor accepts these as Roll templates; the throw must resolve them, not fail.
+        val perLevel = effect("per-level", 0, "attack", "20",
+            EffectAction("level-dice", EffectActionType.ROLL_AFTER, "damage",
+                EffectValueScope.DICE_ONLY, "{level}d4"))
+        val withModifier = effect("with-modifier", 1, "attack", "20",
+            EffectAction("strength-reroll", EffectActionType.REROLL, "attack",
+                EffectValueScope.TOTAL, "1d20+{strength}"))
+
+        val outcome = EffectSequenceExecutor.execute(
+            snapshot, listOf(perLevel, withModifier), mapOf("attack" to "1d20", "damage" to "1d6+2"), Random(4),
+        )
+
+        val actions = outcome.steps.flatMap { it.actions }
+        assertEquals(2, actions.size)
+        assertTrue(actions.all { it.applied && it.error == null })
+        val levelDice = outcome.generatedDice.first { it.actionId == "level-dice" }.result.components.single()
+        assertEquals(3, levelDice.rolls.size)
+        assertEquals(4, levelDice.sides)
+        val damage = outcome.finalSnapshot.parts.getValue("damage")
+        assertEquals(4 + levelDice.subtotal, damage.dice)
+        assertEquals(2, damage.modifiers)
+        val attack = outcome.finalSnapshot.parts.getValue("attack")
+        assertEquals(2, attack.modifiers) // Strength, matched regardless of letter case
+        assertEquals(outcome.generatedDice.first { it.actionId == "strength-reroll" }.result.total, attack.total)
+    }
+
+    @Test
+    fun followUpDiceFormulaWithAnUnknownVariableFailsClosed() {
+        val unknown = effect("unknown", 0, "attack", "20",
+            EffectAction("missing-variable", EffectActionType.ROLL_AFTER, "damage",
+                EffectValueScope.DICE_ONLY, "{Dexterity}d6"))
+
+        val outcome = EffectSequenceExecutor.execute(initial, listOf(unknown), expressions, Random(4))
+
+        val action = outcome.steps.single().actions.single()
+        assertFalse(action.applied)
+        assertNotNull(action.error)
+        assertTrue(outcome.generatedDice.isEmpty())
+        assertEquals(4, outcome.finalSnapshot.parts.getValue("damage").total)
+    }
+
+    @Test
     fun selfTriggeringRollAfterCanOnlyExecuteOnce() {
         val loop = effect("loop", 0, "attack", "1",
             EffectAction("again", EffectActionType.ROLL_AFTER,
