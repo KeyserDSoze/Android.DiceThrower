@@ -140,12 +140,7 @@ class MainActivity : ComponentActivity() {
             local = AndroidSyncLocalGateway(store),
             remote = cloudRepository,
         )
-        // A sync journal rebuilt after corruption needs a full, user-confirmed reconciliation.
-        if (cloudAccountState.googleConnected && !cloudAccountState.initialReconciliationPending &&
-            store.loadSyncJournal().reconciliationRequired
-        ) {
-            updateCloudAccountState(cloudAccountState.copy(initialReconciliationPending = true))
-        }
+        requireReconciliationIfJournalSaysSo()
         syncStatus = syncEngine.currentStatus(cloudAccountState.googleConnected)
         // Recreated while the Drive consent screen was open: its result arrives after this.
         val restoredEmail = savedInstanceState?.getString(STATE_PENDING_ACCOUNT_EMAIL)
@@ -307,8 +302,18 @@ class MainActivity : ComponentActivity() {
         linkImportPending = false
     }
 
+    /** A rebuilt journal or a restored backup needs a full, user-confirmed reconciliation. */
+    private fun requireReconciliationIfJournalSaysSo() {
+        if (cloudAccountState.googleConnected && !cloudAccountState.initialReconciliationPending &&
+            store.loadSyncJournal().reconciliationRequired
+        ) {
+            updateCloudAccountState(cloudAccountState.copy(initialReconciliationPending = true))
+        }
+    }
+
     override fun onResume() {
         super.onResume()
+        if (::syncEngine.isInitialized) requireReconciliationIfJournalSaysSo()
         if (::syncEngine.isInitialized && cloudAccountState.googleConnected) syncNow()
     }
 

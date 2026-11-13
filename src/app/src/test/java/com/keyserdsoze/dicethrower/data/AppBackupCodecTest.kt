@@ -23,6 +23,7 @@ import com.keyserdsoze.dicethrower.model.RollSubgroupOperator
 import com.keyserdsoze.dicethrower.model.ThemeMode
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -80,7 +81,7 @@ class AppBackupCodecTest {
         assertEquals(settings, decoded.settings)
         assertEquals("it", decoded.language)
         assertEquals(123456789L, decoded.exportedAt)
-        assertTrue(raw.contains("\"imageMode\": \"portable-assets\""))
+        assertTrue(raw.contains("\"imageMode\":\"portable-assets\""))
         assertTrue(raw.contains("\"diceStyles\""))
         assertTrue(raw.contains("\"characterSyncMetadata\""))
     }
@@ -516,5 +517,25 @@ class AppBackupCodecTest {
                 ),
             ),
         )
+    }
+
+    @Test
+    fun streamedExportIsCompactAndDecodesLikeTheStringExport() {
+        val data = AppData(characters = listOf(CharacterProfile("hero", "Hero")))
+        val writer = java.io.StringWriter()
+        AppBackupCodec.encodeTo(writer, data, AppSettings(), "en", exportedAt = 5L)
+        val raw = writer.toString()
+        assertFalse(raw.contains("\n"))
+        assertEquals(JSONObject(AppBackupCodec.encode(data, AppSettings(), "en", exportedAt = 5L)).toString(), JSONObject(raw).toString())
+        assertEquals("hero", AppBackupCodec.decode(raw).data.characters.single().id)
+    }
+
+    @Test
+    fun readCappedRejectsInputBeyondTheLimitAndReadsWithinIt() {
+        assertEquals("héllo", AppBackupCodec.readCapped("héllo".byteInputStream(), maxBytes = 6))
+        val failure = runCatching {
+            AppBackupCodec.readCapped(ByteArray(100) { 'a'.code.toByte() }.inputStream(), maxBytes = 99)
+        }.exceptionOrNull()
+        assertTrue(failure is BackupTooLargeException)
     }
 }
