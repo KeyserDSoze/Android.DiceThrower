@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Ha a Google Drive csatlakoztatva van, a visszaállítás semmit sem töröl a felhőadataidból. A következő szinkronizáláskor megkérdezzük, hogyan egyeztessük őket ezzel a mentéssel.</string>
+    <string name="backup_too_large">Ez a mentésfájl nagyobb 256 MiB-nál, ezért nem olvasható.</string>
+</resources>

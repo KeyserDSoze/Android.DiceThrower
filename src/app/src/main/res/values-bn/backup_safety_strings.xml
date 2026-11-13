@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Google Drive সংযুক্ত থাকলে, পুনরুদ্ধার আপনার ক্লাউড ডেটা থেকে কিছুই মুছে না। পরবর্তী সিঙ্কে এটি এই ব্যাকআপের সাথে কীভাবে মেলানো হবে তা জিজ্ঞাসা করা হবে।</string>
+    <string name="backup_too_large">এই ব্যাকআপ ফাইলটি 256 MiB-এর চেয়ে বড় এবং পড়া যাচ্ছে না।</string>
+</resources>

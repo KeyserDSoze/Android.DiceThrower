@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Idan Google Drive yana haɗe, dawo da bayanai ba ya share komai daga bayanan girgijenka. A daidaitawa ta gaba za a tambaye ka yadda za a daidaita shi da wannan ajiyar.</string>
+    <string name="backup_too_large">Wannan fayil ɗin ajiya ya fi 256 MiB girma kuma ba za a iya karanta shi ba.</string>
+</resources>

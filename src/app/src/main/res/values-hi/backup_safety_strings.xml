@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">यदि Google Drive जुड़ा है, तो रिस्टोर करने से आपके क्लाउड डेटा से कुछ भी नहीं हटता। अगले सिंक पर आपसे पूछा जाएगा कि इसे इस बैकअप से कैसे मिलाना है।</string>
+    <string name="backup_too_large">यह बैकअप फ़ाइल 256 MiB से बड़ी है और पढ़ी नहीं जा सकती।</string>
+</resources>

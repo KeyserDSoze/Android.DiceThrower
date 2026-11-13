@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Wenn Google Drive verbunden ist, löscht die Wiederherstellung nichts in deinen Cloud-Daten. Bei der nächsten Synchronisierung wirst du gefragt, wie sie mit diesem Backup abgeglichen werden sollen.</string>
+    <string name="backup_too_large">Diese Backup-Datei ist größer als 256 MiB und kann nicht gelesen werden.</string>
+</resources>

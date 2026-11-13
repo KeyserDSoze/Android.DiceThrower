@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Google Drive जडान गरिएको छ भने, पुनर्स्थापनाले तपाईंको क्लाउड डेटाबाट केही पनि मेट्दैन। अर्को सिंकमा यसलाई यो ब्याकअपसँग कसरी मिलाउने भनी सोधिनेछ।</string>
+    <string name="backup_too_large">यो ब्याकअप फाइल 256 MiB भन्दा ठूलो छ र पढ्न सकिँदैन।</string>
+</resources>

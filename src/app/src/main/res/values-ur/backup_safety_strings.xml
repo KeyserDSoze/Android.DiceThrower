@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">اگر Google Drive منسلک ہے تو بحالی آپ کے کلاؤڈ ڈیٹا سے کچھ بھی نہیں مٹاتی۔ اگلی مطابقت پذیری پر آپ سے پوچھا جائے گا کہ اسے اس بیک اپ سے کیسے ملایا جائے۔</string>
+    <string name="backup_too_large">یہ بیک اپ فائل 256 MiB سے بڑی ہے اور پڑھی نہیں جا سکتی۔</string>
+</resources>

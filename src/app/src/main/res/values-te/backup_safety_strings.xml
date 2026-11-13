@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Google Drive కనెక్ట్ అయి ఉంటే, పునరుద్ధరణ మీ క్లౌడ్ డేటా నుండి ఏదీ తొలగించదు. తదుపరి సింక్‌లో దీన్ని ఈ బ్యాకప్‌తో ఎలా సమన్వయం చేయాలో అడుగుతారు.</string>
+    <string name="backup_too_large">ఈ బ్యాకప్ ఫైల్ 256 MiB కంటే పెద్దది, చదవడం సాధ్యం కాదు.</string>
+</resources>

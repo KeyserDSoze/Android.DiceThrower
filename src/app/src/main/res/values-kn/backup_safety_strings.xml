@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Google Drive ಸಂಪರ್ಕಗೊಂಡಿದ್ದರೆ, ಮರುಸ್ಥಾಪನೆ ನಿಮ್ಮ ಕ್ಲೌಡ್ ಡೇಟಾದಿಂದ ಏನನ್ನೂ ಅಳಿಸುವುದಿಲ್ಲ. ಮುಂದಿನ ಸಿಂಕ್‌ನಲ್ಲಿ ಇದನ್ನು ಈ ಬ್ಯಾಕಪ್‌ನೊಂದಿಗೆ ಹೇಗೆ ಹೊಂದಿಸಬೇಕು ಎಂದು ಕೇಳಲಾಗುತ್ತದೆ.</string>
+    <string name="backup_too_large">ಈ ಬ್ಯಾಕಪ್ ಫೈಲ್ 256 MiB ಗಿಂತ ದೊಡ್ಡದಾಗಿದೆ ಮತ್ತು ಓದಲು ಸಾಧ್ಯವಿಲ್ಲ.</string>
+</resources>

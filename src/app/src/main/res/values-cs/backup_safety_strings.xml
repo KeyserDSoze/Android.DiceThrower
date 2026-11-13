@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Pokud je Google Drive připojen, obnova nic neodstraní z vašich dat v cloudu. Při příští synchronizaci se vás zeptáme, jak je sladit s touto zálohou.</string>
+    <string name="backup_too_large">Tento soubor zálohy je větší než 256 MiB a nelze jej přečíst.</string>
+</resources>

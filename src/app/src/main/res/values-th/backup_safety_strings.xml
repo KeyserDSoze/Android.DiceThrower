@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">หากเชื่อมต่อ Google Drive การกู้คืนจะไม่ลบสิ่งใดจากข้อมูลบนคลาวด์ของคุณ ในการซิงค์ครั้งถัดไประบบจะถามว่าจะกระทบยอดกับข้อมูลสำรองนี้อย่างไร</string>
+    <string name="backup_too_large">ไฟล์สำรองข้อมูลนี้มีขนาดใหญ่กว่า 256 MiB และไม่สามารถอ่านได้</string>
+</resources>

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Ikiwa Google Drive imeunganishwa, kurejesha hakufuti chochote kwenye data yako ya wingu. Katika usawazishaji unaofuata utaulizwa jinsi ya kuilinganisha na nakala hii ya akiba.</string>
+    <string name="backup_too_large">Faili hii ya akiba ni kubwa kuliko 256 MiB na haiwezi kusomwa.</string>
+</resources>

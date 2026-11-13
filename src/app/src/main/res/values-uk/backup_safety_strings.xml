@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Якщо Google Drive підключено, відновлення нічого не видаляє з ваших хмарних даних. Під час наступної синхронізації вас запитають, як узгодити їх із цією копією.</string>
+    <string name="backup_too_large">Цей файл резервної копії більший за 256 MiB і його неможливо прочитати.</string>
+</resources>

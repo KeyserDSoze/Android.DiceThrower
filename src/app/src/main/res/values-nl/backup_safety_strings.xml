@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Als Google Drive is gekoppeld, verwijdert herstellen niets uit je clouddata. Bij de volgende synchronisatie word je gevraagd hoe je ze met deze back-up wilt afstemmen.</string>
+    <string name="backup_too_large">Dit back-upbestand is groter dan 256 MiB en kan niet worden gelezen.</string>
+</resources>

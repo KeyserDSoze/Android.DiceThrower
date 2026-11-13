@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Google Drive जोडलेले असल्यास, पुनर्संचयित केल्याने तुमच्या क्लाउड डेटामधून काहीही हटत नाही. पुढच्या सिंकवेळी हे या बॅकअपशी कसे जुळवायचे ते विचारले जाईल.</string>
+    <string name="backup_too_large">ही बॅकअप फाइल 256 MiB पेक्षा मोठी आहे आणि वाचता येत नाही.</string>
+</resources>

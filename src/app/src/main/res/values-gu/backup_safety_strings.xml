@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">જો Google Drive જોડાયેલું હોય, તો પુનઃસ્થાપનથી તમારા ક્લાઉડ ડેટામાંથી કંઈ કાઢી નખાતું નથી. આગામી સિંક વખતે તેને આ બેકઅપ સાથે કેવી રીતે મેળવવું તે પૂછવામાં આવશે.</string>
+    <string name="backup_too_large">આ બેકઅપ ફાઇલ 256 MiB કરતાં મોટી છે અને વાંચી શકાતી નથી.</string>
+</resources>

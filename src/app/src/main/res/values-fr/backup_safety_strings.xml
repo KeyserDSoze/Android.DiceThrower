@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Si Google Drive est connecté, la restauration ne supprime rien de vos données cloud. À la prochaine synchronisation, on vous demandera comment les concilier avec cette sauvegarde.</string>
+    <string name="backup_too_large">Ce fichier de sauvegarde dépasse 256 MiB et ne peut pas être lu.</string>
+</resources>

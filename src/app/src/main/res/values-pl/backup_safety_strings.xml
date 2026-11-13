@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Jeśli Google Drive jest połączony, przywracanie niczego nie usuwa z Twoich danych w chmurze. Przy następnej synchronizacji zostaniesz zapytany, jak uzgodnić je z tą kopią.</string>
+    <string name="backup_too_large">Ten plik kopii zapasowej jest większy niż 256 MiB i nie można go odczytać.</string>
+</resources>

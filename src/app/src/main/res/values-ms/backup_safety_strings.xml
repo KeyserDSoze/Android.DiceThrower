@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_import_cloud_note">Jika Google Drive disambungkan, pemulihan tidak memadam apa-apa daripada data awan anda. Pada penyegerakan seterusnya anda akan ditanya cara menyelaraskannya dengan sandaran ini.</string>
+    <string name="backup_too_large">Fail sandaran ini lebih besar daripada 256 MiB dan tidak boleh dibaca.</string>
+</resources>
