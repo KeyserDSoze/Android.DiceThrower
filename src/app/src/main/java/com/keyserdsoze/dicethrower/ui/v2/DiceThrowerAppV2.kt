@@ -154,6 +154,7 @@ import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.ConflictPolicy
 import com.keyserdsoze.dicethrower.model.DoubleRollMode
 import com.keyserdsoze.dicethrower.model.EffectType
+import com.keyserdsoze.dicethrower.model.EffectValueSource
 import com.keyserdsoze.dicethrower.model.RollVisualEffectsSettings
 import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.DiceTableTheme
@@ -4980,16 +4981,37 @@ private fun updateRoll(
     }
 }
 
-private fun modifierIsReferenced(
+/**
+ * True when deleting the modifier would break a roll: its `{name}` token appears in a roll,
+ * Part (including support-only Parts) or level-rule expression, or an Effect condition or action
+ * uses it as a `{name}` token, a bare formula identifier or a variable condition.
+ */
+internal fun modifierIsReferenced(
     modifierName: String,
     rolls: List<RollDefinition>,
 ): Boolean {
-    val variableRegex = Regex("""\{([^{}]+)\}""")
+    val name = modifierName.trim()
+    fun matches(candidate: String?) = candidate?.trim()?.equals(name, ignoreCase = true) == true
+    fun referencesToken(expression: String) =
+        modifierTokenRegex.findAll(expression).any { matches(it.groupValues[1]) }
+    // Effect formulas also resolve bare identifiers that are not function calls, e.g. "Strength+2".
+    fun referencesIdentifier(formula: String) =
+        effectIdentifierRegex.findAll(modifierTokenRegex.replace(formula, " ")).any { matches(it.value) }
     return rolls.any { roll ->
-        (listOf(roll.expression) + roll.levelRules.map { it.expression }).any { expression ->
-            variableRegex.findAll(expression).any { match ->
-                match.groupValues[1].trim().equals(modifierName.trim(), ignoreCase = true)
+        (listOf(roll.expression) + roll.subgroups.map { it.expression } + roll.levelRules.map { it.expression })
+            .any(::referencesToken) ||
+            roll.effects.any { effect ->
+                effect.activationGroups.any { group ->
+                    group.conditions.any { condition ->
+                        (condition.source == EffectValueSource.VARIABLE && matches(condition.variableName)) ||
+                            referencesToken(condition.threshold) || referencesIdentifier(condition.threshold)
+                    }
+                } || effect.actions.any { action ->
+                    referencesToken(action.expression) || referencesIdentifier(action.expression)
+                }
             }
-        }
     }
 }
+
+private val modifierTokenRegex = Regex("""\{([^{}]+)\}""")
+private val effectIdentifierRegex = Regex("""(?<![\p{L}\p{Nd}_])[\p{L}_][\p{L}\p{Nd}_]*(?![\p{L}\p{Nd}_]|\s*\()""")
