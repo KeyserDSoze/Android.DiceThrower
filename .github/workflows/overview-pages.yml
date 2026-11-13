@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - 'src/overviewapp/**'
+      - 'src/app/src/test/resources/dice-expression-parity.json'
       - '.github/workflows/overview-pages.yml'
   pull_request:
     paths:
       - 'src/overviewapp/**'
+      - 'src/app/src/test/resources/dice-expression-parity.json'
       - '.github/workflows/overview-pages.yml'
   workflow_dispatch:
 

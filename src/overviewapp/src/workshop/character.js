@@ -1,5 +1,6 @@
 import pako from 'pako';
 import { SYSTEM_STYLES, validateGuidedRoll } from './guided.js';
+import { resolveDiceTemplate, resolveRollFormula } from './dice-formula.js';
 import { WIZARD_2014_CANTRIP_DICE, WIZARD_2014_DICE_SPELLS } from './wizard-spells.js';
 export { WIZARD_2014_SRD_SPELLS, WIZARD_2014_DICE_SPELLS } from './wizard-spells.js';
 
@@ -40,7 +41,7 @@ export function newPart() {
     includeInNormalRoll: true, includeInDoubleRoll: false };
 }
 export function normalFormula(parts) {
-  const active = parts.filter(part => part.includeInNormalRoll);
+  const active = parts.filter(part => part.includeInNormalRoll !== false);
   return active.map((part, index) => {
     const term = '(' + part.expression.trim() + ')';
     return (index === 0 && part.operator === 'ADD') ? term
@@ -63,7 +64,6 @@ export function newStyle() {
 const isRecord = x => !!x && typeof x === 'object' && !Array.isArray(x);
 const validName = x => typeof x === 'string' && x.trim().length > 0 && x.length <= 160;
 const validId = x => typeof x === 'string' && x.length > 0 && x.length <= 180;
-const exprPattern = /^[\d\s()+\-*\/xXdD.%{}\p{L}\p{M}_:]+$/u;
 // Android has no description limit; this bound comfortably fits every starter
 // tag (up to ~115 characters) while keeping shared links from flooding the UI.
 export const MAX_TAG_LENGTH = 500;
@@ -119,28 +119,7 @@ export function validateDocument(doc) {
     assert(!names.has(key), 'Duplicate modifier: ' + m.name);
     names.add(key);
   }
-  const formula = text => {
-    assert(typeof text === 'string' && text.length > 0 && text.length <= 1500 && exprPattern.test(text), 'Invalid dice expression');
-    // Mirror the Android parser: numbers (or variables resolving to numbers) separated only by
-    // spaces are not concatenated ("2 {level}" is an error), and dice counts are bounded.
-    assert(!/[0-9}]\s+[0-9{]/.test(text), 'Separate numbers with an operator (for example 2x{level})');
-    let totalDice = 0;
-    for (const match of text.replace(/\{[^{}]*\}/g, ' ').matchAll(/(\d*)\s*[dD]\s*(\d+)/g)) {
-      const count = match[1] === '' ? 1 : Number(match[1]);
-      assert(count >= 1 && count <= 100, 'Dice count must be between 1 and 100');
-      totalDice += count;
-    }
-    assert(totalDice <= 500, 'An expression can contain at most 500 dice');
-    for (const match of text.matchAll(/\{([^{}]+)\}/g)) {
-      const token = match[1].trim().toLowerCase();
-      const segments = token.startsWith('levelstep:') ? token.slice('levelstep:'.length).split(':') : null;
-      const milestoneValid = segments && segments.length >= 1 && segments.length <= 20 &&
-        segments.every((value, i) => /^([2-9]|[1-9][0-9]{1,3})$/.test(value) &&
-          Number(value) <= 9999 && (i === 0 || Number(value) > Number(segments[i-1])));
-      assert(names.has(token) || token.startsWith('partId:') || milestoneValid,
-        'Missing variable or invalid level milestone: ' + match[1]);
-    }
-  };
+  const formula = text => resolveDiceTemplate(text, c.level, doc.modifiers);
   const nestedIds = new Set();
   for (const roll of doc.rolls) {
     assert(roll.groupId == null || groupIds.has(roll.groupId), 'Unknown roll group');
@@ -171,6 +150,7 @@ export function validateDocument(doc) {
         'Invalid periodic repetition maximum');
       formula(rule.expression);
     }
+    resolveRollFormula(roll, c.level, doc.modifiers);
     // Preserve the complete native effect/appearance schema, even if advanced
     // editing is performed in Android instead of the browser.
     const appearance = roll.diceAppearance || {};

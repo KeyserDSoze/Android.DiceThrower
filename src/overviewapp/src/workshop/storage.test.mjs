@@ -110,3 +110,20 @@ test('unavailable, denied or blocked IndexedDB gives friendly coded errors', asy
     await assert.rejects(listSaved(), error => error.code === 'storage-blocked');
   });
 });
+
+test('stricter formula validation does not delete or overwrite legacy browser records', async () => {
+  const fake = fakeIndexedDB();
+  const legacy = instantiateTemplate(6);
+  legacy.rolls[0].expression = '1d7'; // Accepted by the previous web-only regex.
+  fake.records.set(legacy.character.id, structuredClone(legacy));
+  await withIndexedDB({ value: fake }, async () => {
+    assert.deepEqual(await listSaved(), [legacy]);
+    assert.throws(() => saveDocument(legacy), /unsupported die/);
+    assert.deepEqual(await listSaved(), [legacy], 'invalid save must leave the original record intact');
+    const corrected = structuredClone(legacy);
+    corrected.rolls[0].expression = '1d6';
+    await saveDocument(corrected);
+    assert.deepEqual(await listSaved(), [corrected]);
+    assert.equal(legacy.rolls[0].expression, '1d7');
+  });
+});
