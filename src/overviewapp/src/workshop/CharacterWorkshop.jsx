@@ -10,6 +10,7 @@ import {
 import GuidedRollEditor from './GuidedRollEditor.jsx';
 import WorkshopErrorBoundary from './WorkshopErrorBoundary.jsx';
 import { renderShareQr } from './share-qr.js';
+import './workshop.css';
 import './workshop-fixes.css';
 import { rollLevelPreview } from './roll-level-preview.js';
 import { appendFormulaVariable, formulaVariables } from './formula-variables.js';

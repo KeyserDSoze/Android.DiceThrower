@@ -4,9 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
-    <meta name="theme-color" content="#17131d" />
-    <meta name="description" content="Dice Thrower — game-agnostic Android dice dashboards." />
-    <title>Dice Thrower</title>
+    <meta name="theme-color" content="#0a0b14" />
+    <meta name="description" content="Real 3D dice physics, crafted materials and your whole character sheet. A game-agnostic, offline-first Android dice roller with a free web character workshop." />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Dice Thrower — dice that feel real" />
+    <meta property="og:description" content="Real 3D dice physics, crafted materials and your whole character sheet. A game-agnostic, offline-first Android dice roller with a free web character workshop." />
+    <title>Dice Thrower — dice that feel real</title>
+    <script>
+      (function () {
+        var dark = true;
+        try {
+          var saved = localStorage.getItem('dicethrower-site-theme');
+          dark = saved ? saved === 'dark' : !(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
+        } catch (e) {
+          dark = !(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
+        }
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

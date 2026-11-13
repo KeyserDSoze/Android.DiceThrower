@@ -1,9 +1,12 @@
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { initialLocale, locales } from './i18n.js';
-import CharacterWorkshop from './workshop/CharacterWorkshop.jsx';
+import { readStorage, writeStorage } from './safe-storage.js';
+import Landing from './landing/Landing.jsx';
+
+const CharacterWorkshop = lazy(() => import('./workshop/CharacterWorkshop.jsx'));
 
 const repo = 'https://github.com/KeyserDSoze/Android.DiceThrower';
-const brandArt = 'https://raw.githubusercontent.com/KeyserDSoze/Android.DiceThrower/main/src/app/src/main/res/drawable-nodpi/ic_launcher_art.png';
+const rtl = new Set(['ar', 'he', 'fa', 'ur']);
 
 function currentPage() {
   const path = window.location.pathname;
@@ -14,154 +17,85 @@ function currentPage() {
   return 'home';
 }
 
+function initialDark() {
+  const saved = readStorage('dicethrower-site-theme');
+  if (saved) return saved === 'dark';
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? true;
+}
+
 export default function App() {
   const [locale, setLocale] = useState(initialLocale);
-  const [dark, setDark] = useState(() => {
-    const saved = localStorage.getItem('dicethrower-site-theme');
-    if (saved) return saved === 'dark';
-    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? true;
-  });
-
+  const [dark, setDark] = useState(initialDark);
   const copy = useMemo(() => locales[locale]?.copy || locales.en.copy, [locale]);
   const page = currentPage();
   const base = import.meta.env.BASE_URL;
 
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.theme = dark ? 'dark' : 'light';
+    root.style.colorScheme = dark ? 'dark' : 'light';
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0a0b14' : '#f6f1e7');
+  }, [dark]);
+
+  useEffect(() => {
+    document.documentElement.lang = locale;
+    document.documentElement.dir = rtl.has(locale) ? 'rtl' : 'ltr';
+  }, [locale]);
+
   function changeLocale(value) {
     setLocale(value);
-    localStorage.setItem('dicethrower-site-language', value);
+    writeStorage('dicethrower-site-language', value);
   }
 
   function toggleTheme() {
     const next = !dark;
     setDark(next);
-    localStorage.setItem('dicethrower-site-theme', next ? 'dark' : 'light');
+    writeStorage('dicethrower-site-theme', next ? 'dark' : 'light');
   }
 
-  const links = (
-    <nav>
-      <a href={base}>Dice Thrower</a>
-      <a href={base + 'workshop/'}>{locale === 'it' ? 'Crea personaggi' : 'Character workshop'}</a>
-      <a href={base + 'privacy/'}>{copy.privacy}</a>
-      <a href={base + 'terms/'}>{copy.terms}</a>
-      <a href={base + 'contact/'}>{copy.contact}</a>
-      <a href={repo}>{copy.source}</a>
-    </nav>
-  );
+  const nav = [
+    ['home', base, copy.navHome],
+    ['workshop', base + 'workshop/', copy.navWorkshop],
+    ['privacy', base + 'privacy/', copy.privacy],
+    ['terms', base + 'terms/', copy.terms],
+    ['contact', base + 'contact/', copy.contact],
+  ];
 
   return (
-    <div className={dark ? 'app dark' : 'app light'}>
-      <div className="ambient ambient-a" />
-      <div className="ambient ambient-b" />
-
-      <header>
+    <div className="app">
+      <header className="site-header">
         <a className="brand" href={base}>
-          <img className="brand-icon" src={brandArt} alt="" />
-          <div className="brand-copy">
+          <img className="brand-icon" src={base + 'brand/dice-thrower-96.webp'} alt="" width="40" height="40" />
+          <span className="brand-copy">
             <strong>Dice Thrower</strong>
-            <span>local-first dice dashboard</span>
-          </div>
+            <span>{copy.brandTag}</span>
+          </span>
         </a>
-        {links}
+        <nav aria-label="Dice Thrower">
+          {nav.map(([key, href, label]) => (
+            <a key={key} href={href} aria-current={page === key ? 'page' : undefined}>{label}</a>
+          ))}
+          <a href={repo}>{copy.source}</a>
+        </nav>
         <div className="controls">
-          <select value={locale} onChange={(e) => changeLocale(e.target.value)} aria-label="Language">
+          <select value={locale} onChange={(e) => changeLocale(e.target.value)} aria-label={copy.language}>
             {Object.entries(locales).map(([code, value]) => (
               <option value={code} key={code}>{value.nativeName}</option>
             ))}
           </select>
-          <button className="icon-button" onClick={toggleTheme} aria-label="Toggle theme">
-            {dark ? '☀' : '☾'}
+          <button type="button" className="icon-button" onClick={toggleTheme} aria-label={copy.themeToggle} aria-pressed={dark}>
+            <span aria-hidden="true">{dark ? '☀' : '☾'}</span>
           </button>
         </div>
       </header>
 
       <main>
-        {page === 'home' && (
-          <>
-            <section className="hero-shell">
-              <div className="hero-copy">
-                <div className="eyebrow"><span className="pulse" />{copy.status}</div>
-                <h1>Dice<br />Thrower</h1>
-                <p className="tagline">{copy.tagline}</p>
-                <p className="intro">{copy.intro}</p>
-                <div className="hero-actions">
-                  <a className="primary" href={repo}>GitHub</a>
-                  <a className="secondary" href={base + 'privacy/'}>{copy.privacy}</a>
-                </div>
-                <div className="trust-row">
-                  <span>◆ Offline</span>
-                  <span>◆ Account optional</span>
-                  <span>◆ No tracking</span>
-                </div>
-              </div>
-
-              <div className="hero-visual" aria-hidden="true">
-                <div className="orbit orbit-one" />
-                <div className="orbit orbit-two" />
-                <img className="hero-art" src={brandArt} alt="" />
-                <div className="floating-card card-character">
-                  <span className="mini-avatar">A</span>
-                  <div><b>Alyndra</b><small>Level 8 · Arcane</small></div>
-                  <span className="level-pill">Lv 8</span>
-                </div>
-                <div className="floating-card card-roll">
-                  <span className="die-chip">d20</span>
-                  <div><b>Fireball</b><small>8d6 + {'{Intelligence}'}</small></div>
-                  <span className="roll-pill">ROLL</span>
-                </div>
-                <div className="floating-card card-level">
-                  <span className="spark">✦</span>
-                  <div><b>Level up</b><small>all formulas update</small></div>
-                </div>
-              </div>
-            </section>
-
-            <section className="workshop-cta premium-panel"><div><h2>{locale === 'it' ? 'Crea e condividi personaggi' : 'Build & share your characters'}</h2><p>{locale === 'it' ? 'Editor sul web, salvataggio nel browser, link e QR per importare in Android.' : 'Web editor, browser storage, links and QR codes for Android import.'}</p></div><a className="primary" href={base + 'workshop/'}>{locale === 'it' ? 'Apri laboratorio' : 'Open workshop'}</a></section>
-
-            <section className="metric-strip">
-              <div><strong>9</strong><span>dice types</span></div>
-              <div><strong>∞</strong><span>custom rolls</span></div>
-              <div><strong>40</strong><span>Android languages</span></div>
-              <div><strong>0</strong><span>accounts required</span></div>
-            </section>
-
-            <section className="section-heading">
-              <span className="eyebrow">Built for your table</span>
-              <h2>Fast when you play.<br />Flexible when you configure.</h2>
-            </section>
-
-            <section className="grid">
-              {[
-                ['◎', copy.local, copy.localBody],
-                ['◇', copy.flexible, copy.flexibleBody],
-                ['▦', copy.dashboard, copy.dashboardBody],
-                ['↯', copy.shake, copy.shakeBody],
-                ['↟', copy.progression, copy.progressionBody],
-                ['◷', copy.history, copy.historyBody],
-              ].map(([icon, title, body]) => (
-                <article key={title}>
-                  <div className="feature-icon">{icon}</div>
-                  <h3>{title}</h3>
-                  <p>{body}</p>
-                </article>
-              ))}
-            </section>
-
-            <section className="formula-showcase">
-              <div>
-                <span className="eyebrow">Game agnostic</span>
-                <h2>Your rules stay yours.</h2>
-                <p>Dice Thrower stores expressions, variables and level rules — not a specific RPG system.</p>
-              </div>
-              <div className="formula-stack">
-                <code>1d20+{'{Strength}'}</code>
-                <code>4d3+3d6+10</code>
-                <code>2d6+{'{level}'}+{'{Spell Power}'}</code>
-              </div>
-            </section>
-          </>
+        {page === 'home' && <Landing copy={copy} base={base} repo={repo} />}
+        {page === 'workshop' && (
+          <Suspense fallback={<div className="page-loading" aria-busy="true" />}>
+            <CharacterWorkshop locale={locale} />
+          </Suspense>
         )}
-
-        {page === 'workshop' && <CharacterWorkshop locale={locale} />}
         {page === 'privacy' && <Legal title={copy.privacyTitle} body={copy.privacyBody} />}
         {page === 'terms' && <Legal title={copy.termsTitle} body={copy.termsBody} />}
         {page === 'contact' && (
@@ -171,9 +105,12 @@ export default function App() {
         )}
       </main>
 
-      <footer>
-        <div className="footer-brand"><img src={brandArt} alt="" /> <b>Dice Thrower</b></div>
-        <span>MIT · local-first · game-agnostic</span>
+      <footer className="site-footer">
+        <div className="footer-brand">
+          <img src={base + 'brand/dice-thrower-96.webp'} alt="" width="28" height="28" />
+          <b>Dice Thrower</b>
+        </div>
+        <span>{copy.footerTag}</span>
       </footer>
     </div>
   );

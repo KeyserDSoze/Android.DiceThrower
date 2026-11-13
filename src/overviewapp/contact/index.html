@@ -1,1 +1,30 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg"/><title>Dice Thrower · Contact</title></head><body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
+    <meta name="theme-color" content="#0a0b14" />
+    <meta name="description" content="Support, feature requests and bug reports for Dice Thrower." />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Contact — Dice Thrower" />
+    <meta property="og:description" content="Support, feature requests and bug reports for Dice Thrower." />
+    <title>Contact — Dice Thrower</title>
+    <script>
+      (function () {
+        var dark = true;
+        try {
+          var saved = localStorage.getItem('dicethrower-site-theme');
+          dark = saved ? saved === 'dark' : !(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
+        } catch (e) {
+          dark = !(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
+        }
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

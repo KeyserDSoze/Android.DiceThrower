@@ -6,6 +6,8 @@ export default defineConfig({
   base: process.env.GITHUB_ACTIONS ? '/Android.DiceThrower/' : '/',
   plugins: [react()],
   build: {
+    // three.js lives in a lazily imported chunk loaded after first paint.
+    chunkSizeWarningLimit: 700,
     rollupOptions: {
       input: {
         home: resolve(import.meta.dirname, 'index.html'),
