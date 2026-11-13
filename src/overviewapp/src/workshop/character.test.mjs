@@ -1257,3 +1257,20 @@ test('Android app handoff is offered only for valid documents within the 8000-ch
   custom.character.tag = 'A different campaign';
   assert.throws(() => shareUrl(custom, 'https://example.com/workshop/'), error => error.code === 'link-too-long');
 });
+
+test('web validation mirrors the Android expression limits', async () => {
+  const { newCharacter, newRoll, validateDocument } = await import('./character.js');
+  const withExpression = (expression) => {
+    const doc = newCharacter('Limits');
+    const roll = newRoll(doc.character.id);
+    roll.expression = expression;
+    doc.rolls.push(roll);
+    return doc;
+  };
+  for (const ok of ['1d20+{level}', '2x{level}', '2 d6', '{level}d6', '100d6', '5d100+5d100+5d100+5d100+5d100']) {
+    assert.doesNotThrow(() => validateDocument(withExpression(ok)), ok);
+  }
+  for (const bad of ['2 {level}', '3 1d6', '1d10 0', '{level} {level}', '101d6', '0d6', '100d6+100d6+100d6+100d6+100d6+1d6']) {
+    assert.throws(() => validateDocument(withExpression(bad)), undefined, bad);
+  }
+});

@@ -121,6 +121,16 @@ export function validateDocument(doc) {
   }
   const formula = text => {
     assert(typeof text === 'string' && text.length > 0 && text.length <= 1500 && exprPattern.test(text), 'Invalid dice expression');
+    // Mirror the Android parser: numbers (or variables resolving to numbers) separated only by
+    // spaces are not concatenated ("2 {level}" is an error), and dice counts are bounded.
+    assert(!/[0-9}]\s+[0-9{]/.test(text), 'Separate numbers with an operator (for example 2x{level})');
+    let totalDice = 0;
+    for (const match of text.replace(/\{[^{}]*\}/g, ' ').matchAll(/(\d*)\s*[dD]\s*(\d+)/g)) {
+      const count = match[1] === '' ? 1 : Number(match[1]);
+      assert(count >= 1 && count <= 100, 'Dice count must be between 1 and 100');
+      totalDice += count;
+    }
+    assert(totalDice <= 500, 'An expression can contain at most 500 dice');
     for (const match of text.matchAll(/\{([^{}]+)\}/g)) {
       const token = match[1].trim().toLowerCase();
       const segments = token.startsWith('levelstep:') ? token.slice('levelstep:'.length).split(':') : null;
