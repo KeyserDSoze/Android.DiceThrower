@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="change_not_saved_invalid_rolls">ไม่ได้บันทึกการเปลี่ยนแปลง: การเปลี่ยนแปลงนี้จะทำให้การทอยอย่างน้อยหนึ่งรายการไม่ถูกต้อง</string>
+    <string name="change_not_saved_data_reloaded">ไม่ได้บันทึกการเปลี่ยนแปลง: ข้อมูลถูกแก้ไขจากที่อื่นและโหลดใหม่แล้ว โปรดลองอีกครั้ง</string>
+</resources>

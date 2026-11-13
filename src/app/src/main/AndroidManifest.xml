@@ -15,9 +15,12 @@
             android:name=".BackupActivity"
             android:exported="true" />
 
+        <!-- singleTask: an import link opened from a browser must reach the running instance
+             (onNewIntent) instead of stacking a second MainActivity with its own data copy. -->
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

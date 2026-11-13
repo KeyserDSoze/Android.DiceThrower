@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="change_not_saved_invalid_rolls">ફેરફાર સાચવ્યો નથી: તેનાથી એક અથવા વધુ રોલ અમાન્ય થઈ જાત.</string>
+    <string name="change_not_saved_data_reloaded">ફેરફાર સાચવ્યો નથી: ડેટા બીજી જગ્યાએ બદલાયો હતો અને ફરીથી લોડ કરવામાં આવ્યો છે. કૃપા કરીને ફરી પ્રયાસ કરો.</string>
+</resources>

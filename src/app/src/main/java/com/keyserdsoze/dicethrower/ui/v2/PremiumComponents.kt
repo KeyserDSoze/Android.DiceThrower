@@ -1,7 +1,5 @@
 package com.keyserdsoze.dicethrower.ui.v2
 
-import android.graphics.BitmapFactory
-import android.net.Uri
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -32,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,7 +55,6 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.keyserdsoze.dicethrower.R
-import com.keyserdsoze.dicethrower.data.CharacterImageAssetStore
 import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.ui.theme.Cinzel
@@ -182,24 +180,14 @@ fun CharacterAvatar(
     size: Int = 64,
 ) {
     val context = LocalContext.current
-    val bitmap = remember(character.image, character.imageUri) {
-        val portable = character.image?.let { ref ->
-            CharacterImageAssetStore(context).loadVerified(ref)?.let { bytes ->
-                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-            }
-        }
-        portable ?: character.imageUri?.let { raw ->
-            runCatching {
-                context.contentResolver.openInputStream(Uri.parse(raw)).use { stream ->
-                    BitmapFactory.decodeStream(stream)
-                }
-            }.getOrNull()
-        }
-    }
+    // Read, verified and decoded off the main thread, sampled to the avatar size and cached.
+    val sizePx = with(LocalDensity.current) { size.dp.roundToPx() }
+    val bitmap = rememberAvatarBitmap(context, character.image, character.imageUri, sizePx)
+    val image = remember(bitmap) { bitmap?.asImageBitmap() }
 
-    if (bitmap != null) {
+    if (image != null) {
         Image(
-            bitmap = bitmap.asImageBitmap(),
+            bitmap = image,
             contentDescription = character.name,
             modifier = modifier
                 .size(size.dp)
@@ -386,6 +374,11 @@ fun DragReorderCard(
         targetValue = if (abs(dragOffset) > 1f) 1.02f else 1f,
         label = "drag-scale",
     )
+    // The gesture keeps running across reorders; always use the latest position and data.
+    val currentCanMoveUp by rememberUpdatedState(canMoveUp)
+    val currentCanMoveDown by rememberUpdatedState(canMoveDown)
+    val currentOnMoveUp by rememberUpdatedState(onMoveUp)
+    val currentOnMoveDown by rememberUpdatedState(onMoveDown)
 
     PremiumCard(
         modifier = modifier
@@ -395,7 +388,7 @@ fun DragReorderCard(
                 scaleY = scale
                 shadowElevation = if (abs(dragOffset) > 1f) 16f else 0f
             }
-            .pointerInput(key, canMoveUp, canMoveDown) {
+            .pointerInput(key) {
                 detectDragGesturesAfterLongPress(
                     onDragStart = { dragOffset = 0f },
                     onDragCancel = { dragOffset = 0f },
@@ -403,11 +396,11 @@ fun DragReorderCard(
                     onDrag = { change, dragAmount ->
                         change.consume()
                         dragOffset += dragAmount.y
-                        if (dragOffset <= -threshold && canMoveUp) {
-                            onMoveUp()
+                        if (dragOffset <= -threshold && currentCanMoveUp) {
+                            currentOnMoveUp()
                             dragOffset = 0f
-                        } else if (dragOffset >= threshold && canMoveDown) {
-                            onMoveDown()
+                        } else if (dragOffset >= threshold && currentCanMoveDown) {
+                            currentOnMoveDown()
                             dragOffset = 0f
                         }
                     },

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="change_not_saved_invalid_rolls">Modificarea nu a fost salvată: ar face una sau mai multe aruncări invalide.</string>
+    <string name="change_not_saved_data_reloaded">Modificarea nu a fost salvată: datele au fost modificate în altă parte și au fost reîncărcate. Încercați din nou.</string>
+</resources>

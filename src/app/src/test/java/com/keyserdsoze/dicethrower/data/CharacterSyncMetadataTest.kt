@@ -1,17 +1,22 @@
 package com.keyserdsoze.dicethrower.data
 
+import com.keyserdsoze.dicethrower.data.cloud.CloudDocumentCodec
 import com.keyserdsoze.dicethrower.model.AppData
 import com.keyserdsoze.dicethrower.model.CharacterModifier
 import com.keyserdsoze.dicethrower.model.CharacterProfile
+import com.keyserdsoze.dicethrower.model.CharacterSyncMetadata
 import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 import com.keyserdsoze.dicethrower.model.DiceTableTheme
+import com.keyserdsoze.dicethrower.model.LevelRuleKind
 import com.keyserdsoze.dicethrower.model.RollDefinition
+import com.keyserdsoze.dicethrower.model.RollLevelRule
 import com.keyserdsoze.dicethrower.model.RollLog
 import com.keyserdsoze.dicethrower.model.RollLogPart
 import com.keyserdsoze.dicethrower.model.RollDiceAppearance
 import com.keyserdsoze.dicethrower.model.RollSubgroup
 import com.keyserdsoze.dicethrower.model.RollSubgroupOperator
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -218,6 +223,56 @@ class CharacterSyncMetadataTest {
     }
 
     @Test
+    fun levelRuleBoundsParticipateInRevisionWithoutChangingLegacyHashes() {
+        // Pinned before bounds took part in the revision: unbounded rules keep their hash.
+        assertEquals(LEGACY_WIZARD_REVISION, CharacterRevision.revision(wizard(), WIZARD_ID))
+
+        val bounded = CharacterRevision.revision(wizard(startLevel = 3, maxRepeats = 8), WIZARD_ID)
+        assertNotEquals(LEGACY_WIZARD_REVISION, bounded)
+        assertNotEquals(bounded, CharacterRevision.revision(wizard(startLevel = 3, maxRepeats = 9), WIZARD_ID))
+        assertNotEquals(bounded, CharacterRevision.revision(wizard(startLevel = 4, maxRepeats = 8), WIZARD_ID))
+        assertNotEquals(bounded, CharacterRevision.revision(wizard(startLevel = null, maxRepeats = 8), WIZARD_ID))
+    }
+
+    @Test
+    fun boundedCharacterStampedBeforeBoundsCountedStaysValidUntilEdited() {
+        // Saved, or uploaded to Drive, by a version that ignored bounds: same hash as unbounded.
+        val legacy = CharacterSyncMetadata(WIZARD_ID, 10L, LEGACY_WIZARD_REVISION, "old-device", LEGACY_WIZARD_REVISION)
+        val stored = wizard(startLevel = 3, maxRepeats = 8).copy(characterSyncMetadata = listOf(legacy))
+
+        assertTrue(AppDataValidator.validate(stored).isEmpty())
+        assertEquals(stored, decodeStoredData(AppDataJsonCodec.encodeData(stored).toString()))
+        val document = CloudDocumentCodec.buildCharacterDocument(stored, WIZARD_ID)
+        assertEquals(document, CloudDocumentCodec.decodeCharacter(CloudDocumentCodec.encodeCharacter(document)))
+        // Loading must not re-stamp it: that would look like a local edit and upload it again.
+        assertEquals(stored, SyncMetadataManager.ensureMetadata(stored, "new-device", 50L))
+
+        // Changing only a bound is a real edit that syncs.
+        val edited = SyncMetadataManager.reconcileLocalEdit(stored, wizard(startLevel = 3, maxRepeats = 9), "new-device", 60L)
+        val metadata = edited.characterSyncMetadata.single()
+        assertEquals(CharacterRevision.revision(edited, WIZARD_ID), metadata.revision)
+        assertEquals("new-device", metadata.writerId)
+        assertEquals(60L, metadata.updatedAt)
+        assertEquals(LEGACY_WIZARD_REVISION, metadata.baseRevision)
+        assertTrue(AppDataValidator.validate(edited).isEmpty())
+
+        // The older hash never covers content that changed in any other way.
+        val renamed = stored.copy(characters = stored.characters.map { it.copy(name = "Archmage") })
+        assertFalse(AppDataValidator.validate(renamed).isEmpty())
+    }
+
+    private fun wizard(startLevel: Int? = null, maxRepeats: Int? = null) = AppData(
+        characters = listOf(CharacterProfile(id = WIZARD_ID, name = "Wizard", level = 9)),
+        rolls = listOf(RollDefinition(
+            id = "missile", characterId = WIZARD_ID, name = "Magic Missile", expression = "3d4+3",
+            levelRules = listOf(RollLevelRule(
+                "dart", LevelRuleKind.EVERY_LEVELS, trigger = 2, expression = "1d4+1",
+                startLevel = startLevel, maxRepeats = maxRepeats,
+            )),
+        )),
+    )
+
+    @Test
     fun classifiesSameLocalOnlyRemoteOnlyAndConcurrentChanges() {
         val base = "base"
         val local = "local"
@@ -252,5 +307,7 @@ class CharacterSyncMetadataTest {
 
     private companion object {
         const val CHARACTER_ID = "character"
+        const val WIZARD_ID = "wizard"
+        const val LEGACY_WIZARD_REVISION = "558b60e01cca4dbae6e19e0c3f36960cdaefe04873dc9ff1798fc395bbbd49ae"
     }
 }

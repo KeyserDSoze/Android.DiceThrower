@@ -13,7 +13,10 @@ enum class SyncChangeState {
 }
 
 object CharacterRevision {
-    fun canonicalContent(data: AppData, characterId: String): String {
+    fun canonicalContent(data: AppData, characterId: String): String =
+        canonicalContent(data, characterId, levelRuleBounds = true)
+
+    private fun canonicalContent(data: AppData, characterId: String, levelRuleBounds: Boolean): String {
         val character = requireNotNull(data.characters.firstOrNull { it.id == characterId }) {
             "Unknown character $characterId"
         }
@@ -95,6 +98,11 @@ object CharacterRevision {
                 canonical.field("kind", rule.kind.name)
                 canonical.field("trigger", rule.trigger)
                 canonical.field("expression", rule.expression)
+                // Unset bounds are omitted so unbounded rules keep their pre-bounds hashes.
+                if (levelRuleBounds) {
+                    rule.startLevel?.let { canonical.field("startLevel", it) }
+                    rule.maxRepeats?.let { canonical.field("maxRepeats", it) }
+                }
             }
             roll.subgroups.forEach { subgroup ->
                 canonical.section("rollSubgroup")
@@ -220,9 +228,24 @@ object CharacterRevision {
         return canonical.toString()
     }
 
-    fun revision(data: AppData, characterId: String): String {
-        val digest = MessageDigest.getInstance("SHA-256")
-            .digest(canonicalContent(data, characterId).toByteArray(Charsets.UTF_8))
+    fun revision(data: AppData, characterId: String): String = sha256(canonicalContent(data, characterId))
+
+    /**
+     * Earlier versions left periodic-rule bounds (startLevel, maxRepeats) out of the revision, so
+     * a character with a bounded rule can carry that older hash, locally or on Drive. It still
+     * identifies the unchanged character; any edit stamps the current [revision].
+     */
+    fun isLegacyRevision(revision: String, data: AppData, characterId: String): Boolean =
+        data.rolls.any { roll ->
+            roll.characterId == characterId && roll.levelRules.any { it.startLevel != null || it.maxRepeats != null }
+        } && revision == sha256(canonicalContent(data, characterId, levelRuleBounds = false))
+
+    /** Whether [revision] identifies the current content of the character. */
+    fun matches(revision: String, data: AppData, characterId: String): Boolean =
+        revision == revision(data, characterId) || isLegacyRevision(revision, data, characterId)
+
+    private fun sha256(content: String): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest(content.toByteArray(Charsets.UTF_8))
         return digest.joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
     }
 
@@ -265,7 +288,7 @@ object SyncMetadataManager {
         val metadata = proposed.characters.map { character ->
             val revision = CharacterRevision.revision(proposed, character.id)
             val prior = previousMetadata[character.id]
-            if (prior != null && prior.revision == revision) {
+            if (prior != null && (prior.revision == revision || keepsLegacyRevision(prior, previous, proposed))) {
                 prior
             } else {
                 CharacterSyncMetadata(
@@ -279,6 +302,18 @@ object SyncMetadataManager {
         }.sortedBy { it.characterId }
 
         return proposed.copy(characterSyncMetadata = metadata)
+    }
+
+    /**
+     * Metadata stamped before bounds took part in the revision stays as is while the character is
+     * unchanged: re-stamping on load would look like a local edit, upload it again and could win
+     * a conflict against a real remote change.
+     */
+    private fun keepsLegacyRevision(prior: CharacterSyncMetadata, previous: AppData, proposed: AppData): Boolean {
+        val id = prior.characterId
+        return previous.characters.any { it.id == id } &&
+            CharacterRevision.isLegacyRevision(prior.revision, proposed, id) &&
+            CharacterRevision.canonicalContent(previous, id) == CharacterRevision.canonicalContent(proposed, id)
     }
 
     fun ensureMetadata(

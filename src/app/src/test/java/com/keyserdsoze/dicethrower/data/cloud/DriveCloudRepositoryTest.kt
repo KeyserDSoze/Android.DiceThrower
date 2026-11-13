@@ -6,6 +6,7 @@ import com.keyserdsoze.dicethrower.data.CloudMode
 import com.keyserdsoze.dicethrower.data.PortableCharacterImageAsset
 import com.keyserdsoze.dicethrower.data.SyncMetadataManager
 import com.keyserdsoze.dicethrower.model.AppData
+import com.keyserdsoze.dicethrower.model.CharacterImageRef
 import com.keyserdsoze.dicethrower.model.CharacterProfile
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -123,6 +124,96 @@ class DriveCloudRepositoryTest {
         return CloudDocumentCodec.buildCharacterDocument(data, "hero")
     }
 
+    private fun imageDocument(portrait: CharacterImageRef?, table: CharacterImageRef?, now: Long): CloudCharacterDocument {
+        val data = SyncMetadataManager.ensureMetadata(
+            AppData(characters = listOf(CharacterProfile("hero", "Hero", image = portrait, diceTableImage = table))),
+            writerId = "device-a",
+            now = now,
+        )
+        return CloudDocumentCodec.buildCharacterDocument(data, "hero")
+    }
+
+    private fun assetKeys(transport: FakeDriveTransport): Map<String, String> =
+        transport.files.values.single().file.appProperties.filterKeys { it.startsWith("dt_asset_id") }
+
+    @Test
+    fun characterWithPortraitAndTableImageStoresEachAssetIdAndReadsBack() = runBlocking {
+        val transport = FakeDriveTransport()
+        val repository = DriveCloudRepository(transport)
+        val portrait = CharacterImageAssets.createRef("portrait".toByteArray(), "image/png")
+        val table = CharacterImageAssets.createRef("table".toByteArray(), "image/jpeg")
+        val document = imageDocument(portrait, table, now = 10L)
+        assertEquals(listOf(portrait.assetId, table.assetId).sorted(), document.metadata.assetIds)
+
+        repository.putCharacter(document)
+
+        val properties = assetKeys(transport)
+        assertEquals(document.metadata.assetIds, properties.values.sorted())
+        // Each id gets its own property, within Drive's 124-byte key plus value limit.
+        properties.forEach { (key, value) ->
+            assertTrue(key.toByteArray().size + value.toByteArray().size <= 124)
+        }
+        assertEquals(listOf(document.metadata), repository.listCharacters())
+        assertEquals(document, repository.readCharacter("hero"))
+    }
+
+    @Test
+    fun singleAssetKeepsLegacyPropertyAndRemovedImagesAreCleared() = runBlocking {
+        val transport = FakeDriveTransport()
+        val repository = DriveCloudRepository(transport)
+        val portrait = CharacterImageAssets.createRef("portrait".toByteArray(), "image/png")
+        val table = CharacterImageAssets.createRef("table".toByteArray(), "image/jpeg")
+
+        repository.putCharacter(imageDocument(portrait, null, now = 10L))
+        // Versions that only know one asset read exactly this key.
+        assertEquals(mapOf("dt_asset_id" to portrait.assetId), assetKeys(transport))
+
+        repository.putCharacter(imageDocument(portrait, table, now = 11L))
+        assertEquals(2, assetKeys(transport).size)
+
+        val tableOnly = imageDocument(null, table, now = 12L)
+        repository.putCharacter(tableOnly)
+        assertEquals(mapOf("dt_asset_id" to table.assetId), assetKeys(transport))
+        assertEquals(tableOnly, repository.readCharacter("hero"))
+
+        val noImages = imageDocument(null, null, now = 13L)
+        repository.putCharacter(noImages)
+        assertTrue(assetKeys(transport).isEmpty())
+        assertEquals(listOf(noImages.metadata), repository.listCharacters())
+        assertEquals(noImages, repository.readCharacter("hero"))
+    }
+
+    @Test
+    fun documentsWithAnIncompleteLegacyAssetIndexStayReadable() = runBlocking {
+        val transport = FakeDriveTransport()
+        val repository = DriveCloudRepository(transport)
+        val portrait = CharacterImageAssets.createRef("portrait".toByteArray(), "image/png")
+        val table = CharacterImageAssets.createRef("table".toByteArray(), "image/jpeg")
+        val document = imageDocument(portrait, table, now = 10L)
+        repository.putCharacter(document)
+        // Earlier versions wrote no asset property at all for a character with two images.
+        val stored = transport.files.values.single()
+        transport.files[stored.file.id] = stored.copy(
+            file = stored.file.copy(appProperties = stored.file.appProperties.filterKeys { !it.startsWith("dt_asset_id") }),
+        )
+
+        assertEquals(document, repository.readCharacter("hero"))
+    }
+
+    @Test
+    fun identityMismatchBetweenPropertiesAndDocumentIsStillRejected() = runBlocking {
+        val transport = FakeDriveTransport()
+        val repository = DriveCloudRepository(transport)
+        repository.putCharacter(characterDocument())
+        val stored = transport.files.values.single()
+        transport.files[stored.file.id] = stored.copy(
+            file = stored.file.copy(appProperties = stored.file.appProperties + ("dt_revision" to "f".repeat(64))),
+        )
+
+        val error = runCatching { repository.readCharacter("hero") }.exceptionOrNull()
+        assertTrue(error is CloudProtocolException)
+    }
+
     private class FakeDriveTransport(
         private var failFirstCreateAfterCommit: Boolean = false,
     ) : DriveAppDataTransport {
@@ -163,10 +254,14 @@ class DriveCloudRepositoryTest {
             mimeType: String,
             appProperties: Map<String, String>,
             bytes: ByteArray,
+            removedAppProperties: Set<String>,
         ): DriveAppDataFile {
-            assertNotNull(files[fileId])
+            val existing = files[fileId]
+            assertNotNull(existing)
             updateCalls++
-            val file = DriveAppDataFile(fileId, name, mimeType, appProperties = appProperties)
+            // Like Drive, files.update merges appProperties and only clears explicitly removed keys.
+            val merged = existing!!.file.appProperties + appProperties - removedAppProperties
+            val file = DriveAppDataFile(fileId, name, mimeType, appProperties = merged)
             files[fileId] = Stored(file, bytes.copyOf())
             return file
         }

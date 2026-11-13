@@ -358,7 +358,7 @@ object AppDataJsonCodec {
             json.optString("rollButtonPosition"),
             RollButtonPosition.BOTTOM_RIGHT,
         ),
-        logRetention = json.optInt("logRetention", 20),
+        logRetention = json.optInt("logRetention", 20).takeIf { it >= 0 } ?: 20,
         conflictPolicy = enumValueOrDefault(json.optString("conflictPolicy"), ConflictPolicy.ASK),
     )
 

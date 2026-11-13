@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="change_not_saved_invalid_rolls">Cambio no guardado: haría que una o más tiradas no fueran válidas.</string>
+    <string name="change_not_saved_data_reloaded">Cambio no guardado: los datos se modificaron en otro lugar y se han recargado. Inténtalo de nuevo.</string>
+</resources>

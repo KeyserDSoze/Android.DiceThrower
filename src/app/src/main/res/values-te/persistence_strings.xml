@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="change_not_saved_invalid_rolls">మార్పు సేవ్ కాలేదు: ఇది ఒకటి లేదా అంతకంటే ఎక్కువ రోల్‌లను చెల్లనివిగా చేస్తుంది.</string>
+    <string name="change_not_saved_data_reloaded">మార్పు సేవ్ కాలేదు: డేటా వేరే చోట మార్చబడింది మరియు మళ్లీ లోడ్ చేయబడింది. దయచేసి మళ్లీ ప్రయత్నించండి.</string>
+</resources>

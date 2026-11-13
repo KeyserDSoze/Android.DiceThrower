@@ -221,6 +221,39 @@ class CloudSyncEngineTest {
     }
 
     @Test
+    fun rebuiltJournalNeverAutoResolvesUntilACleanPass() = runBlocking {
+        val remote = FakeRemote()
+        val deviceA = FakeLocal("device-a", characterData("Hero", "device-a", 10L))
+        val deviceB = FakeLocal("device-b", AppData())
+        val engineA = engine(deviceA, remote, 100L)
+        val engineB = engine(deviceB, remote, 200L)
+        engineA.sync()
+        engineB.sync()
+        deviceA.rename("Older remote edit", 300L)
+        deviceB.rename("Newer local edit", 400L)
+        engineA.sync()
+        // The journal could not be read and was rebuilt: its state cannot be trusted blindly.
+        deviceB.journal = deviceB.journal.copy(reconciliationRequired = true)
+
+        val asked = engineB.sync(ConflictPolicy.LATEST_WINS)
+
+        assertEquals(SyncStatusKind.CONFLICT, asked.status.kind)
+        assertEquals(0, asked.status.autoResolvedCount)
+        assertEquals("Older remote edit", remote.characters.getValue(CHARACTER_ID).data.characters.single().name)
+        assertEquals(false, deviceB.lastPlan!!.reconciliationComplete)
+        assertTrue(deviceB.journal.reconciliationRequired)
+
+        val resolved = engineB.sync(
+            ConflictPolicy.LATEST_WINS,
+            resolutions = mapOf(CHARACTER_ID to SyncConflictResolution.KEEP_LOCAL),
+        )
+
+        assertEquals(SyncStatusKind.SYNCED, resolved.status.kind)
+        assertEquals(true, deviceB.lastPlan!!.reconciliationComplete)
+        assertEquals(false, deviceB.journal.reconciliationRequired)
+    }
+
+    @Test
     fun latestWinsTieBreakIsDeterministicByRevisionThenWriter() {
         assertTrue(
             CloudSyncEngine.compareConflictVersions(100L, "bbb", "device-a", 100L, "aaa", "device-z") > 0,
@@ -455,6 +488,7 @@ class CloudSyncEngineTest {
         var settings: AppSettings = AppSettings(),
     ) : SyncLocalGateway {
         var journal = LocalSyncJournal()
+        var lastPlan: LocalSyncCommitPlan? = null
         private val assets = mutableMapOf<String, PortableCharacterImageAsset>()
 
         override fun snapshot(now: Long): LocalSyncSnapshot {
@@ -476,6 +510,7 @@ class CloudSyncEngineTest {
         override fun readImageAsset(ref: CharacterImageRef): PortableCharacterImageAsset? = assets[ref.assetId]
 
         override fun commit(plan: LocalSyncCommitPlan): LocalSyncCommitResult {
+            lastPlan = plan
             var dataChanged = false
             plan.characters.forEach { change ->
                 val current = data.characterSyncMetadata.firstOrNull { it.characterId == change.characterId }
@@ -517,6 +552,7 @@ class CloudSyncEngineTest {
             journal = journal.copy(
                 pendingDeletions = journal.pendingDeletions.filterNot { resolved[it.characterId] == it },
                 lastSuccessfulSyncAt = plan.successfulAt,
+                reconciliationRequired = journal.reconciliationRequired && !plan.reconciliationComplete,
             )
             return LocalSyncCommitResult(
                 dataChanged,

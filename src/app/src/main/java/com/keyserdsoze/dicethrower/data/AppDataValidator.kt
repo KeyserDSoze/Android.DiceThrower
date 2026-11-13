@@ -2,20 +2,38 @@ package com.keyserdsoze.dicethrower.data
 
 import com.keyserdsoze.dicethrower.dice.RollFormulaResolver
 import com.keyserdsoze.dicethrower.model.AppData
+import com.keyserdsoze.dicethrower.model.CharacterModifier
+import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.LevelRuleKind
 import com.keyserdsoze.dicethrower.model.DiceAppearanceMode
 import com.keyserdsoze.dicethrower.model.EffectValueSource
 import com.keyserdsoze.dicethrower.model.EffectActionType
 import com.keyserdsoze.dicethrower.model.PartReferenceAliases
 import com.keyserdsoze.dicethrower.model.DiceStylePresets
+import com.keyserdsoze.dicethrower.model.RollDefinition
 
 object AppDataValidator {
+    const val MAX_CHARACTER_LEVEL = 9999
+
     private val dieSlotRegex = Regex("""\d+:\d+""")
     private val revisionRegex = Regex("[0-9a-f]{64}")
     private val imageAssetIdRegex = Regex("img_[0-9a-f]{64}")
 
-    fun validate(data: AppData): List<String> {
+    /**
+     * Full validation, used where data enters or leaves the app: backup restore and export,
+     * Drive documents and character transfers. Every roll must resolve at its character's level.
+     */
+    fun validate(data: AppData): List<String> = validate(data, acceptedBaseline = null)
+
+    /**
+     * Validation relative to data that an earlier save (possibly by an older version) already
+     * accepted. A character level, or a roll whose definition, character level and modifiers are
+     * all unchanged from [acceptedBaseline], keeps that acceptance: rules introduced later never
+     * stop stored data from loading or unrelated edits from saving. Changed values are fully checked.
+     */
+    fun validate(data: AppData, acceptedBaseline: AppData?): List<String> {
         val errors = mutableListOf<String>()
+        val accepted = acceptedBaseline?.let(::AcceptedBaseline)
         val characterIds = data.characters.map { it.id }.toSet()
         val groupById = data.groups.associateBy { it.id }
         val styleById = DiceStylePresets.availableStyles(data.diceStyles).associateBy { it.id }
@@ -48,7 +66,10 @@ object AppDataValidator {
 
         data.characters.forEach { character ->
             if (character.name.isBlank()) errors += "Character ${character.id} has a blank name"
-            if (character.level < 1) errors += "Character ${character.id} has an invalid level"
+            if (character.level < 1 ||
+                (character.level > MAX_CHARACTER_LEVEL && accepted?.acceptsLevel(character) != true)) {
+                errors += "Character ${character.id} has an invalid level"
+            }
             listOfNotNull(character.image, character.diceTableImage).forEach { image ->
                 if (!imageAssetIdRegex.matches(image.assetId) || image.assetId != "img_${image.sha256}") {
                     errors += "Character ${character.id} has an invalid image asset ID"
@@ -102,7 +123,7 @@ object AppDataValidator {
             }
             if (!revisionRegex.matches(metadata.revision)) {
                 errors += "Sync metadata for ${metadata.characterId} has an invalid revision"
-            } else if (metadata.revision != CharacterRevision.revision(data, metadata.characterId)) {
+            } else if (!CharacterRevision.matches(metadata.revision, data, metadata.characterId)) {
                 errors += "Sync metadata for ${metadata.characterId} does not match character content"
             }
             if (metadata.writerId.isBlank()) {
@@ -143,15 +164,21 @@ object AppDataValidator {
             if (roll.minimumLevel !in 1..9999) errors += "Roll ${roll.id} has an invalid minimum level"
 
             val modifiers = data.modifiers.filter { it.characterId == character.id }
-            if (!RollFormulaResolver.validateTemplate(roll.expression, character.level, modifiers)) {
+            val checkExpressions = accepted?.acceptsRoll(roll, character, modifiers) != true
+            var templatesValid = true
+            if (checkExpressions &&
+                !RollFormulaResolver.validateTemplate(roll.expression, character.level, modifiers)) {
                 errors += "Roll ${roll.id} has an invalid expression"
+                templatesValid = false
             }
             if (roll.subgroups.isNotEmpty() && roll.subgroups.none { it.includeInNormalRoll }) {
                 errors += "Roll ${roll.id} needs at least one Part in the initial throw"
             }
             roll.subgroups.forEach { subgroup ->
-                if (!RollFormulaResolver.validateTemplate(subgroup.expression, character.level, modifiers)) {
+                if (checkExpressions &&
+                    !RollFormulaResolver.validateTemplate(subgroup.expression, character.level, modifiers)) {
                     errors += "Roll subgroup ${subgroup.id} has an invalid expression"
+                    templatesValid = false
                 }
             }
             if (roll.subgroups.isNotEmpty()) {
@@ -228,9 +255,17 @@ object AppDataValidator {
                     errors += "Level rule ${rule.id} has an invalid start level"
                 if (rule.maxRepeats != null && (rule.kind != LevelRuleKind.EVERY_LEVELS || rule.maxRepeats !in 1..40))
                     errors += "Level rule ${rule.id} has an invalid repetition limit"
-                if (!RollFormulaResolver.validateTemplate(rule.expression, character.level, modifiers)) {
+                if (checkExpressions &&
+                    !RollFormulaResolver.validateTemplate(rule.expression, character.level, modifiers)) {
                     errors += "Level rule ${rule.id} has an invalid expression"
+                    templatesValid = false
                 }
+            }
+            // Every template can be valid while the expanded roll still cannot be thrown,
+            // e.g. a periodic rule exceeding the dice limit at the character's level.
+            if (checkExpressions && templatesValid &&
+                runCatching { RollFormulaResolver.resolve(character, modifiers, roll) }.isFailure) {
+                errors += "Roll ${roll.id} cannot be resolved at level ${character.level}"
             }
 
             val appearance = roll.diceAppearance
@@ -269,9 +304,34 @@ object AppDataValidator {
         return errors
     }
 
-    fun requireValid(data: AppData) {
-        val errors = validate(data)
+    fun requireValid(data: AppData, acceptedBaseline: AppData? = null) {
+        val errors = validate(data, acceptedBaseline)
         require(errors.isEmpty()) { errors.joinToString("; ") }
+    }
+
+    /**
+     * Pre-save check for an edit of [current]. LocalStore re-stamps sync metadata when
+     * saving, so the proposed copy's stale revisions are deliberately not compared here.
+     */
+    fun validateEdit(proposed: AppData, current: AppData): List<String> =
+        validate(proposed.copy(characterSyncMetadata = emptyList()), acceptedBaseline = current)
+
+    private class AcceptedBaseline(data: AppData) {
+        private val levels = data.characters.associate { it.id to it.level }
+        private val rolls = data.rolls.associateBy { it.id }
+        private val modifiers = data.modifiers.groupBy { it.characterId }
+            .mapValues { (_, items) -> variables(items) }
+
+        fun acceptsLevel(character: CharacterProfile): Boolean = levels[character.id] == character.level
+
+        fun acceptsRoll(
+            roll: RollDefinition,
+            character: CharacterProfile,
+            characterModifiers: List<CharacterModifier>,
+        ): Boolean = rolls[roll.id] == roll && acceptsLevel(character) &&
+            modifiers[character.id].orEmpty() == variables(characterModifiers)
+
+        private fun variables(items: List<CharacterModifier>) = items.map { it.name to it.value }.toSet()
     }
 
     private fun validateRollStyleReference(

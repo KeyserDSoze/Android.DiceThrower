@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="change_not_saved_invalid_rolls">ಬದಲಾವಣೆಯನ್ನು ಉಳಿಸಲಾಗಿಲ್ಲ: ಇದು ಒಂದು ಅಥವಾ ಹೆಚ್ಚಿನ ರೋಲ್‌ಗಳನ್ನು ಅಮಾನ್ಯಗೊಳಿಸುತ್ತಿತ್ತು.</string>
+    <string name="change_not_saved_data_reloaded">ಬದಲಾವಣೆಯನ್ನು ಉಳಿಸಲಾಗಿಲ್ಲ: ಡೇಟಾವನ್ನು ಬೇರೆಡೆ ಬದಲಾಯಿಸಲಾಗಿದೆ ಮತ್ತು ಮರುಲೋಡ್ ಮಾಡಲಾಗಿದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</string>
+</resources>

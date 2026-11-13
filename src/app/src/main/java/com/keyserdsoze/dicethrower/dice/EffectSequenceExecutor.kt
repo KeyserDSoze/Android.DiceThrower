@@ -100,30 +100,19 @@ object EffectSequenceExecutor {
                     }
                     when (action.kind) {
                         EffectActionType.REROLL, EffectActionType.ROLL_AFTER -> {
-                            val previousSnapshot = numeric
+                            val usedDice = generated.sumOf { sample ->
+                                sample.result.components.sumOf { component -> component.rolls.size }
+                            }
                             val result = applyDiceAction(
-                                effect.id, action, previousSnapshot, resolvedPartExpressions, random,
+                                effect.id, action, numeric, resolvedPartExpressions, random,
+                                remainingDice = MAX_GENERATED_DICE - usedDice,
                             )
-                            numeric = result.first
-                            results += result.second
-                            result.third?.let { sampled ->
-                                val additionalDice = sampled.result.components.sumOf { it.rolls.size }
-                                if (generated.sumOf { it.result.components.sumOf { component -> component.rolls.size } } +
-                                    additionalDice > MAX_GENERATED_DICE) {
-                                    // Reject this action rather than retaining an unbounded sample.
-                                    numeric = previousSnapshot
-                                    results.removeAt(results.lastIndex)
-                                    results += result.second.copy(
-                                        applied = false,
-                                        after = null,
-                                        error = "Effect generated dice limit exceeded",
-                                        snapshot = previousSnapshot,
-                                    )
-                                    limited = true
-                                } else {
-                                    generated += sampled
-                                    generatedThisPass = true
-                                }
+                            numeric = result.snapshot
+                            results += result.trace
+                            if (result.diceLimitExceeded) limited = true
+                            result.drawn?.let { sampled ->
+                                generated += sampled
+                                generatedThisPass = true
                             }
                         }
                         else -> {
@@ -157,21 +146,22 @@ object EffectSequenceExecutor {
         }
         EffectValueSource.ROLL -> {
             val initialTotal = requireNotNull(original.roll) { "Missing Roll" }
-            val initial = original.partsById.values.sumOf { it.total }
-            val modified = current.parts.values.sumOf { it.total }
+            val initial = original.partsById.values.map { it.total }.sumExact()
+            val modified = current.parts.values.map { it.total }.sumExact()
             val total = Math.addExact(initialTotal.total, Math.subtractExact(modified, initial))
             when (condition.scope) {
                 EffectValueScope.TOTAL -> total
                 EffectValueScope.DICE_ONLY -> {
-                    val diceOriginal = initialTotal.components.sumOf { it.subtotal }
-                    val initialDice = original.partsById.values.sumOf { part -> part.components.sumOf { it.subtotal } }
-                    val currentDice = current.parts.values.sumOf { it.dice }
+                    val diceOriginal = initialTotal.components.map { it.subtotal }.sumExact()
+                    val initialDice = original.partsById.values
+                        .flatMap { part -> part.components.map { it.subtotal } }.sumExact()
+                    val currentDice = current.parts.values.map { it.dice }.sumExact()
                     Math.addExact(diceOriginal, Math.subtractExact(currentDice, initialDice))
                 }
                 EffectValueScope.MODIFIERS_ONLY -> {
                     val originalModifiers = initialTotal.constantTotal
-                    val previous = original.partsById.values.sumOf { it.constantTotal }
-                    val changed = current.parts.values.sumOf { it.modifiers }
+                    val previous = original.partsById.values.map { it.constantTotal }.sumExact()
+                    val changed = current.parts.values.map { it.modifiers }.sumExact()
                     Math.addExact(originalModifiers, Math.subtractExact(changed, previous))
                 }
             }
@@ -185,10 +175,20 @@ object EffectSequenceExecutor {
         }
     }
 
+    private class DiceActionOutcome(
+        val snapshot: EffectNumericSnapshot,
+        val trace: EffectActionResult,
+        val drawn: EffectGeneratedDice?,
+        val diceLimitExceeded: Boolean = false,
+    )
+
+    private class GeneratedDiceLimitExceeded : IllegalArgumentException("Effect generated dice limit exceeded")
+
     /**
      * Take a fresh sample solely in the logical engine. A targeted reroll replaces
      * its selected dice/Part, while roll-after adds the new sample's contribution.
      * Modifiers-only actions never sample dice: constants are deterministic.
+     * An expression needing more than [remainingDice] dice is rejected before sampling.
      */
     private fun applyDiceAction(
         effectId: String,
@@ -196,14 +196,19 @@ object EffectSequenceExecutor {
         snapshot: EffectNumericSnapshot,
         expressions: Map<String, String>,
         random: Random,
-    ): Triple<EffectNumericSnapshot, EffectActionResult, EffectGeneratedDice?> {
+        remainingDice: Int,
+    ): DiceActionOutcome {
         val id = action.targetPartId
         val part = id?.let { snapshot.parts[it] }
         val before = part?.value(action.scope)
         val outcome = runCatching {
             require(id != null && part != null) { "Missing target Part" }
-            val expression = action.expression.ifBlank {
+            val expression = if (action.expression.isBlank()) {
                 requireNotNull(expressions[id]) { "Missing resolved Part expression" }
+            } else {
+                // The editor validates follow-up formulas as Roll templates ({level}, modifier
+                // names, {levelstep:…}); resolve them with this throw's values the same way.
+                RollFormulaResolver.resolveWithVariables(action.expression, snapshot.variables)
             }
             val shape = DiceExpression.parse(expression)
             if (action.scope == EffectValueScope.MODIFIERS_ONLY) {
@@ -211,28 +216,26 @@ object EffectSequenceExecutor {
                     "Modifiers-only rerolls cannot consume dice RNG"
                 }
             }
+            if (shape.diceCount > remainingDice) throw GeneratedDiceLimitExceeded()
             val sample = shape.evaluate(random)
+            val sampledDice = sample.components.map { it.subtotal }.sumExact()
             val next = when (action.kind) {
                 EffectActionType.REROLL -> when (action.scope) {
-                    EffectValueScope.DICE_ONLY -> part.copy(
-                        dice = sample.components.sumOf { it.subtotal },
-                    )
+                    EffectValueScope.DICE_ONLY -> part.copy(dice = sampledDice)
                     EffectValueScope.MODIFIERS_ONLY -> part.copy(modifiers = sample.constantTotal)
                     EffectValueScope.TOTAL -> part.copy(
-                        dice = sample.components.sumOf { it.subtotal },
+                        dice = sampledDice,
                         modifiers = sample.constantTotal,
                         totalAdjustment = 0,
                     )
                 }
                 EffectActionType.ROLL_AFTER -> when (action.scope) {
-                    EffectValueScope.DICE_ONLY -> part.copy(dice = Math.addExact(
-                        part.dice, sample.components.sumOf { it.subtotal },
-                    ))
+                    EffectValueScope.DICE_ONLY -> part.copy(dice = Math.addExact(part.dice, sampledDice))
                     EffectValueScope.MODIFIERS_ONLY -> part.copy(
                         modifiers = Math.addExact(part.modifiers, sample.constantTotal),
                     )
                     EffectValueScope.TOTAL -> part.copy(
-                        dice = Math.addExact(part.dice, sample.components.sumOf { it.subtotal }),
+                        dice = Math.addExact(part.dice, sampledDice),
                         modifiers = Math.addExact(part.modifiers, sample.constantTotal),
                     )
                 }
@@ -247,13 +250,27 @@ object EffectSequenceExecutor {
         }
         return outcome.fold(
             onSuccess = { (changed, after, drawn) ->
-                Triple(changed, EffectActionResult(action.id, true, id, action.scope,
+                DiceActionOutcome(changed, EffectActionResult(action.id, true, id, action.scope,
                     before, after, snapshot = changed), drawn)
             },
             onFailure = { failure ->
-                Triple(snapshot, EffectActionResult(action.id, false, id, action.scope,
-                    before, null, error = failure.message ?: "Roll effect failed", snapshot = snapshot), null)
+                DiceActionOutcome(
+                    snapshot,
+                    EffectActionResult(action.id, false, id, action.scope,
+                        before, null, error = failure.message ?: "Roll effect failed", snapshot = snapshot),
+                    drawn = null,
+                    diceLimitExceeded = failure is GeneratedDiceLimitExceeded,
+                )
             },
         )
+    }
+
+    /** Int sums that fail closed instead of silently wrapping around. */
+    private fun List<Int>.sumExact(): Int = fold(0) { total, value ->
+        try {
+            Math.addExact(total, value)
+        } catch (overflow: ArithmeticException) {
+            throw IllegalArgumentException("Effect result exceeds supported integer range", overflow)
+        }
     }
 }

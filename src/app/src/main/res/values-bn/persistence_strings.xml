@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="change_not_saved_invalid_rolls">পরিবর্তন সংরক্ষিত হয়নি: এতে এক বা একাধিক রোল অবৈধ হয়ে যেত।</string>
+    <string name="change_not_saved_data_reloaded">পরিবর্তন সংরক্ষিত হয়নি: ডেটা অন্য কোথাও পরিবর্তিত হয়েছে এবং আবার লোড করা হয়েছে। আবার চেষ্টা করুন।</string>
+</resources>

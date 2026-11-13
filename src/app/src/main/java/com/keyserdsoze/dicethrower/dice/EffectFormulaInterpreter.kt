@@ -133,7 +133,7 @@ object EffectFormulaInterpreter {
                     val token = peek()
                     when {
                         token == null -> throw IllegalArgumentException("Incomplete effect formula")
-                        token.isDigit() || token == '.' -> number()
+                        token.isAsciiDigit() || token == '.' -> number()
                         token.isLetter() || token == '_' -> {
                             val identifier = identifier()
                             skipWhitespace()
@@ -154,17 +154,20 @@ object EffectFormulaInterpreter {
             }
         }
 
+        /** Only ASCII digits form numbers, exactly like DiceExpression. */
         private fun number(): Double {
             val start = cursor
             var digits = 0
-            while (peek()?.isDigit() == true) { cursor++; digits++ }
+            while (peek()?.isAsciiDigit() == true) { cursor++; digits++ }
             if (peek() == '.') {
                 cursor++
-                while (peek()?.isDigit() == true) { cursor++; digits++ }
+                while (peek()?.isAsciiDigit() == true) { cursor++; digits++ }
             }
             require(digits > 0) { "Invalid decimal number" }
             return finite(input.substring(start, cursor).toDouble())
         }
+
+        private fun Char.isAsciiDigit(): Boolean = this in '0'..'9'
 
         private fun identifier(): String {
             val start = cursor

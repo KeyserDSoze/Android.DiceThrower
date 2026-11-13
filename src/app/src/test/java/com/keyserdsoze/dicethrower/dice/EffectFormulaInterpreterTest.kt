@@ -40,6 +40,14 @@ class EffectFormulaInterpreterTest {
     }
 
     @Test
+    fun numbersUseOnlyAsciiDigitsLikeDiceExpressions() {
+        assertEquals(20.5, eval("20.5"), 0.000001)
+        listOf("٣", "1٣", "٢٠", "۲.5", "2.٥").forEach { formula ->
+            assertTrue("Accepted $formula", runCatching { eval(formula) }.exceptionOrNull() is IllegalArgumentException)
+        }
+    }
+
+    @Test
     fun invalidOrDangerousMathFailsWithoutSamplingDice() {
         for (formula in listOf(
             "1d20", "1/0", "1/(2-2)", "bad(5)",

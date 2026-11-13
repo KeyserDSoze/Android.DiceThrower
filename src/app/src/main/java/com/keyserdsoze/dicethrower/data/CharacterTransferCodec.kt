@@ -76,8 +76,14 @@ object CharacterTransferCodec {
     fun encodeToken(data: AppData, characterId: String): String {
         val raw = encodeJson(data, characterId)
         val stream = ByteArrayOutputStream()
-        DeflaterOutputStream(stream, Deflater(9)).use { out ->
-            out.write(raw.toByteArray(Charsets.UTF_8))
+        // DeflaterOutputStream only ends deflaters it created itself; release the native one here.
+        val deflater = Deflater(9)
+        try {
+            DeflaterOutputStream(stream, deflater).use { out ->
+                out.write(raw.toByteArray(Charsets.UTF_8))
+            }
+        } finally {
+            deflater.end()
         }
         return "v1." + Base64.getUrlEncoder().withoutPadding().encodeToString(stream.toByteArray())
     }
@@ -115,7 +121,8 @@ object CharacterTransferCodec {
 
     fun decodeJson(raw: String): AppData {
         require(raw.toByteArray(Charsets.UTF_8).size <= MAX_RAW_BYTES) { "Character is too large" }
-        val envelope = JSONObject(raw)
+        // Links and files are untrusted: bound the nesting before org.json recurses into it.
+        val envelope = JsonNestingGuard.parse(raw) { JSONObject(it) }
         require(envelope.optString("format") == FORMAT &&
             envelope.optInt("formatVersion") in FORMAT_VERSION..BOUNDED_RULE_FORMAT_VERSION) {
             "Unsupported character document"
@@ -195,7 +202,8 @@ object CharacterTransferCodec {
             diceStyles = existing.diceStyles + duplicated.diceStyles
                 .filter { it.characterId == fresh.id }.map { it.copy(characterId = null) },
         )
-        AppDataValidator.requireValid(merged)
+        // The incoming copy is new data and fully checked; existing local data keeps its acceptance.
+        AppDataValidator.requireValid(merged, acceptedBaseline = existing)
         return merged
     }
 }

@@ -1,7 +1,6 @@
 package com.keyserdsoze.dicethrower.ui.v2
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,6 +21,8 @@ import com.keyserdsoze.dicethrower.ui.theme.DiceTheme
 import com.keyserdsoze.dicethrower.ui.theme.LightSystemBarIcons
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -90,8 +91,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -112,6 +113,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.testTag
@@ -120,6 +122,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.keyserdsoze.dicethrower.AppLanguageOption
 import com.keyserdsoze.dicethrower.AppLocaleManager
 import com.keyserdsoze.dicethrower.GoogleConnectionFailure
@@ -129,6 +132,7 @@ import com.keyserdsoze.dicethrower.data.CloudAccountState
 import com.keyserdsoze.dicethrower.data.AppDataValidator
 import com.keyserdsoze.dicethrower.data.DashboardDataOperations
 import com.keyserdsoze.dicethrower.data.LocalStore
+import com.keyserdsoze.dicethrower.data.StaleDataException
 import com.keyserdsoze.dicethrower.data.sync.ConflictArea
 import com.keyserdsoze.dicethrower.data.sync.SyncConflict
 import com.keyserdsoze.dicethrower.data.sync.SyncConflictResolution
@@ -162,11 +166,11 @@ import com.keyserdsoze.dicethrower.model.CharacterProfile
 import com.keyserdsoze.dicethrower.model.ConflictPolicy
 import com.keyserdsoze.dicethrower.model.DoubleRollMode
 import com.keyserdsoze.dicethrower.model.EffectType
+import com.keyserdsoze.dicethrower.model.EffectValueSource
 import com.keyserdsoze.dicethrower.model.RollVisualEffectsSettings
 import com.keyserdsoze.dicethrower.model.DiceStyle
 import com.keyserdsoze.dicethrower.model.DiceTableTheme
 import com.keyserdsoze.dicethrower.model.LevelRuleKind
-import com.keyserdsoze.dicethrower.model.RollButtonPosition
 import com.keyserdsoze.dicethrower.model.RollDiceAppearance
 import com.keyserdsoze.dicethrower.model.RollDefinition
 import com.keyserdsoze.dicethrower.model.RollLevelAvailability
@@ -318,6 +322,8 @@ fun DiceThrowerAppV2(
     }
 
     var data by remember { mutableStateOf(store.loadData()) }
+    // Version of the stored document that `data` was loaded from (optimistic-concurrency token).
+    var dataVersion by remember { mutableStateOf(store.dataVersion()) }
     var route by rememberSaveable { mutableStateOf(RouteV2.CHARACTERS) }
     var selectedCharacterId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedGroupId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -326,10 +332,27 @@ fun DiceThrowerAppV2(
     var editMode by rememberSaveable { mutableStateOf(false) }
     var editingActiveRoll by rememberSaveable { mutableStateOf(false) }
     val stateHolder = rememberSaveableStateHolder()
+    val context = LocalContext.current
+
+    fun reloadData() {
+        data = store.loadData()
+        dataVersion = store.dataVersion()
+    }
 
     fun persist(updated: AppData) {
-        data = store.saveData(updated)
-        onLocalDataChanged()
+        try {
+            data = store.saveData(updated, expectedVersion = dataVersion)
+            dataVersion = store.dataVersion()
+            onLocalDataChanged()
+        } catch (_: StaleDataException) {
+            // An import, a sync or another window saved meanwhile: never overwrite that newer
+            // content with this older copy; show the stored data instead.
+            reloadData()
+            Toast.makeText(context, R.string.change_not_saved_data_reloaded, Toast.LENGTH_LONG).show()
+        } catch (_: IllegalArgumentException) {
+            // LocalStore refuses invalid data; keep the last saved state instead of crashing.
+            Toast.makeText(context, R.string.change_not_saved_invalid_rolls, Toast.LENGTH_LONG).show()
+        }
     }
 
     fun navigateBack() {
@@ -362,7 +385,13 @@ fun DiceThrowerAppV2(
     }
 
     LaunchedEffect(dataRefreshVersion) {
-        if (dataRefreshVersion > 0) data = store.loadData()
+        if (dataRefreshVersion > 0) reloadData()
+    }
+
+    // Pick up data saved elsewhere while this screen was not in the foreground.
+    LifecycleResumeEffect(Unit) {
+        if (store.dataVersion() != dataVersion) reloadData()
+        onPauseOrDispose { }
     }
 
     syncStatus.conflicts.firstOrNull()?.let { conflict ->
@@ -502,14 +531,14 @@ fun DiceThrowerAppV2(
                         onEditRoll = { editingActiveRoll = true },
                         canChangeLevel = { proposed ->
                             proposed in 1..9999 &&
-                                AppDataValidator.validate(data.withCharacterLevel(character.id, proposed)).isEmpty()
+                                AppDataValidator.validateEdit(data.withCharacterLevel(character.id, proposed), data).isEmpty()
                         },
                         onLevelChanged = { newLevel ->
                             if (newLevel in 1..9999) {
                                 val proposed = data.withCharacterLevel(character.id, newLevel)
                                 // Dynamic dice counts like {level}d6 can become invalid
                                 // above 100. Reject the change rather than crash in LocalStore.
-                                if (AppDataValidator.validate(proposed).isEmpty()) persist(proposed)
+                                if (AppDataValidator.validateEdit(proposed, data).isEmpty()) persist(proposed)
                             }
                         },
                         onLogged = { log ->
@@ -1039,11 +1068,27 @@ internal fun CharacterEditContentV2(
     var editingRollId by remember { mutableStateOf<String?>(null) }
     var addRuleRollId by remember { mutableStateOf<String?>(null) }
     var levelText by remember(character.id) { mutableStateOf(character.level.toString()) }
+    var levelRejected by remember(character.id) { mutableStateOf(false) }
+    val context = LocalContext.current
     // Keep the edit list's position while the nested roll builder replaces its content.
     val editListState = rememberLazyListState()
 
     LaunchedEffect(character.level) {
         if (levelText.toIntOrNull() != character.level) levelText = character.level.toString()
+        levelRejected = false
+    }
+
+    // Level and modifier edits are checked as a save would check them, so an edit that would
+    // make a roll unrollable (e.g. {level}d6 above level 100) is refused instead of persisted.
+    fun withLevel(level: Int): AppData = data.copy(
+        characters = data.characters.map { if (it.id == character.id) it.copy(level = level) else it },
+    )
+    fun acceptsEdit(proposed: AppData): Boolean = AppDataValidator.validateEdit(proposed, data).isEmpty()
+    val canLevelDown = remember(data, character.id) {
+        character.level > 1 && acceptsEdit(withLevel(character.level - 1))
+    }
+    val canLevelUp = remember(data, character.id) {
+        character.level < AppDataValidator.MAX_CHARACTER_LEVEL && acceptsEdit(withLevel(character.level + 1))
     }
 
     val groups = data.groups.filter { it.characterId == character.id }.sortedBy { it.order }
@@ -1124,48 +1169,36 @@ internal fun CharacterEditContentV2(
                             val candidate = raw.filter(Char::isDigit).take(4)
                             if (candidate.isBlank() || (candidate.toIntOrNull() ?: 0) >= 1) {
                                 levelText = candidate
+                                levelRejected = false
                                 candidate.toIntOrNull()?.let { newLevel ->
                                     if (newLevel != character.level) {
-                                        onDataChanged(
-                                            data.copy(
-                                                characters = data.characters.map {
-                                                    if (it.id == character.id) it.copy(level = newLevel) else it
-                                                },
-                                            ),
-                                        )
+                                        val proposed = withLevel(newLevel)
+                                        if (acceptsEdit(proposed)) onDataChanged(proposed) else levelRejected = true
                                     }
                                 }
                             }
                         },
                         label = { Text(stringResource(R.string.level)) },
                         singleLine = true,
+                        isError = levelRejected,
                         modifier = Modifier.width(96.dp),
                     )
                     Spacer(Modifier.weight(1f))
                     OutlinedButton(
-                        enabled = character.level > 1,
+                        enabled = canLevelDown,
                         onClick = {
                             levelText = (character.level - 1).coerceAtLeast(1).toString()
-                            onDataChanged(
-                                data.copy(
-                                    characters = data.characters.map {
-                                        if (it.id == character.id) it.copy(level = (it.level - 1).coerceAtLeast(1)) else it
-                                    },
-                                ),
-                            )
+                            levelRejected = false
+                            onDataChanged(withLevel((character.level - 1).coerceAtLeast(1)))
                         },
                     ) { Text("−") }
                     Spacer(Modifier.width(8.dp))
                     Button(
+                        enabled = canLevelUp,
                         onClick = {
                             levelText = (character.level + 1).toString()
-                            onDataChanged(
-                                data.copy(
-                                    characters = data.characters.map {
-                                        if (it.id == character.id) it.copy(level = it.level + 1) else it
-                                    },
-                                ),
-                            )
+                            levelRejected = false
+                            onDataChanged(withLevel(character.level + 1))
                         },
                     ) {
                         Icon(Icons.Rounded.Add, contentDescription = null)
@@ -1405,12 +1438,17 @@ internal fun CharacterEditContentV2(
                 existingNames = modifiers.filterNot { it.id == existing.id }.map { it.name },
                 onDismiss = { editingModifierId = null },
                 onSave = { saved ->
-                    onDataChanged(
-                        data.copy(
-                            modifiers = data.modifiers.map { if (it.id == saved.id) saved else it },
-                        ),
+                    val proposed = data.copy(
+                        modifiers = data.modifiers.map { if (it.id == saved.id) saved else it },
                     )
-                    editingModifierId = null
+                    // A modifier used as a dice count or renamed while referenced could
+                    // break rolls; keep the dialog open instead of persisting invalid data.
+                    if (acceptsEdit(proposed)) {
+                        onDataChanged(proposed)
+                        editingModifierId = null
+                    } else {
+                        Toast.makeText(context, R.string.change_not_saved_invalid_rolls, Toast.LENGTH_LONG).show()
+                    }
                 },
             )
         }
@@ -1468,11 +1506,6 @@ internal fun DiceTablePickerV2(
     val imageAssetStore = remember(context) { CharacterImageAssetStore(context) }
     var imageImportFailed by remember { mutableStateOf(false) }
     var expanded by rememberSaveable(character.id) { mutableStateOf(false) }
-    val customPreview = remember(character.diceTableImage) {
-        character.diceTableImage
-            ?.let(imageAssetStore::loadVerified)
-            ?.let(::decodeTableBitmap)
-    }
     val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             runCatching { imageAssetStore.importFromUri(uri) }
@@ -1522,7 +1555,8 @@ internal fun DiceTablePickerV2(
                     rowThemes.forEach { theme ->
                         val selected = character.diceTableImage == null && character.diceTableTheme == theme
                         val label = stringResource(theme.presetNameRes())
-                        val previewBitmap = remember(context, theme) { theme.presetBitmap(context, preview = true).asImageBitmap() }
+                        val previewBitmap = rememberTablePreviewBitmap(context, theme)
+                        val previewImage = remember(previewBitmap) { previewBitmap?.asImageBitmap() }
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
@@ -1539,14 +1573,19 @@ internal fun DiceTablePickerV2(
                             ),
                         ) {
                             Column {
-                                Image(
-                                    bitmap = previewBitmap,
-                                    contentDescription = label,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(118.dp),
-                                )
+                                if (previewImage != null) {
+                                    Image(
+                                        bitmap = previewImage,
+                                        contentDescription = label,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(118.dp),
+                                    )
+                                } else {
+                                    // Same footprint and label while the preview is painted off the main thread.
+                                    Box(Modifier.fillMaxWidth().height(118.dp).semantics { contentDescription = label })
+                                }
                                 Text(
                                     text = label,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
@@ -1568,6 +1607,7 @@ internal fun DiceTablePickerV2(
             }
         }
 
+        val customPreview = rememberCustomTablePreviewBitmap(context, character.diceTableImage)
         if (customPreview != null) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -1577,7 +1617,7 @@ internal fun DiceTablePickerV2(
             ) {
                 Column {
                     Image(
-                        bitmap = customPreview.asImageBitmap(),
+                        bitmap = remember(customPreview) { customPreview.asImageBitmap() },
                         contentDescription = stringResource(R.string.image_selected),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
@@ -2293,20 +2333,22 @@ private fun RollScreenV2(
     onLogged: (RollLog) -> Unit,
 ) {
     val context = LocalContext.current
-    val tableImageStore = remember(context) { CharacterImageAssetStore(context) }
-    val presetTableBitmap = remember(context, character.diceTableTheme) {
-        character.diceTableTheme.presetBitmap(context)
-    }
-    val customTableBitmap = remember(character.diceTableImage) {
-        character.diceTableImage
-            ?.let(tableImageStore::loadVerified)
-            ?.let(::decodeTableBitmap)
-    }
-    val tableBitmap = customTableBitmap ?: presetTableBitmap
+    // Cached process-wide and produced off the main thread; a custom image replaces the preset,
+    // which is then not painted at all. The plain table colour shows until the image is ready.
+    val tableBitmap = rememberRollTableBitmap(context, character.diceTableTheme, character.diceTableImage)
     val tableImageKey = character.diceTableImage?.assetId ?: "preset:${character.diceTableTheme.name}"
-    val formula = remember(character.level, modifiers, roll) {
-        RollFormulaResolver.resolve(character, modifiers, roll)
+    val resolvedFormula = remember(character.level, modifiers, roll) {
+        runCatching { RollFormulaResolver.resolve(character, modifiers, roll) }.getOrNull()
     }
+    if (resolvedFormula == null) {
+        // Legacy data can hold a roll that newer limits no longer allow at this level.
+        LaunchedEffect(roll.id) {
+            Toast.makeText(context, R.string.invalid_expression, Toast.LENGTH_LONG).show()
+            onBack()
+        }
+        return
+    }
+    val formula = resolvedFormula
     val parsedExpression = remember(formula.expression) { DiceExpression.parse(formula.expression) }
     val previewResult = remember(formula.expression) { parsedExpression.previewResult() }
     val subgroupIdByComponentIndex = remember(formula.subgroups) {
@@ -2507,11 +2549,15 @@ private fun RollScreenV2(
     }
 
     val shakeTriggerEnabled = if (hasRolled) settings.rerollShakeEnabled else settings.shakeEnabled
-    DisposableEffect(shakeTriggerEnabled, hasRolled, resultRevealed, roll.id, formula.expression) {
-        val detector = if (shakeTriggerEnabled && (!hasRolled || resultRevealed)) {
-            ShakeDetector(context) { requestThrow() }.also { it.start() }
+    val shakeArmed = shakeTriggerEnabled && (!hasRolled || resultRevealed)
+    // The detector outlives recompositions: always throw with the current formula and state.
+    val currentRequestThrow by rememberUpdatedState<() -> Unit>({ requestThrow() })
+    // Listen only while the screen is resumed, so a stopped Activity never throws dice.
+    LifecycleResumeEffect(shakeArmed) {
+        val detector = if (shakeArmed) {
+            ShakeDetector(context) { currentRequestThrow() }.also { it.start() }
         } else null
-        onDispose { detector?.stop() }
+        onPauseOrDispose { detector?.stop() }
     }
 
     LightSystemBarIcons()
@@ -2533,7 +2579,9 @@ private fun RollScreenV2(
                 event = visualEvent,
                 tableTheme = character.diceTableTheme,
                 tableImage = tableBitmap,
-                tableImageKey = tableImageKey,
+                // The scene re-reads its table only when this key or the event changes. Artwork that
+                // finishes loading after a throw is applied with the next throw, never by replaying it.
+                tableImageKey = if (tableBitmap == null && !hasRolled) "$tableImageKey:loading" else tableImageKey,
                 fullBleed = true,
                 animateRoll = hasRolled && settings.animationsEnabled,
                 winnerRevealed = resultRevealed,
@@ -2977,21 +3025,6 @@ private fun DiceExpression.previewResult(): DiceRollResult {
         total = components.sumOf { it.subtotal },
         components = components,
         constantTotal = 0,
-    )
-}
-
-private fun decodeTableBitmap(bytes: ByteArray): Bitmap? {
-    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
-
-    var sample = 1
-    while (bounds.outWidth / sample > 2048 || bounds.outHeight / sample > 2048) sample *= 2
-    return BitmapFactory.decodeByteArray(
-        bytes,
-        0,
-        bytes.size,
-        BitmapFactory.Options().apply { inSampleSize = sample },
     )
 }
 
@@ -3727,8 +3760,16 @@ private fun RollTriggerToggle(
     checked: Boolean,
     onChecked: (Boolean) -> Unit,
 ) {
+    // One accessible switch node for the whole row; the Switch only draws (shared press state).
+    val interactionSource = remember { MutableInteractionSource() }
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().toggleable(
+            value = checked,
+            interactionSource = interactionSource,
+            indication = null,
+            role = Role.Switch,
+            onValueChange = onChecked,
+        ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -3736,7 +3777,12 @@ private fun RollTriggerToggle(
             modifier = Modifier.weight(1f),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Switch(checked = checked, onCheckedChange = onChecked)
+        Switch(
+            checked = checked,
+            onCheckedChange = null,
+            modifier = Modifier.minimumInteractiveComponentSize(),
+            interactionSource = interactionSource,
+        )
     }
 }
 
@@ -3746,13 +3792,28 @@ private fun ToggleSettingCard(
     checked: Boolean,
     onChecked: (Boolean) -> Unit,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
     PremiumCard(Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .toggleable(
+                    value = checked,
+                    interactionSource = interactionSource,
+                    indication = null,
+                    role = Role.Switch,
+                    onValueChange = onChecked,
+                )
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(label, modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
-            Switch(checked = checked, onCheckedChange = onChecked)
+            Switch(
+                checked = checked,
+                onCheckedChange = null,
+                modifier = Modifier.minimumInteractiveComponentSize(),
+                interactionSource = interactionSource,
+            )
         }
     }
 }
@@ -4889,27 +4950,6 @@ private fun LevelRuleDialogV2(
     )
 }
 
-@Composable
-private fun positionLabel(position: RollButtonPosition): String = stringResource(
-    when (position) {
-        RollButtonPosition.TOP_LEFT -> R.string.top_left
-        RollButtonPosition.TOP_CENTER -> R.string.top_center
-        RollButtonPosition.TOP_RIGHT -> R.string.top_right
-        RollButtonPosition.BOTTOM_LEFT -> R.string.bottom_left
-        RollButtonPosition.BOTTOM_CENTER -> R.string.bottom_center
-        RollButtonPosition.BOTTOM_RIGHT -> R.string.bottom_right
-    },
-)
-
-private fun RollButtonPosition.toAlignment(): Alignment = when (this) {
-    RollButtonPosition.TOP_LEFT -> Alignment.TopStart
-    RollButtonPosition.TOP_CENTER -> Alignment.TopCenter
-    RollButtonPosition.TOP_RIGHT -> Alignment.TopEnd
-    RollButtonPosition.BOTTOM_LEFT -> Alignment.BottomStart
-    RollButtonPosition.BOTTOM_CENTER -> Alignment.BottomCenter
-    RollButtonPosition.BOTTOM_RIGHT -> Alignment.BottomEnd
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun transparentTopBarColors() = TopAppBarDefaults.topAppBarColors(
@@ -4952,16 +4992,37 @@ private fun updateRoll(
     }
 }
 
-private fun modifierIsReferenced(
+/**
+ * True when deleting the modifier would break a roll: its `{name}` token appears in a roll,
+ * Part (including support-only Parts) or level-rule expression, or an Effect condition or action
+ * uses it as a `{name}` token, a bare formula identifier or a variable condition.
+ */
+internal fun modifierIsReferenced(
     modifierName: String,
     rolls: List<RollDefinition>,
 ): Boolean {
-    val variableRegex = Regex("""\{([^{}]+)\}""")
+    val name = modifierName.trim()
+    fun matches(candidate: String?) = candidate?.trim()?.equals(name, ignoreCase = true) == true
+    fun referencesToken(expression: String) =
+        modifierTokenRegex.findAll(expression).any { matches(it.groupValues[1]) }
+    // Effect formulas also resolve bare identifiers that are not function calls, e.g. "Strength+2".
+    fun referencesIdentifier(formula: String) =
+        effectIdentifierRegex.findAll(modifierTokenRegex.replace(formula, " ")).any { matches(it.value) }
     return rolls.any { roll ->
-        (listOf(roll.expression) + roll.levelRules.map { it.expression }).any { expression ->
-            variableRegex.findAll(expression).any { match ->
-                match.groupValues[1].trim().equals(modifierName.trim(), ignoreCase = true)
+        (listOf(roll.expression) + roll.subgroups.map { it.expression } + roll.levelRules.map { it.expression })
+            .any(::referencesToken) ||
+            roll.effects.any { effect ->
+                effect.activationGroups.any { group ->
+                    group.conditions.any { condition ->
+                        (condition.source == EffectValueSource.VARIABLE && matches(condition.variableName)) ||
+                            referencesToken(condition.threshold) || referencesIdentifier(condition.threshold)
+                    }
+                } || effect.actions.any { action ->
+                    referencesToken(action.expression) || referencesIdentifier(action.expression)
+                }
             }
-        }
     }
 }
+
+private val modifierTokenRegex = Regex("""\{([^{}]+)\}""")
+private val effectIdentifierRegex = Regex("""(?<![\p{L}\p{Nd}_])[\p{L}_][\p{L}\p{Nd}_]*(?![\p{L}\p{Nd}_]|\s*\()""")

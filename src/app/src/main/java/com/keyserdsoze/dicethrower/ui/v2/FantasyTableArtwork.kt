@@ -32,11 +32,22 @@ internal object FantasyTableArtwork {
         else -> false
     }
 
+    /**
+     * ARGB colour of a hex literal: 0xRRGGBB values are opaque, 0xAARRGGBB values keep their
+     * explicit alpha. A bare toInt() would give 0xRRGGBB an alpha of zero, so shaders built from it
+     * (the background gradients) painted nothing.
+     */
+    internal fun colorOf(hex: Long): Int = (if (hex <= 0xFFFFFFL) hex or 0xFF000000L else hex).toInt()
+
     fun render(theme: DiceTableTheme, preview: Boolean = false): Bitmap {
         require(supports(theme)) { "No generated artwork for $theme" }
         val width = if (preview) PREVIEW_WIDTH else FULL_WIDTH
         val height = if (preview) PREVIEW_HEIGHT else FULL_HEIGHT
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+        // Full-screen gradients band visibly in RGB_565; small previews keep the cheaper format.
+        val config = if (preview) Bitmap.Config.RGB_565 else Bitmap.Config.ARGB_8888
+        val bitmap = Bitmap.createBitmap(width, height, config)
+        // Same opaque black base an RGB_565 bitmap starts with, so the artwork composites identically.
+        bitmap.eraseColor(Color.BLACK)
         val canvas = Canvas(bitmap)
         canvas.scale(width / FULL_WIDTH.toFloat(), height / FULL_HEIGHT.toFloat())
         Painter(canvas, Random(theme.ordinal * 34171 + 9031)).apply {
@@ -59,7 +70,7 @@ internal object FantasyTableArtwork {
     private class Painter(private val canvas: Canvas, private val rng: Random) {
         private val brush = Paint(Paint.ANTI_ALIAS_FLAG)
         private val bounds = RectF(0f, 0f, FULL_WIDTH.toFloat(), FULL_HEIGHT.toFloat())
-        private fun rgb(hex: Long) = hex.toInt()
+        private fun rgb(hex: Long) = colorOf(hex)
         private fun tint(color: Int, alpha: Int) = Color.argb(alpha.coerceIn(0, 255), Color.red(color), Color.green(color), Color.blue(color))
 
         private fun fill(color: Int, alpha: Int = 255) {

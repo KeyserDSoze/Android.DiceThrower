@@ -40,6 +40,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.CancellationException
 
+private const val STATE_LINK_IMPORT_PENDING = "dicethrower.linkImportPending"
+
+/**
+ * A dicethrower://import launch link is handled on a fresh launch only, never when Android
+ * relaunches the task from Recents with its original intent, nor when the Activity is recreated
+ * (rotation, language change) unless that link's import preview was still awaiting a decision.
+ */
+internal fun shouldHandleLaunchLink(restored: Boolean, importPreviewPending: Boolean, intentFlags: Int): Boolean =
+    if (restored) importPreviewPending
+    else (intentFlags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0
+
 class MainActivity : ComponentActivity() {
     private lateinit var store: LocalStore
     private lateinit var cloudAccountStore: CloudAccountStore
@@ -59,6 +70,8 @@ class MainActivity : ComponentActivity() {
     private var cloudDeleteFailed by mutableStateOf(false)
     private var pendingCharacterImport by mutableStateOf<AppData?>(null)
     private var characterImportError by mutableStateOf(false)
+    /** True while [pendingCharacterImport] comes from the current intent's import link. */
+    private var linkImportPending = false
 
     private val characterFileImportLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument(),
@@ -77,11 +90,16 @@ class MainActivity : ComponentActivity() {
                         output.write(buffer, 0, length)
                     }
                 }
+                finishLinkImport()
                 pendingCharacterImport = CharacterTransferCodec.decodeJson(
                     output.toString(Charsets.UTF_8.name()),
                 )
                 characterImportError = false
             } catch (_: Exception) {
+                pendingCharacterImport = null
+                characterImportError = true
+            } catch (_: StackOverflowError) {
+                // Untrusted file: deeply nested JSON must never crash the app.
                 pendingCharacterImport = null
                 characterImportError = true
             }
@@ -117,10 +135,24 @@ class MainActivity : ComponentActivity() {
             local = AndroidSyncLocalGateway(store),
             remote = cloudRepository,
         )
+        // A sync journal rebuilt after corruption needs a full, user-confirmed reconciliation.
+        if (cloudAccountState.googleConnected && !cloudAccountState.initialReconciliationPending &&
+            store.loadSyncJournal().reconciliationRequired
+        ) {
+            updateCloudAccountState(cloudAccountState.copy(initialReconciliationPending = true))
+        }
         syncStatus = syncEngine.currentStatus(cloudAccountState.googleConnected)
         selectedLanguage = AppLocaleManager.selectedLanguage(this)
         enableEdgeToEdge()
-        handleIncomingCharacterLink(intent)
+        // Handle the launch link once: not again after rotation, recreate() or a relaunch from
+        // Recents, unless its import preview was still waiting for the user's decision.
+        if (shouldHandleLaunchLink(
+                restored = savedInstanceState != null,
+                importPreviewPending = savedInstanceState?.getBoolean(STATE_LINK_IMPORT_PENDING) == true,
+                intentFlags = intent.flags,
+            )) {
+            handleIncomingCharacterLink(intent)
+        }
 
         setContent {
             DiceThrowerTheme(themeMode = settings.themeMode) {
@@ -167,7 +199,10 @@ class MainActivity : ComponentActivity() {
                     pendingCharacterImport?.let { incoming ->
                         CharacterImportPreviewDialog(
                             incoming = incoming,
-                            onDismiss = { pendingCharacterImport = null },
+                            onDismiss = {
+                                pendingCharacterImport = null
+                                finishLinkImport()
+                            },
                             onImport = { name, level ->
                                 try {
                                     val configured = CharacterTransferCodec.withRecipientPreferences(
@@ -183,6 +218,7 @@ class MainActivity : ComponentActivity() {
                                     characterImportError = true
                                 }
                                 pendingCharacterImport = null
+                                finishLinkImport()
                             },
                         )
                     }
@@ -209,6 +245,11 @@ class MainActivity : ComponentActivity() {
         handleIncomingCharacterLink(intent)
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(STATE_LINK_IMPORT_PENDING, linkImportPending && pendingCharacterImport != null)
+    }
+
     private fun handleIncomingCharacterLink(incoming: Intent?) {
         if (incoming?.action != Intent.ACTION_VIEW) return
         val uri = incoming.data ?: return
@@ -218,10 +259,29 @@ class MainActivity : ComponentActivity() {
             require(!token.isNullOrBlank()) { "Missing character payload" }
             pendingCharacterImport = CharacterTransferCodec.decodeToken(token)
             characterImportError = false
+            // The link stays on the intent until the preview is resolved, so a configuration
+            // change can restore the preview; finishLinkImport then consumes it.
+            linkImportPending = true
         } catch (_: Exception) {
-            pendingCharacterImport = null
-            characterImportError = true
+            rejectCharacterLink(incoming)
+        } catch (_: StackOverflowError) {
+            // Untrusted link: deeply nested JSON must never crash the app.
+            rejectCharacterLink(incoming)
         }
+    }
+
+    private fun rejectCharacterLink(incoming: Intent) {
+        pendingCharacterImport = null
+        characterImportError = true
+        linkImportPending = false
+        incoming.data = null
+    }
+
+    /** Consumes the launch link once its import preview is confirmed or dismissed. */
+    private fun finishLinkImport() {
+        if (!linkImportPending) return
+        linkImportPending = false
+        intent?.data = null
     }
 
     override fun onResume() {

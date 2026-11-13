@@ -25,18 +25,16 @@ data class ResolvedRollSubgroup(
 )
 
 /**
- * Existing normal Parts keep their logical formula; dormant subtracting Parts
- * carry a negative sample when invoked by an Effect. An explicit action dice
- * expression still takes precedence over this default.
+ * Default effect formula of each Part, carrying its sign in the Roll: a subtracting Part
+ * (normal or dormant) samples a negative value when an Effect rerolls it or rolls it again,
+ * exactly like its share of the canonical expression. An explicit action dice expression
+ * still takes precedence over this default.
  */
-fun ResolvedRollFormula.effectPartExpressions(): Map<String, String> {
-    val supportIds = supportSubgroups.map { it.id }.toSet()
-    return (subgroups + supportSubgroups).associate { part ->
-        part.id to if (part.id in supportIds &&
-            part.operator == RollSubgroupOperator.SUBTRACT) "-(${part.expression})"
+fun ResolvedRollFormula.effectPartExpressions(): Map<String, String> =
+    (subgroups + supportSubgroups).associate { part ->
+        part.id to if (part.operator == RollSubgroupOperator.SUBTRACT) "-(${part.expression})"
         else part.expression
     }
-}
 
 data class ResolvedRollSubgroupResult(
     val subgroup: ResolvedRollSubgroup,
@@ -77,6 +75,7 @@ object RollFormulaResolver {
     // Escape both braces explicitly. Android's ICU regex engine rejects a bare closing
     // brace here even though the desktop JVM regex engine accepts it.
     private val variableRegex = Regex("""\{([^{}]+)\}""")
+    private val adjacentVariableRegex = Regex("""(?<=[0-9)}])(?=\{)""")
 
     fun resolve(
         character: CharacterProfile,
@@ -97,17 +96,22 @@ object RollFormulaResolver {
             resolvedSubgroups.filterIndexed { index, _ -> roll.subgroups[index].includeInNormalRoll }
         val supportSubgroups = if (roll.subgroups.isEmpty()) emptyList() else
             resolvedSubgroups.filterIndexed { index, _ -> !roll.subgroups[index].includeInNormalRoll }
-        val baseExpression = if (resolvedSubgroups.isEmpty()) {
-            resolveExpression(roll.expression, variables)
+        val base = if (resolvedSubgroups.isEmpty()) {
+            resolveParsed(roll.expression, variables)
         } else {
-            canonicalExpression(
-                roll.subgroups.filter { it.includeInNormalRoll }.map { subgroup ->
-                    val expression = resolvedSubgroups.first { it.id == subgroup.id }.expression
-                    subgroup.copy(expression = expression)
-                },
+            DiceExpression.parse(
+                canonicalExpression(
+                    roll.subgroups.filter { it.includeInNormalRoll }.map { subgroup ->
+                        val expression = resolvedSubgroups.first { it.id == subgroup.id }.expression
+                        subgroup.copy(expression = expression)
+                    },
+                ),
             )
         }
-        val pieces = mutableListOf(baseExpression)
+        val pieces = mutableListOf(base.source to 1)
+        var totalDice = base.diceCount.toLong()
+        var totalTerms = base.termCount.toLong()
+        var totalLength = base.source.length.toLong()
         val appliedRules = mutableListOf<RollLevelRule>()
 
         roll.levelRules.forEach { rule ->
@@ -123,18 +127,35 @@ object RollFormulaResolver {
                 }
             }
 
-            repeat(repeatCount) {
-                pieces += resolveExpression(rule.expression, variables)
-            }
             if (repeatCount > 0) {
+                // Bound the expansion before building it: an uncapped periodic rule at a very
+                // high level must be rejected, not copied thousands of times first.
+                val piece = resolveParsed(rule.expression, variables)
+                totalDice += piece.diceCount.toLong() * repeatCount
+                totalTerms += piece.termCount.toLong() * repeatCount
+                totalLength += (piece.source.length + 1L) * repeatCount
+                require(totalDice <= DiceExpression.MAX_TOTAL_DICE) {
+                    "Level rules add more than ${DiceExpression.MAX_TOTAL_DICE} dice"
+                }
+                require(
+                    totalTerms <= DiceExpression.MAX_TERMS &&
+                        totalLength <= DiceExpression.MAX_EXPRESSION_LENGTH,
+                ) { "Level rules expand the roll beyond the supported expression size" }
+                pieces += piece.source to repeatCount
                 appliedRules += rule
             }
         }
 
-        val combined = pieces.fold("") { current, piece ->
-            appendExpression(current, piece)
-        }
-        val parsed = DiceExpression.parse(combined)
+        val parsed = if (pieces.size == 1) base else DiceExpression.parse(
+            buildString(totalLength.toInt()) {
+                pieces.forEach { (piece, count) ->
+                    repeat(count) {
+                        if (isNotEmpty() && !piece.startsWith("-")) append('+')
+                        append(piece)
+                    }
+                }
+            },
+        )
 
         return ResolvedRollFormula(
             expression = parsed.source,
@@ -172,8 +193,16 @@ object RollFormulaResolver {
         modifiers: List<CharacterModifier>,
     ): String {
         val variables = buildVariableMap(level, modifiers)
-        return DiceExpression.parse(resolveExpression(expression, variables)).source
+        return resolveExpression(expression, variables)
     }
+
+    /**
+     * Resolves [expression] like a Roll formula with already computed [variables] (level and
+     * modifier values keyed by name, in any letter case), e.g. an Effect's follow-up dice formula
+     * at throw time. Unknown variables fail exactly as in [resolveTemplate].
+     */
+    fun resolveWithVariables(expression: String, variables: Map<String, Int>): String =
+        resolveExpression(expression, variables.mapKeys { normalizeName(it.key) })
 
     fun variableNames(modifiers: List<CharacterModifier>): List<String> =
         listOf(LEVEL_VARIABLE) + modifiers.map { it.name }
@@ -230,11 +259,19 @@ object RollFormulaResolver {
     private fun resolveExpression(
         raw: String,
         variables: Map<String, Int>,
-    ): String {
+    ): String = resolveParsed(raw, variables).source
+
+    private fun resolveParsed(
+        raw: String,
+        variables: Map<String, Int>,
+    ): DiceExpression {
+        require(raw.length <= DiceExpression.MAX_EXPRESSION_LENGTH) {
+            "Expression exceeds ${DiceExpression.MAX_EXPRESSION_LENGTH} characters"
+        }
         // A number immediately before a variable is multiplication, not digit concatenation:
         // legacy "2{level}" must resolve as "2x4", never as "24".
         // "{level}d6" intentionally remains a dynamic dice count.
-        val withExplicitMultiplication = Regex("""(?<=[0-9)}])(?=\{)""").replace(raw, "x")
+        val withExplicitMultiplication = adjacentVariableRegex.replace(raw, "x")
         var resolved = variableRegex.replace(withExplicitMultiplication) { match ->
             val requested = normalizeName(match.groupValues[1])
             (variables[requested] ?: computeLevelSteps(requested, variables))
@@ -255,15 +292,7 @@ object RollFormulaResolver {
                 .replace("--", "+")
         }
 
-        return DiceExpression.parse(resolved).source
-    }
-
-    private fun appendExpression(
-        current: String,
-        addition: String,
-    ): String {
-        if (current.isBlank()) return addition
-        return if (addition.startsWith("-")) current + addition else "$current+$addition"
+        return DiceExpression.parse(resolved)
     }
 
     private fun normalizeName(name: String): String =

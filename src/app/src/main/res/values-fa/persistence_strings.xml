@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="change_not_saved_invalid_rolls">تغییر ذخیره نشد: این تغییر یک یا چند پرتاب را نامعتبر می‌کرد.</string>
+    <string name="change_not_saved_data_reloaded">تغییر ذخیره نشد: داده‌ها در جای دیگری تغییر کرده بودند و دوباره بارگیری شدند. دوباره تلاش کنید.</string>
+</resources>

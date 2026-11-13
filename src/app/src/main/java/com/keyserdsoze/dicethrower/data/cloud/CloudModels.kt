@@ -82,6 +82,8 @@ class CloudTransientException(
     message: String,
     val statusCode: Int? = null,
     cause: Throwable? = null,
+    /** False when an immediate retry cannot succeed (e.g. an exhausted quota); a later sync may. */
+    val retryable: Boolean = true,
 ) : CloudRepositoryException(message, cause)
 
 class CloudNotFoundException(message: String) : CloudRepositoryException(message)

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="change_not_saved_invalid_rolls">Změna nebyla uložena: jeden nebo více hodů by se stalo neplatnými.</string>
+    <string name="change_not_saved_data_reloaded">Změna nebyla uložena: data byla změněna jinde a byla znovu načtena. Zkuste to znovu.</string>
+</resources>

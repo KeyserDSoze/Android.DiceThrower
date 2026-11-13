@@ -179,6 +179,54 @@ class EffectSequenceExecutorTest {
     }
 
     @Test
+    fun followUpDiceFormulasResolveLevelAndModifiersLikeTheRollFormula() {
+        val snapshot = EffectRollSnapshot(
+            roll = null,
+            partsById = mapOf("attack" to result(20), "damage" to result(4, modifier = 2, sides = 6)),
+            variables = mapOf("level" to 3, "Strength" to 2),
+        )
+        // The editor accepts these as Roll templates; the throw must resolve them, not fail.
+        val perLevel = effect("per-level", 0, "attack", "20",
+            EffectAction("level-dice", EffectActionType.ROLL_AFTER, "damage",
+                EffectValueScope.DICE_ONLY, "{level}d4"))
+        val withModifier = effect("with-modifier", 1, "attack", "20",
+            EffectAction("strength-reroll", EffectActionType.REROLL, "attack",
+                EffectValueScope.TOTAL, "1d20+{strength}"))
+
+        val outcome = EffectSequenceExecutor.execute(
+            snapshot, listOf(perLevel, withModifier), mapOf("attack" to "1d20", "damage" to "1d6+2"), Random(4),
+        )
+
+        val actions = outcome.steps.flatMap { it.actions }
+        assertEquals(2, actions.size)
+        assertTrue(actions.all { it.applied && it.error == null })
+        val levelDice = outcome.generatedDice.first { it.actionId == "level-dice" }.result.components.single()
+        assertEquals(3, levelDice.rolls.size)
+        assertEquals(4, levelDice.sides)
+        val damage = outcome.finalSnapshot.parts.getValue("damage")
+        assertEquals(4 + levelDice.subtotal, damage.dice)
+        assertEquals(2, damage.modifiers)
+        val attack = outcome.finalSnapshot.parts.getValue("attack")
+        assertEquals(2, attack.modifiers) // Strength, matched regardless of letter case
+        assertEquals(outcome.generatedDice.first { it.actionId == "strength-reroll" }.result.total, attack.total)
+    }
+
+    @Test
+    fun followUpDiceFormulaWithAnUnknownVariableFailsClosed() {
+        val unknown = effect("unknown", 0, "attack", "20",
+            EffectAction("missing-variable", EffectActionType.ROLL_AFTER, "damage",
+                EffectValueScope.DICE_ONLY, "{Dexterity}d6"))
+
+        val outcome = EffectSequenceExecutor.execute(initial, listOf(unknown), expressions, Random(4))
+
+        val action = outcome.steps.single().actions.single()
+        assertFalse(action.applied)
+        assertNotNull(action.error)
+        assertTrue(outcome.generatedDice.isEmpty())
+        assertEquals(4, outcome.finalSnapshot.parts.getValue("damage").total)
+    }
+
+    @Test
     fun selfTriggeringRollAfterCanOnlyExecuteOnce() {
         val loop = effect("loop", 0, "attack", "1",
             EffectAction("again", EffectActionType.ROLL_AFTER,
@@ -215,5 +263,75 @@ class EffectSequenceExecutorTest {
         assertTrue(outcome.steps.isEmpty())
         assertTrue(outcome.generatedDice.isEmpty())
         assertEquals(4, outcome.finalSnapshot.parts.getValue("damage").total)
+    }
+
+    private class CountingRandom(seed: Int) : Random() {
+        private val delegate = Random(seed)
+        var draws = 0
+            private set
+
+        override fun nextBits(bitCount: Int): Int {
+            draws++
+            return delegate.nextBits(bitCount)
+        }
+    }
+
+    @Test
+    fun generatedDiceBudgetIsCheckedBeforeSampling() {
+        val oversized = effect("oversized", 0, "attack", "1",
+            EffectAction("huge", EffectActionType.ROLL_AFTER, "damage",
+                EffectValueScope.DICE_ONLY, "100d6+1d6"))
+        val random = CountingRandom(4)
+        val outcome = EffectSequenceExecutor.execute(initial, listOf(oversized), expressions, random)
+
+        assertEquals("The rejected sample must not consume dice RNG", 0, random.draws)
+        val action = outcome.steps.single().actions.single()
+        assertFalse(action.applied)
+        assertEquals("Effect generated dice limit exceeded", action.error)
+        assertTrue(outcome.executionLimitReached)
+        assertTrue(outcome.generatedDice.isEmpty())
+        assertEquals(4, outcome.finalSnapshot.parts.getValue("damage").total)
+
+        // Exactly the remaining budget is still accepted; the next die is not sampled.
+        val full = effect("full", 0, "attack", "1",
+            EffectAction("hundred", EffectActionType.ROLL_AFTER, "damage",
+                EffectValueScope.DICE_ONLY, "100d6"))
+        val extra = effect("extra", 1, "attack", "1",
+            EffectAction("one-more", EffectActionType.ROLL_AFTER, "attack",
+                EffectValueScope.DICE_ONLY, "1d20"))
+        val budgeted = EffectSequenceExecutor.execute(initial, listOf(full, extra), expressions, Random(4))
+        assertEquals(100, budgeted.generatedDice.single().result.components.single().rolls.size)
+        assertEquals("Effect generated dice limit exceeded",
+            budgeted.steps.last().actions.single().error)
+        assertEquals(20, budgeted.finalSnapshot.parts.getValue("attack").dice)
+    }
+
+    @Test
+    fun rollWideConditionsFailClosedInsteadOfWrappingAroundIntRange() {
+        val huge = { id: String, part: String, order: Int ->
+            effect(id, order, "attack", "1",
+                EffectAction("replace-$part", EffectActionType.REPLACE, part,
+                    EffectValueScope.TOTAL, "2000000000"))
+        }
+        val rollCheck = RollEffect(
+            id = "roll-check", name = "Roll check", type = EffectType.BONUS, order = 2,
+            activationGroups = listOf(EffectActivationGroup("roll-group", listOf(
+                EffectCondition("roll-total", source = com.keyserdsoze.dicethrower.model.EffectValueSource.ROLL,
+                    scope = EffectValueScope.TOTAL, comparison = EffectComparison.LESS, threshold = "0"),
+            ))),
+            actions = listOf(EffectAction("noop", EffectActionType.ADD, "damage", EffectValueScope.TOTAL, "0")),
+        )
+        val outcome = EffectSequenceExecutor.execute(
+            initial, listOf(huge("a", "attack", 0), huge("b", "damage", 1), rollCheck), expressions,
+        )
+
+        assertEquals(2_000_000_000, outcome.finalSnapshot.parts.getValue("attack").total)
+        assertEquals(2_000_000_000, outcome.finalSnapshot.parts.getValue("damage").total)
+        val condition = outcome.steps.single { it.effectId == "roll-check" }
+            .activation.groups.single().conditions.single()
+        // 4e9 does not fit an Int: report it instead of a wrapped negative total.
+        assertFalse(condition.passed)
+        assertNull(condition.actual)
+        assertNotNull(condition.error)
     }
 }

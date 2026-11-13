@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="change_not_saved_invalid_rolls">Modifica non salvata: renderebbe non validi uno o più tiri.</string>
+    <string name="change_not_saved_data_reloaded">Modifica non salvata: i dati sono stati modificati altrove e sono stati ricaricati. Riprova.</string>
+</resources>

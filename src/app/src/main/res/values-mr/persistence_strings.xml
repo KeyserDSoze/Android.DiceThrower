@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="change_not_saved_invalid_rolls">बदल जतन केला नाही: त्यामुळे एक किंवा अधिक रोल अवैध झाले असते.</string>
+    <string name="change_not_saved_data_reloaded">बदल जतन केला नाही: डेटा इतरत्र बदलला गेला आणि पुन्हा लोड केला आहे. कृपया पुन्हा प्रयत्न करा.</string>
+</resources>

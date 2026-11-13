@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="change_not_saved_invalid_rolls">Chưa lưu thay đổi: thay đổi này sẽ làm một hoặc nhiều lượt đổ xúc xắc không hợp lệ.</string>
+    <string name="change_not_saved_data_reloaded">Chưa lưu thay đổi: dữ liệu đã được thay đổi ở nơi khác và đã được tải lại. Vui lòng thử lại.</string>
+</resources>

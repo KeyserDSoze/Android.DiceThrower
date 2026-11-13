@@ -33,12 +33,17 @@ interface DriveAppDataTransport {
         bytes: ByteArray,
     ): DriveAppDataFile
 
+    /**
+     * Updates content and metadata. Drive merges appProperties: keys absent from [appProperties]
+     * are kept unless listed in [removedAppProperties], which are cleared.
+     */
     suspend fun update(
         fileId: String,
         name: String,
         mimeType: String,
         appProperties: Map<String, String>,
         bytes: ByteArray,
+        removedAppProperties: Set<String> = emptySet(),
     ): DriveAppDataFile
 
     suspend fun delete(fileId: String)
@@ -49,6 +54,11 @@ internal object DriveHttpErrorPolicy {
         statusCode == 401 -> CloudAuthorizationException("Google Drive access token is invalid or expired")
         statusCode == 403 && isRateLimit(responseBody) ->
             CloudTransientException("Google Drive rate limit exceeded", statusCode)
+        // Quotas and usage limits (daily limits, storage quota, item limits) are not an
+        // authorization problem: disconnecting would not help and reconnecting would loop. They
+        // last for hours or need user action, so the request is not retried right away either.
+        statusCode == 403 && isQuotaOrUsageLimit(responseBody) ->
+            CloudTransientException("Google Drive quota or usage limit exceeded", statusCode, retryable = false)
         statusCode == 403 -> CloudAuthorizationException("Google Drive app-data access is forbidden")
         statusCode == 404 -> CloudNotFoundException("Google Drive app-data file was not found")
         statusCode == 429 || statusCode in 500..504 ->
@@ -57,7 +67,11 @@ internal object DriveHttpErrorPolicy {
     }
 
     private fun isRateLimit(body: String): Boolean =
-        body.contains("rateLimitExceeded") || body.contains("userRateLimitExceeded")
+        body.contains("rateLimitExceeded") || body.contains("userRateLimitExceeded") ||
+            body.contains("RATE_LIMIT_EXCEEDED")
+
+    private fun isQuotaOrUsageLimit(body: String): Boolean =
+        body.contains("LimitExceeded") || body.contains("quotaExceeded") || body.contains("QuotaExceeded")
 }
 
 internal object DriveRetryPolicy {
@@ -132,9 +146,13 @@ class DriveRestTransport(
         mimeType: String,
         appProperties: Map<String, String>,
         bytes: ByteArray,
+        removedAppProperties: Set<String>,
     ): DriveAppDataFile = withContext(Dispatchers.IO) {
         val boundary = "dice_thrower_${UUID.randomUUID()}"
-        val body = multipartBody(boundary, fileMetadataJson(name, mimeType, appProperties), mimeType, bytes)
+        val metadata = fileMetadataJson(name, mimeType, appProperties)
+        // A JSON null clears an appProperty in a files.update request.
+        removedAppProperties.forEach { key -> metadata.getJSONObject("appProperties").put(key, JSONObject.NULL) }
+        val body = multipartBody(boundary, metadata, mimeType, bytes)
         val response = execute(
             method = "PATCH",
             url = "$UPLOAD_FILES_URL/${path(fileId)}?uploadType=multipart&fields=id,name,mimeType,modifiedTime,appProperties",
@@ -171,7 +189,9 @@ class DriveRestTransport(
                     response.statusCode,
                     response.bytes.toString(Charsets.UTF_8),
                 )
-                if (failure is CloudTransientException && safeToRetry && attempt < DriveRetryPolicy.MAX_ATTEMPTS - 1) {
+                if (failure is CloudTransientException && failure.retryable && safeToRetry &&
+                    attempt < DriveRetryPolicy.MAX_ATTEMPTS - 1
+                ) {
                     lastFailure = failure
                     sleeper(DriveRetryPolicy.delayMillis(attempt, jitterMillis()))
                 } else {
