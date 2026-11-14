@@ -18,7 +18,7 @@ object CharacterTransferCodec {
     const val FORMAT = "dice-thrower-character"
     const val FORMAT_VERSION = 1
     const val BOUNDED_RULE_FORMAT_VERSION = 2
-    private const val MAX_RAW_BYTES = 128 * 1024
+    internal const val MAX_RAW_BYTES = 128 * 1024
     private const val MAX_TOKEN_LENGTH = 120_000
     const val MAX_SHARE_URL_LENGTH = 2600
     const val WORKSHOP_URL = "https://keyserdsoze.github.io/Android.DiceThrower/workshop/"

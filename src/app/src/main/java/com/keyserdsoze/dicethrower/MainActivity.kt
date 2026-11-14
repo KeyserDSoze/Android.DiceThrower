@@ -8,13 +8,17 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.res.stringResource
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -39,6 +43,7 @@ import com.keyserdsoze.dicethrower.data.sync.SyncStatusKind
 import com.keyserdsoze.dicethrower.model.AppSettings
 import com.keyserdsoze.dicethrower.ui.theme.DiceThrowerTheme
 import com.keyserdsoze.dicethrower.ui.AppDataViewModel
+import com.keyserdsoze.dicethrower.ui.CharacterFileImportViewModel
 import com.keyserdsoze.dicethrower.ui.v2.DiceThrowerAppV2
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
@@ -64,6 +69,7 @@ internal fun shouldHandleLaunchLink(restored: Boolean, importPreviewPending: Boo
 class MainActivity : ComponentActivity() {
     private lateinit var store: LocalStore
     private lateinit var dataModel: AppDataViewModel
+    private lateinit var characterFileImport: CharacterFileImportViewModel
     private lateinit var cloudAccountStore: CloudAccountStore
     private lateinit var googleAccountCoordinator: GoogleAccountCoordinator
     private lateinit var syncEngine: CloudSyncEngine
@@ -90,32 +96,10 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.OpenDocument(),
     ) { uri ->
         if (uri != null) {
-            try {
-                val output = java.io.ByteArrayOutputStream()
-                val stream = contentResolver.openInputStream(uri)
-                    ?: throw IllegalArgumentException("Unable to open character file")
-                stream.use { input ->
-                    val buffer = ByteArray(4096)
-                    while (true) {
-                        val length = input.read(buffer)
-                        if (length == -1) break
-                        require(output.size() + length <= 128 * 1024) { "Character file too large" }
-                        output.write(buffer, 0, length)
-                    }
-                }
-                finishLinkImport()
-                pendingCharacterImport = CharacterTransferCodec.decodeJson(
-                    output.toString(Charsets.UTF_8.name()),
-                )
-                characterImportError = false
-            } catch (_: Exception) {
-                pendingCharacterImport = null
-                characterImportError = true
-            } catch (_: StackOverflowError) {
-                // Untrusted file: deeply nested JSON must never crash the app.
-                pendingCharacterImport = null
-                characterImportError = true
-            }
+            pendingCharacterImport = null
+            characterImportError = false
+            finishLinkImport()
+            characterFileImport.load(uri)
         }
     }
 
@@ -140,6 +124,8 @@ class MainActivity : ComponentActivity() {
         AppLocaleManager.syncFrameworkLocale(this)
         store = LocalStore(this)
         dataModel = ViewModelProvider(this, AppDataViewModel.Factory(this))[AppDataViewModel::class.java]
+        characterFileImport = ViewModelProvider(this, CharacterFileImportViewModel.Factory(this))[
+            CharacterFileImportViewModel::class.java]
         cloudAccountStore = CloudAccountStore(this)
         googleAccountCoordinator = GoogleAccountCoordinator(this)
         settings = store.loadSettings()
@@ -216,11 +202,16 @@ class MainActivity : ComponentActivity() {
                         },
                     )
 
-                    pendingCharacterImport?.let { incoming ->
+                    if (characterFileImport.loading) {
+                        LinearProgressIndicator(Modifier.fillMaxWidth().align(Alignment.TopCenter)
+                            .testTag("character-file-loading"))
+                    }
+                    (pendingCharacterImport ?: characterFileImport.preview)?.let { incoming ->
                         CharacterImportPreviewDialog(
                             incoming = incoming,
                             onDismiss = {
                                 pendingCharacterImport = null
+                                characterFileImport.clear()
                                 finishLinkImport()
                             },
                             onImport = { name, level ->
@@ -240,17 +231,18 @@ class MainActivity : ComponentActivity() {
                                     characterImportError = true
                                 }
                                 pendingCharacterImport = null
+                                characterFileImport.clear()
                                 finishLinkImport()
                             },
                         )
                     }
-                    if (characterImportError) {
+                    if (characterImportError || characterFileImport.failed) {
                         AlertDialog(
-                            onDismissRequest = { characterImportError = false },
+                            onDismissRequest = { characterImportError = false; characterFileImport.clear() },
                             title = { Text(stringResource(R.string.import_character_error_title)) },
                             text = { Text(stringResource(R.string.import_character_error_message)) },
                             confirmButton = {
-                                TextButton(onClick = { characterImportError = false }) {
+                                TextButton(onClick = { characterImportError = false; characterFileImport.clear() }) {
                                     Text(stringResource(R.string.cancel))
                                 }
                             },
@@ -282,6 +274,8 @@ class MainActivity : ComponentActivity() {
         if (incoming?.action != Intent.ACTION_VIEW) return
         val uri = incoming.data ?: return
         if (uri.scheme != "dicethrower" || uri.host != "import") return
+        // A newer explicit link supersedes a pending file read or file preview.
+        characterFileImport.clear()
         val token = uri.getQueryParameter("data")
         try {
             require(!token.isNullOrBlank()) { "Missing character payload" }
