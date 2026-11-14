@@ -1,7 +1,8 @@
 # Errori delle formule EN/IT — follow-up EPIC #165
 
 Tracking: [EPIC #165](https://github.com/KeyserDSoze/Android.DiceThrower/issues/165).
-Branch `fix/workshop-formula-error-messages`: sviluppo locale, **non incluso nella v0.0.27**.
+Integrato in `main` da `fix/workshop-formula-error-messages`, per la release **v0.0.28**.
+Esiti della pubblicazione: [FORMULA_ERROR_RELEASE_QA.md](FORMULA_ERROR_RELEASE_QA.md).
 
 ## Ambito
 

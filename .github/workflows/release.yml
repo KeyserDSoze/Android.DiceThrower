@@ -211,8 +211,8 @@ jobs:
           VERSION: ${{ needs.release.outputs.version }}
         run: |
           mkdir -p distribution/whatsnew
-          printf 'Dice Thrower %s: the web Character Workshop now validates roll formulas against Android grammar, integer overflow and dice/size limits before saving or sharing. Dynamic variables and expanded level rules use the same budgets. Existing browser characters remain editable without automatic rewrites. A shared 92-case corpus checks both platforms. JSON export reports errors in the UI. Android roll results and stored data are unchanged.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
-          printf 'Dice Thrower %s: il Character Workshop web controlla formule, overflow e limiti di dadi/dimensioni come Android prima di salvare o condividere. Variabili e regole di livello espanse rispettano gli stessi budget. I personaggi browser esistenti restano modificabili senza riscritture automatiche. Un corpus di 92 casi verifica entrambe le piattaforme. Export JSON mostra gli errori nella UI. Risultati e dati Android invariati.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
+          printf 'Dice Thrower %s: clearer English and Italian formula errors in the web Character Workshop. Changing language keeps the draft and updates existing diagnostics. Long variable names wrap correctly; invalid saves, shares and JSON imports preserve existing data. Validation rules, Android roll results and data formats are unchanged.\n' "$VERSION" > distribution/whatsnew/whatsnew-en-US
+          printf 'Dice Thrower %s: errori delle formule più chiari in italiano e inglese nel Character Workshop web. Il cambio lingua conserva la bozza e aggiorna gli errori già visibili. Nomi lunghi leggibili e dati conservati dopo salvataggi, condivisioni o import JSON non validi. Regole di validazione, risultati Android e formati dati invariati.\n' "$VERSION" > distribution/whatsnew/whatsnew-it-IT
 
       - name: Upload to Google Play Internal testing
         uses: r0adkll/upload-google-play@v1.1.5
