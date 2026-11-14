@@ -2,7 +2,8 @@
 
 Tracking: [EPIC #165](https://github.com/KeyserDSoze/Android.DiceThrower/issues/165).
 Integrato in `main` da `fix/workshop-formula-error-messages`, per la release **v0.0.28**.
-Esiti della pubblicazione: [FORMULA_ERROR_RELEASE_QA.md](FORMULA_ERROR_RELEASE_QA.md).
+Sito e release firmata verificati, con aggiornamento dalla v0.0.27 e pulizia dei branch:
+[FORMULA_ERROR_RELEASE_QA.md](FORMULA_ERROR_RELEASE_QA.md).
 
 ## Ambito
 
